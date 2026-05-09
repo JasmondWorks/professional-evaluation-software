@@ -6,10 +6,15 @@ import { roleCreatedView } from '@/app/state/rolecreated/roleCreatedSlice';
 
 type FormProps = {
    formdata: Record<string, any>;
-   setFormdata: (data: Record<string, any>) => void;
+   updateFields: (data: Record<string, any>) => void;
+   setStepValid: (data: boolean) => void;
 };
 
-export default function Formthree({ formdata, setFormdata }: FormProps){
+export default function Formthree({
+   formdata,
+   updateFields,
+   setStepValid
+}: FormProps){
    const dispatch = useDispatch()
 
    return(
@@ -17,7 +22,6 @@ export default function Formthree({ formdata, setFormdata }: FormProps){
          <div className="w-full">
             <p className="my-2 mx-8">{ `You are currently viewing the pre-set Reporting Hierarchy for the`} employee’s role. {`Click 'Edit Reporting Hierarchy' to customize the structure according to your organization's needs.` }</p>
          </div>
-         
       </>
    )
 }

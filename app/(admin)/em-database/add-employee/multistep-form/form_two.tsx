@@ -1,11 +1,12 @@
 'use client'
 import { useEffect } from "react";
+import { Dispatch, SetStateAction } from "react";
 
-type FormProps = {
-   formdata: Record<string, any>;
-   updateFields: (data: Record<string, any>) => void;
-   setStepValid: (data: boolean)=>{}
-};
+interface FormProps {
+  formdata: any;
+  updateFields: (fields: Record<string, any>) => void;
+  setStepValid: Dispatch<SetStateAction<boolean>>;
+}
 
 export default function Formtwo({ formdata, updateFields, setStepValid }: FormProps){
    const required = ["name", "email"];

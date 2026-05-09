@@ -25,7 +25,7 @@ export default function Action(){
         Get help
       </Link>
 
-      <div onClick={ handleLogout } className='text-red-500 flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-gray-100'>
+      <div onClick={ handleLogout } className='text-red-500 flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-gray-100 cursor-pointer'>
         <Logout className='me-2'/>
         logout
       </div>

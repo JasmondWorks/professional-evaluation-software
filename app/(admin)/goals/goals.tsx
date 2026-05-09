@@ -14,25 +14,28 @@ type Goal = {
     name: string;
     status: number | string;
     daysLeft: number;
-    // to add other properties late
 }
 
 export default function Goals(){
     const [grid, setGrid] = useState(false)
     const [goals, setGoals] = useState<Goal[]>([])
     const dispatch = useDispatch()
-   const [user, setUser] = useState({name: '', role: ''})
-
+    const [user, setUser] = useState({name: '', role: '', id: ''})
 
     useEffect(() => {
-    const access_token = localStorage.getItem('access_token') as string
-    const tokenData = jwt.decode(access_token)
+        const access_token = localStorage.getItem('access_token') as string
+        const tokenData = jwt.decode(access_token)
 
-    if (tokenData && typeof tokenData === 'object' && 'name' in tokenData && 'role' in tokenData) {
-        setUser({ name: (tokenData as any).name, role: (tokenData as any).role });
-    } else {
-        setUser({ name: '', role: '' });
-    }
+        if (tokenData && typeof tokenData === 'object' && 'name' in tokenData && 'role' in tokenData) {
+            setUser({
+                name: (tokenData as any).name,
+                role: (tokenData as any).role,
+                id: (tokenData as any).id
+            });
+        } else {
+            setUser({ name: '', role: '', id: '' });
+        }
+
         async function fetchGoal() {
             const data = await fetch('/api/getGoals', {
                 method: 'POST',
@@ -40,11 +43,12 @@ export default function Goals(){
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify(tokenData)
-
             })
+
             const goalData = await data.json()
             setGoals(goalData)          
         }
+
         fetchGoal()
     }, [])
 
@@ -71,7 +75,7 @@ export default function Goals(){
                     }
                 </div>
             </div>
-            
+
             <div className="flex flex-col justify-center">
             {
                 (goals.length == 0) ? 
@@ -81,9 +85,6 @@ export default function Goals(){
                     <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
                     <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
                 </div>
-                // <p className="mt-48 mx-auto text-sm text-gray-500 font-light">
-                //     {`Currently, No Goals Created. Click 'Set New Goals' to Begin Your Journey of Achievement and Growth.`}
-                // </p> 
                 : 
                 <div className={ `${ grid? 'grid grid-cols-3 gap-4': 'flex flex-col' } my-8 ` } >
                     {
@@ -116,7 +117,6 @@ export default function Goals(){
                             )
                         })
                     }
-
                 </div>
             }
             </div>

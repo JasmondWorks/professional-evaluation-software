@@ -6,10 +6,10 @@ type user = {
   id:number
   name: string
   email: string 
-  password: string
   gsm: string
   role: string
   address: string
+  dept: string
   faculty_college: string
   dob: string
   doa: string

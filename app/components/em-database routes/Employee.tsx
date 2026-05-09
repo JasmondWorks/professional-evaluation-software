@@ -278,7 +278,7 @@ export default function Employee() {
                       {i.role}
                     </p>
                   </div>
-                  <div className="w-[30%] my-auto font-semibold mx-auto flex justify-center">{i.dept}</div>
+                  <div className="w-[30%] my-auto font-semibold mx-auto flex justify-start items-center ml-14">{i.dept}</div>
                 </Link>
               ))
             ) : (
