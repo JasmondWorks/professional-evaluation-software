@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import { useMultistepForm } from "./useMultistep";
 import { jwtDecode } from "jwt-decode";
 
@@ -9,55 +9,55 @@ import Formtwo from "./multistep-form/form_two";
 import Formthree from "./multistep-form/form_three";
 
 export default function MainForm() {
-  const [formdata, setFormdata] = useState({org: ''});
-  const [credentialData, setCredentialData] = useState<{[key: string]: string}>({})
-  const [stepValid, setStepValid] = useState(false); // 🔥 key addition
-  const [adding, setAdding] = useState(false)
-  const [selectedFile, setSelectedFile] = useState("");
-  const [isSuccessful, setIsSuccessful] =  useState(false)
+  const [formdata, setFormdata] = useState({ org: "" });
+  const [credentialData, setCredentialData] = useState<Record<string, string>>(
+    {}
+  );
+  const [stepValid, setStepValid] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string>("");
+  const [isSuccessful, setIsSuccessful] = useState(false);
 
-    useEffect(() => {
-      const token = localStorage.getItem("access_token");
-      if (!token) return;
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
 
-      try {
-        const decoded: any = jwtDecode(token);
+    try {
+      const decoded = jwtDecode<{ org?: string }>(token);
 
-        // adjust key name to match your JWT payload
-        if (decoded?.org) {
-          setFormdata(prev => ({
-            ...prev,
-            org: decoded.org
-          }));
-        }
-
-      } catch (err) {
-        console.error("Invalid token:", err);
+      if (decoded?.org) {
+        setFormdata((prev) => ({
+          ...prev,
+          org: decoded.org || "",
+        }));
       }
-    }, []);
+    } catch (err) {
+      console.error("Invalid token:", err);
+    }
+  }, []);
 
-  function updateFields(fields) {
-    setFormdata(prev => ({ ...prev, ...fields }));
+  function updateFields(fields: Record<string, any>) {
+    setFormdata((prev) => ({ ...prev, ...fields }));
   }
 
-  const steps = [
-    <Formone 
-      formdata={formdata} 
-      updateFields={updateFields} 
-      setStepValid={setStepValid} 
+  const steps: ReactElement[] = [
+    <Formone
+      formdata={formdata}
+      updateFields={updateFields}
+      setStepValid={setStepValid}
       setCredentialData={setCredentialData}
-      selectedFile={selectedFile} 
-      setSelectedFile={setSelectedFile} 
+      selectedFile={selectedFile}
+      setSelectedFile={setSelectedFile}
     />,
-    <Formtwo 
-      formdata={formdata} 
-      updateFields={updateFields} 
-      setStepValid={setStepValid} 
+    <Formtwo
+      formdata={formdata}
+      updateFields={updateFields}
+      setStepValid={setStepValid}
     />,
-    <Formthree 
-      formdata={formdata} 
-      updateFields={updateFields} 
-      setStepValid={setStepValid} 
+    <Formthree
+      formdata={formdata}
+      updateFields={updateFields}
+      setStepValid={setStepValid}
     />,
   ];
 
@@ -68,10 +68,14 @@ export default function MainForm() {
     isFirstStep,
     isLastStep,
     back,
-    next
+    next,
   } = useMultistepForm(steps);
 
-  async function handleSubmit(e) {
+  useEffect(() => {
+    setStepValid(false);
+  }, [currentStepIndex]);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!isLastStep) return next();
@@ -84,24 +88,22 @@ export default function MainForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formdata,
-          credentialData: Object.values(credentialData)
-        })
+          credentialData: Object.values(credentialData),
+        }),
       });
 
       const data = await res.json();
 
       if (data.status === 200) {
-        // alert("Employee added successfully");
-        setIsSuccessful(true)
-        setTimeout(()=>{
-          window.location.href = "/em-database";
-        }, 1000)
+        setIsSuccessful(true);
 
+        setTimeout(() => {
+          window.location.href = "/em-database";
+        }, 1000);
       } else {
         alert(`error: ${data.message}`);
         setAdding(false);
       }
-
     } catch (err) {
       console.error(err);
       setAdding(false);
@@ -109,24 +111,30 @@ export default function MainForm() {
     }
   }
 
+  const isDisabled = (!stepValid && !isLastStep) || adding;
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col bg-white m-4">
-      {
-        isSuccessful&&
+      {isSuccessful && (
         <div className="bg-white border rounded-lg border-pes flex justify-center align-center shadow-md flex-col p-6 absolute left-1/2 w-fit m-auto">
-          <p className="font-bold text-xl text-pes mb-3">Employee Added successfully</p>
+          <p className="font-bold text-xl text-pes mb-3">
+            Employee Added successfully
+          </p>
           <p>redirecting...</p>
         </div>
-      }
+      )}
 
       <div className="w-full h-[4rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold text-xl">Add an Employee</h1>
+        <h1 className="my-auto mx-6 font-semibold text-xl">
+          Add an Employee
+        </h1>
       </div>
 
       <div className="bg-gray-50 h-[3rem] flex justify-between">
         <h1 className="my-auto mx-6 font-semibold">
           Step {currentStepIndex + 1}
         </h1>
+
         <h1 className="my-auto mx-6 font-semibold">
           {currentStepIndex + 1} / {stepList.length}
         </h1>
@@ -147,12 +155,12 @@ export default function MainForm() {
 
         <button
           type="submit"
-          disabled={!stepValid || adding}
+          disabled={isDisabled}
           className={`btn rounded-sm py-2 px-16 mx-8 border border-pes text-white ms-auto 
             ${
-              stepValid && !adding
-                ? "bg-pes hover:bg-blue-800"
-                : "bg-gray-400 cursor-not-allowed"
+              isDisabled
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-pes hover:bg-blue-800"
             }`}
         >
           {adding ? (
@@ -170,12 +178,14 @@ export default function MainForm() {
                   strokeWidth="4"
                   fill="none"
                 />
+
                 <path
                   className="opacity-75"
                   fill="currentColor"
                   d="M4 12a8 8 0 018-8v8z"
                 />
               </svg>
+
               Submitting...
             </span>
           ) : isLastStep ? (
