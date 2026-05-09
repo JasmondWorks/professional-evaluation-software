@@ -1,0 +1,585 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model OptimizationResult {
+  id                 Int       @id @default(autoincrement())
+  mode               String    @db.VarChar(50)
+  optimalK           Int
+  efficiencyValue    Float?
+  totalStaffNeeded   Int
+  supervisoryStaff   Int?
+  managementLevel1   Int?
+  managementLevel2   Int?
+  topManagementStaff Int?
+  lecturers          Int?
+  seniorLecturers    Int?
+  professors         Int?
+  studentPopulation  Int?
+  D                  Float?
+  G                  Float?
+  Y                  Float?
+  alpha              Float?
+  t1                 Float?
+  t2                 Float?
+  t3                 Float?
+  t4                 Float?
+  S0                 Float?
+  createdAt          DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model StaffEstimation {
+  id                      Int       @id @default(autoincrement())
+  methodType              String    @db.VarChar(50)
+  staffNeeded             Float?
+  createdAt               DateTime? @default(now()) @db.Timestamp(6)
+  basicTime               Float?
+  relaxAllowance          Float?
+  loadFactor              Float?
+  numTasks                Int?
+  timePerTask             Float?
+  availableHoursPerPerson Float?
+  observedTime            Float?
+  estimatedTime           Float?
+  correctiveFactor        Float?
+  personsEstimate         Float?
+  A                       Float?
+  B                       Float?
+  confidenceLimit         Float?
+  utilizationFactor       Float?
+  annualManHours          Float?
+  standardManHours        Float?
+}
+
+model appraisal {
+  id                                Int      @id @default(autoincrement())
+  pesuser_name                      String   @db.VarChar(255)
+  org                               String?  @db.VarChar(255)
+  teaching_quality_evaluation       Decimal? @db.Decimal
+  research_quality_evaluation       Decimal? @db.Decimal
+  administrative_quality_evaluation Decimal? @db.Decimal
+  community_quality_evaluation      Decimal? @db.Decimal
+  other_relevant_information        Decimal? @db.Decimal
+  dept                              String?  @default("mechanical engineering") @db.VarChar(255)
+  pending                           Boolean? @default(false)
+  resolve                           Boolean? @default(false)
+
+  @@unique([pesuser_name, org, dept], map: "appraisal_unique")
+  @@unique([pesuser_name, dept], map: "appraisal_user_dept_unique")
+}
+
+model auditor_responses {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  email      String    @unique @db.VarChar(255)
+  gsm        String    @db.VarChar(50)
+  address    String
+  dob        DateTime  @db.Date
+  image      String?   @db.VarChar(255)
+  responses  Json
+  status     String?   @default("pending") @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model auditor_survey_responses {
+  id           Int       @id @default(autoincrement())
+  pesuser_name String?   @db.VarChar(255)
+  org          String?   @db.VarChar(255)
+  section      String?   @db.VarChar(100)
+  question     String?   @db.VarChar(255)
+  response     String?   @db.VarChar(255)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model badges {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(255)
+  category     String?   @db.VarChar(100)
+  sub_category String?   @db.VarChar(100)
+  image_url    String?   @db.VarChar(500)
+  description  String?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model counter_appraisal {
+  id                                Int      @id @default(autoincrement())
+  pesuser_name                      String   @db.VarChar(255)
+  org                               String?  @db.VarChar(255)
+  teaching_quality_evaluation       Decimal? @db.Decimal(5, 2)
+  research_quality_evaluation       Decimal? @db.Decimal(5, 2)
+  administrative_quality_evaluation Decimal? @db.Decimal(5, 2)
+  community_quality_evaluation      Decimal? @db.Decimal(5, 2)
+  other_relevant_information        String?
+  dept                              String?  @db.VarChar(255)
+  pending                           Boolean? @default(false)
+}
+
+model counter_stress {
+  id                       Int       @id @default(autoincrement())
+  pesuser_name             String    @db.VarChar(255)
+  org                      String?   @db.VarChar(255)
+  dept                     String?   @db.VarChar(255)
+  created_at               DateTime? @default(now()) @db.Timestamp(6)
+  stress_theme             Int?
+  stress_feeling_frequency Int?
+}
+
+model counter_userperformance {
+  id               Int       @id @default(autoincrement())
+  pesuser_name     String    @db.VarChar(255)
+  org              String?   @db.VarChar(255)
+  dept             String?   @db.VarChar(255)
+  competence       Decimal?  @db.Decimal(5, 2)
+  integrity        Decimal?  @db.Decimal(5, 2)
+  compatibility    Decimal?  @db.Decimal(5, 2)
+  use_of_resources Decimal?  @db.Decimal(5, 2)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  pending          Boolean?  @default(false)
+}
+
+model facilities {
+  id                      Int       @id @default(autoincrement())
+  identification_symbol   String?   @db.VarChar(100)
+  description_of_facility String
+  location                String?
+  facility_register_id_no String?   @db.VarChar(100)
+  type                    String?   @db.VarChar(100)
+  priority_rating         String?   @db.VarChar(50)
+  remarks                 String?
+  org                     String?   @default("DevSquad inc") @db.VarChar(255)
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model first_book_of_record {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  achievement   String    @db.VarChar(255)
+  category      String?   @db.VarChar(100)
+  date_achieved DateTime? @db.Date
+  image_url     String?   @db.VarChar(500)
+  description   String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  sub_category  String?   @db.VarChar(100)
+
+  @@index([category], map: "idx_first_book_category")
+  @@index([date_achieved], map: "idx_first_book_date")
+}
+
+model goals {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  status      Int?
+  day_started DateTime? @db.Date
+  due_date    DateTime? @db.Date
+  user_id     String
+  dept        String?   @default("mechnical engineering") @db.VarChar(255)
+}
+
+model hall_of_fame {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  title       String?   @db.VarChar(255)
+  image_url   String?   @db.VarChar(500)
+  year        String?   @db.VarChar(4)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([name], map: "idx_hall_of_fame_name")
+  @@index([year], map: "idx_hall_of_fame_year")
+}
+
+model index {
+  id           Int      @id @default(autoincrement())
+  redundancy   Decimal? @db.Decimal
+  productivity Decimal? @db.Decimal
+  utility      Decimal? @db.Decimal
+  dept         String?  @db.VarChar(255)
+  org          String?
+}
+
+model lead_scores {
+  pesuser_name     String @db.VarChar(255)
+  dept             String @db.VarChar(255)
+  competence       Float?
+  integrity        Float?
+  compatibility    Float?
+  use_of_resources Float?
+
+  @@id([pesuser_name, dept])
+}
+
+model motivation {
+  id          Int       @id @default(autoincrement())
+  org         String
+  total_score Decimal   @db.Decimal(10, 2)
+  rating      String
+  thresholds  Json
+  categories  Json
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model non_academic_appraisal {
+  id          Int       @id @default(autoincrement())
+  org         String
+  output      Decimal   @db.Decimal(10, 2)
+  quality     Decimal   @db.Decimal(10, 2)
+  efficiency  Decimal   @db.Decimal(10, 2)
+  attendance  Decimal   @db.Decimal(10, 2)
+  teamwork    Decimal   @db.Decimal(10, 2)
+  total_score Decimal   @db.Decimal(10, 2)
+  rating      String
+  thresholds  Json
+  weights     Json
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model notifications {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  org        String?   @db.VarChar(255)
+  title      String
+  message    String
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  pesuser    pesuser   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user")
+}
+
+model org {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(255)
+  category   String    @db.VarChar(100)
+  plan       String    @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  evaluation String[]  @default([])
+  ongoing    Boolean   @default(false)
+  maintenance_model Boolean @default(false)
+}
+
+model org_structure_results {
+  id          Int       @id @default(autoincrement())
+  org         String
+  section     Int
+  result      Decimal?  @db.Decimal(10, 4)
+  numerator   Decimal[] @db.Decimal
+  denominator Decimal[] @db.Decimal
+  extra_data  Json?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model performance {
+  id      Int    @id @default(autoincrement())
+  dept    String
+  type    String
+  yield   String
+  user_id String
+}
+
+model performance_result {
+  id          Int       @id @default(autoincrement())
+  org         String
+  total_score Decimal   @db.Decimal(10, 2)
+  rating      String
+  thresholds  Json
+  criteria    Json
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model permission {
+  id                 Int     @id @default(autoincrement())
+  manage_user        String?
+  access_em          String?
+  ae_all             String?
+  ae_sub             String?
+  ae_sel             String?
+  define_performance String?
+  dp_all             String?
+  dp_sub             String?
+  dp_sel             String?
+  access_hierachy    String?
+  manage_review      String?
+  mr_all             String?
+  mr_sub             String?
+  mr_sel             String?
+  user_id            String? @db.VarChar(255)
+  org                String? @db.VarChar(255)
+}
+
+model personnel_redundancy {
+  id                 Int       @id @default(autoincrement())
+  org                String?
+  actual_staff       Int
+  optimal_staff      Int
+  low_threshold      Int
+  moderate_threshold Int
+  pr_value           Decimal   @db.Decimal(6, 2)
+  rating             String    @db.VarChar(50)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model personnel_utilization {
+  id             Int       @id @default(autoincrement())
+  org            String
+  b              Decimal?  @db.Decimal(10, 2)
+  w              Decimal?  @db.Decimal(10, 2)
+  p0             Decimal?  @db.Decimal(6, 3)
+  t1             Decimal?  @db.Decimal(6, 3)
+  t2             Decimal?  @db.Decimal(6, 3)
+  t3             Decimal?  @db.Decimal(6, 3)
+  t4             Decimal?  @db.Decimal(6, 3)
+  s0             Decimal?  @db.Decimal(6, 3)
+  g              Decimal?  @db.Decimal(10, 2)
+  d              Decimal?  @db.Decimal(10, 2)
+  y              Decimal?  @db.Decimal(6, 3)
+  alpha          Decimal?  @db.Decimal(6, 3)
+  lambda         Decimal?  @db.Decimal(6, 3)
+  mu             Decimal?  @db.Decimal(6, 3)
+  j              Decimal?  @db.Decimal(10, 2)
+  kmin           Int?
+  kmax           Int?
+  kstar          Int?
+  hstar          Decimal?  @db.Decimal(12, 6)
+  constraints_ok Boolean?  @default(true)
+  violations     String[]
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model pesuser {
+  id              Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
+  name            String          @db.VarChar(255)
+  email           String          @unique @db.VarChar(255)
+  password        String          @db.VarChar(255)
+  gsm             String?         @db.VarChar(50)
+  role            String?         @db.VarChar(50)
+  address         String?
+  faculty_college String?         @db.VarChar(255)
+  dob             DateTime?       @db.Date
+  doa             DateTime?       @db.Date
+  poa             String?         @db.VarChar(255)
+  doc             String?         @db.VarChar(255)
+  post            String?         @db.VarChar(255)
+  dopp            DateTime?       @db.Date
+  level           String?         @db.VarChar(50)
+  image           String?         @db.VarChar(255)
+  org             String?         @db.VarChar(255)
+  dept            String?         @db.VarChar(255)
+  tier            String?         @default("bronze") @db.VarChar(50)
+  category        String?         @db.VarChar(100)
+  plan            String?         @db.VarChar(100)
+  notifications   notifications[]
+  subscriptions   subscriptions[]
+
+  @@unique([name, dept, org], map: "unique_user_per_dept_org")
+}
+
+model plans {
+  id                           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paypal_plan_id               String          @unique
+  name                         String
+  price_cents                  Int
+  currency_code                String          @db.VarChar(10)
+  billing_cycle_interval_unit  String          @db.VarChar(10)
+  billing_cycle_interval_count Int
+  trial_days                   Int?            @default(0)
+  is_active                    Boolean         @default(true)
+  created_at                   DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime        @default(now()) @db.Timestamptz(6)
+  subscriptions                subscriptions[]
+}
+
+model roles {
+  id       Int     @default(autoincrement())
+  name     String  @id @db.VarChar(255)
+  assigned Int?
+  org      String? @db.VarChar(255)
+}
+
+model second_book_of_record {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(255)
+  achievement   String    @db.VarChar(255)
+  category      String?   @db.VarChar(100)
+  date_achieved DateTime? @db.Date
+  image_url     String?   @db.VarChar(500)
+  description   String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  sub_category  String?   @db.VarChar(100)
+
+  @@index([category], map: "idx_second_book_category")
+  @@index([date_achieved], map: "idx_second_book_date")
+}
+
+model staff_appraisal_results {
+  id                           Int       @id @default(autoincrement())
+  org                          String
+  cwh                          Decimal?  @db.Decimal(10, 2)
+  cbh                          Decimal?  @db.Decimal(10, 2)
+  hd                           Decimal?  @db.Decimal(10, 2)
+  oq                           Decimal?  @db.Decimal(10, 2)
+  wq                           Decimal?  @db.Decimal(10, 2)
+  points                       Decimal?  @db.Decimal(10, 2)
+  rtp                          Decimal?  @db.Decimal(10, 2)
+  computed_appraisal_max_score Decimal?  @db.Decimal(10, 2)
+  hod_max_score                Decimal?  @db.Decimal(10, 2)
+  na                           Decimal?  @db.Decimal(10, 2)
+  ta                           Decimal?  @db.Decimal(10, 2)
+  wasted_man_hours             Decimal?  @db.Decimal(10, 2)
+  wasted_cost                  Decimal?  @db.Decimal(10, 2)
+  pidle                        Decimal?  @db.Decimal(10, 2)
+  lost_hours                   Decimal?  @db.Decimal(10, 2)
+  lost_cost                    Decimal?  @db.Decimal(10, 2)
+  total_wasted_cost            Decimal?  @db.Decimal(10, 2)
+  created_at                   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model staff_motivation {
+  id          Int       @id @default(autoincrement())
+  org         Int
+  total_score Decimal   @db.Decimal(10, 2)
+  rating      String
+  thresholds  Json
+  categories  Json
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model staff_survey_responses {
+  id            Int       @id @default(autoincrement())
+  pesuser_name  String    @db.VarChar(255)
+  pesuser_email String    @db.VarChar(255)
+  org           String?   @db.VarChar(255)
+  dept          String?   @db.VarChar(255)
+  responses     Json
+  submitted_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model stress {
+  id                       Int     @id @default(autoincrement())
+  pesuser_name             String  @db.VarChar(255)
+  org                      String? @db.VarChar(255)
+  stress_theme             Int?
+  stress_feeling_frequency Int?
+  dept                     String? @db.VarChar(255)
+}
+
+model stress_analysis_results {
+  id             Int       @id @default(autoincrement())
+  org            String?   @db.VarChar(255)
+  group_by       String?   @db.VarChar(50)
+  ssto           Float?
+  sstr           Float?
+  sse            Float?
+  f_statistic    Float?
+  critical_value Float?
+  conclusion     String?
+  df_between     Int?
+  df_within      Int?
+  ms_between     Float?
+  ms_within      Float?
+  mean           Float?
+  std_dev        Float?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model stress_scores {
+  id                       Int      @id @default(autoincrement())
+  organizational           Decimal? @default(0) @db.Decimal
+  student                  Decimal? @default(0) @db.Decimal
+  administrative           Decimal? @default(0) @db.Decimal
+  teacher                  Decimal? @default(0) @db.Decimal
+  parents                  Decimal? @default(0) @db.Decimal
+  occupational             Decimal? @default(0) @db.Decimal
+  personal                 Decimal? @default(0) @db.Decimal
+  academic_program         Decimal? @default(0) @db.Decimal
+  negative_public_attitude Decimal? @default(0) @db.Decimal
+  misc                     Decimal? @default(0) @db.Decimal
+  org                      String?  @db.VarChar(255)
+  dept                     String?  @db.VarChar(255)
+  user_id                  String?  @db.Uuid
+  user_name                String?  @db.VarChar(255)
+}
+
+model subscription_events {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_type      String
+  event_time      DateTime      @default(now()) @db.Timestamptz(6)
+  raw_payload     Json
+  processed       Boolean       @default(false)
+  subscription_id BigInt
+  subscriptions   subscriptions @relation(fields: [subscription_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model subscriptions {
+  pesuser_id             Int
+  plan_id                String                @db.Uuid
+  paypal_subscription_id String                @unique
+  status                 String                @db.VarChar(50)
+  start_time             DateTime?             @db.Timestamptz(6)
+  next_billing_time      DateTime?             @db.Timestamptz(6)
+  last_billing_time      DateTime?             @db.Timestamptz(6)
+  cancel_time            DateTime?             @db.Timestamptz(6)
+  failed_payment_count   Int?                  @default(0)
+  metadata               Json?
+  created_at             DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime              @default(now()) @db.Timestamptz(6)
+  old_uuid_id            String?               @db.Uuid
+  id                     BigInt                @id @default(autoincrement())
+  subscription_events    subscription_events[]
+  pesuser                pesuser               @relation(fields: [pesuser_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  plans                  plans                 @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model subscriptions_info {
+  id            Int       @id @default(autoincrement())
+  pesuser_email String    @db.VarChar(255)
+  pesuser_name  String?   @db.VarChar(255)
+  org           String?   @db.VarChar(255)
+  plan_code     String    @db.VarChar(100)
+  plan_name     String?   @db.VarChar(100)
+  reference     String    @unique @db.VarChar(100)
+  status        String?   @default("pending") @db.VarChar(50)
+  amount        Decimal?  @db.Decimal(12, 2)
+  paid_at       DateTime? @db.Timestamp(6)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model unit_head_overloading {
+  id                Int       @id @default(autoincrement())
+  org               String
+  actual_hours      Decimal   @db.Decimal(10, 2)
+  num_subordinates  Int
+  extra_complexity  Decimal   @db.Decimal(10, 2)
+  optimal_hours     Decimal   @db.Decimal(10, 2)
+  optimal_k         Decimal?  @db.Decimal(10, 2)
+  complexity_factor Decimal   @db.Decimal(10, 3)
+  overload_ratio    Decimal   @db.Decimal(10, 3)
+  status            String    @db.VarChar(50)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model userperformance {
+  id               Int      @id @default(autoincrement())
+  pesuser_name     String   @db.VarChar(255)
+  org              String?  @db.VarChar(255)
+  competence       Decimal? @db.Decimal
+  integrity        Decimal? @db.Decimal
+  compatibility    Decimal? @db.Decimal
+  use_of_resources Decimal? @db.Decimal
+  dept             String?  @default("mechanical engineering") @db.VarChar(255)
+  pending          Boolean? @default(false)
+  resolve          Boolean? @default(false)
+
+  @@unique([pesuser_name, org, dept], map: "userperformance_unique")
+}

@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  "--breakpoint-xs": 30rem;
+}
+
+:root {
+  --foreground-rgb: gray;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(94, 93, 93);
+  font-size: 15.5px;
+  background: white;
+}
+*{
+  /* border: 1px solid red; */
+  padding: 0px;
+  margin: 0px;
+  box-sizing: border-box;
+}
