@@ -1,65 +1,75 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "../prisma.dev";
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '../prisma.dev';
+import jwt from 'jsonwebtoken';
+import { validateData, saveAppraisalSchema, formatZodErrors } from '@/app/lib/validation';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // ✅ Clone the request to prevent the stream from being locked
-    const clonedReq = req.clone();
-    const body = await clonedReq.json();
+    const body = await request.json();
 
-    const { pesuser_name, org, isCounter = false, isAuditor = false, ...payload } = body;
+    // Verify JWT token from body
+    const token = body.token || body.access_token
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
 
-    if (!pesuser_name || !org || Object.keys(payload).length === 0) {
+    // Validate input
+    const validation = validateData(saveAppraisalSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { message: "Missing required fields or empty payload" },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       );
     }
 
-    // Fetch dept from pesuser
-    const userResult = await prisma.$queryRawUnsafe<{ dept: string }[]>(
-      `SELECT dept FROM "pesuser" WHERE name = $1 AND org = $2 LIMIT 1`,
-      pesuser_name,
-      org
-    );
+    const { pesuser_name, org, dept, isCounter, payload: appraisalData } = validation.data!;
 
-    if (userResult.length === 0 || !userResult[0].dept) {
-      return NextResponse.json(
-        { message: "User not found or department missing" },
-        { status: 404 }
-      );
+    // Convert all payload values to numbers
+    const numericData: Record<string, number> = {};
+    for (const [key, value] of Object.entries(appraisalData)) {
+      const numValue = parseFloat(String(value));
+      if (isNaN(numValue)) {
+        return NextResponse.json(
+          { error: `Invalid numeric value for ${key}` },
+          { status: 400 }
+        );
+      }
+      numericData[key] = numValue;
     }
 
-    const dept = userResult[0].dept;
-    const targetTable = isCounter || !isAuditor ? "counter_appraisal" : "appraisal";
-
-    // Build query
-    const columns = Object.keys(payload).map((c) => `"${c}"`).join(", ");
-    const placeholders = Object.keys(payload).map((_, i) => `$${i + 4}`).join(", ");
-    const values = Object.values(payload);
-
-    console.log(columns, placeholders, values);
-
-    const updates = Object.keys(payload)
-      .map((c) => `"${c}" = EXCLUDED."${c}"`)
-      .join(", ");
-
-    // This ensures replace behavior on every insert
-    const query = `
-      INSERT INTO "${targetTable}" (pesuser_name, org, dept, ${columns})
-      VALUES ($1, $2, $3, ${placeholders})
-      ON CONFLICT (pesuser_name, org, dept)
-      DO UPDATE SET ${updates};
-    `;
-
-    await prisma.$executeRawUnsafe(query, pesuser_name, org, dept, ...values);
+    if (isCounter) {
+      // Save counter appraisal (HOD scores)
+      await prisma.$executeRaw`
+        INSERT INTO counterappraisal (pesuser_name, org, dept, payload)
+        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
+        ON CONFLICT (pesuser_name, org)
+        DO UPDATE SET
+          payload = ${JSON.stringify(numericData)}::jsonb,
+          dept = ${dept || null}
+      `;
+    } else {
+      // Save regular appraisal (employee scores)
+      await prisma.$executeRaw`
+        INSERT INTO appraisal (pesuser_name, org, dept, payload)
+        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
+        ON CONFLICT (pesuser_name, org)
+        DO UPDATE SET
+          payload = ${JSON.stringify(numericData)}::jsonb,
+          dept = ${dept || null}
+      `;
+    }
 
     return NextResponse.json(
-      { message: `${isCounter ? "Counter" : "Main"} appraisal saved (replaced if existed)` },
+      { message: 'Appraisal data saved successfully', status: 200 },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("Prisma query error:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+
+  } catch (err) {
+    console.error('Error saving appraisal:', err);
+    return NextResponse.json(
+      { error: 'Failed to save appraisal data' },
+      { status: 500 }
+    );
   }
 }

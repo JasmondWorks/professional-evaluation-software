@@ -1,62 +1,82 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '../prisma.dev'
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '../prisma.dev';
+import jwt from 'jsonwebtoken';
+import { validateData, savePerformanceSchema, formatZodErrors } from '@/app/lib/validation';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { pesuser_name, org, payload, isCounter = false } = body;
+    const body = await request.json();
 
-    if (!pesuser_name || !org || !payload || Object.keys(payload).length === 0) {
+    // Verify JWT token from body
+    const token = body.token || body.access_token
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+
+    // Validate input
+    const validation = validateData(savePerformanceSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { message: 'Missing required fields or empty payload' },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       );
     }
 
-    // Fetch dept from pesuser
-    const userResult = await prisma.$queryRawUnsafe<{ dept: string }[]>(
-      `SELECT dept FROM "pesuser" WHERE name = $1 AND org = $2 LIMIT 1`,
-      pesuser_name,
-      org
-    );
+    const { pesuser_name, org, dept, isCounter, payload: performanceData } = validation.data!;
 
-    if (userResult.length === 0 || !userResult[0].dept) {
+    // Convert payload values to numbers
+    const competence = parseFloat(String(performanceData.competence));
+    const integrity = parseFloat(String(performanceData.integrity));
+    const compatibility = parseFloat(String(performanceData.compatibility));
+    const use_of_resources = parseFloat(String(performanceData.use_of_resources));
+
+    // Validate numeric values
+    if (isNaN(competence) || isNaN(integrity) || isNaN(compatibility) || isNaN(use_of_resources)) {
       return NextResponse.json(
-        { message: 'User not found or department missing' },
-        { status: 404 }
+        { error: 'All performance values must be valid numbers' },
+        { status: 400 }
       );
     }
 
-    const dept = userResult[0].dept;
-    const targetTable = isCounter ? "counter_userperformance" : "userperformance";
-
-    // Build dynamic query from payload
-    const columns = Object.keys(payload);
-    const values = Object.values(payload);
-
-    const columnNames = columns.map((c) => `"${c}"`).join(", ");
-    const placeholders = columns.map((_, i) => `$${i + 4}`).join(", ");
-
-    let query = `
-      INSERT INTO "${targetTable}" (pesuser_name, org, dept, ${columnNames})
-      VALUES ($1, $2, $3, ${placeholders})
-    `;
-
-    if (!isCounter) {
-      const updates = columns
-        .map((c) => `"${c}" = EXCLUDED."${c}"`)
-        .join(", ");
-      query += ` ON CONFLICT (pesuser_name, org, dept) DO UPDATE SET ${updates}`;
+    if (isCounter) {
+      // Save counter performance (HOD scores)
+      await prisma.$executeRaw`
+        INSERT INTO counteruserperformance (pesuser_name, org, dept, competence, integrity, compatibility, use_of_resources)
+        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${competence}, ${integrity}, ${compatibility}, ${use_of_resources})
+        ON CONFLICT (pesuser_name, org)
+        DO UPDATE SET
+          competence = ${competence},
+          integrity = ${integrity},
+          compatibility = ${compatibility},
+          use_of_resources = ${use_of_resources},
+          dept = ${dept || null}
+      `;
+    } else {
+      // Save regular performance (employee scores)
+      await prisma.$executeRaw`
+        INSERT INTO userperformance (pesuser_name, org, dept, competence, integrity, compatibility, use_of_resources)
+        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${competence}, ${integrity}, ${compatibility}, ${use_of_resources})
+        ON CONFLICT (pesuser_name, org)
+        DO UPDATE SET
+          competence = ${competence},
+          integrity = ${integrity},
+          compatibility = ${compatibility},
+          use_of_resources = ${use_of_resources},
+          dept = ${dept || null}
+      `;
     }
 
-    await prisma.$executeRawUnsafe(query, pesuser_name, org, dept, ...values);
-
     return NextResponse.json(
-      { message: `${isCounter ? "Counter userperformance" : "Userperformance"} saved/updated` },
+      { message: 'Performance data saved successfully', status: 200 },
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Prisma query error:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+
+  } catch (err) {
+    console.error('Error saving performance:', err);
+    return NextResponse.json(
+      { error: 'Failed to save performance data' },
+      { status: 500 }
+    );
   }
 }

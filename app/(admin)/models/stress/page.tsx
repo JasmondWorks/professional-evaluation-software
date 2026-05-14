@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";import { getAccessToken } from '@/app/utils/auth';
+
 import {
   LineChart,
   Line,
@@ -111,7 +112,7 @@ export default function StressAnalysisTool() {
 
   useEffect(() => {
     async function fetchData() {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
 
       if (!token) return;
 

@@ -6,13 +6,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { org } = body;
 
-    let whereClause = "";
-    if (org) whereClause = `WHERE org = '${org.replace(/'/g, "''")}'`;
+    // Validate input
+    if (!org || typeof org !== 'string') {
+      return NextResponse.json({ error: "Invalid org parameter" }, { status: 400 });
+    }
 
-    const results = await prisma.$queryRawUnsafe<any[]>(`
+    // Use parameterized query to prevent SQL injection
+    const results = await prisma.$queryRaw<any[]>`
       SELECT pesuser_name, dept, stress_theme, stress_feeling_frequency
-      FROM stress ${whereClause};
-    `);
+      FROM stress
+      WHERE org = ${org};
+    `;
 
     return NextResponse.json(results);
   } catch (err) {

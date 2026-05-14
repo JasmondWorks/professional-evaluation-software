@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { jwtDecode } from 'jwt-decode'
 import CriteriaForm from './criteria/form'
 import LoadingButton from '../../../components/ui/LoadingButton'
+import { getAccessToken } from '@/app/utils/auth'
 
 type JWTPayload = {
   name?: string
@@ -76,7 +77,7 @@ export default function PerformanceStep() {
   useEffect(() => {
     const fetchScores = async () => {
       try {
-        const token = localStorage.getItem('access_token')
+        const token = getAccessToken()
         if (!token) return
         const user: JWTPayload = jwtDecode(token)
 
@@ -113,7 +114,7 @@ export default function PerformanceStep() {
   /* ---------------- Accept / Reject ---------------- */
   const handleAcceptReject = async (section: string, decision: 'accepted' | 'rejected') => {
     try {
-      const token = localStorage.getItem('access_token')
+      const token = getAccessToken()
       if (!token) return alert('No token found ❌')
       const user: JWTPayload = jwtDecode(token)
 
@@ -149,7 +150,7 @@ export default function PerformanceStep() {
       return
     }
 
-    const token = localStorage.getItem('access_token')
+    const token = getAccessToken()
     if (!token) return alert('No token found ❌')
 
     const user: JWTPayload = jwtDecode(token)
@@ -168,7 +169,7 @@ export default function PerformanceStep() {
       const res = await fetch('/api/savePerformance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, token }),
       })
 
       if (!res.ok) throw new Error('Error saving performance ❌')

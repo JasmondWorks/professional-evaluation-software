@@ -6,13 +6,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name } = body;
 
-    let whereClause = "";
-    if (name) whereClause = `WHERE pesuser_name = '${name.replace(/'/g, "''")}'`;
+    // Validate input
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: "Invalid name parameter" }, { status: 400 });
+    }
 
-    const results = await prisma.$queryRawUnsafe<any[]>(`
+    // Use parameterized query to prevent SQL injection
+    const results = await prisma.$queryRaw<any[]>`
       SELECT pesuser_name, dept, competence, integrity, compatibility, use_of_resources
-      FROM userperformance ${whereClause};
-    `);
+      FROM userperformance
+      WHERE pesuser_name = ${name};
+    `;
 
     return NextResponse.json(results);
   } catch (err) {

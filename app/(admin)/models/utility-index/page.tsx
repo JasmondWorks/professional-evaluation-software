@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState } from "react";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function UtilizationIndex() {
   const [data, setData] = useState({ used: 0, given: 0 });
@@ -40,7 +41,7 @@ export default function UtilizationIndex() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+          "Authorization": `Bearer ${getAccessToken()}`,
         },
         body: JSON.stringify({
           payload: "utility",

@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
+import { getAccessToken } from '@/app/utils/auth'
 
 type user = {
    id:number
@@ -28,7 +29,7 @@ export default function ProfileChunk(){
    const TextFallback = () => <><div className='w-60 h-3 my-1 rounded-full animate-pulse bg-gray-200'></div><div className='w-40 h-3 my-1 rounded-full animate-pulse bg-gray-200'></div></>
 
    useEffect( () => {
-      const access_token = localStorage.getItem('access_token') as string
+      const access_token = getAccessToken() as string
       console.log('access toknei s TokenExpiredError', access_token)
 
       async function fetchUser(){
@@ -54,11 +55,12 @@ export default function ProfileChunk(){
             <div className='flex justify-between max-sm:gap-4 max-sm:flex-col py-2'>
                <div className='w-40 h-40 me-8 max-sm:w-full'>
                   {
-                     user?.image == "" ?
-                        <img src={ `/${user.image}` } alt="profile-img" className='w-full h-full'/>                   
+                     user?.image ?
+                        <img src={ user.image } alt="profile-img" className='w-full h-full object-cover rounded-md'/>
                      :
-                        <img src='/young oti.PNG' alt='profile' />                        
-
+                        <div className='w-full h-full rounded-md bg-gray-300 flex items-center justify-center text-gray-600 font-bold text-4xl'>
+                           {user?.name?.charAt(0).toUpperCase() ?? '?'}
+                        </div>
                   }
                </div>
 

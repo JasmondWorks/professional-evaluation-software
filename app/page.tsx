@@ -8,12 +8,16 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    if (localStorage.getItem('access_token')) {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
+    // SSR safety check
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token && token !== 'undefined' && token !== 'null') {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     }
-  }, []) 
+  }, [router]); 
 
   return(
     <main className="w-full flex justify-center overflow-hidden relative bg-pes text-white">

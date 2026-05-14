@@ -3,6 +3,7 @@ import { cancelDelete } from '@/app/state/goals/goalSlice';
 import { RootState } from '@/app/state/store'
 import { CloseCircle } from 'iconsax-react'
 import LoadingButton from '../ui/LoadingButton';
+import { getAccessToken } from '@/app/utils/auth';
 
 type goal = {
     name: string;
@@ -11,13 +12,31 @@ type goal = {
     daysLeft: any
 }
 
-async function changeGoal() {
-    
-}
-
 export default function Deletegoal(){
     const isVisible = useSelector( (state: RootState) => state.goal.delete )
+    const goalData = useSelector( (state: RootState) => state.goal.data )
     const dispatch = useDispatch()
+
+    async function handleDelete() {
+        try {
+            const token = getAccessToken()
+            const res = await fetch('/api/removeGoal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, goalId: goalData.id })
+            })
+
+            if (!res.ok) {
+                throw new Error('Failed to delete goal')
+            }
+
+            dispatch(cancelDelete())
+            // Reload the page to reflect the deleted goal
+            window.location.reload()
+        } catch (err) {
+            console.error('Error deleting goal:', err)
+        }
+    }
 
     return (
         <div className={`notification ${ isVisible? 'visible': 'invisible' } rounded-sm shadow-lg p-12 z-30 flex flex-col w-4/12 bg-white absolute top-1/2 -translate-y-1/2`}>
@@ -35,7 +54,7 @@ export default function Deletegoal(){
                </p>
                <div className="actions flex">
                   <LoadingButton className='bg-pes rounded-md text-white w-7/12 py-4 mt-6 me-2' onClick={ () => dispatch( cancelDelete()) } >Cancel</LoadingButton>
-                  <button className='bg-red-500 rounded-md text-white w-4/12 py-4 mt-6'>Delete</button>
+                  <LoadingButton className='bg-red-500 rounded-md text-white w-4/12 py-4 mt-6' onClick={ handleDelete }>Delete</LoadingButton>
                </div>
 
             </div>

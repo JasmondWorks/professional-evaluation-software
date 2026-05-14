@@ -17,6 +17,10 @@ export default function MainForm() {
   const [adding, setAdding] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [isSuccessful, setIsSuccessful] = useState(false);
+  const [emailFailed, setEmailFailed] = useState(false);
+  const [failedEmail, setFailedEmail] = useState('');
+  const [failedName, setFailedName] = useState('');
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -96,10 +100,15 @@ export default function MainForm() {
 
       if (data.status === 200) {
         setIsSuccessful(true);
-
         setTimeout(() => {
           window.location.href = "/em-database";
         }, 1000);
+      } else if (data.status === 201 && data.emailFailed) {
+        // User created but email failed — show resend option
+        setEmailFailed(true);
+        setFailedEmail(data.email);
+        setFailedName(data.name);
+        setAdding(false);
       } else {
         alert(`error: ${data.message}`);
         setAdding(false);
@@ -113,6 +122,28 @@ export default function MainForm() {
 
   const isDisabled = (!stepValid && !isLastStep) || adding;
 
+  async function handleResendCredentials() {
+    setResending(true);
+    try {
+      const res = await fetch('/api/resendCredentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: failedEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Credentials resent to ${failedEmail} ✅`);
+        window.location.href = '/em-database';
+      } else {
+        alert(`Failed to resend: ${data.message}`);
+      }
+    } catch (err) {
+      alert('Error resending credentials');
+    } finally {
+      setResending(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col bg-white m-4">
       {isSuccessful && (
@@ -121,6 +152,33 @@ export default function MainForm() {
             Employee Added successfully
           </p>
           <p>redirecting...</p>
+        </div>
+      )}
+
+      {emailFailed && (
+        <div className="bg-yellow-50 border border-yellow-400 rounded-lg p-6 mb-4 flex flex-col gap-3">
+          <p className="font-bold text-yellow-800 text-lg">Employee created, but the welcome email failed to send.</p>
+          <p className="text-yellow-700 text-sm">
+            The account for <strong>{failedName}</strong> ({failedEmail}) was created successfully.
+            You can resend their login credentials below.
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleResendCredentials}
+              disabled={resending}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded disabled:opacity-50"
+            >
+              {resending ? 'Resending...' : 'Resend Credentials'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/em-database'; }}
+              className="border border-gray-400 text-gray-600 px-6 py-2 rounded hover:bg-gray-50"
+            >
+              Skip & Go to Employee List
+            </button>
+          </div>
         </div>
       )}
 

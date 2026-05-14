@@ -21,18 +21,17 @@ async function getData( user: string | null ) {
 
 export async function POST(request: NextRequest) {
   const token = await request.json();
-  console.log(token);
-  const user = token.name;
+  const user = token.userID ?? token.name;
   if (token) {
     try {
       let goals = await getData(user)
-      console.log(user)
       return NextResponse.json(goals)
   
     } catch(err) {
       console.error(err)
       return NextResponse.json([])
-    }    
+    }
+  } else {
+    return NextResponse.json({ error: 'No token provided' }, { status: 401 })
   }
-  NextResponse.redirect(new URL('/not-found', request.url))
 }

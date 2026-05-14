@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
-import Link from "next/link";
+import Link from "next/link";import { getAccessToken } from '@/app/utils/auth';
+
 
 function grader(num: number) {
   if (num >= 80) return "1st class (Excellent)";
@@ -26,7 +27,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const token = localStorage.getItem("access_token");
+        const token = getAccessToken();
         const decoded: any = jwt.decode(token as string);
 
         // Fetch performance + appraisal

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import jwt from 'jsonwebtoken'
+import { validateData, updateGoalSchema, formatZodErrors } from '@/app/lib/validation'
 
 type Goals = {
   name: string
@@ -28,18 +30,33 @@ async function updateData( entry: Goals ) {
 }
 
 export async function PUT(request: NextRequest) {
-  const data = await request.json();
+  try {
+    const data = await request.json()
 
-  if (data) {
-    try {
-      let goals = await updateData(data)
-      console.log(goals)
-      return NextResponse.json(goals)
+    // Verify JWT token from body
+    const token = data.token || data.access_token
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+
+    // Validate input
+    const validation = validateData(updateGoalSchema, data)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
+        { status: 400 }
+      )
+    }
+
+    const goals = await updateData(validation.data!)
+    return NextResponse.json(goals)
   
-   } catch(err) {
-      console.error(err)
-      return NextResponse.json([])
-   }    
+  } catch(err) {
+    console.error(err)
+    return NextResponse.json(
+      { error: 'Failed to update goal' },
+      { status: 500 }
+    )
   }
-  NextResponse.redirect(new URL('/not-found', request.url))
 }

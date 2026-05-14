@@ -158,7 +158,7 @@ export async function POST(req: Request) {
         productCategory: user.category,
         productPlan: user.plan,
         maintenance_model: m_model.maintenance_model
-      }, 'oti');
+      }, process.env.JWT_SECRET || 'fallback-secret-change-in-production');
       
       console.log(token, 'before send', user.name)
       return NextResponse.json({ message: 'Login successful!', token: token, status: 200 })      

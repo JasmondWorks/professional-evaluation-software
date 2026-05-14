@@ -6,6 +6,7 @@ import { notificationView } from "@/app/state/notification/notificationSlice"
 import { RootState } from "@/app/state/store"
 import { useEffect, useState } from "react"
 import jwt from "jsonwebtoken"
+import { getAccessToken } from '@/app/utils/auth'
 
 type NotificationType = {
   id: number
@@ -25,7 +26,7 @@ export default function Notification() {
     const fetchNotifications = async () => {
       try {
         setLoading(true)
-        const token = localStorage.getItem("access_token")
+        const token = getAccessToken()
         if (!token) return
         const decoded = jwt.decode(token) as { name?: string; id?: number; org?: string }
         const org = decoded?.org

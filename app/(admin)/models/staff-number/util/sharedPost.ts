@@ -1,5 +1,6 @@
+import { getAccessToken } from '@/app/utils/auth';
 export const saveResult = async (payload: any) => {
-  const token = localStorage.getItem("access_token");
+  const token = getAccessToken();
 
   const res = await fetch("/api/staffEstimation", {
     method: "POST",

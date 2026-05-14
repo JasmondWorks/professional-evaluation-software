@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState } from "react";import { getAccessToken } from '@/app/utils/auth';
+
 
 type SharedConstants = {
   Cwh: number | "";
@@ -291,7 +292,7 @@ export default function StaffAppraisalAllPage() {
                 <button
                     className="mt-6 px-4 py-2 bg-green-600 text-white rounded"
                     onClick={async () => {
-                      const token = localStorage.getItem("access_token");
+                      const token = getAccessToken();
                       if (!token) {
                         alert("Missing token");
                         return;

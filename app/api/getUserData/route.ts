@@ -20,11 +20,11 @@ async function getUserData( user: string | null ) {
 
 export async function POST(request: NextRequest) {
   const { token } = await request.json();
-  const user = jwt.verify( token, 'oti') as string;
+  const user = jwt.verify( token, process.env.JWT_SECRET || 'fallback-secret-change-in-production') as { userID: string | number };
 
   if (token) {
     try {
-      let { goodPerformance, badPerformance} = await getUserData(user)
+      let { goodPerformance, badPerformance} = await getUserData(user?.userID?.toString() ?? null)
       console.log(user)
       return NextResponse.json({ goodPerformance, badPerformance })
   

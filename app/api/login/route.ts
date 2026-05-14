@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         productPlan: user.plan,
         maintenance_model: maintenance.maintenance_model 
       },
-      'oti'
+      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
     );
     console.log('login successful')
 

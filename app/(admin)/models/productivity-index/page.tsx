@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function ProductivityIndex() {
   const [data, setData] = useState({
@@ -13,7 +14,7 @@ export default function ProductivityIndex() {
   const [userToken, setUserToken] = useState<string>("");
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (token) setUserToken(token);
   }, []);
 

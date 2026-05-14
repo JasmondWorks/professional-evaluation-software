@@ -34,25 +34,28 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    const { role } = useAuth(); // Optional, depending on if useAuth is faster
 
    useEffect(() => {
-      const access_token = localStorage.getItem('access_token');
-      
-      if (access_token && access_token !== 'undefined') {
-         try {
-            const decoded: any = jwt.decode(access_token);
-            if (decoded) {
-               setUser({
-                  name: decoded.name || '',
-                  role: decoded.role || '',
-                  org: decoded.org || '',
-                  logo: decoded.logo || '', // Ensure this is empty string if null, not "null" string
-                  maintenance_model: decoded.maintenance_model || false
-               });
+      // SSR safety check
+      if (typeof window !== 'undefined') {
+         const access_token = localStorage.getItem('access_token');
+         
+         if (access_token && access_token !== 'undefined' && access_token !== 'null') {
+            try {
+               const decoded: any = jwt.decode(access_token);
+               if (decoded) {
+                  setUser({
+                     name: decoded.name || '',
+                     role: decoded.role || '',
+                     org: decoded.org || '',
+                     logo: decoded.logo || '',
+                     maintenance_model: decoded.maintenance_model || false
+                  });
+               }
+            } catch (e) {
+               console.error("Token decode error:", e);
             }
-         } catch (e) {
-            console.error("Token decode error:", e);
          }
       }
-   }, [role]) // Re-run if role changes, though token check is usually sufficient
+   }, [role])
 
    // Definition of all tabs
    const tabs = [

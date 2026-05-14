@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Add, SearchNormal1 } from 'iconsax-react'
 import Link from 'next/link'
+import { getAccessToken } from '@/app/utils/auth'
 
 type User = {
   id: number
@@ -53,6 +54,26 @@ export default function Employee() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [resendingId, setResendingId] = useState<number | null>(null)
+
+  async function handleResend(email: string, id: number) {
+    setResendingId(id)
+    try {
+      const res = await fetch('/api/resendCredentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (res.ok) alert(`Credentials resent to ${email} ✅`)
+      else alert(`Failed: ${data.message}`)
+    } catch {
+      alert('Error resending credentials')
+    } finally {
+      setResendingId(null)
+    }
+  }
+
   function roleColor(role: string) {
     if (role === 'dept-admin') return 'blue'
     if (role === 'auditor') return 'yellow'
@@ -66,7 +87,7 @@ export default function Employee() {
     async function getEmployees() {
       setLoading(true)
       try {
-        const token = localStorage.getItem('access_token')
+        const token = getAccessToken()
         const req = await fetch('/api/getEmployee', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -99,7 +120,7 @@ export default function Employee() {
 
     setAssigning(true)
     try {
-      const token = localStorage.getItem('access_token')
+      const token = getAccessToken()
       const res = await fetch(`api/assign-${post}`, {
         method: 'POST',
         headers: {
@@ -246,10 +267,11 @@ export default function Employee() {
         <div className="w-full text-bold flex flex-col">
           <div className="rw bg-gray-100 h-12 w-full flex text-gray-400">
             <div className="w-[5%] my-auto mx-auto flex justify-center">S/N</div>
-            <div className="w-[25%] my-auto mx-auto flex justify-center">Name</div>
-            <div className="w-[30%] my-auto mx-auto flex justify-center">Email</div>
+            <div className="w-[20%] my-auto mx-auto flex justify-center">Name</div>
+            <div className="w-[25%] my-auto mx-auto flex justify-center">Email</div>
             <div className="w-[10%] my-auto mx-auto flex justify-center">Role</div>
-            <div className="w-[30%] my-auto mx-auto flex justify-center">Dept</div>
+            <div className="w-[25%] my-auto mx-auto flex justify-center">Dept</div>
+            <div className="w-[15%] my-auto mx-auto flex justify-center">Actions</div>
           </div>
 
           <div className="flex flex-col justify-between">
@@ -261,25 +283,28 @@ export default function Employee() {
               </div>
             ) : employees.length > 0 ? (
               employees.map((i, key) => (
-                <Link
-                  href={`/em-database/${i.id}`}
-                  key={i.id}
-                  className="rw h-12 w-full flex my-1 hover:bg-slate-50"
-                >
-                  <div className="w-[5%] my-auto font-semibold mx-auto flex justify-center">{key + 1}</div>
-                  <div className="w-[25%] my-auto font-semibold mx-auto flex justify-center">{i.name}</div>
-                  <div className="w-[30%] my-auto font-semibold mx-auto flex justify-center">{i.email}</div>
-                  <div className={`w-[10%] my-auto font-semibold mx-auto flex justify-center`}>
-                    <p
-                      className={`rounded-full w-fit px-4 py-1 bg-${roleColor(
-                        i.role
-                      )}-100 text-${roleColor(i.role)}-500`}
+                <div key={i.id} className="rw h-12 w-full flex my-1 hover:bg-slate-50">
+                  <Link href={`/em-database/${i.id}`} className="flex flex-1 items-center">
+                    <div className="w-[5%] my-auto font-semibold mx-auto flex justify-center">{key + 1}</div>
+                    <div className="w-[20%] my-auto font-semibold mx-auto flex justify-center">{i.name}</div>
+                    <div className="w-[25%] my-auto font-semibold mx-auto flex justify-center">{i.email}</div>
+                    <div className="w-[10%] my-auto font-semibold mx-auto flex justify-center">
+                      <p className={`rounded-full w-fit px-4 py-1 bg-${roleColor(i.role)}-100 text-${roleColor(i.role)}-500`}>
+                        {i.role}
+                      </p>
+                    </div>
+                    <div className="w-[25%] my-auto font-semibold mx-auto flex justify-start items-center ml-14">{i.dept}</div>
+                  </Link>
+                  <div className="w-[15%] my-auto flex justify-center">
+                    <button
+                      onClick={() => handleResend(i.email, i.id)}
+                      disabled={resendingId === i.id}
+                      className="text-xs border border-gray-300 rounded px-3 py-1 hover:bg-gray-100 disabled:opacity-50"
                     >
-                      {i.role}
-                    </p>
+                      {resendingId === i.id ? 'Sending...' : 'Resend credentials'}
+                    </button>
                   </div>
-                  <div className="w-[30%] my-auto font-semibold mx-auto flex justify-start items-center ml-14">{i.dept}</div>
-                </Link>
+                </div>
               ))
             ) : (
               <div className="p-3 text-gray-400 text-sm text-center">No employees found</div>

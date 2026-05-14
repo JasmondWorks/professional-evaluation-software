@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // ✅ Verify token
     let decoded: any;
     try {
-      decoded = jwt.verify(token, 'oti');
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production');
     } catch (err) {
       return NextResponse.json(
         { message: "Invalid token" },
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       maintenance_model: true,
     };
 
-    const newToken = jwt.sign(newPayload, 'oti');
+    const newToken = jwt.sign(newPayload, process.env.JWT_SECRET || 'fallback-secret-change-in-production');
 
     return NextResponse.json({
       message: "Payment verified and maintenance_model activated",

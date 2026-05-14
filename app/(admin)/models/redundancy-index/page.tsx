@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState } from 'react';import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function RedundancyIndex() {
   const [data, setData] = useState({ wasted: '', total: '' });
@@ -31,7 +32,7 @@ export default function RedundancyIndex() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          authorization: `Bearer ${localStorage.getItem('access_token')}`,
+          authorization: `Bearer ${getAccessToken()}`,
         },
         body: JSON.stringify({
           payload: 'redundancy',
