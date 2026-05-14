@@ -3,7 +3,8 @@
 import { ArrowRight2 } from 'iconsax-react'
 import { useRouter } from "next/navigation";
 import Link from 'next/link'
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 import React, { useEffect, useState } from 'react'
 
 type User = {
@@ -21,7 +22,7 @@ export default function Page({ params }: { params: { org: string } }) {
 
   useEffect(() => {
     async function fetchUsers() {
-      const access_token = localStorage.getItem('access_token') as string
+      const access_token = getAccessToken() as string
       jwtDecode(access_token) // assuming you check auth elsewhere
 
       const res = await fetch(`/api/admin/orgs/${params.org}/users`)

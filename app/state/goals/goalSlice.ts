@@ -56,15 +56,6 @@ const goalSlice = createSlice({
             state.edit = !state.edit
         },
         deleteGoal: (state) => {
-            state.data = {
-                name: '',
-                status: 0,
-                description: '',
-                day_started: '',
-                due_date: '01-01-2222',
-                id: 0,
-                user_id: ''
-            },
             state.delete = !state.delete
             state.view = !state.view
         },

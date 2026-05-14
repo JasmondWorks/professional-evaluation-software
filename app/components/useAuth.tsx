@@ -16,20 +16,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
 
   useEffect(() => {
-    // Check for token in localStorage
-    const token = localStorage.getItem('access_token');
-    
-    if (token && token !== 'undefined') {
-      try {
-        //  Decode the token to get the role
-        const decoded: any = jwt.decode(token);
-        
-        if (decoded && decoded.role) {
-          setRole(decoded.role);
+    // SSR safety check
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      
+      if (token && token !== 'undefined' && token !== 'null') {
+        try {
+          const decoded: any = jwt.decode(token);
+          
+          if (decoded && decoded.role) {
+            setRole(decoded.role);
+          }
+        } catch (error) {
+          console.error("Failed to decode token in AuthProvider:", error);
+          setRole(null);
         }
-      } catch (error) {
-        console.error("Failed to decode token in AuthProvider:", error);
-        setRole(null);
       }
     }
   }, []);

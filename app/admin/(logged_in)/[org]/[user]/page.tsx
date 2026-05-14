@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from 'next/link'
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 import React, { useEffect, useState } from 'react'
 
 type user = {
@@ -30,7 +31,7 @@ export default function Page({ params }: { params: { user: string } }) {
 
   useEffect(() => {
     async function fetchUser() {
-      const access_token = localStorage.getItem('access_token') as string
+      const access_token = getAccessToken() as string
       jwtDecode(access_token)
 
       const res = await fetch(`/api/admin/users/${params.user}`)

@@ -11,44 +11,123 @@ type FormProps = {
   setSelectedFile: (file: string) => void;
 };
 
+// Advance focus to the next focusable form control on Enter
+function advanceFocus(current: HTMLElement) {
+  const focusable = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
+    )
+  );
+  const idx = focusable.indexOf(current);
+  if (idx >= 0 && idx < focusable.length - 1) focusable[idx + 1].focus();
+}
+
 // --------------------------------------
-// Stable Phone Input (No Focus Loss)
+// Stable Input — defined OUTSIDE FormOne
+// so React never remounts it on re-render
 // --------------------------------------
-function PhoneInput({ name, label, placeholder, value, onChange }: {
+type InputProps = {
+  name: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  classNameProp?: string;
+  tabIndex?: number;
+  formdata: Record<string, any>;
+  errors: Record<string, string>;
+  updateFields: (data: Record<string, any>) => void;
+  validateField: (name: string, value: string) => void;
+};
+
+function Input({
+  name,
+  label,
+  type = 'text',
+  placeholder,
+  classNameProp,
+  tabIndex,
+  formdata,
+  errors,
+  updateFields,
+  validateField,
+}: InputProps) {
+  const [localValue, setLocalValue] = useState(formdata[name] || '');
+
+  // Sync when external value changes (e.g. form reset)
+  useEffect(() => {
+    setLocalValue(formdata[name] || '');
+  }, [formdata[name]]);
+
+  function commitValue(val: string) {
+    updateFields({ [name]: val });
+    validateField(name, val);
+  }
+
+  return (
+    <div className={`formgroup flex flex-col my-2 w-full ${classNameProp}`}>
+      <label className="my-2 text-sm">{label}</label>
+      <input
+        name={name}
+        type={type}
+        value={localValue}
+        placeholder={placeholder}
+        tabIndex={tabIndex}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={(e) => commitValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitValue(localValue);
+            advanceFocus(e.currentTarget);
+          }
+        }}
+        className="font-medium text-lg text-gray-800 placeholder-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
+      />
+      {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
+    </div>
+  );
+}
+
+// --------------------------------------
+// Stable Phone Input — also outside FormOne
+// --------------------------------------
+function PhoneInput({
+  name,
+  label,
+  placeholder,
+  value,
+  onChange,
+  tabIndex,
+}: {
   name: string;
   label?: string;
   placeholder?: string;
   value: string;
   onChange: (val: string) => void;
+  tabIndex?: number;
 }) {
-  const [localValue, setLocalValue] = useState(value || "");
+  const [localValue, setLocalValue] = useState(value || '');
 
   useEffect(() => {
-    setLocalValue(value || "");
+    setLocalValue(value || '');
   }, [value]);
 
   function formatPhone(num: string) {
-    num = num.replace(/\D/g, "");
+    num = num.replace(/\D/g, '');
+    if (num.startsWith('234')) num = '+' + num;
+    if (num.startsWith('0')) num = '+234' + num.slice(1);
+    if (!num.startsWith('+234')) num = '+234' + num;
 
-    if (num.startsWith("234")) num = "+" + num;
-    if (num.startsWith("0")) num = "+234" + num.slice(1);
-    if (!num.startsWith("+234")) num = "+234" + num;
-
-    const rest = num.replace("+234", "");
+    const rest = num.replace('+234', '');
     const p1 = rest.slice(0, 3);
     const p2 = rest.slice(3, 6);
     const p3 = rest.slice(6, 10);
 
-    let formatted = "+234";
-    if (p1) formatted += " " + p1;
-    if (p2) formatted += " " + p2;
-    if (p3) formatted += " " + p3;
-
+    let formatted = '+234';
+    if (p1) formatted += ' ' + p1;
+    if (p2) formatted += ' ' + p2;
+    if (p3) formatted += ' ' + p3;
     return formatted;
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setLocalValue(e.target.value.replace(/[^\d+]/g, ""));
   }
 
   function handleBlur() {
@@ -59,14 +138,26 @@ function PhoneInput({ name, label, placeholder, value, onChange }: {
 
   return (
     <div className="my-4 w-full">
-      {label && <label className="text-gray-800 placeholder-gray-500 font-bold text-lg placeholder-lg block mb-1">{label}</label>}
+      {label && (
+        <label className="text-gray-800 placeholder-gray-500 font-bold text-lg placeholder-lg block mb-1">
+          {label}
+        </label>
+      )}
       <input
         type="text"
         name={name}
         value={localValue}
         placeholder={placeholder}
-        onChange={handleChange}
+        onChange={(e) => setLocalValue(e.target.value.replace(/[^\d+]/g, ''))}
         onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleBlur();
+            advanceFocus(e.currentTarget);
+          }
+        }}
+        tabIndex={tabIndex}
         className="border font-bold border-gray-300 rounded p-2 w-full outline-none focus:border-black"
         maxLength={16}
       />
@@ -75,38 +166,44 @@ function PhoneInput({ name, label, placeholder, value, onChange }: {
 }
 
 // --------------------------------------
-// MAIN FORM COMPONENT (STABLE LAYOUT)
+// MAIN FORM COMPONENT
 // --------------------------------------
-export default function FormOne({ formdata, setCredentialData, updateFields, setStepValid, selectedFile, setSelectedFile }: FormProps) {
+export default function FormOne({
+  formdata,
+  setCredentialData,
+  updateFields,
+  setStepValid,
+  selectedFile,
+  setSelectedFile,
+}: FormProps) {
   const requiredFields = [
     'name', 'address', 'faculty_college', 'email', 'gsm', 'dept',
-    'dob', 'doa', 'post', 'doc', 'role', 'dopp', 'level', 'year', 'qualification', 'credential'
+    'dob', 'doa', 'post', 'doc', 'role', 'dopp', 'level', 'year', 'qualification', 'credential',
   ];
-  // const [selectedFile, setSelectedFile] = useState(""); 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validateField(name: string, value: string) {
-    let error = "";
+    let error = '';
 
-    if (!value.trim()) error = "This field is required.";
+    if (!value.trim()) error = 'This field is required.';
 
-    if (name === "email" && value.trim()) {
+    if (name === 'email' && value.trim()) {
       const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!regex.test(value)) error = "Enter a valid email address.";
+      if (!regex.test(value)) error = 'Enter a valid email address.';
     }
 
-    if (name === "gsm" && value.trim()) {
-      const digits = value.replace(/\D/g, "");
-      if (digits.length < 7 || digits.length > 15) error = "Phone number must be 7–15 digits.";
+    if (name === 'gsm' && value.trim()) {
+      const digits = value.replace(/\D/g, '');
+      if (digits.length < 7 || digits.length > 15) error = 'Phone number must be 7–15 digits.';
     }
 
-    if (["dob", "doa", "doc", "dopp"].includes(name) && value.trim()) {
-      const today = new Date().toISOString().split("T")[0];
-      if (value > today) error = "Date cannot be in the future.";
+    if (['dob', 'doa', 'doc', 'dopp'].includes(name) && value.trim()) {
+      const today = new Date().toISOString().split('T')[0];
+      if (value > today) error = 'Date cannot be in the future.';
     }
 
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -127,84 +224,30 @@ export default function FormOne({ formdata, setCredentialData, updateFields, set
     setSelectedFile(file.name);
 
     const data = new FormData();
-    data.append("file", file);
-    data.append("upload_preset", "pes_unsigned");
-    data.append("folder", `pes/${formdata?.email}/credentials/${labelName}`);
+    data.append('file', file);
+    data.append('upload_preset', 'pes_unsigned');
+    data.append('folder', `pes/${formdata?.email}/credentials/${labelName}`);
 
     try {
-      const cloudRes = await fetch(
-        "https://api.cloudinary.com/v1_1/duvqe45ds/image/upload",
-        {
-          method: "POST",
-          body: data
-        }
-      );
+      const cloudRes = await fetch('https://api.cloudinary.com/v1_1/duvqe45ds/image/upload', {
+        method: 'POST',
+        body: data,
+      });
       const uploaded = await cloudRes.json();
-
-      setCredentialData((prev: any) => {
-        return {...prev, [labelName]:uploaded.secure_url }        
-      }
-    );
-
+      setCredentialData((prev: any) => ({ ...prev, [labelName]: uploaded.secure_url }));
     } catch (err) {
       console.log(err);
     }
   }
 
   useEffect(() => {
-    const allFilled = requiredFields.every(f => formdata[f]?.trim());
-    const noErrors = Object.values(errors).every(err => err === "");
+    const allFilled = requiredFields.every((f) => formdata[f]?.trim());
+    const noErrors = Object.values(errors).every((err) => err === '');
     setStepValid(allFilled && noErrors);
   }, [formdata, errors]);
 
-  const Input = ({
-    name,
-    label,
-    type = "text",
-    placeholder,
-    classNameProp
-  }: {
-    name: string;
-    label: string;
-    type?: string;
-    placeholder?: string;
-    classNameProp?: string
-  }) => {
-    const [localValue, setLocalValue] = useState(formdata[name] || "");
-
-    // Sync external updates (but not while typing)
-    useEffect(() => {
-      if (formdata[name] !== localValue) {
-        setLocalValue(formdata[name] || "");
-      }
-    }, [formdata[name]]);
-
-    return (
-      <div className={`formgroup flex flex-col my-2 w-full ${ classNameProp }`}>
-        <label className="my-2 text-sm">{label}</label>
-
-        <input
-          name={name}
-          type={type}
-          value={localValue}
-          placeholder={placeholder}
-          onChange={(e) => {
-            setLocalValue(e.target.value);
-          }}
-          onBlur={(e) => {
-            updateFields({ [name]: e.target.value });
-            validateField(name, e.target.value);
-          }}
-          className={`font-medium text-lg text-gray-800 placeholder-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400`}
-        />
-
-        {errors[name] && (
-          <p className="text-red-500 text-xs mt-1">{errors[name]}</p>
-        )}
-      </div>
-    );
-  };
-
+  // Shared props passed down to each Input
+  const inputProps = { formdata, errors, updateFields, validateField };
 
   return (
     <div className="flex flex-col gap-8 w-full px-10">
@@ -212,35 +255,33 @@ export default function FormOne({ formdata, setCredentialData, updateFields, set
       {/* Row 1 */}
       <div className="grid grid-cols-2 gap-10">
         <div>
-          <Input name="name" label="Employee's Full Name:" placeholder="Enter full name" />
-          <Input name="address" label="Current Home Address:" placeholder="Home address" />
-          <Input name="faculty_college" label="Faculty/College:" placeholder="Enter faculty" />
+          <Input {...inputProps} name="name" label="Employee's Full Name:" placeholder="Enter full name" tabIndex={1} />
+          <Input {...inputProps} name="address" label="Current Home Address:" placeholder="Home address" tabIndex={3} />
+          <Input {...inputProps} name="faculty_college" label="Faculty/College:" placeholder="Enter faculty" tabIndex={5} />
         </div>
-
         <div>
-          <Input name="email" label="Employee's Email Address:" placeholder="Enter email" />
-
+          <Input {...inputProps} name="email" label="Employee's Email Address:" placeholder="Enter email" tabIndex={2} />
           <PhoneInput
             name="gsm"
             label="Phone Number:"
             placeholder="Enter phone number"
-            value={formdata.gsm || ""}
+            value={formdata.gsm || ''}
             onChange={(v) => {
               updateFields({ gsm: v });
-              validateField("gsm", v);
+              validateField('gsm', v);
             }}
+            tabIndex={4}
           />
-
-          <Input name="dept" label="Department:" placeholder="Enter department" />
+          <Input {...inputProps} name="dept" label="Department:" placeholder="Enter department" tabIndex={6} />
         </div>
       </div>
 
       {/* Row 2 */}
       <div className="grid grid-cols-4 gap-6">
-        <Input name="dob" label="Date of birth:" type="date" />
-        <Input name="doa" label="Date of first appointment:" type="date" />
-        <Input name="post" label="Post/grade of first appointment:" placeholder="Enter post" />
-        <Input name="doc" label="Date of confirmation:" type="date" />
+        <Input {...inputProps} name="dob" label="Date of birth:" type="date" tabIndex={7} />
+        <Input {...inputProps} name="doa" label="Date of first appointment:" type="date" tabIndex={8} />
+        <Input {...inputProps} name="post" label="Post/grade of first appointment:" placeholder="Enter post" tabIndex={9} />
+        <Input {...inputProps} name="doc" label="Date of confirmation:" type="date" tabIndex={10} />
       </div>
 
       {/* Row 3 */}
@@ -249,8 +290,15 @@ export default function FormOne({ formdata, setCredentialData, updateFields, set
           <label className="my-2 text-sm">Present post:</label>
           <select
             name="role"
-            value={formdata.role || ""}
+            value={formdata.role || ''}
             onChange={handleChange}
+            tabIndex={11}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                advanceFocus(e.currentTarget);
+              }
+            }}
             className="font-medium text-lg text-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
           >
             <option value="" disabled>Select a role</option>
@@ -260,14 +308,13 @@ export default function FormOne({ formdata, setCredentialData, updateFields, set
           </select>
           {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
         </div>
-
-        <Input name="dopp" label="Date appointed to present post:" type="date" />
-        <Input name="level" label="Current level:" placeholder="Current level" />
+        <Input {...inputProps} name="dopp" label="Date appointed to present post:" type="date" tabIndex={12} />
+        <Input {...inputProps} name="level" label="Current level:" placeholder="Current level" tabIndex={13} />
       </div>
 
       {/* Qualifications */}
       <div className="w-full flex flex-col">
-        <p className='text-sm text-pes my-3'>
+        <p className="text-sm text-pes my-3">
           Academic & Professional Qualifications held:
           <span className="text-gray-300"> (certificates must be attached)</span>
         </p>
@@ -278,24 +325,24 @@ export default function FormOne({ formdata, setCredentialData, updateFields, set
               id="title"
               type="text"
               placeholder="Title or Qualification"
-              name='qualification'
-              value={formdata.qualification || ""}
+              name="qualification"
+              value={formdata.qualification || ''}
               onChange={handleChange}
-              className="font-medium text-sm text-gray-500 py-3 px-6 border rounded-sm "
+              className="font-medium text-sm text-gray-500 py-3 px-6 border rounded-sm"
             />
-
-            <Input name='year' label='Year Obtained' type='date' classNameProp='w-[20%] ms-auto'/>
+            <Input {...inputProps} name="year" label="Year Obtained" type="date" classNameProp="w-[20%] ms-auto" />
           </div>
 
           <div className="flex flex-col justify-between m-2">
             <label htmlFor="file" className="w-[30%] my-auto border">
               <div className="flex justify-end bg-white rounded-sm w-11/12 relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-300">{selectedFile != "" ? selectedFile : "No image selected"}</p>
+                <p className="m-auto text-sm text-gray-300">
+                  {selectedFile !== '' ? selectedFile : 'No image selected'}
+                </p>
                 <div className="bg-gray-100 rounded-sm px-5 py-3 text-sm text-gray-500">Browse Files</div>
               </div>
-              <input id="file" type="file" name='credential' className="hidden" onChange={handleFileUpload}/>
+              <input id="file" type="file" name="credential" className="hidden" onChange={handleFileUpload} />
             </label>
-
           </div>
         </div>
       </div>

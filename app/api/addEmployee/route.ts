@@ -312,6 +312,13 @@ export async function POST(req: Request) {
 
       if (!emailSent) {
         console.error("User created but email failed")
+        return NextResponse.json({
+          message: 'User created but email failed to send. You can resend the credentials from the employee list.',
+          status: 201,
+          emailFailed: true,
+          email: reqInfo.email,
+          name: reqInfo.name
+        })
       }
 
       return NextResponse.json({

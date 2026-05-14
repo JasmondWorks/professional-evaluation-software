@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";import { getAccessToken } from '@/app/utils/auth';
+
 
 // 1. Define Types for your Token and Configs
 interface UserToken {
@@ -58,7 +59,7 @@ export default function ModelsPage() {
   const [isLoading, setIsLoading] = useState(true); // 3. Added loading state
 
   useEffect(() => {
-    const access_token = localStorage.getItem("access_token");
+    const access_token = getAccessToken();
 
     if (!access_token) {
       console.log("No valid token found, redirecting...");

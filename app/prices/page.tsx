@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "iconsax-react";
+import { ArrowLeft } from "iconsax-react";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function SubscriptionPage() {
   const searchParams = useSearchParams();
@@ -202,7 +203,7 @@ export default function SubscriptionPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     const decoded = decodeToken(token);

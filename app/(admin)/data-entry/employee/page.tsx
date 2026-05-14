@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from '@/app/utils/auth';
+
 
 interface JWTPayload {
   org: any;
@@ -27,7 +29,7 @@ export default function EmployeeScoresPage() {
   const [counterScores, setCounterScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) {
       setError("No access token found");
       setLoading(false);
@@ -68,7 +70,7 @@ async function handleSubmit() {
     return;
   }
 
-  const decoded = jwtDecode<JWTPayload>(localStorage.getItem('access_token') || "");
+  const decoded = jwtDecode<JWTPayload>(getAccessToken() || "");
   const org = decoded.org
   const dept = decoded.dept
 
@@ -86,11 +88,12 @@ async function handleSubmit() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        token: getAccessToken(),
         pesuser_name: selectedEmployee.pesuser_name,
         org,
         dept,
-        isCounter: true, // 👈 tell backend this is a counter-offer
-        payload: counterScores, // all counter scores for that employee/group
+        isCounter: true,
+        payload: counterScores,
       }),
     });
 

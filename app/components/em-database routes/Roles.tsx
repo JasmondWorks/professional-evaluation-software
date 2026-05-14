@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Add, SearchNormal1 } from 'iconsax-react'
+import { getAccessToken } from '@/app/utils/auth'
 
 type Role = {
    id: string | number
@@ -15,7 +16,7 @@ export default function Roles(){
 
    useEffect(() => {
       async function getRoles() {
-         const data = localStorage.getItem('access_token')
+         const data = getAccessToken()
          try {
             const req = await fetch('/api/getRoles', {
                method: "POST",

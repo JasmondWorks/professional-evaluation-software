@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from "react"
 import jwt, { JwtPayload } from "jsonwebtoken";
-import LoadingButton from '../../components/ui/LoadingButton';
+import LoadingButton from '../../components/ui/LoadingButton';import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function Home(){
     const [toolView, setToolView] = useState(false)
@@ -28,7 +29,7 @@ export default function Home(){
 
     async function addFacility(event: { preventDefault: () => void; }) {
         event.preventDefault()
-        const access_token = localStorage.getItem("access_token");
+        const access_token = getAccessToken();
         const decoded: any = jwt.decode(access_token as string);
         
         try {
@@ -58,7 +59,7 @@ export default function Home(){
 
     useEffect(()=>{
         async function fetchTools(){
-            const access_token = localStorage.getItem('access_token') as any
+            const access_token = getAccessToken() as any
             const tokenData = jwt.decode(access_token)
             console.log(tokenData);
             

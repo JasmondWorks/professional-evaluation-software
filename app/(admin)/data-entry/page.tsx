@@ -39,8 +39,6 @@ export default function DataEntryPage() {
       .then((res) => res.json())
       .then((res) => {
         if (res?.data?.evaluation) {
-          alert(res.data.evaluation);
-          console.log(alert(res.data.evaluation));
           setEvaluation(res.data.evaluation);
         }
       })
@@ -90,7 +88,7 @@ export default function DataEntryPage() {
             {open && (
               <div className="px-4 pb-3">
                 {stress.map((it, i) => {
-                  const active = true //has("stress");
+                  const active = has("stress");
                   return (
                     <div
                       key={`${it.formId}-${i}`}

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {jwtDecode} from "jwt-decode";
+import {jwtDecode} from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function MaintenancePaymentPage() {
   const [org, setOrg] = useState("");
@@ -23,7 +24,7 @@ export default function MaintenancePaymentPage() {
     if (savedOrg) setOrg(savedOrg);
 
     if (!savedEmail || !savedOrg) {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
@@ -80,7 +81,7 @@ export default function MaintenancePaymentPage() {
     setMessage("");
 
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
 
       const res = await fetch("/api/maintenance/verify", {
         method: "POST",

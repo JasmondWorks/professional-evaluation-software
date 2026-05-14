@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import jsPDF from "jspdf";import { getAccessToken } from '@/app/utils/auth';
+
 
 type JWTPayload = {
   name?: string;
@@ -17,7 +18,7 @@ export default function AppraisalStep() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const session = searchParams.get("session") || "";
-  const token = localStorage.getItem("access_token");
+  const token = getAccessToken();
   const user = jwtDecode<JWTPayload>(token || "") || null;
 
   const [selectedStaff, setSelectedStaff] = useState("");

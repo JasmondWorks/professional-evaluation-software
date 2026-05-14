@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 import {
   findOptimalK,
   pdfConstraintsOk,
@@ -52,7 +53,7 @@ export default function PersonnelUtilizationPage() {
   // Decode org from JWT
   const getOrgFromToken = () => {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) return null;
       const decoded: any = jwtDecode(token);
       return decoded?.org || null;
@@ -124,7 +125,7 @@ export default function PersonnelUtilizationPage() {
     setSaveMsg(null);
 
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) {
         setSaveMsg("Missing token — please log in again.");
         setSaving(false);

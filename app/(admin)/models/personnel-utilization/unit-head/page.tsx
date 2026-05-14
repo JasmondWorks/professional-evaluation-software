@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function UnitHeadOverloadingPage() {
   const [actualHours, setActualHours] = useState<number | "">("");
@@ -49,7 +50,7 @@ export default function UnitHeadOverloadingPage() {
 
     try {
       setSaving(true);
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) {
         alert("No access token found");
         return;

@@ -14,8 +14,11 @@ export default function Newgoal() {
   const [formData, setFormdata] = useState({ 
     goalType: '', 
     description: '', 
-    due_date: '' 
+    due_date: '',
+    evaluation_type: 'appraisal' as 'appraisal' | 'performance' | 'stress'
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const goalTypes = [
     "appraisal",
@@ -34,49 +37,102 @@ export default function Newgoal() {
     "organizational structure"
   ];
 
+  // Map goal types to evaluation types
+  const getEvaluationType = (goalType: string): 'appraisal' | 'performance' | 'stress' => {
+    if (goalType.includes('appraisal')) return 'appraisal';
+    if (goalType.includes('performance') || goalType.includes('productivity')) return 'performance';
+    if (goalType.includes('stress')) return 'stress';
+    return 'appraisal'; // default
+  };
+
   function handleChange(event: { target: { name: string; value: string; }; }) {
-    setFormdata({ ...formData, [event.target.name]: event.target.value });
+    const updatedData = { ...formData, [event.target.name]: event.target.value };
+    
+    // Auto-set evaluation_type when goalType changes
+    if (event.target.name === 'goalType') {
+      updatedData.evaluation_type = getEvaluationType(event.target.value);
+    }
+    
+    setFormdata(updatedData);
+    setError(''); // Clear error on change
   }
 
   async function handleSubmit(event: { preventDefault: () => void; }) {
     event.preventDefault();
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      throw new Error('No access token found');
-    }
-    const user = jwt.decode(token);
-
-    if (!user || typeof user !== 'object' || !('name' in user)) {
-      throw new Error('Invalid user token');
-    }
+    setIsSubmitting(true);
+    setError('');
 
     try {
-      const data = await fetch('/api/addGoals', {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('No access token found. Please log in again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const user = jwt.decode(token);
+      if (!user || typeof user !== 'object' || !('userID' in user)) {
+        setError('Invalid user token. Please log in again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate form data
+      if (!formData.goalType || !formData.description || !formData.due_date) {
+        setError('Please fill in all required fields.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const response = await fetch('/api/addGoals', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           name: formData.goalType, 
           description: formData.description, 
           due_date: formData.due_date, 
-          user_id: (user as { name: string }).name 
+          user_id: String((user as { userID: string | number }).userID),
+          evaluation_type: formData.evaluation_type,
+          token
         })
       });
 
-      // maybe check response.ok / parse json
-      // const result = await data.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create goal');
+      }
 
-      dispatch(newGoal());
-      dispatch(successView());
-      router.push('/goals');
+      const result = await response.json();
+      
+      if (result.status === 200) {
+        dispatch(newGoal());
+        dispatch(successView());
+        router.push('/goals');
+      } else {
+        setError('Failed to create goal. Please try again.');
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Goal creation error:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
     <div className={`notification ${ isVisible ? 'visible' : 'invisible' } rounded-sm shadow-lg p-12 z-30 flex flex-col w-4/12 bg-white absolute top-1/2 -translate-y-1/2`}>
-      <CloseCircle onClick={() => dispatch(newGoal())} className='ms-auto hover:text-red-500'/>
+      <CloseCircle 
+        onClick={() => !isSubmitting && dispatch(newGoal())} 
+        className={`ms-auto ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'hover:text-red-500 cursor-pointer'}`}
+        tabIndex={isVisible ? 0 : -1}
+      />
       <form onSubmit={ handleSubmit }>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
         <div className="formgroup flex flex-col w-full">
           <label htmlFor="goalType" className='font-bold my-2 text-sm'>Goal Type:</label>
           <select
@@ -84,8 +140,17 @@ export default function Newgoal() {
             name="goalType"
             value={formData.goalType}
             onChange={ handleChange }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextInput = document.getElementById('new-description');
+                nextInput?.focus();
+              }
+            }}
             className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
             required
+            disabled={isSubmitting}
+            tabIndex={isVisible ? 1 : -1}
           >
             <option value="" disabled>Select a Goal Type</option>
             { goalTypes.map( (gt) => (
@@ -95,33 +160,50 @@ export default function Newgoal() {
         </div>
 
         <div className="formgroup flex flex-col w-full">
-          <label htmlFor="description" className='font-bold my-2 text-sm'>Description:</label>
+          <label htmlFor="new-description" className='font-bold my-2 text-sm'>Description:</label>
           <input
             onChange={ handleChange }
             name='description'
-            id='description'
+            id='new-description'
             type="text"
             className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
             placeholder='Add goal description'
+            required
+            disabled={isSubmitting}
+            tabIndex={isVisible ? 2 : -1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextInput = document.getElementById('new-due_date');
+                nextInput?.focus();
+              }
+            }}
           />
         </div>
 
         <div className="formgroup flex flex-col w-1/2">
-          <label htmlFor="due_date" className='font-bold my-2 text-sm'>Due Date:</label>
+          <label htmlFor="new-due_date" className='font-bold my-2 text-sm'>Due Date:</label>
           <input
             onChange={ handleChange }
             name='due_date'
-            id='due_date'
+            id='new-due_date'
             type="date"
             className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
+            required
+            disabled={isSubmitting}
+            tabIndex={isVisible ? 3 : -1}
+            min={new Date().toISOString().split('T')[0]}
           />
         </div>
 
-        <input
+        <button
           type='submit'
-          className='bg-pes rounded-md text-white w-full py-4 mt-6'
-          value='Set Goal'
-        />
+          className='bg-pes rounded-md text-white w-full py-4 mt-6 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors'
+          disabled={isSubmitting}
+          tabIndex={isVisible ? 4 : -1}
+        >
+          {isSubmitting ? 'Creating Goal...' : 'Set Goal'}
+        </button>
       </form>
     </div>
   );

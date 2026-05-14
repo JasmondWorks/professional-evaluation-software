@@ -5,7 +5,8 @@ import { useDispatch } from 'react-redux';
 import { roleCreatedView } from '@/app/state/rolecreated/roleCreatedSlice';
 import { useState } from "react";
 import jwt from 'jsonwebtoken'
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";import { getAccessToken } from '@/app/utils/auth';
+
 
 
 export default function CreateRole(){
@@ -19,7 +20,7 @@ export default function CreateRole(){
 
    async function handleSubmit(event: { preventDefault: () => void; }) {
       event.preventDefault()
-      const access_token = localStorage.getItem('access_token') as string
+      const access_token = getAccessToken() as string
       const user = jwt.decode(access_token)
       console.log( 'data is: ', formData)
 

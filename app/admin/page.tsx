@@ -1,14 +1,15 @@
 "use client"
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect } from 'react';import { getAccessToken } from '@/app/utils/auth';
+
 
 
 export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    if (localStorage.getItem('access_token')) {
+    if (getAccessToken()) {
       router.push('/admin/dashboard')
     } else {
       router.push('/admin/login')

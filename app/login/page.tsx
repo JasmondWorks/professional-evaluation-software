@@ -119,6 +119,7 @@ export default function Home() {
                 name="email"
                 id="email"
                 required
+                tabIndex={1}
               />
             </div>
 
@@ -132,18 +133,19 @@ export default function Home() {
                 name="password"
                 id="password"
                 required
+                tabIndex={2}
               />
             </div>
 
             <div className="flex flex-row justify-between mb-8">
               <div className="flex">
-                <Field type="checkbox" name="remember" id="remember" />
+                <Field type="checkbox" name="remember" id="remember" tabIndex={3} />
                 <label htmlFor="remember" className="mx-4">
                   Remember me
                 </label>
               </div>
 
-              <Link className="text-pes" href={"/"}>
+              <Link className="text-pes" href={"/forgot-password"} tabIndex={5}>
                 Forgot Password ?
               </Link>
             </div>
@@ -151,8 +153,9 @@ export default function Home() {
             <button
               type="submit"
               className="btn bg-pes text-white px-4 py-3 flex justify-center rounded-lg mb-2 
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors"
               disabled={!(dirty && isValid)}
+              tabIndex={4}
             >
               Sign In
             </button>

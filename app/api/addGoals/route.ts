@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import jwt from 'jsonwebtoken'
+import { validateData, createGoalSchema, formatZodErrors } from '@/app/lib/validation'
 
 type Goals = {
   name: string
@@ -10,10 +12,11 @@ type Goals = {
 }
 
 async function updateData(entry: Goals) {
-  const userId = Number(entry.user_id)
+  const userId = entry.user_id
+  const userIdNum = Number(userId)
 
-  if (!entry.user_id || isNaN(userId)) {
-    throw new Error('Invalid user_id: must be numeric')
+  if (!entry.user_id) {
+    throw new Error('Invalid user_id: must be provided')
   }
 
   const goal = await prisma.goals.create({
@@ -23,7 +26,7 @@ async function updateData(entry: Goals) {
       status: 70,
       day_started: new Date('1990-01-01'),
       due_date: new Date(entry.due_date),
-      user_id: userId, // ✅ now valid because Prisma schema is Int
+      user_id: userId,
     },
     select: {
       id: true,
@@ -39,7 +42,7 @@ async function updateData(entry: Goals) {
     INSERT INTO notifications (user_id, org, title, message)
     SELECT id, org, ${title}, ${message}
     FROM pesuser
-    WHERE org = (SELECT org FROM pesuser WHERE id = ${userId})
+    WHERE org = (SELECT org FROM pesuser WHERE id = ${userIdNum})
   `
 
   const orgResult = await prisma.$queryRaw<
@@ -47,7 +50,7 @@ async function updateData(entry: Goals) {
   >`
     SELECT name, evaluation, ongoing
     FROM org
-    WHERE name = (SELECT org FROM pesuser WHERE id = ${userId})
+    WHERE name = (SELECT org FROM pesuser WHERE id = ${userIdNum})
   `
 
   if (orgResult.length > 0) {
@@ -71,10 +74,26 @@ async function updateData(entry: Goals) {
 }
 
 export async function POST(request: NextRequest) {
-  const data = await request.json()
-
   try {
-    const goals = await updateData(data)
+    const data = await request.json()
+
+    // Verify JWT token from body
+    const token = data.token || data.access_token
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+
+    // Validate input
+    const validation = validateData(createGoalSchema, data)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
+        { status: 400 }
+      )
+    }
+
+    const goals = await updateData(validation.data!)
     return NextResponse.json(goals)
   } catch (err) {
     console.error(err)

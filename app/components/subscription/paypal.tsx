@@ -1,14 +1,15 @@
 "use client";
 
 import { PayPalButtons } from "@paypal/react-paypal-js";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function SubscriptionButton({ plan }: { plan: string }) {
   return (
     <PayPalButtons
       style={{ layout: "vertical", label: "subscribe" }}
       createSubscription={async (data, actions) => {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) throw new Error("Not authenticated");
       type MyJwtPayload = { userID: string, name: string };
       let decoded = jwtDecode<MyJwtPayload>(token);

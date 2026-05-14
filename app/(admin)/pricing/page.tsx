@@ -6,7 +6,8 @@ import Subscriptionbutton from "../../components/subscription/paypal";
 import PaystackButton from "@/app/components/subscription/paystackButton";
 import PayPalProviderWrapper from "../../components/subscription/paypalWrapper";
 import { packages } from "../../lib/utils/packages";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function Home() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
@@ -14,7 +15,7 @@ export default function Home() {
   const [maintenance, setMaintenance] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {

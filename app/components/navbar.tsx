@@ -1,6 +1,5 @@
 "use client"
 
-import Image from 'next/image'
 import { SearchNormal, Notification, HambergerMenu } from 'iconsax-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { notificationView } from '@/app/state/notification/notificationSlice';
@@ -17,28 +16,40 @@ export default function Navbar({ is_sidebar_active, handleSideBar }:
    const [unreadCount, setUnreadCount] = useState<number>(0)
 
    useEffect(() => {
-      const access_token = localStorage.getItem('access_token') as string
-      if (access_token) {
-         const decoded = jwt.decode(access_token);
-         console.log(decoded);
-         setUser(decoded);
+      // SSR safety check
+      if (typeof window !== 'undefined') {
+         const access_token = localStorage.getItem('access_token');
+         
+         if (access_token && access_token !== 'undefined' && access_token !== 'null') {
+            try {
+               const decoded = jwt.decode(access_token);
+               setUser(decoded);
 
-         // 🔑 fetch unread notifications count
-         fetch(`/api/notifications`, {
-            method: 'POST',
-            headers: {
-               'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ org: (decoded as any)?.org }),
-         })
-            .then(res => res.json())
-            .then(data => {
-               if (data.notifications) {
-                  const unread = data.notifications.filter((n: any) => !n.is_read).length;
-                  setUnreadCount(unread);
+               // Fetch unread notifications count
+               if (decoded && typeof decoded === 'object' && 'org' in decoded) {
+                  fetch(`/api/notifications`, {
+                     method: 'POST',
+                     headers: {
+                        'Content-Type': 'application/json',
+                     },
+                     body: JSON.stringify({ org: (decoded as any)?.org }),
+                  })
+                     .then(res => {
+                        if (!res.ok) throw new Error('Failed to fetch notifications');
+                        return res.json();
+                     })
+                     .then(data => {
+                        if (data.notifications) {
+                           const unread = data.notifications.filter((n: any) => !n.is_read).length;
+                           setUnreadCount(unread);
+                        }
+                     })
+                     .catch(err => console.error("Failed to fetch notifications", err));
                }
-            })
-            .catch(err => console.error("Failed to fetch notifications", err));
+            } catch (err) {
+               console.error("Token decode error:", err);
+            }
+         }
       }
    }, [])
 
@@ -71,7 +82,11 @@ export default function Navbar({ is_sidebar_active, handleSideBar }:
                </div>
 
                <div className="image flex justify-between text-gray-600 hover:underline" onClick={() => dispatch(actionView())}>
-                  <Image src={'/young oti.PNG'} alt='profile image' width={40} height={0} className='mx-2 rounded-full'/>
+                  <div className='mx-2 rounded-full w-10 h-10 bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-sm overflow-hidden'>
+                     {typeof user === 'object' && user !== null && 'name' in user
+                        ? (user.name as string).charAt(0).toUpperCase()
+                        : '?'}
+                  </div>
                   <p className='mx-2 max-sm:hidden my-auto cursor-pointer'>
                      {typeof user === 'object' && user !== null && 'name' in user ? user.name as string : ''}
                   </p>

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import jwt from "jsonwebtoken";
-import { ArrowLeft } from "iconsax-react";
+import { ArrowLeft } from "iconsax-react";import { getAccessToken } from '@/app/utils/auth';
+
 
 type InventoryItem = {
   identification_symbol: string;
@@ -19,7 +20,7 @@ export default function MaintenanceInventory() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
   useEffect(() => {
-    const access_token = localStorage.getItem("access_token") as string;
+    const access_token = getAccessToken() as string;
     const tokenData = jwt.decode(access_token);
 
     async function fetchInventory() {

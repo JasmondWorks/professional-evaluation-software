@@ -9,7 +9,8 @@ import Goalchunk from '@/app/components/goals/goalChunk';
 import Performance from '@/app/components/performance/performanceChunk'
 import ProfileChunk from '@/app/components/Profilechunk';
 import Quickstats from './Quickstats';
-import Datachunk from '@/app/components/data/Datachunk';
+import Datachunk from '@/app/components/data/Datachunk';import { getAccessToken } from '@/app/utils/auth';
+
 
 export default function Dashboard() {
    const [performanceView, setPerformanceView] = useState('employee')
@@ -17,7 +18,7 @@ export default function Dashboard() {
    const router = useRouter();
 
    useEffect(() => {
-      const access_token = localStorage.getItem('access_token') as string;
+      const access_token = getAccessToken() as string;
       if (!access_token || access_token === undefined) {
          console.log("No valid token found, redirecting...");
          router.push('/login');

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+
 
 type JWTPayload = {
   org?: string;
@@ -56,7 +57,7 @@ export default function PersonnelRedundancyPage() {
     try {
       setSaving(true);
 
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) {
         alert("User not authenticated");
         return;

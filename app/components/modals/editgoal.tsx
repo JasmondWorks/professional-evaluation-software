@@ -25,7 +25,8 @@ export default function Editgoal(){
     const data: goal = useSelector( (state: RootState) => state.goal.data )
     const dispatch = useDispatch()
     const router = useRouter()
-    console.log('do this first')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [error, setError] = useState('')
 
     interface HandleChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
 
@@ -35,6 +36,7 @@ export default function Editgoal(){
     }
 
     function handleChange(event: HandleChangeEvent) {
+        setError(''); // Clear error on change
         dispatch(
             editGoal({
                 payload: { ...data, [event.target.name]: event.target.value },
@@ -44,63 +46,151 @@ export default function Editgoal(){
     }
 
     async function handleSubmit() {
-        const token = localStorage.getItem('access_token')
-        if (!token) {
-            throw new Error('No access token found');
-        }
-        const user = jwt.decode(token)
+        setIsSubmitting(true);
+        setError('');
 
         try {
+            const token = localStorage.getItem('access_token')
+            if (!token) {
+                setError('No access token found. Please log in again.');
+                setIsSubmitting(false);
+                return;
+            }
+            
+            const user = jwt.decode(token)
+            if (!user || typeof user !== 'object' || !('userID' in user)) {
+                setError('Invalid user token. Please log in again.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Validate data
+            if (!data.name || !data.description || !data.due_date) {
+                setError('Please fill in all required fields.');
+                setIsSubmitting(false);
+                return;
+            }
+
             const response = await fetch('/api/updateGoals', {
                 method: 'PUT', 
                 headers: {
                     'Content-Type': 'application/json', 
                 },
-                body: JSON.stringify({ ...data, user_id: user && typeof user === 'object' && 'name' in user ? (user as any).name : ''})
+                body: JSON.stringify({ 
+                    ...data, 
+                    user_id: String((user as any).userID),
+                    token
+                })
             });
         
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Error: ${errorData}`);
-                // dispatch( failureView())
-
+                throw new Error(errorData.error || errorData.message || 'Failed to update goal');
             }
         
             const responseData = await response.json();
-            dispatch( uneditGoal())
-            dispatch( successView())
-            console.log('Success:', responseData); 
-            router.push('/goals')
+            
+            if (responseData.status === 200) {
+                dispatch( uneditGoal())
+                dispatch( successView())
+                router.push('/goals')
+            } else {
+                setError('Failed to update goal. Please try again.');
+            }
 
         } catch (error) {
-            console.error('Error:', error); 
+            console.error('Goal update error:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        } finally {
+            setIsSubmitting(false);
         }
     }
     
+    // When hidden, pull all fields out of tab order
+    const tabIdx = isVisible ? undefined : -1;
+
     return (
         <div className={`notification ${ isVisible? 'visible': 'invisible' } rounded-sm shadow-lg p-12 z-30 flex flex-col w-4/12 bg-white absolute top-1/2 -translate-y-1/2`}>
-            <CloseCircle onClick={ () => { dispatch( uneditGoal()) }} className='ms-auto hover:text-red-500'/>
-            <div>
+            <CloseCircle 
+                onClick={ () => { !isSubmitting && dispatch( uneditGoal()) }} 
+                className={`ms-auto ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'hover:text-red-500 cursor-pointer'}`}
+                tabIndex={tabIdx}
+            />
+            {/* form wrapper so Enter key can submit and keyboard flow works */}
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
+
                 <div className="formgroup flex flex-col w-full">
-                    <label htmlFor=""className='font-bold my-2 text-sm'>Goal:</label>
-                    <input type='text' name='name' className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' value={ data?.name } onChange={ handleChange }/>
+                    <label htmlFor="edit-name" className='font-bold my-2 text-sm'>Goal:</label>
+                    <input 
+                        type='text' 
+                        name='name' 
+                        id='edit-name'
+                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        value={ data?.name || '' } 
+                        onChange={ handleChange }
+                        disabled={isSubmitting}
+                        tabIndex={isVisible ? 1 : -1}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                document.getElementById('edit-description')?.focus();
+                            }
+                        }}
+                    />
                 </div>
 
                 <div className="formgroup flex flex-col w-full">
-                    <label htmlFor=""className='font-bold my-2 text-sm'>Description:</label>
-                    <input type='text' name='description' className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' value={ data?.description } onChange={ handleChange }/>
+                    <label htmlFor="edit-description" className='font-bold my-2 text-sm'>Description:</label>
+                    <input 
+                        type='text' 
+                        name='description' 
+                        id='edit-description'
+                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        value={ data?.description || '' } 
+                        onChange={ handleChange }
+                        disabled={isSubmitting}
+                        tabIndex={isVisible ? 2 : -1}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                document.getElementById('edit-due_date')?.focus();
+                            }
+                        }}
+                    />
                 </div>
 
                 <div className="formgroup flex flex-col w-1/2">
-                    <label htmlFor=""className='font-bold my-2 text-sm'>Due Date:</label>
-                    <input type='date' name='status' className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' onChange={ handleChange }/>
+                    <label htmlFor="edit-due_date" className='font-bold my-2 text-sm'>Due Date:</label>
+                    <input 
+                        type='date' 
+                        name='due_date' 
+                        id='edit-due_date'
+                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        value={data?.due_date ? new Date(data.due_date).toISOString().split('T')[0] : ''}
+                        onChange={ handleChange }
+                        min={new Date().toISOString().split('T')[0]}
+                        disabled={isSubmitting}
+                        tabIndex={isVisible ? 3 : -1}
+                    />
                 </div>
 
                 <div className="actions flex">
-                    <LoadingButton className='bg-pes rounded-md text-white w-full py-4 mt-6 me-2' onClick={ handleSubmit }>Done</LoadingButton>
+                    <LoadingButton 
+                        type='submit'
+                        className='bg-pes rounded-md text-white w-full py-4 mt-6 me-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors' 
+                        disabled={isSubmitting}
+                        tabIndex={isVisible ? 4 : -1}
+                    >
+                        {isSubmitting ? 'Updating...' : 'Done'}
+                    </LoadingButton>
                 </div>
 
-            </div>
+            </form>
         </div>
     )
 }

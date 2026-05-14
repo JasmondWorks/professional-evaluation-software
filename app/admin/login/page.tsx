@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/app/components/useAuth";
+import { useAuth } from "@/app/components/useAuth";import { getAccessToken } from '@/app/utils/auth';
+
 
 type formdata = {
   email: string;
@@ -64,7 +65,7 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (localStorage.getItem("access_token")) {
+    if (getAccessToken()) {
       router.push("/admin/dashboard");
     }
   }, [router]);
