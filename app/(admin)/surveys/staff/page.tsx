@@ -10,7 +10,97 @@ export default function StaffSurveyPage() {
     setResponses({ ...responses, [question]: value });
   };
 
+  const scaleOptions = [0, 1, 2, 3, 4, 5];
+  const yesNo = ["Yes", "No"];
+
+  const sections = [
+    {
+      title: "ON APP USE",
+      type: "scale" as const,
+      options: scaleOptions,
+      questions: [
+        "Rate your experience on ease of use of the App",
+        "If you had the choice to repeat the decisions you took, rate your choice to repeat your action(s)",
+        "Do you agree with the results displayed to you as your grade(s)",
+        "Will you request for more time to reflect on your choice of action before the App was closed to actions",
+        "Are the texts displayed legible enough for your viewing?",
+        "Do you understand how the various sections you were asked to take actions on were well understood enough?",
+        "Was the Super Admin political in the control of results display?",
+        "Do you feel that there is a need for improvement on some sections of the App use?",
+      ]
+    },
+    {
+      title: "UNIT HEADS DECISIONS",
+      type: "yesno" as const,
+      questions: [
+        "Was there an area where your unit head opposed to your choice of action?",
+        "Were you given the option to accept or reject your Unit Head’s decision on your choice of action?",
+        "If invited by an external auditor to review some decision arrived at on you, are you willing to cooperate?",
+        "Were your grades rightly displayed to you?",
+        "Were your results made privy to you alone?",
+        "Did your Unit Head/H.O.D approve the score you scored yourself?",
+        "Which of these sectors will you refer for an improvement? (Stress, Appraisal, Performance, Motivation, None)",
+      ]
+    },
+    {
+      title: "APPRAISAL",
+      type: "scale" as const,
+      options: scaleOptions,
+      questions: [
+        "Rate how encompassing you feel the Appraisal model used here covers your area of activities",
+        "How will you rate your Unit Head/H.O.D in terms of fairness to your score approval",
+        "Rate in terms of fairness how you feel with the Appraisal activity you just completed went",
+        "Rate how you feel your management is involved with the influence of the App operation",
+        "How satisfied are you with the grade you scored yourself",
+      ]
+    },
+    {
+      title: "PERFORMANCE EVALUATION",
+      type: "scale" as const,
+      options: scaleOptions,
+      questions: [
+        "Rate how encompassing you feel the Performance-evaluation model used here covers your area of activities",
+        "How will you rate your Unit Head/H.O.D in terms of fairness to your score approval",
+        "Rate in terms of fairness how you feel the Performance-evaluation activity you just completed went",
+        "Rate how you feel your management is involved with the influence of the App operation",
+        "How satisfied are you with the grade you scored yourself",
+      ]
+    },
+    {
+      title: "MOTIVATION",
+      type: "mixed" as const,
+      questions: [
+        "Were you informed by your management if the motivation model will be applied to your Appraisal and Performance activities done?",
+        "If yes, do you approve of this automated motivational model?",
+        "Rate how you feel the Motivational section of the App will positively influence attitude to work",
+        "Rate how you feel your management is willing to get involved with financing the Motivation result of the App",
+        "How satisfied are you with the motivational grading of the App",
+      ]
+    },
+    {
+      title: "STRESS",
+      type: "scale" as const,
+      options: scaleOptions,
+      questions: [
+        "Rate how encompassing you feel the STRESS model reflects your stress level of activities in your organization",
+        "How will you rate your Unit Head/H.O.D involvement in contributing to the stress being experienced in your department?",
+        "Rate how fairly the STRESS Model reflects your department compared to others",
+        "Rate the contributory role played by your management on the STRESS level in the organization",
+        "How satisfied are you with the STRESS grade score given to your department",
+      ]
+    }
+  ];
+
+  const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0);
+
   const submitSurvey = async () => {
+    const answeredCount = Object.keys(responses).length;
+    
+    if (answeredCount < totalQuestions) {
+      setMessage(`⚠️ Please answer all questions before submitting (${answeredCount}/${totalQuestions} answered).`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/survey", {
@@ -28,100 +118,20 @@ export default function StaffSurveyPage() {
     }
   };
 
-  const scaleOptions = [0, 1, 2, 3, 4, 5];
-  const yesNo = ["Yes", "No"];
-
   return (
     <main className="p-10 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Staff Survey</h1>
 
-      <SurveySection
-        title="ON APP USE"
-        questions={[
-          "Rate your experience on ease of use of the App",
-          "If you had the choice to repeat the decisions you took, rate your choice to repeat your action(s)",
-          "Do you agree with the results displayed to you as your grade(s)",
-          "Will you request for more time to reflect on your choice of action before the App was closed to actions",
-          "Are the texts displayed legible enough for your viewing?",
-          "Do you understand how the various sections you were asked to take actions on were well understood enough?",
-          "Was the Super Admin political in the control of results display?",
-          "Do you feel that there is a need for improvement on some sections of the App use?",
-        ]}
-        type="scale"
-        options={scaleOptions}
-        onChange={handleChange}
-      />
-
-      <SurveySection
-        title="UNIT HEADS DECISIONS"
-        questions={[
-          "Was there an area where your unit head opposed to your choice of action?",
-          "Were you given the option to accept or reject your Unit Head’s decision on your choice of action?",
-          "If invited by an external auditor to review some decision arrived at on you, are you willing to cooperate?",
-          "Were your grades rightly displayed to you?",
-          "Were your results made privy to you alone?",
-          "Did your Unit Head/H.O.D approve the score you scored yourself?",
-          "Which of these sectors will you refer for an improvement? (Stress, Appraisal, Performance, Motivation, None)",
-        ]}
-        type="yesno"
-        options={yesNo}
-        onChange={handleChange}
-      />
-
-      <SurveySection
-        title="APPRAISAL"
-        questions={[
-          "Rate how encompassing you feel the Appraisal model used here covers your area of activities",
-          "How will you rate your Unit Head/H.O.D in terms of fairness to your score approval",
-          "Rate in terms of fairness how you feel with the Appraisal activity you just completed went",
-          "Rate how you feel your management is involved with the influence of the App operation",
-          "How satisfied are you with the grade you scored yourself",
-        ]}
-        type="scale"
-        options={scaleOptions}
-        onChange={handleChange}
-      />
-
-      <SurveySection
-        title="PERFORMANCE EVALUATION"
-        questions={[
-          "Rate how encompassing you feel the Performance-evaluation model used here covers your area of activities",
-          "How will you rate your Unit Head/H.O.D in terms of fairness to your score approval",
-          "Rate in terms of fairness how you feel the Performance-evaluation activity you just completed went",
-          "Rate how you feel your management is involved with the influence of the App operation",
-          "How satisfied are you with the grade you scored yourself",
-        ]}
-        type="scale"
-        options={scaleOptions}
-        onChange={handleChange}
-      />
-
-      <SurveySection
-        title="MOTIVATION"
-        questions={[
-          "Were you informed by your management if the motivation model will be applied to your Appraisal and Performance activities done?",
-          "If yes, do you approve of this automated motivational model?",
-          "Rate how you feel the Motivational section of the App will positively influence attitude to work",
-          "Rate how you feel your management is willing to get involved with financing the Motivation result of the App",
-          "How satisfied are you with the motivational grading of the App",
-        ]}
-        type="mixed"
-        onChange={handleChange}
-      />
-
-      <SurveySection
-        title="STRESS"
-        questions={[
-          "Rate how encompassing you feel the STRESS model reflects your stress level of activities in your organization",
-          "How will you rate your Unit Head/H.O.D involvement in contributing to the stress being experienced in your department?",
-          "Rate how fairly the STRESS Model reflects your department compared to others",
-          "Rate the contributory role played by your management on the STRESS level in the organization",
-          "How satisfied are you with the STRESS grade score given to your department",
-        ]}
-        type="scale"
-        options={scaleOptions}
-        onChange={handleChange}
-      />
+      {sections.map((section) => (
+        <SurveySection
+          key={section.title}
+          title={section.title}
+          questions={section.questions}
+          type={section.type}
+          options={section.options}
+          onChange={handleChange}
+        />
+      ))}
 
       <div className="mt-8">
         <button

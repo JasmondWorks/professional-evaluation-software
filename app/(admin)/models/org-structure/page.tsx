@@ -152,22 +152,36 @@ export default function OrgStructurePage() {
     <div className="mb-4">
       <div className="font-medium mb-2">{label}</div>
       {list.map((val, idx) => (
-        <input
-          key={idx}
-          type="number"
-          value={val}
-          onChange={(e) => {
-            const newList = [...list];
-            newList[idx] = Number(e.target.value);
-            setList(newList);
-          }}
-          className="block w-full mb-2 rounded border-gray-300 p-2 shadow-sm"
-        />
+        <div key={idx} className="flex gap-2 items-center mb-2">
+          <input
+            type="number"
+            value={val}
+            onChange={(e) => {
+              const newList = [...list];
+              newList[idx] = Number(e.target.value);
+              setList(newList);
+            }}
+            className="block w-full rounded border-gray-300 p-2 shadow-sm"
+          />
+          {list.length > 1 && (
+            <button
+              onClick={() => {
+                const newList = list.filter((_, i) => i !== idx);
+                setList(newList);
+              }}
+              type="button"
+              className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+              title="Remove row"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       ))}
       <button
         onClick={() => setList([...list, 0])}
         type="button"
-        className="px-3 py-1 bg-gray-200 rounded"
+        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors text-sm font-medium"
       >
         + Add Row
       </button>

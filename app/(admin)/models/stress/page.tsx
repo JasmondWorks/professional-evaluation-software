@@ -369,7 +369,7 @@ export default function StressAnalysisTool() {
                     stroke="#46e57b"
                     label={{
                       value: `Acquired stress 
-                      ${summary?.stress}`,
+                      ${summary?.stress?.toFixed(2)}`,
                       position: "right",
                     }}
                     className="z-200"

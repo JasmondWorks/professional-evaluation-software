@@ -12,24 +12,41 @@ export default function Method1Page() {
   const [availableHoursPerPerson, setAvailableHoursPerPerson] = useState<number>(0);
 
   const [result, setResult] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const calculate = async () => {
+    setError(null);
+
+    // Validation
+    if (availableHoursPerPerson <= 0) {
+      setError("⚠️ Available Man-hours per Person must be greater than zero.");
+      return;
+    }
+    if (basicTime <= 0 || numTasks <= 0 || timePerTask <= 0) {
+      setError("⚠️ All time and task inputs must be greater than zero.");
+      return;
+    }
+
     // Formula: Number of Staff = (Total Standard Man-hours) / (Available Man-hours per Person)
     const standardManHoursPerTask = basicTime * (1 + relaxAllowance / 100) * loadFactor;
     const totalStandardManHours = standardManHoursPerTask * numTasks * timePerTask;
     const staffNeeded = totalStandardManHours / availableHoursPerPerson;
     setResult(staffNeeded);
     
-    await saveResult({
-      methodType: "Method1",
-      staffNeeded,
-      basicTime,
-      relaxAllowance,
-      loadFactor,
-      numTasks,
-      timePerTask,
-      availableHoursPerPerson
-    })
+    try {
+      await saveResult({
+        methodType: "Method1",
+        staffNeeded,
+        basicTime,
+        relaxAllowance,
+        loadFactor,
+        numTasks,
+        timePerTask,
+        availableHoursPerPerson
+      })
+    } catch (err) {
+      console.error("Failed to save result:", err);
+    }
   };
 
   return (
@@ -120,12 +137,15 @@ export default function Method1Page() {
         </label>
 
         {/* Calculate Button */}
-        <button
-          onClick={calculate}
-          className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"
-        >
-          Calculate Staff Needed
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={calculate}
+            className="px-4 py-2 bg-pes text-white rounded hover:opacity-90 w-fit"
+          >
+            Calculate Staff Needed
+          </button>
+          {error && <p className="text-red-500 text-sm font-medium animate-pulse">{error}</p>}
+        </div>
 
         {/* Result */}
         {result !== null && (
