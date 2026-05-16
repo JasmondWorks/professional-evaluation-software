@@ -31,6 +31,7 @@ export default function FactoredEstimatingPage() {
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskObserved, setNewTaskObserved] = useState('');
   const [newTaskEstimated, setNewTaskEstimated] = useState('');
+  const [taskError, setTaskError] = useState('');
   
   const [estimation, setEstimation] = useState<EstimateCalculation>({
     originalEstimate: 1.8,
@@ -84,7 +85,21 @@ export default function FactoredEstimatingPage() {
       setNewTaskName('');
       setNewTaskObserved('');
       setNewTaskEstimated('');
+      setTaskError('');
+    } else {
+      setTaskError('Please provide a name, observed time, and estimated time.');
     }
+  };
+
+  const addEmptyRow = () => {
+    const newTask: Task = {
+      id: Date.now(),
+      name: '',
+      observedTime: 0,
+      estimatedTime: 0,
+      correctionFactor: 0
+    };
+    setTasks([...tasks, newTask]);
   };
 
   const removeTask = (id: number) => {
@@ -155,7 +170,14 @@ export default function FactoredEstimatingPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" onClick={addTask}>Add task</LoadingButton>
+                  {taskError && (
+                    <p className="text-red-500 text-sm mt-1">{taskError}</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <LoadingButton className="bg-pes w-fit my-3 rounded text-white px-12 py-3" onClick={addTask}>
+                      Add task
+                    </LoadingButton>
+                  </div>
                 </div>
               </div>
 
@@ -209,6 +231,16 @@ export default function FactoredEstimatingPage() {
                     </div>
                   </div>
                 ))}
+
+                <button
+                  onClick={addEmptyRow}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add More Tasks
+                </button>
               </div>
 
               {/* Average Correction Factor */}

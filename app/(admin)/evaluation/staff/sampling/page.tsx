@@ -56,6 +56,12 @@ const WorkSamplingPage: React.FC = () => {
     performanceRating: 100,
     notes: ''
   });
+  const [error, setError] = useState<string | null>(null);
+
+  // Clear error when changing tabs
+  useEffect(() => {
+    setError(null);
+  }, [activeTab]);
 
   // Calculate required observations based on parameters
   useEffect(() => {
@@ -71,14 +77,17 @@ const WorkSamplingPage: React.FC = () => {
 
   // Add position
   const addPosition = () => {
-    if (newPosition.name && newPosition.department) {
+    if (newPosition.name.trim() && newPosition.department.trim()) {
       const position: Position = {
         id: Date.now().toString(),
-        name: newPosition.name,
-        department: newPosition.department
+        name: newPosition.name.trim(),
+        department: newPosition.department.trim()
       };
       setPositions([...positions, position]);
       setNewPosition({ name: '', department: '' });
+      setError(null);
+    } else {
+      setError('Please fill in both Position Name and Department.');
     }
   };
 
@@ -97,6 +106,9 @@ const WorkSamplingPage: React.FC = () => {
       };
       setObservations([...observations, observation]);
       setNewObservation(prev => ({ ...prev, notes: '' }));
+      setError(null);
+    } else {
+      setError('Please select a position before recording an observation.');
     }
   };
 
@@ -233,6 +245,11 @@ const WorkSamplingPage: React.FC = () => {
                   <Plus size={20} />
                   Add Position
                 </button>
+                {error && (
+                  <div className="md:col-span-3 text-red-500 text-sm font-medium animate-pulse">
+                    ⚠️ {error}
+                  </div>
+                )}
               </div>
 
               {/* Positions List */}
@@ -409,6 +426,11 @@ const WorkSamplingPage: React.FC = () => {
                       <Plus size={20} />
                       Add
                     </button>
+                    {error && (
+                      <div className="md:col-span-6 text-red-500 text-sm font-medium animate-pulse">
+                        ⚠️ {error}
+                      </div>
+                    )}
                   </div>
 
                   {/* Observations List */}
