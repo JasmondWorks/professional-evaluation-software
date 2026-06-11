@@ -115,7 +115,7 @@ async function addToDb(info: reqInfo) {
       SELECT * FROM pesuser WHERE email = ${email} LIMIT 1
     `;
 
-    const m_model = await tx.$queryRaw<user[]>`
+    const m_model = await tx.$queryRaw<{ maintenance_model: boolean }[]>`
       SELECT maintenance_model FROM org WHERE name = ${org} LIMIT 1
     `;
     
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
         logo: user.image,
         productCategory: user.category,
         productPlan: user.plan,
-        maintenance_model: m_model.maintenance_model
+        maintenance_model: m_model?.maintenance_model || false
       }, process.env.JWT_SECRET || 'fallback-secret-change-in-production');
       
       console.log(token, 'before send', user.name)

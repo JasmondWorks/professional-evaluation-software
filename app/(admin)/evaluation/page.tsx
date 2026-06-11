@@ -159,16 +159,22 @@ export default function StatisticalAnalysisPage() {
   useEffect(() => {
     const fetchDataset = async () => {
       const res = await fetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`);
+
+      if (!res.ok) {
+        console.error('Failed to fetch data scores:', res.status, res.statusText);
+        return;
+      }
+
       const data: Data = await res.json();
 
-      const appraisal = data.appraisal.flatMap(a => [
+      const appraisal = (data.appraisal ?? []).flatMap(a => [
         { department: dept, user: a.pesuser_name, value: a.teaching_quality_evaluation },
         { department: dept, user: a.pesuser_name, value: a.research_quality_evaluation },
         { department: dept, user: a.pesuser_name, value: a.administrative_quality_evaluation },
         { department: dept, user: a.pesuser_name, value: a.community_quality_evaluation },
       ]);
 
-      const performance = data.userperformance.flatMap(u => [
+      const performance = (data.userperformance ?? []).flatMap(u => [
         { department: dept, user: u.pesuser_name, value: u.competence },
         { department: dept, user: u.pesuser_name, value: u.integrity },
         { department: dept, user: u.pesuser_name, value: u.compatibility },

@@ -569,6 +569,56 @@ model unit_head_overloading {
   created_at        DateTime? @default(now()) @db.Timestamp(6)
 }
 
+model WorkSamplingStudy {
+  id                         Int                       @id @default(autoincrement())
+  org                        String?                   @db.VarChar(255)
+  department                 String?                   @db.VarChar(255)
+  analyst                    String?                   @db.VarChar(255)
+  authorizedBy               String?                   @db.VarChar(255)
+  // Study parameters
+  confidenceLevel            Int?
+  desiredAccuracy            Float?
+  preliminaryP               Float?
+  totalObservationsRequired  Int?
+  studyMonth                 Int?
+  studyMonths                Json?
+  observationsPerDay         Int?
+  workingHoursPerDay         Float?
+  workStartTime              String?                   @db.VarChar(10)
+  minCycleDuration           Float?
+  maxDuration                Float?
+  estimatedStudyDays         Int?
+  availableAnnualHours       Float?
+  defaultPerformanceAllowance Float?
+  lockedDates                Json?
+  lockedTimes                Json?
+  createdAt                  DateTime?                 @default(now()) @db.Timestamp(6)
+  positions                  WorkSamplingPosition[]
+}
+
+model WorkSamplingPosition {
+  id                  Int                       @id @default(autoincrement())
+  studyId             Int
+  name                String                    @db.VarChar(255)
+  department          String?                   @db.VarChar(255)
+  performanceAllowance Float?
+  createdAt           DateTime?                 @default(now()) @db.Timestamp(6)
+  study               WorkSamplingStudy         @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  observations        WorkSamplingObservation[]
+}
+
+model WorkSamplingObservation {
+  id                Int                  @id @default(autoincrement())
+  positionId        Int
+  date              String               @db.VarChar(20)
+  time              String               @db.VarChar(10)
+  isBusy            Boolean
+  performanceRating Float?
+  notes             String?
+  createdAt         DateTime?            @default(now()) @db.Timestamp(6)
+  position          WorkSamplingPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+}
+
 model userperformance {
   id               Int      @id @default(autoincrement())
   pesuser_name     String   @db.VarChar(255)

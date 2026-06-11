@@ -17,8 +17,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
-    // 🔐 Compare hashed password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Compare hashed password (with fallback to plain text if not bcrypt)
+    const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
+    let isMatch = false;
+    if (isBcrypt) {
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      isMatch = password === user.password;
+    }
 
     if (!isMatch) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
@@ -55,7 +61,7 @@ export async function POST(req: Request) {
         dept: user.dept,
         productCategory: user.category,
         productPlan: user.plan,
-        maintenance_model: maintenance.maintenance_model 
+        maintenance_model: maintenance.maintenance_model
       },
       process.env.JWT_SECRET || 'fallback-secret-change-in-production'
     );
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
       token,
       role: user.role,
       status: 200
-    }, {status: 200});
+    }, { status: 200 });
 
   } catch (err) {
     console.error("LOGIN ERROR:", err);

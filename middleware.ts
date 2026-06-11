@@ -13,7 +13,7 @@ export function middleware(req: NextRequest) {
   }
 
   // Check if the route exists in your tabs list
-  const tab = tabs.find(t => t.href === pathname);
+  const tab = tabs.find(t => pathname === t.href || pathname.startsWith(t.href + "/"));
 
   if (tab && role && !tab.role_access.includes(role)) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
@@ -24,13 +24,13 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // "/em-database",
-    "/goals",
-    "/data-entry",
-    "/assessment",
-    "/performance",
-    "/profile",
-    "/pricing",
-    "/maintenance",
+    // "/em-database/:path*",
+    "/goals/:path*",
+    "/data-entry/:path*",
+    "/assessment/:path*",
+    "/performance/:path*",
+    "/profile/:path*",
+    "/pricing/:path*",
+    "/maintenance/:path*",
   ],
 };

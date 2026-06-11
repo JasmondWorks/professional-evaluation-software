@@ -91,16 +91,7 @@ export default function FactoredEstimatingPage() {
     }
   };
 
-  const addEmptyRow = () => {
-    const newTask: Task = {
-      id: Date.now(),
-      name: '',
-      observedTime: 0,
-      estimatedTime: 0,
-      correctionFactor: 0
-    };
-    setTasks([...tasks, newTask]);
-  };
+
 
   const removeTask = (id: number) => {
     setTasks(tasks.filter(task => task.id !== id));
@@ -232,15 +223,7 @@ export default function FactoredEstimatingPage() {
                   </div>
                 ))}
 
-                <button
-                  onClick={addEmptyRow}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Add More Tasks
-                </button>
+
               </div>
 
               {/* Average Correction Factor */}

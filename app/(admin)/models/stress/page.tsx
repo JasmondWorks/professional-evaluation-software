@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import jwt from "jsonwebtoken";import { getAccessToken } from '@/app/utils/auth';
-
+import jwt from "jsonwebtoken";
 import {
-  LineChart,
+  ComposedChart,
   Line,
   XAxis,
   YAxis,
@@ -12,18 +11,20 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Scatter,
 } from "recharts";
 
 const generateNormalCurve = (mean = 50, stdDev = 15) => {
   const data = [];
+  // peak of the PDF at the mean
+  const peak = 1 / (stdDev * Math.sqrt(2 * Math.PI));
 
-  for (let y = 0; y <= 100; y += 1) {
-    const x =
+  for (let y = 0; y <= 100; y += 0.5) {
+    const pdf =
       (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
       Math.exp(-0.5 * ((y - mean) / stdDev) ** 2);
 
-    data.push({ x, y });
+    // scale so the peak reaches 100 on the x-axis — makes the bell fully visible
+    data.push({ y, density: (pdf / peak) * 100 });
   }
 
   return data;
@@ -112,7 +113,7 @@ export default function StressAnalysisTool() {
 
   useEffect(() => {
     async function fetchData() {
-      const token = getAccessToken();
+      const token = localStorage.getItem("access_token");
 
       if (!token) return;
 
@@ -131,7 +132,7 @@ export default function StressAnalysisTool() {
     fetchData();
   }, []);
 
-  const normalize = (val: number) => Math.min(100, (val / 5) * 100);
+  const normalize = (val: number) => Math.min(100, (val / 5) * 100); // unused, kept for reference
 
   const enrichedData = stressData.map((s) => {
     const rawStress =
@@ -170,22 +171,6 @@ export default function StressAnalysisTool() {
   });
 
   const stressValues = enrichedData.map((d) => d.stressFactor * 100);
-
-  const avgStress =
-    stressValues.reduce((a, b) => a + b, 0) / stressValues.length;
-
-  const normalX = (y: number, mean = 50, stdDev = 15) =>
-    (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
-    Math.exp(-0.5 * ((y - mean) ** 2) / stdDev ** 2);
-
-  const scatterData = enrichedData.map((d) => {
-    const stress = d.stressFactor * 100;
-
-    return {
-      y: stress,
-      x: normalX(stress),
-    };
-  });
 
   const runANOVA = () => {
     const grouped: GroupedData = {};
@@ -324,66 +309,88 @@ export default function StressAnalysisTool() {
 
             {/* GRAPH */}
             <div className="mt-10 w-[45rem] overflow-visible">
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart
-                  data={generateNormalCurve()}
-                  margin={{ right: 300, left: 100, bottom: 50 }}
+              <h3 className="text-base font-semibold text-gray-700 mb-1">Stress Distribution (Normal Curve)</h3>
+              <p className="text-xs text-gray-400 mb-4">
+                Y-axis: stress score (0–100) · Bell curve centred at mean 50 · Reference lines show normal range (32–68)
+              </p>
+              <ResponsiveContainer width="100%" height={450}>
+                <ComposedChart
+                  data={generateNormalCurve(50, 15)}
+                  layout="vertical"
+                  margin={{ right: 220, left: 80, bottom: 20, top: 20 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
 
-                  <XAxis type="number" dataKey="x" hide />
+                  {/* X axis = density (0–100 scaled) */}
+                  <XAxis
+                    type="number"
+                    dataKey="density"
+                    domain={[0, 110]}
+                    hide
+                  />
 
+                  {/* Y axis = stress score 0–100, 0 at bottom */}
                   <YAxis
                     type="number"
                     dataKey="y"
                     domain={[0, 100]}
-                    ticks={[0, 50, 100]}
+                    ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                    reversed
                   />
 
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(val: any) => [`${Number(val).toFixed(1)}`, "Density"]}
+                    labelFormatter={(label) => `Stress score: ${label}`}
+                  />
 
+                  {/* The bell curve */}
                   <Line
                     type="monotone"
-                    dataKey="x"
+                    dataKey="density"
                     stroke="#4f46e5"
+                    strokeWidth={2}
                     dot={false}
+                    name="Normal curve"
                   />
 
+                  {/* Min −1σ ≈ 32 */}
                   <ReferenceLine
                     y={32}
-                    x={100}
                     stroke="blue"
-                    label={{ value: "Min 32%", position: "left" }}
+                    label={{ value: "Min 32%", position: "left", fill: "blue", fontSize: 12 }}
                   />
 
+                  {/* Max +1σ ≈ 68 */}
                   <ReferenceLine
                     y={68}
-                    x={100}
                     stroke="red"
-                    label={{ value: "Max 68%", position: "left" }}
+                    label={{ value: "Max 68%", position: "left", fill: "red", fontSize: 12 }}
                   />
 
-                  <ReferenceLine
-                    y={60}
-                    x={100}
-                    stroke="#46e57b"
-                    label={{
-                      value: `Acquired stress 
-                      ${summary?.stress?.toFixed(2)}`,
-                      position: "right",
-                    }}
-                    className="z-200"
-                  />
-
+                  {/* Average / mean */}
                   <ReferenceLine
                     y={50}
                     stroke="black"
                     strokeDasharray="5 5"
-                    label="Average"
+                    label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }}
                   />
 
-                  <Scatter data={scatterData} fill="black" />
-                </LineChart>
+                  {/* Acquired stress — stressFactor sums to ~0–1 range, so * 100 gives 0–100 */}
+                  {summary && (
+                    <ReferenceLine
+                      y={Math.min(100, summary.stress * 100)}
+                      stroke="#16a34a"
+                      strokeWidth={2}
+                      label={{
+                        value: `Acquired stress  ${(summary.stress * 100).toFixed(1)}%`,
+                        position: "right",
+                        fill: "#16a34a",
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
 
