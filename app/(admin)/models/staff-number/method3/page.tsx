@@ -35,6 +35,20 @@ export default function Method3Page() {
       <div className="border rounded p-4 space-y-4">
         <h1 className="font-semibold text-lg">Method 3: Work Sampling</h1>
 
+        {/* Link to full robust sampling module */}
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 my-4">
+          <h2 className="text-sm font-semibold text-indigo-800 mb-1">Looking for the full Work Sampling Analysis Tool?</h2>
+          <p className="text-xs text-indigo-600 mb-3">
+            The full tool includes multi-month scheduling, randomized observation times, and comprehensive statistical analysis.
+          </p>
+          <a
+            href="/evaluation/staff/sampling"
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 transition-colors"
+          >
+            Open Full Work Sampling Tool &rarr;
+          </a>
+        </div>
+
         {/* Placeholder PDF Links */}
         {/* <a
           href="https://example.com/work-sampling-table.pdf"

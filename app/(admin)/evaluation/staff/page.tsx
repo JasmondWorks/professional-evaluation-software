@@ -49,10 +49,10 @@ export default function Home() {
         }));
     }
 
-    function handleNumberDataEntry(event: React.ChangeEvent<HTMLInputElement>){
+    function handleNumberDataEntry(event: React.ChangeEvent<HTMLInputElement>) {
         event.preventDefault()
         setNumberDataEntry(prev => (
-            {...prev, [event.target.name]: Number(event.target.value)}
+            { ...prev, [event.target.name]: Number(event.target.value) }
         ))
     }
 
@@ -95,19 +95,19 @@ export default function Home() {
         let grand_total = grand_total_man_hours(
             arrayDataEntry.observed_time,
             arrayDataEntry.rating,
-            arrayDataEntry.relaxation_time, 
+            arrayDataEntry.relaxation_time,
             arrayDataEntry.contingency_time,
             arrayDataEntry.number_of_workers,
             arrayDataEntry.annual_frequency
         )
         console.log(grand_total)
         let evaluated = number_of_staff(grand_total, numberDataEntry.available_hours, numberDataEntry.use_factor)
-        console.log(`the evaluated number of staff is ${ evaluated }`)
+        console.log(`the evaluated number of staff is ${evaluated}`)
         setEvaluation(evaluated)
     }
 
-    return(
-        <form className="flex flex-col m-4" onSubmit={() => {}}>
+    return (
+        <form className="flex flex-col m-4" onSubmit={() => { }}>
             <div className="p-2">
                 <h1 className="font-bold text-3xl my-6">Plain estimating data entry</h1>
 
@@ -161,38 +161,38 @@ export default function Home() {
                                 </label>
                             </div>
                         </div>
-                    ))}                    
+                    ))}
                 </div>
 
 
 
-                <hr className="border-dashed border-2 my-6"/>
+                <hr className="border-dashed border-2 my-6" />
 
                 <label htmlFor="" className="flex flex-col w-72">
                     Available hours
-                    <input name="available_hours" required className="border me-6 my-2 px-16 py-2 rounded" type="number" onChange={handleNumberDataEntry}/>
-                </label>   
+                    <input name="available_hours" required className="border me-6 my-2 px-16 py-2 rounded" type="number" onChange={handleNumberDataEntry} />
+                </label>
 
                 <label htmlFor="" className="flex flex-col w-72">
                     Use factor
-                    <input name="use_factor" required className="border me-6 my-2 px-16 py-2 rounded" type="number"  onChange={handleNumberDataEntry}/>
-                </label>                 
+                    <input name="use_factor" required className="border me-6 my-2 px-16 py-2 rounded" type="number" onChange={handleNumberDataEntry} />
+                </label>
             </div>
 
             <div className="flex flex-wrap my-4 items-center">
-                <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" type="submit" onClick={ handleEvaluate }>Evaluate number of staff</LoadingButton>
-                <a href="downloadables/relax.doc" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" >Relaxation time guide</a>
-                <a href="/downloadables/plain-estimate.docx" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3">Print task form</a>
-                <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" onClick={ handleTaskAdd } >Add new task +</LoadingButton>
+                <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" type="submit" onClick={handleEvaluate}>Evaluate number of staff</LoadingButton>
+                <a href="downloadables/relax.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" >Relaxation time guide</a>
+                <a href="/downloadables/plain-estimate.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3">Print task form</a>
+                <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" onClick={handleTaskAdd} >Add new task +</LoadingButton>
                 {error && <p className="text-red-500 text-sm font-medium animate-pulse ms-2">{error}</p>}
             </div>
-            <>    
+            <>
                 {
-                    evaluation? (
+                    evaluation ? (
                         <p>
-                            The number of staff required for the following information is { evaluation }
+                            The number of staff required for the following information is {evaluation}
                         </p>
-                    ) : <></>              
+                    ) : <></>
                 }
             </>
         </form>

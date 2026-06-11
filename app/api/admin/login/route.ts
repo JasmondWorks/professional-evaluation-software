@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 
 type reqInfo = {
   email: string
@@ -12,11 +13,31 @@ async function getUser(info: reqInfo) {
   const users = await prisma.$queryRaw`
     SELECT * 
     FROM pesuser 
-    WHERE email = ${email} 
-      AND password = ${password};
-  `;
+    WHERE email = ${email};
+  ` as any[];
 
-  return users as any[];
+  if (users.length === 0) {
+    return [];
+  }
+
+  const user = users[0];
+  const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
+  
+  let isMatch = false;
+  if (isBcrypt) {
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch (e) {
+      isMatch = false;
+    }
+  } else {
+    isMatch = password === user.password;
+  }
+
+  if (isMatch) {
+    return [user];
+  }
+  return [];
 }
 
 
