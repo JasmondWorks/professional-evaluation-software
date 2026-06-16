@@ -27,7 +27,7 @@ export default function Method2Page() {
     const staffNeeded = totalStandardManHours / availableHoursPerPerson;
 
     setResult(staffNeeded);
-    
+
     await saveResult({
       methodType: "Method2",
       staffNeeded,
@@ -48,7 +48,7 @@ export default function Method2Page() {
 
         {/* Placeholder PDF Links */}
         {/* <a
-          href="https://example.com/relaxation-allowance-table.pdf"
+          href="/downloadables/relaxation-allowance-table.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"

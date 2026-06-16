@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveResult} from "./util/sharedPost"
+import { saveResult } from "./util/sharedPost"
 
 export default function Method1Page() {
   const [basicTime, setBasicTime] = useState<number>(0);
@@ -32,7 +32,7 @@ export default function Method1Page() {
     const totalStandardManHours = standardManHoursPerTask * numTasks * timePerTask;
     const staffNeeded = totalStandardManHours / availableHoursPerPerson;
     setResult(staffNeeded);
-    
+
     try {
       await saveResult({
         methodType: "Method1",
@@ -56,22 +56,22 @@ export default function Method1Page() {
 
         {/* Placeholder PDF Links */}
         <div className="w-1/2 flex my-2">
-            <a
-            href="https://example.com/relaxation-allowance-table.pdf"
+          <a
+            href="/downloadables/relax.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 m-4 bg-pes text-white rounded hover:opacity-90"
-            >
+          >
             View Relaxation Allowance Guide
-            </a>
-            <a
-            href="https://example.com/load-classification-table.pdf"
+          </a>
+          <a
+            href="/downloadables/load-classification-table.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 m-4 bg-pes text-white rounded hover:opacity-90"
-            >
+          >
             View Load Classification Table
-            </a>            
+          </a>
         </div>
 
 

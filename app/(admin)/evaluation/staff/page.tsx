@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import number_of_staff from "@/app/api/modules/numberOfstaff/numberOfStaff"
 import grand_total_man_hours from "@/app/api/modules/numberOfstaff/method1/main"
 import LoadingButton from '../../../components/ui/LoadingButton';
+import { useAuth } from "@/app/components/useAuth";
 
 type DataEntry = {
     observed_time: number[],
@@ -20,6 +21,7 @@ type numberDataEntry = {
 };
 
 export default function Home() {
+    const { role } = useAuth();
 
     const [arrayDataEntry, setArrayDataEntry] = useState<DataEntry>({
         observed_time: [0],
@@ -180,17 +182,23 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap my-4 items-center">
-                <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" type="submit" onClick={handleEvaluate}>Evaluate number of staff</LoadingButton>
-                <a href="downloadables/relax.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" >Relaxation time guide</a>
+                {(role === 'super-admin' || role === 'admin') ? (
+                    <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" type="submit" onClick={handleEvaluate}>Evaluate number of staff</LoadingButton>
+                ) : (
+                    <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 my-3 me-2">
+                        Only administrators are authorized to calculate the final number of staff.
+                    </p>
+                )}
+                <a href="/downloadables/relax.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" >Relaxation time guide</a>
                 <a href="/downloadables/plain-estimate.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3">Print task form</a>
                 <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" onClick={handleTaskAdd} >Add new task +</LoadingButton>
                 {error && <p className="text-red-500 text-sm font-medium animate-pulse ms-2">{error}</p>}
             </div>
             <>
                 {
-                    evaluation ? (
-                        <p>
-                            The number of staff required for the following information is {evaluation}
+                    (role === 'super-admin' || role === 'admin') && evaluation ? (
+                        <p className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 font-semibold text-lg max-w-xl shadow-sm">
+                            The number of staff required for the following information is <span className="text-xl font-bold text-pes underline">{evaluation.toFixed(2)}</span>
                         </p>
                     ) : <></>
                 }

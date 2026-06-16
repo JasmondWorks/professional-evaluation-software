@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import LoadingButton from '../../../../components/ui/LoadingButton';
+import { useAuth } from "@/app/components/useAuth";
 
 interface Task {
   id: number;
@@ -21,6 +22,23 @@ interface EstimateCalculation {
 }
 
 export default function FactoredEstimatingPage() {
+  const { role } = useAuth();
+  const [availableHours, setAvailableHours] = useState<number | ''>('');
+  const [useFactor, setUseFactor] = useState<number | ''>('');
+  const [calculatedStaff, setCalculatedStaff] = useState<number | null>(null);
+  const [staffError, setStaffError] = useState<string | null>(null);
+
+  const handleCalculateStaff = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setStaffError(null);
+    if (!availableHours || Number(availableHours) <= 0 || !useFactor || Number(useFactor) <= 0) {
+      setStaffError("⚠️ Available hours and Use factor must be greater than zero.");
+      return;
+    }
+    const staff = estimation.standardTime / (Number(availableHours) * Number(useFactor));
+    setCalculatedStaff(staff);
+  };
+
   const [tasks, setTasks] = useState<Task[]>([
     { id: 1, name: 'Write cleaners pay voucher', observedTime: 0.6, estimatedTime: 0.75, correctionFactor: 0 },
     { id: 2, name: 'Write permanent junior staff voucher', observedTime: 1.3, estimatedTime: 1.6, correctionFactor: 0 },
@@ -331,6 +349,60 @@ export default function FactoredEstimatingPage() {
                   <div>Corrected = {estimation.originalEstimate} × (1 + {(averageCorrectionFactor).toFixed(3)})</div>
                   <div>Basic = {estimation.correctedEstimate.toFixed(3)} × ({estimation.performanceRating}/100)</div>
                   <div>Standard = {estimation.basicTime.toFixed(3)} + ({estimation.allowancePercentage}% × {estimation.basicTime.toFixed(3)})</div>
+                  <div className="mt-2 pt-2 border-t border-blue-200">Total Staff = Standard / (Available Hours × Use Factor)</div>
+                </div>
+
+                {/* Staff Determination Section */}
+                <div className="border-t pt-4 space-y-4">
+                  <h4 className="font-semibold text-gray-800 text-sm">Staff Determination</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Available Hours</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 2080"
+                        value={availableHours}
+                        onChange={(e) => setAvailableHours(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Use Factor</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="e.g. 0.85"
+                        value={useFactor}
+                        onChange={(e) => setUseFactor(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {(role === 'super-admin' || role === 'admin') ? (
+                    <div className="space-y-3">
+                      <LoadingButton
+                        className="bg-pes w-full rounded text-white py-2.5 text-sm font-medium hover:opacity-90 transition-all"
+                        onClick={handleCalculateStaff}
+                      >
+                        Calculate Number of Staff
+                      </LoadingButton>
+
+                      {staffError && (
+                        <p className="text-red-500 text-xs font-medium">{staffError}</p>
+                      )}
+
+                      {calculatedStaff !== null && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 font-semibold text-sm">
+                          Recommended number of staff: <span className="font-mono font-bold text-base text-pes underline">{calculatedStaff.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-200">
+                      Only administrators are authorized to calculate the final number of staff.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

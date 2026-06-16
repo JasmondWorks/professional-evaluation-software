@@ -127,7 +127,7 @@ export default function NonAcademicAppraisalPage() {
           <div className="p-4 space-y-6">
             <div>
               <a
-                href="https://example.com/non-academic-appraisal-table.pdf"
+                href="/downloadables/non-academic-appraisal-table.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -195,11 +195,10 @@ export default function NonAcademicAppraisalPage() {
               <button
                 onClick={calculateScore}
                 disabled={loading}
-                className={`px-4 py-2 rounded text-white ${
-                  loading
+                className={`px-4 py-2 rounded text-white ${loading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700"
-                }`}
+                  }`}
               >
                 {loading ? "Saving..." : "Calculate Appraisal"}
               </button>

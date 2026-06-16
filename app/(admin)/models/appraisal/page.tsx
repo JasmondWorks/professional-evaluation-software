@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";import { getAccessToken } from '@/app/utils/auth';
+import { useState } from "react";
+import { getAccessToken } from '@/app/utils/auth';
 
 
 type SharedConstants = {
@@ -149,7 +150,7 @@ export default function StaffAppraisalAllPage() {
         <>
           <div className="flex gap-2 mb-4">
             <a
-              href="https://example.com/staff-utilization.pdf"
+              href="/downloadables/staff-utilization.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -157,7 +158,7 @@ export default function StaffAppraisalAllPage() {
               View Staff Utilization Table
             </a>
             <a
-              href="https://example.com/academic-staff-utilization.pdf"
+              href="/downloadables/academic-staff-utilization.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
@@ -271,67 +272,67 @@ export default function StaffAppraisalAllPage() {
 
       {/* ===== Total Wasted Man-Hour Cost ===== */}
       {<section className="border rounded mb-4">
-          <h1 className="w-full text-left p-3 bg-gray-100 font-semibold">Total Wasted Man-Hour Cost</h1>
+        <h1 className="w-full text-left p-3 bg-gray-100 font-semibold">Total Wasted Man-Hour Cost</h1>
 
-          <div className="p-4">
-            <p className="text-sm text-gray-500 mb-2">
-                Uses results from Unit Head Overloading and Boss Lost Man-Hours.
-            </p>
-            <button
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-                onClick={calcTotalWastedCost}
-            >
-                Calculate
-            </button>
-            {totalWastedCost !== null && (
-                <div className="mt-4 bg-white p-4 rounded shadow">
-                <p>
-                    <strong>Total Wasted Man-Hour Cost:</strong>{" "}
-                    {totalWastedCost.toFixed(2)}
-                </p>
-                <button
-                    className="mt-6 px-4 py-2 bg-green-600 text-white rounded"
-                    onClick={async () => {
-                      const token = getAccessToken();
-                      if (!token) {
-                        alert("Missing token");
-                        return;
-                      }
+        <div className="p-4">
+          <p className="text-sm text-gray-500 mb-2">
+            Uses results from Unit Head Overloading and Boss Lost Man-Hours.
+          </p>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+            onClick={calcTotalWastedCost}
+          >
+            Calculate
+          </button>
+          {totalWastedCost !== null && (
+            <div className="mt-4 bg-white p-4 rounded shadow">
+              <p>
+                <strong>Total Wasted Man-Hour Cost:</strong>{" "}
+                {totalWastedCost.toFixed(2)}
+              </p>
+              <button
+                className="mt-6 px-4 py-2 bg-green-600 text-white rounded"
+                onClick={async () => {
+                  const token = getAccessToken();
+                  if (!token) {
+                    alert("Missing token");
+                    return;
+                  }
 
-                      const payload = {
-                        shared,
-                        OQ,
-                        WQ,
-                        points,
-                        RTP,
-                        staffAppraisalResult,
-                        Na,
-                        Ta,
-                        unitOverloadingResult,
-                        Pidle,
-                        bossLostResult,
-                        totalWastedCost,
-                      };
+                  const payload = {
+                    shared,
+                    OQ,
+                    WQ,
+                    points,
+                    RTP,
+                    staffAppraisalResult,
+                    Na,
+                    Ta,
+                    unitOverloadingResult,
+                    Pidle,
+                    bossLostResult,
+                    totalWastedCost,
+                  };
 
-                      const res = await fetch("/api/staffAppraisal", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify(payload),
-                      });
+                  const res = await fetch("/api/staffAppraisal", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                  });
 
-                      const data = await res.json();
-                      if (res.ok) alert("✅ Saved successfully!");
-                      else alert(`❌ Failed to save: ${data.error}`);
-                    }}
-                  >
-                    Save All Results
-                  </button>
-                </div>
-            )}            
-          </div>
+                  const data = await res.json();
+                  if (res.ok) alert("✅ Saved successfully!");
+                  else alert(`❌ Failed to save: ${data.error}`);
+                }}
+              >
+                Save All Results
+              </button>
+            </div>
+          )}
+        </div>
 
       </section>
       }

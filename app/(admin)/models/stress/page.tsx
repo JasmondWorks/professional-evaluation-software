@@ -132,8 +132,6 @@ export default function StressAnalysisTool() {
     fetchData();
   }, []);
 
-  const normalize = (val: number) => Math.min(100, (val / 5) * 100); // unused, kept for reference
-
   const enrichedData = stressData.map((s) => {
     const rawStress =
       Number(s.organizational) / 383 +
@@ -169,8 +167,6 @@ export default function StressAnalysisTool() {
       conflictFactor: conflict,
     };
   });
-
-  const stressValues = enrichedData.map((d) => d.stressFactor * 100);
 
   const runANOVA = () => {
     const grouped: GroupedData = {};
@@ -264,13 +260,13 @@ export default function StressAnalysisTool() {
                 <tbody>
                   <tr>
                     <td className="border px-4 py-2 text-center">
-                      {summary.stress.toFixed(2)}
+                      {(summary.stress * 100).toFixed(2)}%
                     </td>
                     <td className="border px-4 py-2 text-center">
-                      {summary.pressure.toFixed(2)}
+                      {(summary.pressure * 100).toFixed(2)}%
                     </td>
                     <td className="border px-4 py-2 text-center">
-                      {summary.conflict.toFixed(2)}
+                      {(summary.conflict * 100).toFixed(2)}%
                     </td>
                   </tr>
                 </tbody>
@@ -294,13 +290,13 @@ export default function StressAnalysisTool() {
                     <td className="border px-4 py-2">{s.user_name}</td>
                     <td className="border px-4 py-2">{s.dept}</td>
                     <td className="border px-4 py-2">
-                      {s.stressFactor.toFixed(1)}
+                      {(s.stressFactor * 100).toFixed(1)}%
                     </td>
                     <td className="border px-4 py-2">
-                      {s.pressureFactor.toFixed(1)}
+                      {(s.pressureFactor * 100).toFixed(1)}%
                     </td>
                     <td className="border px-4 py-2">
-                      {s.conflictFactor.toFixed(1)}
+                      {(s.conflictFactor * 100).toFixed(1)}%
                     </td>
                   </tr>
                 ))}
@@ -335,7 +331,6 @@ export default function StressAnalysisTool() {
                     dataKey="y"
                     domain={[0, 100]}
                     ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
-                    reversed
                   />
 
                   <Tooltip

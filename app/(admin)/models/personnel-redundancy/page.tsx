@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from '@/app/utils/auth';
 
 
 type JWTPayload = {
@@ -118,7 +119,7 @@ export default function PersonnelRedundancyPage() {
         {open && (
           <div className="p-4 space-y-6">
             <a
-              href="https://example.com/personnel-utilization-table.pdf"
+              href="/downloadables/personnel-utilization-table.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"
@@ -183,11 +184,10 @@ export default function PersonnelRedundancyPage() {
               <button
                 onClick={saveToDatabase}
                 disabled={!result || saving}
-                className={`px-6 py-2 rounded ${
-                  result
+                className={`px-6 py-2 rounded ${result
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "bg-gray-400 text-gray-100 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {saving ? "Saving..." : "Save"}
               </button>
