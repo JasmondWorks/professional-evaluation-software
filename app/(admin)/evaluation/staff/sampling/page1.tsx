@@ -262,7 +262,7 @@ export default function Home() {
             <div className="flex">
                 <button className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" type="submit">Evaluate</button>
                 <LoadingButton className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" onClick={handleTaskAdd}>Add Position</LoadingButton>
-                <a href="/downloadables/work-sample-study-estimate.docx" className="bg-pes w-fit me-4 rounded text-white px-16 py-3">Print form for survey</a>
+                <a href="/downloadables/work-sample-study.docx" className="bg-pes w-fit me-4 rounded text-white px-16 py-3">Print form for survey</a>
                 <a href="/downloadables/relax.pdf" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3">relaxation guide</a>
                 <a href="staff/sampling/generate" className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3" >Generate random study day/hours</a>
             </div>

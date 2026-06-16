@@ -92,7 +92,7 @@ export default function StaffMotivationPage() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem("access_token"); 
+      const token = localStorage.getItem("access_token");
       const res = await fetch("/api/motivation", {
         method: "POST",
         headers: {
@@ -139,7 +139,7 @@ export default function StaffMotivationPage() {
             {/* PDF link */}
             <div>
               <a
-                href="https://example.com/staff-motivation-table.pdf"
+                href="/downloadables/staff-motivation-table.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"

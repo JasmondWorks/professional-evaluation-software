@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       FROM subscriptions_info
       WHERE pesuser_email = ${email}
       AND status IN ('success', 'active')
-      AND expires_at > NOW()
-      ORDER BY expires_at DESC
+      AND (expires_at > NOW() OR expires_at IS NULL)
+      ORDER BY created_at DESC
       LIMIT 1
     `;
 

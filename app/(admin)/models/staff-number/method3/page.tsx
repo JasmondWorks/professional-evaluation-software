@@ -13,7 +13,7 @@ export default function Method3Page() {
 
   const [result, setResult] = useState<number | null>(null);
 
-  const calculate =async () => {
+  const calculate = async () => {
     // Placeholder simple formula: Staff = (Utilization Factor * Annual Man-hours) / Standard Man-hours
     const staffNeeded = (utilizationFactor * annualManHours) / standardManHours;
     setResult(staffNeeded);
@@ -51,7 +51,7 @@ export default function Method3Page() {
 
         {/* Placeholder PDF Links */}
         {/* <a
-          href="https://example.com/work-sampling-table.pdf"
+          href="/downloadables/work-sampling-table.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"

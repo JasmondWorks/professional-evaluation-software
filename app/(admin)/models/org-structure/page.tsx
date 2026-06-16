@@ -48,7 +48,7 @@ export default function OrgStructurePage() {
   }
 
   // ===== Section 17 =====
-  const section17Link = "https://example.com/personnel-utilization.pdf";
+  const section17Link = "/downloadables/personnel-utilization.pdf";
 
   // ===== Section 18 =====
   const [section18Numerator, setSection18Numerator] = useState<number[]>([0]);

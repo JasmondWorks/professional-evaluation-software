@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } fr
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Clock, Users, BarChart3, Calculator, FileText, Plus, Check, Trash2, Download, Info, X, RotateCcw, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
 import { getCurrentUser } from '@/app/utils/auth';
+import { useAuth } from '@/app/components/useAuth';
 
 const CONFIDENCE_ACCURACY_MAP: Record<number, { accuracy: number; zValue: number }> = {
   90: { accuracy: 10, zValue: 1.645 },
@@ -46,6 +47,7 @@ interface StudyParameters {
   preliminaryP: number;
   totalObservations: number;
   studyMonths: number[];
+  studyMonth?: number;
   observationsPerDay: number;
   workingHoursPerDay: number;
   workStartTime: string;
@@ -80,7 +82,7 @@ const DEFAULT_PARAMS: StudyParameters = {
   desiredAccuracy: 5,
   preliminaryP: 0.5,
   totalObservations: 0,
-  studyMonth: new Date().getMonth() + 1,
+  studyMonths: [new Date().getMonth() + 1],
   observationsPerDay: 10,
   workingHoursPerDay: 8,
   workStartTime: '08:00',
@@ -94,6 +96,11 @@ const DEFAULT_PARAMS: StudyParameters = {
 const WorkSamplingPageInner: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { role } = useAuth();
+  const [samplingUseFactor, setSamplingUseFactor] = useState<number | ''>('');
+  const [samplingAvailableHours, setSamplingAvailableHours] = useState<number | ''>(2080);
+  const [samplingCalculatedStaff, setSamplingCalculatedStaff] = useState<number | null>(null);
+  const [samplingStaffError, setSamplingStaffError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'positions' | 'parameters' | 'observations' | 'analysis'>('positions');
   const [studyDbId, setStudyDbId] = useState<number | null>(null);
@@ -124,6 +131,12 @@ const WorkSamplingPageInner: React.FC = () => {
   const latestSavePayload = useRef({ studyDbId, studyParameters, studyMeta });
   // True while the initial DB load is populating state — prevents spurious auto-saves
   const isLoadingFromDb = useRef(false);
+
+  useEffect(() => {
+    if (studyParameters.availableAnnualHours) {
+      setSamplingAvailableHours(studyParameters.availableAnnualHours);
+    }
+  }, [studyParameters.availableAnnualHours]);
 
   // ── Read current user from JWT and auto-fill study meta ──────────────────────
   useEffect(() => {
@@ -718,6 +731,17 @@ const WorkSamplingPageInner: React.FC = () => {
     };
   });
   const TAM = analysisResults.reduce((s, r) => s + r.estimatedStandardManHours, 0);
+
+  const handleCalculateSamplingStaff = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSamplingStaffError(null);
+    if (!samplingAvailableHours || Number(samplingAvailableHours) <= 0 || !samplingUseFactor || Number(samplingUseFactor) <= 0) {
+      setSamplingStaffError("⚠️ Available hours and Use factor must be greater than zero.");
+      return;
+    }
+    const staff = TAM / (Number(samplingAvailableHours) * Number(samplingUseFactor));
+    setSamplingCalculatedStaff(staff);
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────────
   const SaveIndicator = () => (
@@ -1449,17 +1473,39 @@ const WorkSamplingPageInner: React.FC = () => {
                       disabled={!selectedPosition || !paramsSaved || lockedDates.length === 0}
                       className="px-4 py-3 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
                       <option value="">— Select date —</option>
-                      {lockedDates.map(day => {
-                        const year = new Date().getFullYear();
-                        const dateStr = `${year}-${String(studyParameters.studyMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                        const d = new Date(year, studyParameters.studyMonth - 1, day);
-                        const dn = d.toLocaleDateString('en-US', { weekday: 'short' });
+                      {lockedDates.map(dateVal => {
+                        let dateStr = String(dateVal);
+                        let dn = '';
+                        let displayLabel = '';
+
+                        if (typeof dateVal === 'number' || !dateStr.includes('-')) {
+                          // Legacy format (integer day)
+                          const day = Number(dateVal);
+                          const month = studyParameters.studyMonths[0] || studyParameters.studyMonth || 1;
+                          const year = new Date().getFullYear();
+                          const dObj = new Date(year, month - 1, day);
+                          dn = dObj.toLocaleDateString('en-US', { weekday: 'short' });
+                          dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                          const mName = MONTH_NAMES[month - 1] ? MONTH_NAMES[month - 1].slice(0, 3) : '';
+                          displayLabel = `${dn}, ${mName} ${day}`;
+                        } else {
+                          // New YYYY-MM-DD format
+                          const [y, m, d] = dateStr.split('-');
+                          const month = Number(m);
+                          const day = Number(d);
+                          const dObj = new Date(Number(y), month - 1, day);
+                          dn = dObj.toLocaleDateString('en-US', { weekday: 'short' });
+                          const mName = MONTH_NAMES[month - 1] ? MONTH_NAMES[month - 1].slice(0, 3) : '';
+                          displayLabel = `${dn}, ${mName} ${day}`;
+                        }
+
                         const obsCount = observations.filter(o =>
                           o.positionId === selectedPositionId && o.date === dateStr
                         ).length;
+
                         return (
-                          <option key={day} value={dateStr}>
-                            {dn}, {MONTH_NAMES[studyParameters.studyMonth - 1].slice(0,3)} {day}
+                          <option key={String(dateVal)} value={dateStr}>
+                            {displayLabel}
                             {obsCount > 0 ? ` (${obsCount} recorded)` : ''}
                           </option>
                         );
@@ -1708,6 +1754,65 @@ const WorkSamplingPageInner: React.FC = () => {
                     <p><code>EBMᵢ</code> = EAMᵢ × Perf. Rating / 100  <span className="text-gray-400">(eq 6.13)</span></p>
                     <p><code>ESMᵢ</code> = EBMᵢ + EBMᵢ × PA / 100  <span className="text-gray-400">(eq 6.14)</span></p>
                     <p><code>TAM</code> = Σ ESMᵢ  <span className="text-gray-400">(eq 6.15)</span></p>
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p><code>Total Staff</code> = TAM / (Available Hours × Use Factor)</p>
+                    </div>
+                  </div>
+
+                  {/* Staff Determination Section */}
+                  <div className="p-6 rounded-lg border bg-gray-50 border-gray-200 space-y-4">
+                    <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                      <Users size={18} style={{ color: '#322b80' }} />
+                      Staff Determination
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Available Hours</label>
+                        <input
+                          type="number"
+                          value={samplingAvailableHours}
+                          onChange={(e) => setSamplingAvailableHours(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Use Factor</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g. 0.85"
+                          value={samplingUseFactor}
+                          onChange={(e) => setSamplingUseFactor(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {(role === 'super-admin' || role === 'admin') ? (
+                      <div className="space-y-3">
+                        <button
+                          onClick={handleCalculateSamplingStaff}
+                          className="flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow"
+                          style={{ backgroundColor: '#322b80' }}
+                        >
+                          Calculate Number of Staff
+                        </button>
+
+                        {samplingStaffError && (
+                          <p className="text-red-500 text-xs font-medium">{samplingStaffError}</p>
+                        )}
+
+                        {samplingCalculatedStaff !== null && (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 font-semibold text-sm">
+                            Recommended number of staff: <span className="font-mono font-bold text-base text-pes underline">{samplingCalculatedStaff.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-200">
+                        Only administrators are authorized to calculate the final number of staff.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex justify-end">
