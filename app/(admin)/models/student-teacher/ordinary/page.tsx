@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import jwt from "jsonwebtoken";
 import Link from "next/link";
 import {
   findOptimalK_ordinary,
@@ -19,7 +20,6 @@ export default function OrdinaryOptimization() {
     t2: 0.4,
     t3: 0.2,
     t4: 0.5,
-    S0: 0.2,
     studentPopulation: 1000,
     staffMix: {
       lecturers: 0.5,
@@ -34,6 +34,17 @@ export default function OrdinaryOptimization() {
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      const decoded: any = jwt.decode(token);
+      setRole(decoded?.role || null);
+    }
+  }, []);
+
+  const isAdmin = role === "super-admin" || role === "admin";
 
   const handleCalculate = async () => {
     setLoading(true);
@@ -97,15 +108,23 @@ export default function OrdinaryOptimization() {
         <h1 className="text-2xl font-bold">Ordinary Optimization</h1>
       </div>
 
-      <ParametersForm params={params} setParams={setParams} />
+      <div className="print:hidden">
+        <ParametersForm params={params} setParams={setParams} mode="ordinary" />
+      </div>
 
-      <button
-        onClick={handleCalculate}
-        disabled={loading}
-        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mt-4"
-      >
-        {loading ? "Calculating..." : "Calculate"}
-      </button>
+      <div className="print:hidden">
+        {isAdmin ? (
+          <button
+            onClick={handleCalculate}
+            disabled={loading}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mt-4"
+          >
+            {loading ? "Calculating..." : "Calculate"}
+          </button>
+        ) : (
+          <p className="mt-4 text-red-600 font-semibold text-sm">Only admins can perform calculations.</p>
+        )}
+      </div>
 
       {status && (
         <p
@@ -120,6 +139,14 @@ export default function OrdinaryOptimization() {
       {results && (
         <div className="mt-6">
           <ResultsCard results={results} />
+          {isAdmin && (
+            <button 
+              onClick={() => window.print()}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 print:hidden"
+            >
+              Print Results
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ import Subscriptionbutton from "../../components/subscription/paypal";
 import PaystackButton from "@/app/components/subscription/paystackButton";
 import PayPalProviderWrapper from "../../components/subscription/paypalWrapper";
 import { packages } from "../../lib/utils/packages";
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 
 
 export default function Home() {
@@ -147,7 +147,7 @@ export default function Home() {
             }
             label={label}
           />
-          <a href={`/prices?plan=${planKey}`} className="text-pes hover:underline">view plan</a>
+          <a href={`/prices?plan=${planKey}`} className={`hover:underline ${color ? "text-white" : "text-pes"}`}>view plan</a>
         </div>
       </div>
     );

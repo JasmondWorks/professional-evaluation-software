@@ -11,7 +11,6 @@ type Params = {
   t2: number;
   t3: number;
   t4: number;
-  S0: number;
   studentPopulation: number;
   staffMix: {
     lecturers: number;
@@ -20,12 +19,29 @@ type Params = {
   };
 };
 
+// Human-readable labels for parameter keys
+const paramLabels: Record<string, string> = {
+  D: "D — Official weekly hours",
+  G: "G — Total hours in a week",
+  Y: "y — Lecture hours per course",
+  alpha: "a — Courses per week",
+  t1: "t₁ — Consultation proportion",
+  t2: "t₂ — Research proportion",
+  t3: "t₃ — Assessment proportion",
+  t4: "t₄ — Assessment hours per student",
+  studentPopulation: "Student population",
+};
+
 interface Props {
   params: Params;
   setParams: React.Dispatch<React.SetStateAction<Params>>;
+  mode?: "ordinary" | "robust";
 }
 
-export default function ParametersForm({ params, setParams }: Props) {
+export default function ParametersForm({ params, setParams, mode }: Props) {
+  // G is only used in the Robust model; hide it for Ordinary
+  const hiddenKeys = mode === "ordinary" ? ["G", "staffMix"] : ["staffMix"];
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numericValue = parseFloat(value);
@@ -50,11 +66,11 @@ export default function ParametersForm({ params, setParams }: Props) {
       </h2>
 
       {Object.entries(params)
-        .filter(([key]) => key !== "staffMix")
+        .filter(([key]) => !hiddenKeys.includes(key))
         .map(([key, value]) => (
           <div key={key} className="flex flex-col">
             <label htmlFor={key} className="text-sm font-medium text-gray-600">
-              {key}
+              {paramLabels[key] || key}
             </label>
             <input
               type="number"

@@ -82,9 +82,10 @@ export async function POST(req: Request) {
     const emailSent = await sendLoginEmail(email, user.name, newPassword)
 
     if (!emailSent) {
+      console.warn(`⚠️ EMAIL FAILED. Dev Mode: The new password for ${email} is: ${newPassword}`);
       return NextResponse.json(
-        { message: 'Password reset but email failed to send. Check SMTP configuration.' },
-        { status: 500 }
+        { message: 'Password reset successful, but email failed. Check server console for new password.', status: 200 },
+        { status: 200 }
       )
     }
 

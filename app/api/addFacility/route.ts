@@ -37,23 +37,27 @@ export async function POST(request: NextRequest) {
 
 
       // ✅ Send email notification
-      const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-         user: process.env.EMAIL_USER,
-         pass: process.env.EMAIL_PASS,
-      },
-      });
+      try {
+        const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+           user: process.env.EMAIL_USER,
+           pass: process.env.EMAIL_PASS,
+        },
+        });
 
 
-      const mailOptions = {
-      from: `"Super Admin" <${process.env.EMAIL_USER}>`,
-      to: userData[0].email,
-      subject: "New Entry added",
-      text: `Hello,\n\nA user at ${org} has filled entries for maintenance models.\n\nBest,\nPES team`,
-      };
-      
-      await transporter.sendMail(mailOptions);
+        const mailOptions = {
+        from: `"Super Admin" <${process.env.EMAIL_USER}>`,
+        to: userData[0].email,
+        subject: "New Entry added",
+        text: `Hello,\n\nA user at ${org} has filled entries for maintenance models.\n\nBest,\nPES team`,
+        };
+        
+        await transporter.sendMail(mailOptions);
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr);
+      }
       return NextResponse.json(goals)
   
    } catch(err) {
