@@ -235,38 +235,58 @@ export default function SubscriptionPage() {
   console.log(selectedPlan)
 
   return (
-    <div className="bg-gray-50 py-16 px-6 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-6 flex justify-center items-start">
       <div
-        className={`max-w-md w-full border rounded-2xl p-6 shadow-lg ${
-          isActive ? "border-green-500" : "border-gray-200"
+        className={`max-w-xl w-full bg-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden transition-all duration-300 ${
+          isActive ? "border-2 border-green-500" : "border border-gray-100"
         }`}
       >
-        <Link href="/pricing" className="text-gray-600 hover:underline">
-          <ArrowLeft/>
-        </Link>
-        <h1 className="text-2xl font-bold text-center mb-2 text-pes">
-          {planFromQuery}
-        </h1>
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 opacity-50 blur-3xl -z-10 pointer-events-none"></div>
 
-        <p className="text-center text-gray-500 mb-4 capitalize">
-          {type.replace(/-/g, " ")}
-        </p>
+        <Link href="/pricing" className="inline-flex items-center text-gray-400 hover:text-gray-600 transition-colors mb-6 group">
+          <ArrowLeft className="group-hover:-translate-x-1 transition-transform" />
+          <span className="ml-2 font-medium">Back to Pricing</span>
+        </Link>
+
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-extrabold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
+            {planFromQuery} Plan
+          </h1>
+          <p className="text-gray-500 font-medium uppercase tracking-wider text-sm">
+            {type.replace(/-/g, " ")} Package
+          </p>
+        </div>
 
         {/* 🔥 Active indicator */}
         {isActive && (
-          <p className="text-center text-green-600 font-semibold mb-4">
-            Current Plan
-          </p>
+          <div className="flex justify-center mb-8">
+            <span className="bg-green-100 text-green-700 py-1.5 px-4 rounded-full text-sm font-semibold tracking-wide shadow-sm flex items-center">
+              <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+              Current Plan
+            </span>
+          </div>
         )}
 
-        <ul className="space-y-2 mb-6 text-md text-gray-700">
-          {(selectedPlan?.features || []).map((f: string, i: number) => (
-            <li key={i} className="flex items-start">
-              <span className="text-green-600 font-bold mr-2">✓</span>
-              {f}
-            </li>
-          ))}
-        </ul>
+        <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            Plan Features
+          </h3>
+          <ul className="space-y-4 text-gray-700">
+            {(selectedPlan?.features || []).map((f: string, i: number) => (
+              <li key={i} className="flex items-start break-words">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                </div>
+                <span className="ml-3 font-medium text-gray-600 leading-relaxed">{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -110,6 +110,7 @@ export default function StressAnalysisTool() {
   const [stressData, setStressData] = useState<StressEntry[]>([]);
   const [anovaResult, setAnovaResult] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -118,6 +119,7 @@ export default function StressAnalysisTool() {
       if (!token) return;
 
       const decoded: any = jwt.decode(token);
+      setRole(decoded?.role || null);
 
       const res = await fetch("/api/getStressDataScores", {
         method: "POST",
@@ -131,6 +133,8 @@ export default function StressAnalysisTool() {
 
     fetchData();
   }, []);
+
+  const isAdmin = role === "super-admin" || role === "admin";
 
   const enrichedData = stressData.map((s) => {
     const rawStress =
@@ -208,7 +212,7 @@ export default function StressAnalysisTool() {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 print:hidden">
           <button
             onClick={() => setActiveTab("analysis")}
             className={`px-4 py-2 rounded ${
@@ -234,19 +238,33 @@ export default function StressAnalysisTool() {
 
         {/* ANALYSIS */}
         {activeTab === "analysis" && (
-          <div className="bg-white p-6 rounded shadow">
-            <button
-              onClick={runANOVA}
-              className="bg-green-600 text-white px-5 py-2 rounded"
-            >
-              Run ANOVA
-            </button>
+          <div className="bg-white p-6 rounded shadow print:hidden">
+            {isAdmin ? (
+              <button
+                onClick={runANOVA}
+                className="bg-green-600 text-white px-5 py-2 rounded"
+              >
+                Run ANOVA
+              </button>
+            ) : (
+              <p className="text-red-600 font-semibold text-sm">Only admins can run ANOVA analysis.</p>
+            )}
           </div>
         )}
 
         {/* RESULTS */}
         {activeTab === "results" && (
           <div className="bg-white p-6 rounded shadow">
+            {isAdmin && (
+              <div className="flex justify-end mb-4 print:hidden">
+                <button 
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Print Results
+                </button>
+              </div>
+            )}
             {/* SUMMARY TABLE */}
             {summary && (
               <table className="w-full border border-gray-300 mb-6">
@@ -331,6 +349,7 @@ export default function StressAnalysisTool() {
                     dataKey="y"
                     domain={[0, 100]}
                     ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                    reversed
                   />
 
                   <Tooltip
