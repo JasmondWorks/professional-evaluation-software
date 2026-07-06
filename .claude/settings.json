@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker volume *)",
+      "Bash(docker exec *)",
+      "Bash(lsof -nP -iTCP:5555 -sTCP:LISTEN)",
+      "Bash(ps eww *)",
+      "Bash(lsof -nP -iTCP:5434 -sTCP:LISTEN)",
+      "Bash(PGPASSWORD=admin psql -h localhost -p 5434 -U postgres -d pes_local -c \"SELECT current_database\\(\\), count\\(*\\) AS users FROM pesuser;\")",
+      "Bash(DATABASE_URL='postgresql://postgres:admin@localhost:5434/pes_local?schema=public' node scratchpad_t.js)",
+      "Bash(DATABASE_URL='postgresql://postgres:admin@localhost:5434/pes_local?schema=public' node /private/tmp/claude-501/-Users-gracethompson-Documents-femis-stuff-web-devpt-pes-software/37476475-202a-4b44-bd02-748b926c4f5d/scratchpad/t.js)",
+      "Bash(DATABASE_URL='postgresql://postgres:admin@localhost:5434/pes_local?schema=public' node _t_probe.js)",
+      "Bash(kill 42343 42327)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}

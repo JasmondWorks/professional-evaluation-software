@@ -31,6 +31,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 // import { Lato } from 'next/font/google'  // Commented out
 import { AuthProvider } from './components/useAuth'
+import { Toaster } from 'sonner'
 
 // const lato = Lato(   // Commented out
 //   {
@@ -48,9 +49,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       {/* Remove lato.className from here */}
-      <body className={'bg-gray-10 flex flex-row relative justify-center max-w-screen h-screen'}>
+      <body className={'bg-gray-10 flex flex-row relative justify-center max-w-screen min-h-screen'}>
         <AuthProvider>
-          {children}          
+          {children}
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              style: { fontFamily: 'inherit' },
+            }}
+          />
         </AuthProvider>
       </body>        
     </html>      

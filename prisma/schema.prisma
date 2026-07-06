@@ -255,15 +255,15 @@ model notifications {
 }
 
 model org {
-  id         Int       @id @default(autoincrement())
-  name       String    @unique @db.VarChar(255)
-  category   String    @db.VarChar(100)
-  plan       String    @db.VarChar(100)
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @default(now()) @db.Timestamp(6)
-  evaluation String[]  @default([])
-  ongoing    Boolean   @default(false)
-  maintenance_model Boolean @default(false)
+  id                Int       @id @default(autoincrement())
+  name              String    @unique @db.VarChar(255)
+  category          String    @db.VarChar(100)
+  plan              String    @db.VarChar(100)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  evaluation        String[]  @default([])
+  ongoing           Boolean   @default(false)
+  maintenance_model Boolean?
 }
 
 model org_structure_results {
@@ -356,31 +356,36 @@ model personnel_utilization {
 }
 
 model pesuser {
-  id              Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
-  name            String          @db.VarChar(255)
-  email           String          @unique @db.VarChar(255)
-  password        String          @db.VarChar(255)
-  gsm             String?         @db.VarChar(50)
-  role            String?         @db.VarChar(50)
-  address         String?
-  faculty_college String?         @db.VarChar(255)
-  dob             DateTime?       @db.Date
-  doa             DateTime?       @db.Date
-  poa             String?         @db.VarChar(255)
-  doc             String?         @db.VarChar(255)
-  post            String?         @db.VarChar(255)
-  dopp            DateTime?       @db.Date
-  level           String?         @db.VarChar(50)
-  image           String?         @db.VarChar(255)
-  org             String?         @db.VarChar(255)
-  dept            String?         @db.VarChar(255)
-  tier            String?         @default("bronze") @db.VarChar(50)
-  category        String?         @db.VarChar(100)
-  plan            String?         @db.VarChar(100)
-  notifications   notifications[]
-  subscriptions   subscriptions[]
+  id               Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
+  name             String          @db.VarChar(255)
+  email            String          @unique @db.VarChar(255)
+  password         String          @db.VarChar(255)
+  gsm              String?         @db.VarChar(50)
+  role             String?         @db.VarChar(50)
+  address          String?
+  faculty_college  String?         @db.VarChar(255)
+  dob              DateTime?       @db.Date
+  doa              DateTime?       @db.Date
+  poa              String?         @db.VarChar(255)
+  doc              String?         @db.VarChar(255)
+  post             String?         @db.VarChar(255)
+  dopp             DateTime?       @db.Date
+  level            String?         @db.VarChar(50)
+  image            String?         @db.VarChar(255)
+  org              String?         @db.VarChar(255)
+  dept             String?         @db.VarChar(255)
+  tier             String?         @default("bronze") @db.VarChar(50)
+  category         String?         @db.VarChar(100)
+  plan             String?         @db.VarChar(100)
+  resettoken       String?         @db.VarChar(255)
+  resettokenexpiry DateTime?       @db.Timestamp(6)
+  updated_at       DateTime?       @default(now()) @db.Timestamp(6)
+  notifications    notifications[]
+  subscriptions    subscriptions[]
 
   @@unique([name, dept, org], map: "unique_user_per_dept_org")
+  @@index([resettoken], map: "idx_pesuser_resettoken")
+  @@index([resettokenexpiry], map: "idx_pesuser_resettokenexpiry")
 }
 
 model plans {
@@ -553,10 +558,7 @@ model subscriptions_info {
   amount        Decimal?  @db.Decimal(12, 2)
   paid_at       DateTime? @db.Timestamp(6)
   created_at    DateTime? @default(now()) @db.Timestamp(6)
-  expires_at    DateTime? @db.Timestamp(6)
-  started_at    DateTime? @db.Timestamp(6)
-  updated_at    DateTime? @default(now()) @db.Timestamp(6)
-  replaced_by   String?   @db.VarChar(255)
+  expires_at    DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model unit_head_overloading {
@@ -571,56 +573,6 @@ model unit_head_overloading {
   overload_ratio    Decimal   @db.Decimal(10, 3)
   status            String    @db.VarChar(50)
   created_at        DateTime? @default(now()) @db.Timestamp(6)
-}
-
-model WorkSamplingStudy {
-  id                         Int                       @id @default(autoincrement())
-  org                        String?                   @db.VarChar(255)
-  department                 String?                   @db.VarChar(255)
-  analyst                    String?                   @db.VarChar(255)
-  authorizedBy               String?                   @db.VarChar(255)
-  // Study parameters
-  confidenceLevel            Int?
-  desiredAccuracy            Float?
-  preliminaryP               Float?
-  totalObservationsRequired  Int?
-  studyMonth                 Int?
-  studyMonths                Json?
-  observationsPerDay         Int?
-  workingHoursPerDay         Float?
-  workStartTime              String?                   @db.VarChar(10)
-  minCycleDuration           Float?
-  maxDuration                Float?
-  estimatedStudyDays         Int?
-  availableAnnualHours       Float?
-  defaultPerformanceAllowance Float?
-  lockedDates                Json?
-  lockedTimes                Json?
-  createdAt                  DateTime?                 @default(now()) @db.Timestamp(6)
-  positions                  WorkSamplingPosition[]
-}
-
-model WorkSamplingPosition {
-  id                  Int                       @id @default(autoincrement())
-  studyId             Int
-  name                String                    @db.VarChar(255)
-  department          String?                   @db.VarChar(255)
-  performanceAllowance Float?
-  createdAt           DateTime?                 @default(now()) @db.Timestamp(6)
-  study               WorkSamplingStudy         @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  observations        WorkSamplingObservation[]
-}
-
-model WorkSamplingObservation {
-  id                Int                  @id @default(autoincrement())
-  positionId        Int
-  date              String               @db.VarChar(20)
-  time              String               @db.VarChar(10)
-  isBusy            Boolean
-  performanceRating Float?
-  notes             String?
-  createdAt         DateTime?            @default(now()) @db.Timestamp(6)
-  position          WorkSamplingPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
 }
 
 model userperformance {
