@@ -22,7 +22,7 @@ export default function SignupLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className={ lato.className + ' bg-gray-10 flex flex-row relative justify-center w-full max-w-screen h-screen' }>
+    <div className={ lato.className + ' bg-gray-10 flex flex-row relative justify-center w-full max-w-screen min-h-screen' }>
         {children}          
     </div>
   )

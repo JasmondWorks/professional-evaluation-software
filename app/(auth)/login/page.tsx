@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/components/useAuth";
+import { notify } from "@/lib/toast";
 
 type formdata = {
   email: string;
@@ -15,11 +15,8 @@ type formdata = {
 
 export default function Home() {
   const { setRole } = useAuth();
-  const [message, setMessage] = useState({
-    visibility: "invisible",
-    text: "",
-    color: "",
-  });
+  // Inline error state for the specific network/server error message.
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
   const schema = Yup.object({
@@ -33,7 +30,8 @@ export default function Home() {
   });
 
   async function login(url: string, data: formdata) {
-    setMessage({ visibility: "visible", text: "loading", color: "green" });
+    setErrorMessage("");
+    const toastId = notify.loading("Signing in…");
 
     try {
       const req = await fetch(url, {
@@ -43,32 +41,36 @@ export default function Home() {
       });
 
       let res = await req.json();
-      console.log(res)
+      console.log(res);
 
       if (res.status == 200) {
-        console.log('logged in')
+        console.log("logged in");
         localStorage.setItem("access_token", res.token);
 
         setRole(res.role);
 
         document.cookie = `role=${res.role}; path=/; max-age=86400`;
 
+        notify.dismiss(toastId);
+        notify.success("Signed in successfully");
         router.push("/dashboard");
-      } else if (res.status >= 400 && res.status < 500) {
-        setMessage({
-          visibility: "visible",
-          text: "login failed, inalid details",
-          color: "red",
-        });
-      } else if(res.status >= 500){
-        setMessage({
-          visibility:"visible",
-          text: "Sorry! Something went wrong on our end, please try again later",
-          color: "red",
-        })
+      } else {
+        const errorText =
+          res.status >= 500
+            ? "Sorry! Something went wrong on our end, please try again later"
+            : res.message || "Login failed, invalid details";
+
+        setErrorMessage(errorText);
+        notify.dismiss(toastId);
+        notify.error(errorText);
       }
     } catch (error) {
       console.log(error);
+      const errorText =
+        "Unable to reach the server. Please check your connection and try again.";
+      setErrorMessage(errorText);
+      notify.dismiss(toastId);
+      notify.error(errorText);
     }
   }
 
@@ -79,35 +81,23 @@ export default function Home() {
   }, [router]);
 
   return (
-    <main className="w-full flex overflow-hidden relative">
-      {/* message box */}
-      <div
-        style={{ borderColor: message.color }}
-        className={`z-10 bg-white absolute p-6 px-12 shadow-md rounded-md border text-gray-600 font-semibold ${message.visibility} top-3 left-1/2 -translate-x-1/2`}
-      >
-        {message.text}
-      </div>
-
-      {/* illustration */}
-      <div className="illustration bg-pes-gradient w-1/2 h-screen relative flex">
-        <Image
-          src={"/pes.svg"}
-          alt="pes hero image"
-          width={130}
-          height={130}
-          className="z-10 mx-auto my-auto"
-        />
-      </div>
-
-      {/* login form */}
-      <Formik
-        initialValues={{ email: "", password: "" }}
-        validationSchema={schema}
-        onSubmit={(values) => login("/api/login", values)}
-      >
-        {({ isValid, dirty }) => (
-          <Form className="form w-1/2 h-screen flex flex-col p-28 justify-center">
+    <Formik
+      initialValues={{ email: "", password: "" }}
+      validationSchema={schema}
+      onSubmit={(values) => login("/api/login", values)}
+    >
+      {({ isValid, dirty }) => (
+        <Form className="form w-full flex flex-col">
             <p className="text-4xl text-semibold mb-8">Sign In</p>
+
+            {errorMessage && (
+              <div
+                role="alert"
+                className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {errorMessage}
+              </div>
+            )}
 
             <div className="input flex flex-col justify-center mb-4">
               <label htmlFor="email" className="mb-1">
@@ -139,8 +129,13 @@ export default function Home() {
 
             <div className="flex flex-row justify-between mb-8">
               <div className="flex">
-                <Field type="checkbox" name="remember" id="remember" tabIndex={3} />
-                <label htmlFor="remember" className="mx-4">
+                <Field
+                  type="checkbox"
+                  name="remember"
+                  id="remember"
+                  tabIndex={3}
+                />
+                <label htmlFor="remember" className="mx-2">
                   Remember me
                 </label>
               </div>
@@ -159,9 +154,14 @@ export default function Home() {
             >
               Sign In
             </button>
-          </Form>
-        )}
-      </Formik>
-    </main>
+            <p className="text-center">
+              {`Don't have an Account?`}{" "}
+              <Link className="text-pes" href={"/signup"}>
+                Sign Up
+              </Link>{" "}
+            </p>
+        </Form>
+      )}
+    </Formik>
   );
 }

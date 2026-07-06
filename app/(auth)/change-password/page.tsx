@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { jwtDecode } from 'jwt-decode'
 import { ArrowLeft } from 'iconsax-react'
-import LoadingButton from '../components/ui/LoadingButton'
+import LoadingButton from '@/app/components/ui/LoadingButton'
+import { notify } from '@/lib/toast'
 
 type JWTPayload = {
   email: string
@@ -19,43 +20,45 @@ export default function ChangePassword() {
     confirmPassword: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [message, setMessage] = useState({ text: '', type: '' })
+  // Inline error state for validation and network/server error messages.
+  const [errorMessage, setErrorMessage] = useState('')
+
+  function fail(text: string) {
+    setErrorMessage(text)
+    notify.error(text)
+    setIsSubmitting(false)
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
-    setMessage({ text: '', type: '' })
+    setErrorMessage('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsSubmitting(true)
-    setMessage({ text: '', type: '' })
+    setErrorMessage('')
 
     // Validation
     if (formData.newPassword !== formData.confirmPassword) {
-      setMessage({ text: 'New passwords do not match', type: 'error' })
-      setIsSubmitting(false)
-      return
+      return fail('New passwords do not match')
     }
 
     if (formData.newPassword.length < 6) {
-      setMessage({ text: 'Password must be at least 6 characters long', type: 'error' })
-      setIsSubmitting(false)
-      return
+      return fail('Password must be at least 6 characters long')
     }
 
     if (formData.currentPassword === formData.newPassword) {
-      setMessage({ text: 'New password must be different from current password', type: 'error' })
-      setIsSubmitting(false)
-      return
+      return fail('New password must be different from current password')
     }
+
+    const toastId = notify.loading('Changing password…')
 
     try {
       const token = localStorage.getItem('access_token')
       if (!token) {
-        setMessage({ text: 'Please log in again', type: 'error' })
-        setIsSubmitting(false)
-        return
+        notify.dismiss(toastId)
+        return fail('Please log in again')
       }
 
       const decoded: JWTPayload = jwtDecode(token)
@@ -73,52 +76,52 @@ export default function ChangePassword() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage({ text: 'Password changed successfully!', type: 'success' })
+        notify.dismiss(toastId)
+        notify.success('Password changed successfully!')
         setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-        
+
         // Redirect after 2 seconds
         setTimeout(() => {
           router.push('/dashboard')
         }, 2000)
       } else {
-        setMessage({ text: data.error || 'Failed to change password', type: 'error' })
+        notify.dismiss(toastId)
+        fail(data.error || 'Failed to change password')
       }
     } catch (error) {
       console.error('Change password error:', error)
-      setMessage({ text: 'An unexpected error occurred', type: 'error' })
+      notify.dismiss(toastId)
+      fail('Unable to reach the server. Please check your connection and try again.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Change Password</h1>
-            <button
-              onClick={() => router.back()}
-              className="flex items-center text-blue-600 hover:text-blue-800"
-            >
-              <ArrowLeft size={20} className="mr-1" />
-              Back
-            </button>
-          </div>
+    <div className="form w-full flex flex-col">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-semibold text-gray-800">
+          Change Password
+        </h1>
+        <button
+          onClick={() => router.back()}
+          className="flex items-center text-pes hover:text-[#141444]"
+        >
+          <ArrowLeft size={20} className="mr-1" />
+          Back
+        </button>
+      </div>
 
-          {message.text && (
-            <div
-              className={`mb-6 p-4 rounded ${
-                message.type === 'success'
-                  ? 'bg-green-100 text-green-700 border border-green-400'
-                  : 'bg-red-100 text-red-700 border border-red-400'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mb-6 p-4 rounded bg-red-100 text-red-700 border border-red-400"
+        >
+          {errorMessage}
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 Current Password
@@ -193,9 +196,7 @@ export default function ChangePassword() {
             >
               {isSubmitting ? 'Changing Password...' : 'Change Password'}
             </LoadingButton>
-          </form>
-        </div>
-      </div>
+      </form>
     </div>
   )
 }

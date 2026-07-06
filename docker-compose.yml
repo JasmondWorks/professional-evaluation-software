@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: pes_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: pes_local
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Automatically initialize the database with backup schema/data and migrations
+      - ./backup.sql:/docker-entrypoint-initdb.d/01-backup.sql
+      - ./DATABASE_MIGRATION.sql:/docker-entrypoint-initdb.d/02-migration.sql
+
+  # Optional/Full-stack configuration:
+  # web:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: pes_web_app
+  #   restart: always
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:admin@db:5432/pes_local
+  #     - JWT_SECRET=fallback-secret-change-in-production
+  #     # Add other required environment variables from .env.local here
+  #   depends_on:
+  #     - db
+
+volumes:
+  postgres_data:
