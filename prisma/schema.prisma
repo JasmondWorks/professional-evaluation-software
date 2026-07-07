@@ -329,30 +329,19 @@ model personnel_redundancy {
 }
 
 model personnel_utilization {
-  id             Int       @id @default(autoincrement())
-  org            String
-  b              Decimal?  @db.Decimal(10, 2)
-  w              Decimal?  @db.Decimal(10, 2)
-  p0             Decimal?  @db.Decimal(6, 3)
-  t1             Decimal?  @db.Decimal(6, 3)
-  t2             Decimal?  @db.Decimal(6, 3)
-  t3             Decimal?  @db.Decimal(6, 3)
-  t4             Decimal?  @db.Decimal(6, 3)
-  s0             Decimal?  @db.Decimal(6, 3)
-  g              Decimal?  @db.Decimal(10, 2)
-  d              Decimal?  @db.Decimal(10, 2)
-  y              Decimal?  @db.Decimal(6, 3)
-  alpha          Decimal?  @db.Decimal(6, 3)
-  lambda         Decimal?  @db.Decimal(6, 3)
-  mu             Decimal?  @db.Decimal(6, 3)
-  j              Decimal?  @db.Decimal(10, 2)
-  kmin           Int?
-  kmax           Int?
-  kstar          Int?
-  hstar          Decimal?  @db.Decimal(12, 6)
-  constraints_ok Boolean?  @default(true)
-  violations     String[]
-  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  id         Int       @id @default(autoincrement())
+  org        String
+  a_ij       Decimal?  @db.Decimal(10, 4)
+  lambda     Decimal?  @db.Decimal(10, 6)
+  mu         Decimal?  @db.Decimal(10, 6)
+  rho        Decimal?  @db.Decimal(10, 6)
+  p0         Decimal?  @db.Decimal(10, 6)
+  lbar       Decimal?  @db.Decimal(10, 6)
+  kmin       Int?
+  kmax       Int?
+  kstar      Int?
+  hstar      Decimal?  @db.Decimal(12, 6)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model pesuser {
@@ -377,10 +366,15 @@ model pesuser {
   tier            String?         @default("bronze") @db.VarChar(50)
   category        String?         @db.VarChar(100)
   plan            String?         @db.VarChar(100)
+  updated_at      DateTime?       @default(now()) @db.Timestamp(6)
+  resettoken      String?         @db.VarChar(255)
+  resettokenexpiry DateTime?      @db.Timestamp(6)
   notifications   notifications[]
   subscriptions   subscriptions[]
 
   @@unique([name, dept, org], map: "unique_user_per_dept_org")
+  @@index([resettoken])
+  @@index([resettokenexpiry])
 }
 
 model plans {
