@@ -1,11 +1,24 @@
-// app/api/notifications/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { jwtDecode } from "jwt-decode";
+
+export async function GET(request: NextRequest) {
+  return handleRequest(request);
+}
 
 export async function POST(request: NextRequest) {
+  return handleRequest(request);
+}
+
+async function handleRequest(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { org } = body;
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwtDecode<{ org: string }>(token);
+    const org = decoded.org;
 
     if (!org) {
       return NextResponse.json(

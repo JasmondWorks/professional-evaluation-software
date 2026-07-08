@@ -69,7 +69,7 @@ export default function Form6({ onSave }: { onSave: (data: number) => void }) {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ user_name, org }),
+          body: JSON.stringify({ user_name }),
         });
 
         const info = await res.json();

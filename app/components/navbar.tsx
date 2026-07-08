@@ -28,11 +28,10 @@ export default function Navbar({ is_sidebar_active, handleSideBar }:
                // Fetch unread notifications count
                if (decoded && typeof decoded === 'object' && 'org' in decoded) {
                   fetch(`/api/notifications`, {
-                     method: 'POST',
+                     method: 'GET',
                      headers: {
-                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${access_token}`,
                      },
-                     body: JSON.stringify({ org: (decoded as any)?.org }),
                   })
                      .then(res => {
                         if (!res.ok) throw new Error('Failed to fetch notifications');

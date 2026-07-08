@@ -46,8 +46,11 @@ export default function EmployeeScoresPage() {
 
     fetch(`/api/getAllDataScores`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dept, org }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ dept }),
     })
       .then((res) => res.json())
       .then((data) => {
