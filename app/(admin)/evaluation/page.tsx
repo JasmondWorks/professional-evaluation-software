@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Upload, BarChart3, FileText } from 'lucide-react';
+import { getAccessToken } from '@/app/utils/auth';
 
 /* ----------------- Types ----------------- */
 interface DataPoint {
@@ -158,7 +159,12 @@ export default function StatisticalAnalysisPage() {
 
   useEffect(() => {
     const fetchDataset = async () => {
-      const res = await fetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`);
+      const token = getAccessToken();
+      const res = await fetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       if (!res.ok) {
         console.error('Failed to fetch data scores:', res.status, res.statusText);

@@ -51,7 +51,7 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ user_name, org }),
+          body: JSON.stringify({ user_name }),
         });
         const info = await res.json();
         if (!info.data) return setLoading(false);

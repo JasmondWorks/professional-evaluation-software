@@ -1,24 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
+import { jwtDecode } from "jwt-decode";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const deptParam = searchParams.get('dept');
   const dept = deptParam ? deptParam.replace('%20', ' ') : null;
 
-  if (!dept) {
-    return NextResponse.json({ error: 'Missing department parameter' }, { status: 400 });
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) {
+    return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+  }
+  const token = authHeader.split(" ")[1];
+  const decoded = jwtDecode<{ org: string }>(token);
+  const org = decoded.org;
+
+  if (!dept || !org) {
+    return NextResponse.json({ error: 'Missing department or org parameter' }, { status: 400 });
   }
 
   try {
 const rawResult: { dept: string; pesuser_name: string }[] = await prisma.$queryRaw`
   SELECT DISTINCT dept, pesuser_name
   FROM (
-    SELECT dept, pesuser_name FROM appraisal WHERE dept = ${dept}
+    SELECT dept, pesuser_name FROM appraisal WHERE dept = ${dept} AND org = ${org}
     UNION
-    SELECT dept, pesuser_name FROM stress WHERE dept = ${dept}
+    SELECT dept, pesuser_name FROM stress WHERE dept = ${dept} AND org = ${org}
     UNION
-    SELECT dept, pesuser_name FROM userperformance WHERE dept = ${dept}
+    SELECT dept, pesuser_name FROM userperformance WHERE dept = ${dept} AND org = ${org}
   ) AS unique_users
   ORDER BY pesuser_name;
 `;

@@ -104,8 +104,11 @@ export default function StressAnalysisTool() {
 
         const res = await fetch("/api/getStressDataScores", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ org: decoded?.org }),
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({}),
         });
         const data = await res.json();
         setStressData(data);

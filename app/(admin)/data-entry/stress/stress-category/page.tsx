@@ -155,10 +155,12 @@ export default function StressForm5() {
 
       await fetch("/api/saveStressScores", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           user_name: user.name,
-          org: user.org,
           scores,
         }),
       });

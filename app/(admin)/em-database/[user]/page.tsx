@@ -84,7 +84,7 @@ export default function Page({ params }: { params: { user: string } }){
             method: "POST",
             headers: { "Content-Type": "application/json",
                     "Authorization": `Bearer ${access_token}` },
-            body: JSON.stringify({ org: user.org, email:user.email }),
+            body: JSON.stringify({ email:user.email }),
             });
 
             const data = await res.json();

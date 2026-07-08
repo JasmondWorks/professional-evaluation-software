@@ -81,9 +81,9 @@ export default function AuditorScoresPage() {
     const org = decoded.org;
 
     const apiEndpoints: Record<GroupKey, string> = {
-      appraisal: `/api/saveAuditorAppraisal?org=${org}`,
-      performance: `/api/saveAuditorPerformance?org=${org}`,
-      // stress: `/api/saveAuditorStress?org=${org}`,
+      appraisal: `/api/saveAuditorAppraisal`,
+      performance: `/api/saveAuditorPerformance`,
+      // stress: `/api/saveAuditorStress`,
     };
 
     const endpoint = apiEndpoints[selectedGroup];
@@ -91,10 +91,10 @@ export default function AuditorScoresPage() {
     try {
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getAccessToken()}` },
         body: JSON.stringify({
           pesuser_name: selectedEmployee.pesuser_name,
-          org,
+
           isAuditor: true,
           ...auditorScores,
         }),

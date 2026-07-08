@@ -32,7 +32,11 @@ export default function Notification() {
         const org = decoded?.org
         console.log("what is the org?:", org, decoded)
 
-        const res = await fetch(`/api/notifications?org=${org}`)
+        const res = await fetch(`/api/notifications`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
         const data = await res.json()
         if (data.notifications) {
           setNotifications(data.notifications)

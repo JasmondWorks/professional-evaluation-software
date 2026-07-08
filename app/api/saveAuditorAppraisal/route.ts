@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { jwtDecode } from "jwt-decode";
 
 export async function POST(req: NextRequest) {
   try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwtDecode<{ org: string }>(token);
+    const org = decoded.org;
+
     // ✅ Clone request to avoid body lock
     const clonedReq = req.clone();
     const body = await clonedReq.json();
 
-    const { pesuser_name, org, isCounter = false, isAuditor = false, ...payload } = body;
+    const { pesuser_name, isCounter = false, isAuditor = false, ...payload } = body;
 
     if (!pesuser_name || !org || Object.keys(payload).length === 0) {
       return NextResponse.json(
