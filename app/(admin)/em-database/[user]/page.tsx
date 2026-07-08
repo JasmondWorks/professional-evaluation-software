@@ -1,7 +1,8 @@
 'use client'
 import { ArrowLeft } from 'iconsax-react'
 import Link from 'next/link'
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from '@/app/utils/auth';
 
 import React, { useEffect, useState } from 'react'
 
@@ -80,6 +81,7 @@ export default function Page({ params }: { params: { user: string } }){
         }
 
         try {
+            const access_token = getAccessToken() as string;
             const res = await fetch("/api/users/delete", {
             method: "POST",
             headers: { "Content-Type": "application/json",
