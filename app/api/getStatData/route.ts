@@ -1,34 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { jwtDecode } from "jwt-decode";
 
-async function getStats(user: string | null) {
-  const users = await prisma.$queryRawUnsafe<any[]>(
-    "SELECT * FROM pesuser WHERE org = $1",
-    user?.toString(),
-  );
-  const appraisals: any[] = await prisma.$queryRawUnsafe(
-    "SELECT * FROM appraisal WHERE org = $1",
-    user?.toString(),
-  );
-  //   const assessments = await prisma.$queryRawUnsafe('SELECT * FROM assesments WHERE org = $1', user?.toString())
-  const employees = await prisma.findMany();
-  const req = await fetch("/api/getEmployee", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
-  });
-  const res = await req.json();
+async function getStats(org: string) {
+  const [users, completedAppraisals, pendingAppraisals] = await Promise.all([
+    prisma.pesuser.count({ where: { org: org } }),
+    prisma.appraisal.count({ where: { org: org, pending: false } }),
+    prisma.appraisal.count({ where: { org: org, pending: true } }),
+  ]);
 
-  await prisma.$disconnect();
-  return [users.length, appraisals.length, 67];
+  return [users, completedAppraisals, pendingAppraisals];
 }
 
 export async function POST(request: NextRequest) {
-  const { user } = await request.json();
+  const token = request.headers.get("authorization")?.split(" ")[1];
+  
+  if (!token) {
+    return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
+  }
 
-  if (user) {
+  let org;
+  try {
+    const decoded: any = jwtDecode(token);
+    org = decoded?.org;
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  if (org) {
     try {
-      let userInfo = await getStats(user);
+      let userInfo = await getStats(org);
       return NextResponse.json(userInfo);
     } catch (err) {
       console.error(err);

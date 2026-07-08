@@ -15,15 +15,23 @@ export async function POST(req: Request) {
 
     console.log("Fetching stress scores for:", { org });
 
-    const data = await prisma.$queryRawUnsafe<any[]>(
-      `
-      SELECT user_name, dept, organizational, student, administrative, teacher, parents,
-             occupational, personal, academic_program, negative_public_attitude, misc
-      FROM stress_scores
-      WHERE org = $1
-      `,
-      org
-    );
+    const data = await prisma.stress_scores.findMany({
+      where: { org },
+      select: {
+        user_name: true,
+        dept: true,
+        organizational: true,
+        student: true,
+        administrative: true,
+        teacher: true,
+        parents: true,
+        occupational: true,
+        personal: true,
+        academic_program: true,
+        negative_public_attitude: true,
+        misc: true,
+      },
+    });
 
     if (!data) {
       return NextResponse.json(

@@ -3,6 +3,8 @@
 import { useState, useEffect, ReactElement } from "react";
 import { useMultistepForm } from "./useMultistep";
 import { jwtDecode } from "jwt-decode";
+import Link from "next/link";
+import { notify } from "@/lib/toast";
 
 import Formone from "./multistep-form/form_one";
 import Formtwo from "./multistep-form/form_two";
@@ -75,10 +77,6 @@ export default function MainForm() {
     next,
   } = useMultistepForm(steps);
 
-  useEffect(() => {
-    setStepValid(false);
-  }, [currentStepIndex]);
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -99,6 +97,7 @@ export default function MainForm() {
       const data = await res.json();
 
       if (data.status === 200) {
+        notify.success("Employee added and credentials emailed.");
         setIsSuccessful(true);
         setTimeout(() => {
           window.location.href = "/em-database";
@@ -110,13 +109,13 @@ export default function MainForm() {
         setFailedName(data.name);
         setAdding(false);
       } else {
-        alert(`error: ${data.message}`);
+        notify.error(data.message || "Could not add employee.");
         setAdding(false);
       }
     } catch (err) {
       console.error(err);
       setAdding(false);
-      alert("Something went wrong");
+      notify.error("Something went wrong. Please try again.");
     }
   }
 
@@ -132,21 +131,29 @@ export default function MainForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`Credentials resent to ${failedEmail} ✅`);
+        notify.success(`Credentials resent to ${failedEmail}`);
         window.location.href = '/em-database';
       } else {
-        alert(`Failed to resend: ${data.message}`);
+        notify.error(`Failed to resend: ${data.message}`);
       }
     } catch (err) {
-      alert('Error resending credentials');
+      notify.error('Error resending credentials');
     } finally {
       setResending(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col bg-white m-4">
-      {isSuccessful && (
+    <div className="w-full h-full flex flex-col p-4 bg-gray-50/50">
+      <Link href="/em-database" className="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-4 ml-4 group">
+        <svg className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Database
+      </Link>
+      
+      <form onSubmit={handleSubmit} className="flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex-1 m-2 p-4">
+        {isSuccessful && (
         <div className="bg-white border rounded-lg border-pes flex justify-center align-center shadow-md flex-col p-6 absolute left-1/2 w-fit m-auto">
           <p className="font-bold text-xl text-pes mb-3">
             Employee Added successfully
@@ -253,6 +260,7 @@ export default function MainForm() {
           )}
         </button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

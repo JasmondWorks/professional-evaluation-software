@@ -11,12 +11,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid name parameter" }, { status: 400 });
     }
 
-    // Use parameterized query to prevent SQL injection
-    const results = await prisma.$queryRaw<any[]>`
-      SELECT pesuser_name, dept, competence, integrity, compatibility, use_of_resources
-      FROM userperformance
-      WHERE pesuser_name = ${name};
-    `;
+    const results = await prisma.userperformance.findMany({
+      where: { pesuser_name: name },
+      select: {
+        pesuser_name: true,
+        dept: true,
+        competence: true,
+        integrity: true,
+        compatibility: true,
+        use_of_resources: true,
+      },
+    });
 
     return NextResponse.json(results);
   } catch (err) {

@@ -10,17 +10,12 @@ type reqInfo = {
 
 async function getUser(info: reqInfo) {
   const { email, password } = info
-  const users = await prisma.$queryRaw`
-    SELECT * 
-    FROM pesuser 
-    WHERE email = ${email};
-  ` as any[];
+  const user = await prisma.pesuser.findUnique({ where: { email } });
 
-  if (users.length === 0) {
+  if (!user) {
     return [];
   }
 
-  const user = users[0];
   const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
   
   let isMatch = false;
@@ -59,6 +54,7 @@ export async function POST(req: Request) {
         name: user.name,
         role: user.role,
         email: user.email,
+        org: user.org,
       },
       'oti'
     );
@@ -73,8 +69,5 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return NextResponse.json({ message: "Invalid credentials", status: 500 });
-  } finally {
-    // Close Prisma AFTER all queries
-    await prisma.$disconnect();
   }
 }

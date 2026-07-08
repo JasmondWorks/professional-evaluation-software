@@ -8,7 +8,7 @@ type reqInfo = {
  
 const getUser = async (info: reqInfo) => {
    const {email, password} = info;
-   const user = await prisma.users.findMany({
+   const user = await prisma.pesuser.findMany({
       where: {
          email: email,
          password: password

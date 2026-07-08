@@ -2,7 +2,7 @@
 import { useState } from "react";
 
 export default function AuditorSurveyPage() {
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<Record<string, Record<string, string>>>({});
 
   const handleChange = (section: string, question: string, value: string) => {
     setFormData((prev) => ({

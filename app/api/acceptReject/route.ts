@@ -24,28 +24,30 @@ export async function POST(req: Request) {
       'use_of_resources',
     ]
 
-    let mainTable = ''
-    let counterTable = ''
+    // Pick typed delegates for the relevant table pair.
+    let mainDelegate: any
+    let counterDelegate: any
 
     if (appraisalSections.includes(section)) {
-      mainTable = 'appraisal'
-      counterTable = 'counter_appraisal'
+      mainDelegate = prisma.appraisal
+      counterDelegate = prisma.counter_appraisal
     } else if (userPerfSections.includes(section)) {
-      mainTable = 'userperformance'
-      counterTable = 'counter_userperformance'
+      mainDelegate = prisma.userperformance
+      counterDelegate = prisma.counter_userperformance
     } else {
       return NextResponse.json({ error: `Unknown section '${section}' ❌` }, { status: 400 })
     }
 
-    const [staffScoreRow]: any = await prisma.$queryRawUnsafe(`
-      SELECT ${section} FROM ${mainTable}
-      WHERE pesuser_name = '${staff}'
-    `)
+    // `section` is validated against the allowlists above, so the dynamic key is safe.
+    const staffScoreRow = await mainDelegate.findFirst({
+      where: { pesuser_name: staff },
+      select: { [section]: true },
+    })
 
-    const [counterScoreRow]: any = await prisma.$queryRawUnsafe(`
-      SELECT ${section} FROM ${counterTable}
-      WHERE pesuser_name = '${staff}'
-    `)
+    const counterScoreRow = await counterDelegate.findFirst({
+      where: { pesuser_name: staff },
+      select: { [section]: true },
+    })
 
     if (!staffScoreRow || !counterScoreRow)
       return NextResponse.json({ error: 'Scores not found ❌' }, { status: 404 })
@@ -57,30 +59,24 @@ export async function POST(req: Request) {
       const avgScore = (staffScore + hodScore) / 2
 
       // ✅ Update main table with averaged score and mark as not pending
-      await prisma.$executeRawUnsafe(`
-        UPDATE ${mainTable}
-        SET ${section} = ${avgScore}, pending = FALSE
-        WHERE pesuser_name = '${staff}'
-      `)
+      await mainDelegate.updateMany({
+        where: { pesuser_name: staff },
+        data: { [section]: avgScore, pending: false },
+      })
 
       // 🧹 Delete counter record after acceptance
-      await prisma.$executeRawUnsafe(`
-        DELETE FROM ${counterTable}
-        WHERE pesuser_name = '${staff}'
-      `)
+      await counterDelegate.deleteMany({ where: { pesuser_name: staff } })
     } else if (decision === 'rejected') {
       // ⚠️ Mark both as pending
-      await prisma.$executeRawUnsafe(`
-        UPDATE ${mainTable}
-        SET pending = TRUE
-        WHERE pesuser_name = '${staff}'
-      `)
+      await mainDelegate.updateMany({
+        where: { pesuser_name: staff },
+        data: { pending: true },
+      })
 
-      await prisma.$executeRawUnsafe(`
-        UPDATE ${counterTable}
-        SET pending = TRUE
-        WHERE pesuser_name = '${staff}'
-      `)
+      await counterDelegate.updateMany({
+        where: { pesuser_name: staff },
+        data: { pending: true },
+      })
     } else {
       return NextResponse.json({ error: 'Invalid decision value ❌' }, { status: 400 })
     }

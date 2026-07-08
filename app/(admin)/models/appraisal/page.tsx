@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { getAccessToken } from '@/app/utils/auth';
-
+import { getAccessToken } from "@/app/utils/auth";
+import Link from "next/link";
+import { ArrowLeft2, Save2, Calculator, Money4, DocumentText, Warning2 } from "iconsax-react";
+import InfoPopover from "@/app/components/ui/InfoPopover";
 
 type SharedConstants = {
   Cwh: number | "";
@@ -11,27 +13,33 @@ type SharedConstants = {
 };
 
 export default function StaffAppraisalAllPage() {
-  // Shared constants
   const [shared, setShared] = useState<SharedConstants>({
     Cwh: "",
     Cbh: "",
     Hd: "",
   });
 
-  // Collapsible state
-  const [openSection, setOpenSection] = useState<string | null>(null);
-
-  // ===== 1. Staff Appraisal =====
   const [OQ, setOQ] = useState<number | "">("");
   const [WQ, setWQ] = useState<number | "">("");
   const [points, setPoints] = useState<number | "">("");
   const [RTP, setRTP] = useState<number | "">("");
-  const [staffAppraisalResult, setStaffAppraisalResult] = useState<null | any>(
-    null
-  );
+  const [staffAppraisalResult, setStaffAppraisalResult] = useState<null | any>(null);
 
-  const calcStaffAppraisal = () => {
-    // Placeholder logic until lookup tables are added
+  const [Na, setNa] = useState<number | "">("");
+  const [Ta, setTa] = useState<number | "">("");
+  const [unitOverloadingResult, setUnitOverloadingResult] = useState<null | any>(null);
+
+  const [Pidle, setPidle] = useState<number | "">("");
+  const [bossLostResult, setBossLostResult] = useState<null | any>(null);
+
+  const [totalWastedCost, setTotalWastedCost] = useState<number | null>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const calculateAll = () => {
+    // 1. Staff Appraisal
     const computedAppraisalMaxScore = Number(OQ) * Number(WQ);
     const hodMaxScore = computedAppraisalMaxScore + Number(points);
     setStaffAppraisalResult({
@@ -39,303 +47,281 @@ export default function StaffAppraisalAllPage() {
       hodMaxScore,
       RTP: Number(RTP),
     });
-  };
 
-  // ===== 2. Unit Head Overloading =====
-  const [Na, setNa] = useState<number | "">("");
-  const [Ta, setTa] = useState<number | "">("");
-  const [unitOverloadingResult, setUnitOverloadingResult] = useState<null | any>(
-    null
-  );
-
-  const calcUnitOverloading = () => {
+    // 2. Unit Head Overloading
     const wastedManHours = Number(Na) * Number(Ta);
     const wastedCost = wastedManHours * Number(shared.Cwh);
     setUnitOverloadingResult({ wastedManHours, wastedCost });
-  };
 
-  // ===== 3. Boss Valuable Lost Man-Hours =====
-  const [Pidle, setPidle] = useState<number | "">("");
-  const [bossLostResult, setBossLostResult] = useState<null | any>(null);
-
-  const calcBossLostHours = () => {
+    // 3. Boss Lost Hours
     const Lh = Number(Pidle) * Number(shared.Hd);
     const cost = Lh * Number(shared.Cbh);
     setBossLostResult({ Lh, cost });
+
+    // 4. Total Wasted Cost
+    setTotalWastedCost(wastedCost + cost);
   };
 
-  // ===== 4. Total Wasted Man-Hour Cost =====
-  const [totalWastedCost, setTotalWastedCost] = useState<number | null>(null);
+  const handleSave = async () => {
+    if (totalWastedCost === null) return;
+    setLoading(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
 
-  const calcTotalWastedCost = () => {
-    const overCost = unitOverloadingResult?.wastedCost || 0;
-    const bossCost = bossLostResult?.cost || 0;
-    setTotalWastedCost(overCost + bossCost);
+    const token = getAccessToken();
+    if (!token) {
+      setErrorMsg("Missing authentication token");
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      shared,
+      OQ,
+      WQ,
+      points,
+      RTP,
+      staffAppraisalResult,
+      Na,
+      Ta,
+      unitOverloadingResult,
+      Pidle,
+      bossLostResult,
+      totalWastedCost,
+    };
+
+    try {
+      const res = await fetch("/api/staffAppraisal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) setSuccessMsg("Results saved successfully!");
+      else setErrorMsg(`Failed to save: ${data.error}`);
+    } catch (err: any) {
+      setErrorMsg("Network error saving results");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ===== Helpers =====
   const numberInput = (
     label: string,
     value: number | "",
     setValue: (v: number | "") => void,
-    opts: { min?: number; step?: number } = {}
+    desc: string,
+    opts: { min?: number; step?: number } = {},
   ) => (
-    <label className="block mb-2">
-      <div className="text-sm font-medium">{label}</div>
+    <div className="block">
+      <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+        <span className="truncate">{label}</span>
+        <InfoPopover text={desc} />
+      </div>
       <input
         type="number"
         min={opts.min}
         step={opts.step}
         value={value}
-        onChange={(e) =>
-          setValue(e.target.value === "" ? "" : Number(e.target.value))
-        }
-        className="mt-1 block w-full rounded border border-gray-300 p-2 shadow-sm"
+        onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
+        className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
       />
-    </label>
-  );
-
-  const section = (
-    key: string,
-    title: string,
-    children: React.ReactNode
-  ) => (
-    <div className="border rounded mb-4">
-      <button
-        onClick={() => setOpenSection(openSection === key ? null : key)}
-        className="w-full text-left p-3 bg-gray-100 font-semibold"
-      >
-        {title}
-      </button>
-      {openSection === key && <div className="p-4">{children}</div>}
     </div>
   );
 
   return (
-    <div className="w-full mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        Staff Appraisal & Related Models
-      </h1>
+    <div className="p-8 w-full mx-auto max-w-7xl">
+      <div className="mb-4">
+        <Link
+          href="/models"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+        >
+          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
+        </Link>
+      </div>
 
-      {/* ===== Shared Constants ===== */}
-      {section(
-        "shared",
-        "Shared Constants",
-        <>
-          {numberInput(
-            "Cwh — Cost per wasted man-hour (staff level)",
-            shared.Cwh,
-            (v) => setShared({ ...shared, Cwh: v }),
-            { min: 0, step: 0.01 }
-          )}
-          {numberInput(
-            "Cbh — Cost per wasted man-hour (boss level)",
-            shared.Cbh,
-            (v) => setShared({ ...shared, Cbh: v }),
-            { min: 0, step: 0.01 }
-          )}
-          {numberInput(
-            "Hd — Daily working hours",
-            shared.Hd,
-            (v) => setShared({ ...shared, Hd: v }),
-            { min: 0, step: 0.1 }
-          )}
-        </>
-      )}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Staff Appraisal & Costs</h1>
+          <p className="text-gray-600 mb-6 max-w-2xl">
+            Evaluate staff performance, compute lost hours due to underloading and overloading, and estimate total financial impact of wasted man-hours.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/appraisal/history"
+            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <DocumentText size="16" />
+            View History
+          </Link>
+        </div>
+      </div>
 
-      {/* ===== Staff Appraisal ===== */}
-      {section(
-        "staffAppraisal",
-        "Staff Appraisal",
-        <>
-          <div className="flex gap-2 mb-4">
-            <a
-              href="/downloadables/staff-utilization.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              View Staff Utilization Table
-            </a>
-            <a
-              href="/downloadables/academic-staff-utilization.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              View Academic Staff Utilization Table
-            </a>
+      {/* Shared Constants */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+            <Money4 size="16" variant="Bold" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Shared Constants</h2>
+            <p className="text-xs text-gray-500">Hourly costs and daily working limits</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {numberInput("Cost per wasted hour (Cwh)", shared.Cwh, (v) => setShared({ ...shared, Cwh: v }), "Staff level cost per wasted hour", { min: 0, step: 0.01 })}
+          {numberInput("Cost per wasted hour (Cbh)", shared.Cbh, (v) => setShared({ ...shared, Cbh: v }), "Boss level cost per wasted hour", { min: 0, step: 0.01 })}
+          {numberInput("Daily working hours (Hd)", shared.Hd, (v) => setShared({ ...shared, Hd: v }), "Standard daily working hours", { min: 0, step: 0.1 })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Left Column */}
+        <div className="space-y-8">
+          
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <DocumentText size="16" variant="Bold" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Staff Appraisal Metrics</h2>
+                <p className="text-xs text-gray-500">Output and quality scores</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {numberInput("Output Quantity (OQ)", OQ, setOQ, "Overall output quantity score")}
+              {numberInput("Worth of Quality (WQ)", WQ, setWQ, "Worth of quality score")}
+              {numberInput("HOD Points", points, setPoints, "Additional points assigned")}
+              {numberInput("RTP Target", RTP, setRTP, "Relative to Target Performance")}
+            </div>
           </div>
 
-          {numberInput("Overall output quantity (OQ)", OQ, setOQ)}
-          {numberInput("Worth of quality (WQ)", WQ, setWQ)}
-          {numberInput("Points", points, setPoints)}
-          {numberInput("RTP (Relative to Target Performance)", RTP, setRTP)}
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcStaffAppraisal}
-          >
-            Calculate
-          </button>
-
-          {staffAppraisalResult && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Computed Appraisal Max Score:</strong>{" "}
-                {staffAppraisalResult.computedAppraisalMaxScore.toFixed(2)}
-              </p>
-              <p>
-                <strong>HOD/Unit Max Score:</strong>{" "}
-                {staffAppraisalResult.hodMaxScore.toFixed(2)}
-              </p>
-              <p>
-                <strong>RTP:</strong> {staffAppraisalResult.RTP}
-              </p>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                <Warning2 size="16" variant="Bold" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Unit Head Overloading</h2>
+                <p className="text-xs text-gray-500">Cost of wait times for subordinates</p>
+              </div>
             </div>
-          )}
-        </>
-      )}
-
-      {/* ===== Unit Head Overloading ===== */}
-      {section(
-        "unitOverloading",
-        "Unit Head Overloading",
-        <>
-          {numberInput(
-            "Na — Avg. number of subordinates/cases waiting daily",
-            Na,
-            setNa
-          )}
-          {numberInput(
-            "Ta — Avg. time (hours) case waits for attention",
-            Ta,
-            setTa
-          )}
-          <p className="text-sm text-gray-500 mb-2">
-            Cwh from Shared Constants will be used in calculation.
-          </p>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcUnitOverloading}
-          >
-            Calculate
-          </button>
-          {unitOverloadingResult && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Wasted Man-Hours:</strong>{" "}
-                {unitOverloadingResult.wastedManHours.toFixed(2)}
-              </p>
-              <p>
-                <strong>Wasted Cost:</strong>{" "}
-                {unitOverloadingResult.wastedCost.toFixed(2)}
-              </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {numberInput("Avg. waiting subordinates (Na)", Na, setNa, "Average number of subordinates or cases waiting daily")}
+              {numberInput("Avg. waiting time (Ta)", Ta, setTa, "Average time in hours a case waits for attention")}
             </div>
-          )}
-        </>
-      )}
+          </div>
 
-      {/* ===== Boss Valuable Lost Man-Hours ===== */}
-      {section(
-        "bossLost",
-        "Boss Valuable Lost Man-Hours (Underloading)",
-        <>
-          {numberInput(
-            "Pidle — Proportion of time idle/day (0-1)",
-            Pidle,
-            setPidle,
-            { min: 0, step: 0.01 }
-          )}
-          <p className="text-sm text-gray-500 mb-2">
-            Hd and Cbh from Shared Constants will be used in calculation.
-          </p>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcBossLostHours}
-          >
-            Calculate
-          </button>
-          {bossLostResult && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Lost Man-Hours/Day (Lh):</strong>{" "}
-                {bossLostResult.Lh.toFixed(2)}
-              </p>
-              <p>
-                <strong>Cost of Lost Man-Hours:</strong>{" "}
-                {bossLostResult.cost.toFixed(2)}
-              </p>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-600">
+                <Warning2 size="16" variant="Bold" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Boss Underloading</h2>
+                <p className="text-xs text-gray-500">Lost man-hours due to idle time</p>
+              </div>
             </div>
-          )}
-        </>
-      )}
-
-      {/* ===== Total Wasted Man-Hour Cost ===== */}
-      {<section className="border rounded mb-4">
-        <h1 className="w-full text-left p-3 bg-gray-100 font-semibold">Total Wasted Man-Hour Cost</h1>
-
-        <div className="p-4">
-          <p className="text-sm text-gray-500 mb-2">
-            Uses results from Unit Head Overloading and Boss Lost Man-Hours.
-          </p>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcTotalWastedCost}
-          >
-            Calculate
-          </button>
-          {totalWastedCost !== null && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Total Wasted Man-Hour Cost:</strong>{" "}
-                {totalWastedCost.toFixed(2)}
-              </p>
-              <button
-                className="mt-6 px-4 py-2 bg-green-600 text-white rounded"
-                onClick={async () => {
-                  const token = getAccessToken();
-                  if (!token) {
-                    alert("Missing token");
-                    return;
-                  }
-
-                  const payload = {
-                    shared,
-                    OQ,
-                    WQ,
-                    points,
-                    RTP,
-                    staffAppraisalResult,
-                    Na,
-                    Ta,
-                    unitOverloadingResult,
-                    Pidle,
-                    bossLostResult,
-                    totalWastedCost,
-                  };
-
-                  const res = await fetch("/api/staffAppraisal", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(payload),
-                  });
-
-                  const data = await res.json();
-                  if (res.ok) alert("✅ Saved successfully!");
-                  else alert(`❌ Failed to save: ${data.error}`);
-                }}
-              >
-                Save All Results
-              </button>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {numberInput("Idle Proportion (Pidle)", Pidle, setPidle, "Proportion of time idle per day (0-1)", { min: 0, step: 0.01 })}
             </div>
-          )}
+          </div>
+
         </div>
 
-      </section>
-      }
+        {/* Right Column (Results) */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm sticky top-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-6">Simulation Results</h2>
+
+            <button
+              onClick={calculateAll}
+              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex justify-center items-center gap-2 mb-6"
+            >
+              <Calculator size="18" />
+              Run All Calculations
+            </button>
+
+            {totalWastedCost !== null && (
+              <div className="space-y-4">
+                
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
+                  <h3 className="text-sm font-semibold text-indigo-900 mb-2">Appraisal Result</h3>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-indigo-700">Appraisal Max Score:</span>
+                    <span className="font-bold">{staffAppraisalResult?.computedAppraisalMaxScore.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-indigo-700">HOD Max Score:</span>
+                    <span className="font-bold">{staffAppraisalResult?.hodMaxScore.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-indigo-700">RTP:</span>
+                    <span className="font-bold">{staffAppraisalResult?.RTP.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                  <h3 className="text-sm font-semibold text-red-900 mb-2">Unit Overloading</h3>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-red-700">Wasted Hours:</span>
+                    <span className="font-bold">{unitOverloadingResult?.wastedManHours.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-red-700">Wasted Cost:</span>
+                    <span className="font-bold">{unitOverloadingResult?.wastedCost.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <h3 className="text-sm font-semibold text-yellow-900 mb-2">Boss Underloading</h3>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-yellow-700">Lost Hours (Lh):</span>
+                    <span className="font-bold">{bossLostResult?.Lh.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-yellow-700">Lost Cost:</span>
+                    <span className="font-bold">{bossLostResult?.cost.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-gray-200">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Total Wasted Man-Hour Cost</p>
+                    <p className="text-4xl font-bold text-gray-900 mb-4">{totalWastedCost.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                {errorMsg && <p className="text-red-600 text-sm font-medium text-center">{errorMsg}</p>}
+                {successMsg && <p className="text-green-600 text-sm font-medium text-center">{successMsg}</p>}
+
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+                >
+                  {loading ? "Saving..." : (
+                    <>
+                      <Save2 size="18" />
+                      Save Results to Database
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

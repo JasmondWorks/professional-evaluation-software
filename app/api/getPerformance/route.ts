@@ -18,11 +18,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch user performance for this org
-    const results: any[] = await prisma.$queryRaw`
-      SELECT competence, integrity, compatibility, "use_of_resources"
-      FROM userperformance
-      WHERE org = ${org}
-    `;
+    const results = await prisma.userperformance.findMany({
+      where: { org },
+      select: {
+        competence: true,
+        integrity: true,
+        compatibility: true,
+        use_of_resources: true,
+      },
+    });
 
     // Transform rows into grouped arrays by category
     const grouped = {

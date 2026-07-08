@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  "--breakpoint-xs": 30rem;
-}
 
 :root {
   --foreground-rgb: gray;

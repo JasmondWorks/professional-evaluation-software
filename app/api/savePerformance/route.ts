@@ -39,32 +39,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (isCounter) {
-      // Save counter performance (HOD scores)
-      await prisma.$executeRaw`
-        INSERT INTO counteruserperformance (pesuser_name, org, dept, competence, integrity, compatibility, use_of_resources)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${competence}, ${integrity}, ${compatibility}, ${use_of_resources})
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          competence = ${competence},
-          integrity = ${integrity},
-          compatibility = ${compatibility},
-          use_of_resources = ${use_of_resources},
-          dept = ${dept || null}
-      `;
+    // Pick the correct model (counter_userperformance for HOD scores).
+    const delegate: any = isCounter
+      ? prisma.counter_userperformance
+      : prisma.userperformance;
+
+    const values = {
+      competence,
+      integrity,
+      compatibility,
+      use_of_resources,
+      dept: dept || null,
+    };
+
+    // Upsert on (pesuser_name, org). No unique constraint spans exactly those two
+    // columns, so do a constraint-independent find-then-write.
+    const existing = await delegate.findFirst({
+      where: { pesuser_name, org },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await delegate.updateMany({ where: { pesuser_name, org }, data: values });
     } else {
-      // Save regular performance (employee scores)
-      await prisma.$executeRaw`
-        INSERT INTO userperformance (pesuser_name, org, dept, competence, integrity, compatibility, use_of_resources)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${competence}, ${integrity}, ${compatibility}, ${use_of_resources})
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          competence = ${competence},
-          integrity = ${integrity},
-          compatibility = ${compatibility},
-          use_of_resources = ${use_of_resources},
-          dept = ${dept || null}
-      `;
+      await delegate.create({ data: { pesuser_name, org, ...values } });
     }
 
     return NextResponse.json(

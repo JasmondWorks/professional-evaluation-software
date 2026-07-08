@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { jwtDecode } from "jwt-decode";
 import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, org, dept } = await req.json();
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    let org;
+    try {
+      const decoded: any = jwtDecode(token);
+      org = decoded?.org;
+    } catch {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+
+    const { email, dept } = await req.json();
 
     if (!email) {
       return NextResponse.json(
@@ -13,15 +27,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Update role in DB
-    const updatedUser = await prisma.$queryRawUnsafe<Array<{ name: string; email: string; role: string; org: string; dept: string }>>(`
-      UPDATE pesuser
-      SET role = 'hod'
-      WHERE email = '${email}'
-      RETURNING name, email, role, org, dept;
-    `);
+    const existingUser = await prisma.pesuser.findUnique({ where: { email } });
+    if (!existingUser || existingUser.org !== org) {
+      return NextResponse.json({ error: "User not found or unauthorized" }, { status: 404 });
+    }
 
-    if (!updatedUser || updatedUser.length === 0) {
+    // ✅ Update role in DB
+    const user = await prisma.pesuser
+      .update({
+        where: { email },
+        data: { role: "hod" },
+        select: { name: true, email: true, role: true, org: true, dept: true },
+      })
+      .catch(() => null);
+
+    if (!user) {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
@@ -36,8 +56,6 @@ export async function POST(req: NextRequest) {
         pass: process.env.EMAIL_PASS,
       },
     });
-
-    const user = updatedUser[0];
 
     const mailOptions = {
       from: `"Admin" <${process.env.EMAIL_USER}>`,

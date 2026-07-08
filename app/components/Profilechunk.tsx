@@ -1,6 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { getAccessToken } from '@/app/utils/auth'
+import DataField from './ui/DataField'
+import { titleCase, formatDate, getInitials } from '@/lib/utils'
 
 type user = {
    id:number
@@ -59,89 +61,22 @@ export default function ProfileChunk(){
                         <img src={ user.image } alt="profile-img" className='w-full h-full object-cover rounded-md'/>
                      :
                         <div className='w-full h-full rounded-md bg-gray-300 flex items-center justify-center text-gray-600 font-bold text-4xl'>
-                           {user?.name?.charAt(0).toUpperCase() ?? '?'}
+                           {user?.name ? getInitials(user.name) : '?'}
                         </div>
                   }
                </div>
 
                <div className='flex flex-col'>
-                  <div className='my-2 flex flex-col'>
-                     {
-                        user?
-                           <>
-                              <p className='text-gray-400'>Name:</p>
-                              <p className='font-semibold text-lg'>{user.name}</p>                         
-                           </>
- 
-                        :
-                           <TextFallback/>                        
-                     }
-                  </div>
-
-                  <div className='my-2 flex flex-col'>
-                     {
-                        user?
-                        <>
-                           <p className='text-gray-400'>Functional GSM:</p>
-                           <p className='font-semibold text-lg'>{user.gsm}</p>                      
-                        </>
-                        
-                        :
-                        <TextFallback/>
-                     }
-                  </div>
-
-                  <div className='my-2 flex flex-col'>
-                     {
-                        user?
-                           <>
-                              <p className='text-gray-400'>Current home address:</p>
-                              <p className='font-semibold text-lg'>{user.address}</p>                            
-                           </>
-                        :
-                        <TextFallback />
-                     }
-                  </div>
+                  {user ? <DataField label="Name" value={titleCase(user.name)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+                  {user ? <DataField label="Functional GSM" value={user.gsm} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+                  {user ? <DataField label="Current home address" value={titleCase(user.address)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
                </div>
             </div>
 
             <div className='flex flex-col min-w-[30rem] py-2 px-4'>
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Email:</p>
-                           <p className='font-semibold text-lg'>{user.email}</p>                             
-                        </>
-                     :
-                     <TextFallback />
-                  } 
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Present role:</p>
-                           <p className='font-semibold text-lg'>{user.role}</p>                           
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Faculty/college:</p>
-                           <p className='font-semibold text-lg'>{user.faculty_college}</p>                             
-                        </>
-                     :
-                     <TextFallback />
-                  }
-                
-               </div>
+               {user ? <DataField label="Email" value={user.email.toLowerCase()} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Present role" value={titleCase(user.role)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Faculty/college" value={titleCase(user.faculty_college)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
 
                {/* <div className='my-2 flex flex-col'>
                   <p className='text-gray-400'>Faculty/college:</p>
@@ -152,92 +87,16 @@ export default function ProfileChunk(){
 
          <div style={{ display: `${ expanded? '' : 'none' }` }}  className='(see more) flex flex-col justify-between'>
             <div className='flex justify-between w-9/12'>
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Date of Birth:</p>
-                           <p className='font-semibold text-lg'>{user.dob?.toString().split('T')[0]}</p>                           
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>date of first Appointment:</p>
-                           <p className='font-semibold text-lg'>{user.doa?.toString().split('T')[0]}</p>                           
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Post/grade of first appointment:</p>
-                           <p className='font-semibold text-lg'>{user.poa}</p>                           
-                        </>
-                     :
-                     <TextFallback />
-                  }
-
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Date of confirmation:</p>
-                           <p className='font-semibold text-lg'>{user.doc?.toString().split('T')[0]}</p>                        
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
+               {user ? <DataField label="Date of Birth" value={formatDate(user.dob)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Date of first Appointment" value={formatDate(user.doa)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Post/grade of first appointment" value={titleCase(user.poa)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Date of confirmation" value={formatDate(user.doc)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
             </div>
 
             <div className='flex justify-between w-9/12'>
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Present Post:</p>
-                           <p className='font-semibold text-lg'>{user.post}</p>                        
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Date appointed to present post:</p>
-                           <p className='font-semibold text-lg'>{user.dopp?.toString().split('T')[0]}</p>                        
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
-
-               <div className='my-2 flex flex-col'>
-                  {
-                     user?
-                        <>
-                           <p className='text-gray-400'>Current Level/Step:</p>
-                           <p className='font-semibold text-lg'>{user.level}</p>                        
-                        </>
-                     :
-                     <TextFallback />
-                  }
-               </div>
+               {user ? <DataField label="Present Post" value={titleCase(user.post)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Date appointed to present post" value={formatDate(user.dopp)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Current Level/Step" value={user.level} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
             </div>
             
             <div className='flex justify-between w-9/12'>

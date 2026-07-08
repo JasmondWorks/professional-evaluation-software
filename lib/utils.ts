@@ -192,6 +192,7 @@ export function capitalize(str: string) {
  * @example titleCase("industrial-engineer") // -> "Industrial Engineer"
  */
 export function titleCase(str: string) {
+  if (!str) return "";
   return str
     .replace(/[-_]/g, " ")
     .split(" ")

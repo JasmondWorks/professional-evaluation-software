@@ -2,23 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
-type Goals = {
-  id: number
-  name: string
-  description: string
-  status: string
-  day_started: string
-  due_date: string
-  user_id: string
-}
-
 async function getData( user: string | null ) {
   if (!user) return []
-  console.log(user)
-  const goals: Goals[] = await prisma.$queryRawUnsafe('SELECT * FROM goals WHERE user_id = $1', user.toString())
-  
-  await prisma.$disconnect()
-  return goals
+  return prisma.goals.findMany({ where: { user_id: user } })
 }
 
 export async function POST(request: NextRequest) {

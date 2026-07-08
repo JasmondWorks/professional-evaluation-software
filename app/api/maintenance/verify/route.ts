@@ -28,11 +28,12 @@ export async function POST(req: Request) {
     }
 
     // ✅ Get request body
-    const { reference, org } = await req.json();
+    const { reference } = await req.json();
+    const org = decoded?.org;
 
     if (!reference || !org) {
       return NextResponse.json(
-        { message: "Missing reference or org" },
+        { message: "Missing reference or org in token" },
         { status: 400 }
       );
     }

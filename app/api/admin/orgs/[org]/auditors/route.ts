@@ -5,12 +5,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { org: string } }
 ) {
-  const auditors = await prisma.$queryRawUnsafe(
-    `SELECT id, name, email, role, org
-     FROM pesuser
-     WHERE org = $1 AND role = 'auditor'`,
-    params.org
-  );
+  const auditors = await prisma.pesuser.findMany({
+    where: { org: params.org, role: "auditor" },
+    select: { id: true, name: true, email: true, role: true, org: true },
+  });
 
   return NextResponse.json(auditors);
 }

@@ -22,18 +22,24 @@ export async function POST(req: NextRequest) {
       std_dev,
     } = body;
 
-    // Use Prisma raw query for direct insert
-    const result = await prisma.$queryRawUnsafe(`
-      INSERT INTO stress_analysis_results (
-        org, group_by, ssto, sstr, sse, f_statistic, critical_value, conclusion,
-        df_between, df_within, ms_between, ms_within, mean, std_dev
-      )
-      VALUES (
-        '${org}', '${group_by}', ${ssto}, ${sstr}, ${sse}, ${f_statistic}, ${critical_value},
-        '${conclusion}', ${df_between}, ${df_within}, ${ms_between}, ${ms_within}, ${mean}, ${std_dev}
-      )
-      RETURNING *;
-    `);
+    const result = await prisma.stress_analysis_results.create({
+      data: {
+        org,
+        group_by,
+        ssto,
+        sstr,
+        sse,
+        f_statistic,
+        critical_value,
+        conclusion,
+        df_between,
+        df_within,
+        ms_between,
+        ms_within,
+        mean,
+        std_dev,
+      },
+    });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

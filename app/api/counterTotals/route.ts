@@ -14,23 +14,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Construct properly typed arrays
-    const numArray = `{${numerator.map(Number).join(',')}}`
-    const denArray = `{${denominator.map(Number).join(',')}}`
-
-    // Use Prisma's queryRaw for the database operation
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO counter_totals (
-        section, result, numerator, denominator
-      )
-      VALUES (
-        ${Number(section)},
-        ${Number(result)},
-        ${numArray}::numeric[],
-        ${denArray}::numeric[]
-      )
-      RETURNING *;
-    `
+    const record = await prisma.counter_totals.create({
+      data: {
+        section: Number(section),
+        result: Number(result),
+        numerator: numerator.map(Number),
+        denominator: denominator.map(Number),
+      },
+    })
 
     return NextResponse.json({ success: true, record }, { status: 201 })
   } catch (err: any) {

@@ -4,32 +4,30 @@ import jwt from 'jsonwebtoken'
 
 
 async function getUser(user: string | null) {
+  if (!user) return []
 
-  const users = await prisma.$queryRaw`
-    SELECT
-      id,
-      name,
-      email,
-      gsm,
-      role,
-      address,
-      dept,
-      faculty_college,
-      dob,
-      doa,
-      poa,
-      doc,
-      post,
-      dopp,
-      level,
-      image,
-      org
-    FROM pesuser
-    WHERE org = ${user?.toString()}
-  `
-
-  await prisma.$disconnect()
-  return users
+  return prisma.pesuser.findMany({
+    where: { org: user },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      gsm: true,
+      role: true,
+      address: true,
+      dept: true,
+      faculty_college: true,
+      dob: true,
+      doa: true,
+      poa: true,
+      doc: true,
+      post: true,
+      dopp: true,
+      level: true,
+      image: true,
+      org: true,
+    },
+  })
 }
 
 

@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import jwt from "jsonwebtoken";
-import { ArrowLeft } from "iconsax-react";import { getAccessToken } from '@/app/utils/auth';
-
+import { ArrowLeft } from "iconsax-react";
+import { getAccessToken } from "@/app/utils/auth";
 
 type InventoryItem = {
   identification_symbol: string;
@@ -39,10 +39,10 @@ export default function MaintenanceInventory() {
   return (
     <div className="p-4 w-full">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <a href="/maintenance">
+        <div>
+          <Link href="/maintenance" className="flex items-center">
             <ArrowLeft className="me-4" />
-          </a>
+          </Link>
           <h1 className="text-2xl font-semibold">Inventory Sheet</h1>
         </div>
       </div>
@@ -63,13 +63,19 @@ export default function MaintenanceInventory() {
           {inventory.map((item, key) => (
             <tr key={key} className="hover:bg-gray-50">
               <td className="border px-4 py-2">
-                <Link href={`/maintenance/${encodeURIComponent(item.description_of_facility)}`}>
+                <Link
+                  href={`/maintenance/${encodeURIComponent(item.description_of_facility)}`}
+                >
                   {item.identification_symbol}
                 </Link>
               </td>
-              <td className="border px-4 py-2">{item.description_of_facility}</td>
+              <td className="border px-4 py-2">
+                {item.description_of_facility}
+              </td>
               <td className="border px-4 py-2">{item.location}</td>
-              <td className="border px-4 py-2">{item.facility_register_id_no}</td>
+              <td className="border px-4 py-2">
+                {item.facility_register_id_no}
+              </td>
               <td className="border px-4 py-2">{item.type}</td>
               <td className="border px-4 py-2">{item.priority_rating}</td>
               <td className="border px-4 py-2">{item.remarks}</td>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
+import { getAccessToken } from "@/app/utils/auth";
 import {
   findOptimalK_robust,
   calculateStaffNeeds,
@@ -82,7 +83,10 @@ export default function RobustOptimization() {
     try {
       const res = await fetch("/api/results", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAccessToken()}`
+        },
         body: JSON.stringify({
           mode: "robust",
           ...params,
@@ -103,11 +107,20 @@ export default function RobustOptimization() {
 
   return (
     <div className="p-10">
-      <div className="flex items-center mb-6 space-x-4">
-        <Link href="/models/student-teacher" className="text-blue-600 hover:underline">
-          {"<- back"}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Link href="/models/student-teacher" className="text-blue-600 hover:underline">
+            {"<- back"}
+          </Link>
+          <h1 className="text-2xl font-bold">Robust Optimization</h1>
+        </div>
+        <Link
+          href="/models/student-teacher/robust/history"
+          className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2 print:hidden"
+        >
+          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          View History
         </Link>
-        <h1 className="text-2xl font-bold">Robust Optimization</h1>
       </div>
 
       <div className="print:hidden">

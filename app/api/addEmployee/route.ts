@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { Prisma } from '@prisma/client'
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
 
@@ -72,8 +73,8 @@ async function sendLoginEmail(to: string, name: string, password: string) {
       port: 465,
       secure: true,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
     });
 
@@ -96,7 +97,7 @@ async function sendLoginEmail(to: string, name: string, password: string) {
     console.log("Sending email to:", to)
 
     const info = await transporter.sendMail({
-      from: `"Admin" <${process.env.SMTP_USER}>`,
+      from: `"Admin" <${process.env.EMAIL_USER}>`,
       to,
       subject: "Your Login Credentials",
       html
@@ -123,12 +124,10 @@ async function sendLoginEmail(to: string, name: string, password: string) {
 async function addAssigned(info: ReqInfo){
   const { role , org } = info
 
-  await prisma.$queryRaw`
-    UPDATE roles
-    SET assigned = assigned + 1
-    WHERE name = ${role}
-    AND org = ${org};
-  `
+  await prisma.roles.updateMany({
+    where: { name: role, org },
+    data: { assigned: { increment: 1 } },
+  })
 }
 
 
@@ -168,12 +167,12 @@ async function addUser(info: ReqInfo, randPassword: string) {
 
   try {
 
-    const existingUser: any = await prisma.$queryRaw`
-      SELECT id FROM pesuser
-      WHERE email = ${email}
-    `
+    const existingUser = await prisma.pesuser.findUnique({
+      where: { email },
+      select: { id: true },
+    })
 
-    if (existingUser.length > 0) {
+    if (existingUser) {
       return 'email_exists'
     }
 
@@ -183,99 +182,63 @@ async function addUser(info: ReqInfo, randPassword: string) {
     console.log("Role:", role)
     console.log("Org:", org)
 
-    const user: any = await prisma.$queryRaw`
-      INSERT INTO pesuser 
-      (
+    const user = await prisma.pesuser.create({
+      data: {
         name,
         email,
-        password,
-        gsm,
-        role,
-        address,
-        dept,
-        faculty_college,
-        dob,
-        doa,
-        poa,
-        doc,
-        post,
-        dopp,
-        level,
-        image,
-        org
-      )
+        password: hashedPassword,
+        gsm: gsm || null,
+        role: role || null,
+        address: address || null,
+        dept: dept || null,
+        faculty_college: faculty_college || null,
+        dob: dob ? new Date(dob) : null,
+        doa: doa ? new Date(doa) : null,
+        poa: sanitizeString(poa),
+        doc: sanitizeString(doc),
+        post: sanitizeString(post),
+        dopp: dopp ? new Date(dopp) : null,
+        level: sanitizeString(level),
+        image: null,
+        org: org || null,
+      },
+      select: { id: true },
+    })
 
-      VALUES (
-        ${name},
-        ${email},
-        ${hashedPassword},
-        ${gsm},
-        ${role},
-        ${address},
-        ${dept},
-        ${faculty_college},
-        ${dob ? new Date(dob) : null},
-        ${doa ? new Date(doa) : null},
-        ${sanitizeString(poa) || null},
-        ${doc ? new Date(doc) : null},
-        ${sanitizeString(post) || null},
-        ${dopp ? new Date(dopp) : null},
-        ${sanitizeString(level) || null},
-        NULL,
-        ${org}
-      )
-
-      RETURNING id;
-    `
-
-    const userId = user[0].id
-
-    await prisma.$queryRaw`
-      INSERT INTO permission 
-      (
-        manage_user,
-        access_em,
-        ae_all,
-        ae_sub,
-        ae_sel,
-        define_performance,
-        dp_all,
-        dp_sub,
-        dp_sel,
-        access_hierachy,
-        manage_review,
-        mr_all,
-        mr_sub,
-        mr_sel,
-        user_id,
-        org
-      )
-
-      VALUES (
-        ${manage_user},
-        ${access_em},
-        ${ae_all},
-        ${ae_sub},
-        ${ae_sel},
-        ${define_performance},
-        ${dp_all},
-        ${dp_sub},
-        ${dp_sel},
-        ${access_hierachy},
-        ${manage_review},
-        ${mr_all},
-        ${mr_sub},
-        ${mr_sel},
-        ${userId},
-        ${org}
-      );
-    `
+    // permission booleans are stored in String? columns (schema/DB drift), so cast.
+    await prisma.permission.create({
+      data: {
+        manage_user: manage_user || false,
+        access_em: access_em || false,
+        ae_all: ae_all || false,
+        ae_sub: ae_sub || false,
+        ae_sel: ae_sel || false,
+        define_performance: define_performance || false,
+        dp_all: dp_all || false,
+        dp_sub: dp_sub || false,
+        dp_sel: dp_sel || false,
+        access_hierachy: access_hierachy || false,
+        manage_review: manage_review || false,
+        mr_all: mr_all || false,
+        mr_sub: mr_sub || false,
+        mr_sel: mr_sel || false,
+        user_id: String(user.id),
+        org: org || null,
+      } as unknown as Prisma.permissionUncheckedCreateInput,
+    })
 
     await addAssigned(info)
 
     return 'success'
 
   } catch (error) {
+    // Unique constraint (e.g. same name+dept+org, or duplicate email) → friendly signal.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return 'duplicate_employee'
+    }
     console.error(error)
     return error
   }
@@ -296,7 +259,16 @@ export async function POST(req: Request) {
     if (result === 'email_exists') {
 
       return NextResponse.json({
-        message: 'Email already exists',
+        message: 'An employee with this email already exists.',
+        status: 409
+      })
+
+    }
+
+    if (result === 'duplicate_employee') {
+
+      return NextResponse.json({
+        message: `${reqInfo.name} is already registered in the ${reqInfo.dept} department.`,
         status: 409
       })
 
@@ -329,7 +301,8 @@ export async function POST(req: Request) {
     } else {
 
       return NextResponse.json({
-        message: 'There was a problem',
+        message: result instanceof Error ? result.message : 'There was a problem',
+        errorDetails: result,
         status: 500
       })
 

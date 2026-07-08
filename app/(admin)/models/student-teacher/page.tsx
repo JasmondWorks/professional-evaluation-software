@@ -1,555 +1,499 @@
-// "use client"
-// import { useState, useEffect } from 'react';
+"use client";
+import React, { useState, useEffect } from "react";
+import { getAccessToken } from '@/app/utils/auth';
+import Link from "next/link";
+import { ArrowLeft2 } from "iconsax-react";
+import InfoPopover from "@/app/components/ui/InfoPopover";
 
-// const Home = () => {
-//   // State for input parameters
-//   const [params, setParams] = useState({
-//     D: 40, // Total official hours available for lecturers' formal activities per week
-//     G: 168, // Total hours available in a week (24*7)
-//     Y: 3, // Weekly lecture hours per course
-//     alpha: 4, // Number of courses to be lectured per week
-//     t1: 0.4, // Proportion for student consultation
-//     t2: 0.4, // Proportion for research/community service
-//     t3: 0.2, // Proportion for assessment
-//     t4: 0.5, // Standard hours to assess a single student's work per week
-//     lambda: 5, // Rate at which students consult lecturer per hour
-//     mu: 6, // Rate at which lecturer attends to students per hour
-//     S0: 0.2, // Probability of doing research outside formal hours
-//     studentPopulation: 1000, // Total student population
-//     staffMix: { // Academic staff mix
-//       lecturers: 0.5,
-//       seniorLecturers: 0.3,
-//       professors: 0.2
-//     }
-//   });
-  
-//   const [mus, setMus] = useState({
-//     mu0: 6, //base (Rate at which students consult lecturer per hour)
-//     mu1: 15.75, // supervisory
-//     mu2: 12.75, // level 1
-//     mu3: 3.75, // level 2
-//     mu4: 0, // top management
-//   })
+interface StaffMix {
+  lecturers: number;
+  seniorLecturers: number;
+  professors: number;
+}
 
-//   const [lambda, setLambda] = useState({
-//     lambda0: 5, //base (Rate at which students consult lecturer per hour)
-//     lambda1: 2.25, // supervisory
-//     lambda2: 3.0, // level 1
-//     lambda3: 2.75, // level 2
-//     lambda4: 0.75, // top management
-//   })
+interface Params {
+  D: number;
+  G: number;
+  Y: number;
+  alpha: number;
+  t1: number;
+  t2: number;
+  t3: number;
+  t4: number;
+  S0: number;
+  studentPopulation: number;
+  staffMix: StaffMix;
+}
 
-//   // State for calculated results
-//   const [results, setResults] = useState({
-//     optimalK: 0,
-//     totalStaffNeeded: 0,
-//     supervisoryStaff: 0,
-//     managementStaffLevel1: 0,
-//     managementStaffLevel2: 0,
-//     topManagementStaff: 0,
-//     staffDistribution: {
-//       lecturers: 0,
-//       seniorLecturers: 0,
-//       professors: 0
-//     },
-//     efficiencyValue: 0
-//   });
+export default function StudentTeacherRatio() {
+  const [params, setParams] = useState<Params>({
+    D: 40,
+    G: 168,
+    Y: 3,
+    alpha: 4,
+    t1: 0.4,
+    t2: 0.4,
+    t3: 0.2,
+    t4: 0.5,
+    S0: 0.2,
+    studentPopulation: 1000,
+    staffMix: {
+      lecturers: 0.5,
+      seniorLecturers: 0.3,
+      professors: 0.2,
+    },
+  });
 
-//   interface StaffMix {
-//     lecturers: number;
-//     seniorLecturers: number;
-//     professors: number;
-//   }
+  const [mus, setMus] = useState({
+    mu0: 6,
+    mu1: 15.75,
+    mu2: 12.75,
+    mu3: 3.75,
+    mu4: 0,
+  });
 
-//   interface Params {
-//     D: number;
-//     G: number;
-//     Y: number;
-//     alpha: number;
-//     t1: number;
-//     t2: number;
-//     t3: number;
-//     t4: number;
-//     S0: number;
-//     studentPopulation: number;
-//     staffMix: StaffMix;
-//   }
+  const [lambdas, setLambdas] = useState({
+    lambda0: 5,
+    lambda1: 2.25,
+    lambda2: 3.0,
+    lambda3: 2.75,
+    lambda4: 0.75,
+  });
 
+  const [results, setResults] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [calcErrorMsg, setCalcErrorMsg] = useState<string | null>(null);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
 
-//   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const { name, value } = e.target;
+  const handleParamChange = (field: keyof Params, val: number) => {
+    setParams((prev) => ({ ...prev, [field]: val }));
+  };
 
-//     // Handle nested properties like staffMix
-//     if (name.includes('.')) {
-//       const [parent, child] = name.split('.') as [keyof Params, keyof StaffMix];
-//       setParams({
-//         ...params,
-//         [parent]: {
-//           ...params[parent] as StaffMix,
-//           [child]: parseFloat(value)
-//         }
-//       });
-//     } else {
-//       setParams({
-//         ...params,
-//         [name]: parseFloat(value)
-//       });
-//     }
-//   };
+  const handleStaffMixChange = (field: keyof StaffMix, val: number) => {
+    setParams((prev) => ({
+      ...prev,
+      staffMix: { ...prev.staffMix, [field]: val },
+    }));
+  };
 
+  const factorial = (n: number): number => {
+    if (n < 0) return NaN;
+    return n <= 1 ? 1 : n * factorial(n - 1);
+  };
 
-//   function factorial(n: number): number {
-//     if (n < 0) return NaN;
-//     return n <= 1 ? 1 : n * factorial(n - 1);
-//   }
+  const combination = (n: number, k: number) => {
+    if (k < 0 || n < 0 || k > n) return NaN;
+    return factorial(n) / (factorial(k) * factorial(n - k));
+  };
 
-//   function combination(n: number, k: number) {
-//     if (k < 0 || n < 0 || k > n) return NaN;
-//     return factorial(n) / (factorial(k) * factorial(n - k));
-//   }
+  const calculateP0 = (k: number, rho: number) => {
+    let sum = 1;
+    for (let n = 2; n <= k; n++) {
+      sum += combination(n, k) * factorial(n) * Math.pow(rho, n);
+    }
+    return 1 / sum;
+  };
 
-//   const calculateP0 = (k: number, rho: number) => {
-//     let sum = 1;
-//     for (let n = 2; n <= k; n++) {
-//       sum +=  combination(n, k) * factorial(n) * Math.pow(rho, n);
-//     }
+  const calculateW = (k: number, rho: number, mu: number, P0: number) => {
+    let sum = 0;
+    for (let n = 2; n <= k; n++) {
+      sum += (n - 1) * combination(n, k) * factorial(n) * Math.pow(rho, n) * P0;
+    }
+    return (1 / mu) + (sum / (mu * (1 - P0)));
+  };
 
-//     return 1 / sum;
-//   };
+  const calculateH = (K: number, mu: number, lambda: number) => {
+    const { D, G, Y, alpha, t1, t2, t3, t4, S0 } = params;
 
-//   const calculateW = (k: number, rho: number, mu: number, P0: number) => {
-//     let sum = 0
+    const F = D - (Y * alpha);
+    const B = t1 * F;
+    const rho = lambda / mu;
 
-//     for (let n = 2; n <= k; n++) {
-//       sum +=  (n - 1) * combination(n, k) * factorial(n) * Math.pow(rho, n) * P0;
-//     }
+    if (rho >= 1) return { H_ordinary: 0, H_robust: 0 };
 
-//     return (1 / mu) + (sum / (mu * (1 - P0)));
-//   };
+    const P0 = calculateP0(K, rho);
+    const W = calculateW(K, lambda, mu, P0);
 
-//   const calculateH = (K: number, mu: number, lambda: number): { H_ordinary: number, H_robust: number } => {
-//     const { D, G, Y, alpha, t1, t2, t3, t4, S0 } = params;
+    const term1 = K * (B - W);
+    const term2 = B * (1 - P0);
+    const term3 = t4 * K;
+    const term4 = ((1 - S0) * G) - D;
 
-//     // Calculate basic parameters
-//     const F = D - (Y * alpha); // Non-formal classroom lecture hours
-//     const B = t1 * F; // Hours scheduled for student consultation
+    const denom1 = (K + 1) * (D - Y * alpha) * t1;
+    const denom2 = (1 - t1 - t2) * (D - Y * alpha);
+    const denom3 = G - D;
+
+    const H_robust = (term1 + term2 + term3 + term4) / (denom1 + denom2 + denom3);
+    return { H_robust };
+  };
+
+  const findOptimalK_robust = (mu: number, lambda: number) => {
+    let maxH = 0;
+    let optimalK = 0;
+    for (let K = 1; K <= 50; K++) {
+      const { H_robust } = calculateH(K, mu, lambda);
+      if (H_robust > maxH) {
+        maxH = H_robust;
+        optimalK = K;
+      }
+    }
+    return { optimalK, maxH };
+  };
+
+  const calculateStaffNeeds = (optimalK: number, optimalK1: number, optimalK2: number, optimalK3: number, optimalK4: number) => {
+    const { studentPopulation, staffMix } = params;
+    const totalStaffNeeded = Math.ceil(studentPopulation / optimalK);
+    const staffDistribution = {
+      lecturers: Math.round(totalStaffNeeded * staffMix.lecturers),
+      seniorLecturers: Math.round(totalStaffNeeded * staffMix.seniorLecturers),
+      professors: Math.round(totalStaffNeeded * staffMix.professors),
+    };
+    const supervisoryStaff = optimalK1 ? Math.ceil(totalStaffNeeded / optimalK1) : 0;
+    const managementStaffLevel1 = optimalK2 ? Math.ceil(supervisoryStaff / optimalK2) : 0;
+    const managementStaffLevel2 = optimalK3 ? Math.ceil(managementStaffLevel1 / optimalK3) : 0;
+    const topManagementStaff = optimalK4 ? Math.ceil(managementStaffLevel2 / optimalK4) : 0;
+
+    return { totalStaffNeeded, supervisoryStaff, managementStaffLevel1, managementStaffLevel2, topManagementStaff, staffDistribution };
+  };
+
+  const handleCalculate = () => {
+    setCalcErrorMsg(null);
+    setSaveErrorMsg(null);
+    setSuccessMsg(null);
     
-//     const rho = lambda / mu;
-    
-//     // Check if rho < 1 (system stability condition)
-//     if (rho >= 1) return { H_ordinary: 0, H_robust: 0 };
-    
-//     // Calculate P0
-//     const P0 = calculateP0(K, rho);
-    
-//     // Calculate W
-//     const W = calculateW(K, lambda, mu, P0);
-    
-//     // Calculate numerator components
-//     const term1 = K * (B - W);
-//     const term2 = (B * (1 - P0));
-//     const term3 = t4 * K;
-//     const term4 = ((1 - S0) * G) - D;
-    
-//     // Calculate denominator components
-//     const denom1 = (K + 1) * (D - Y * alpha) * t1;
-//     const denom2 = (1 - t1 - t2) * (D - Y * alpha);
-//     const denom3 = G - D;
-    
-//     // Calculate H
-//     const H_robust = (term1 + term2 + term3 + term4) / (denom1 + denom2 + denom3);
-    
-//     const H_ordinary = (term1 + term2 + term3) / (denom1 + denom2);
-    
-//     return { H_ordinary, H_robust };
-//   };
+    // Validate staff mix
+    const mixTotal = params.staffMix.lecturers + params.staffMix.seniorLecturers + params.staffMix.professors;
+    if (Math.abs(mixTotal - 1.0) > 0.01) {
+      setCalcErrorMsg("Staff mix proportions must add up to 1.0");
+      return;
+    }
 
-//   const findOptimalK_ordinary = (mu: number, lambda: number) => {
-//     let maxH = 0;
-//     let optimalK = 0;
-    
-//     // Try different values of K from 1 to 50 (can adjust range as needed)
-//     for (let K = 1; K <= 10000; K++) {
-//       const { H_ordinary} = calculateH(K, mu, lambda);
-      
-//       if (H_ordinary > maxH) {
-//         maxH = H_ordinary;
-//         optimalK = K;
-//       }
-//     }
-    
-//     return { optimalK, maxH };
-//   };
+    const Ks = [];
+    type MuKeys = 'mu0' | 'mu1' | 'mu2' | 'mu3' | 'mu4';
+    type LambdaKeys = 'lambda0' | 'lambda1' | 'lambda2' | 'lambda3' | 'lambda4';
 
-//   const findOptimalK_robust = (mu: number, lambda: number) => {
-//     let maxH = 0;
-//     let optimalK = 0;
-    
-//     // Try different values of K from 1 to 50 (can adjust range as needed)
-//     for (let K = 1; K <= 50; K++) {
-//       const { H_robust} = calculateH(K, mu, lambda);
-      
-//       if (H_robust > maxH) {
-//         maxH = H_robust;
-//         optimalK = K;
-//       }
-//     }
-    
-//     return { optimalK, maxH };
-//   };
+    for (let i = 0; i < 5; i++) {
+      Ks.push(findOptimalK_robust(mus[`mu${i}` as MuKeys], lambdas[`lambda${i}` as LambdaKeys]));
+    }
 
-//   const calculateStaffNeeds = (optimalK: number, optimalK1: number, optimalK2: number, optimalK3: number, optimalK4: number) => {
-//     const { studentPopulation, staffMix } = params;
-    
-//     const totalStaffNeeded = Math.ceil(studentPopulation / optimalK);
-    
-//     // Calculate staff distribution based on mix
-//     const staffDistribution = {
-//       lecturers: Math.round(totalStaffNeeded * staffMix.lecturers),
-//       seniorLecturers: Math.round(totalStaffNeeded * staffMix.seniorLecturers),
-//       professors: Math.round(totalStaffNeeded * staffMix.professors)
-//     };
-//     const supervisoryStaff = Math.ceil(totalStaffNeeded / optimalK1); // Assuming 10% supervisory staff
-//     const managementStaffLevel1 = Math.ceil(supervisoryStaff / optimalK2); // Assuming 5% level 1 management staff
-//     const managementStaffLevel2 = Math.ceil(managementStaffLevel1 / optimalK3); // Assuming 3% level 2 management staff
-//     const topManagementStaff = Math.ceil(managementStaffLevel2 / optimalK4); // Assuming 2% top management staff
+    const { optimalK, maxH } = Ks[0] || { optimalK: 1, maxH: 0 }; // prevent divide by zero
+    const optimalK1 = Ks[1]?.optimalK ?? 0;
+    const optimalK2 = Ks[2]?.optimalK ?? 0;
+    const optimalK3 = Ks[3]?.optimalK ?? 0;
+    const optimalK4 = Ks[4]?.optimalK ?? 0;
 
-//     return { totalStaffNeeded, supervisoryStaff, managementStaffLevel1, managementStaffLevel2, topManagementStaff, staffDistribution };
-//   };
+    if (optimalK === 0) {
+      setCalcErrorMsg("Calculated Optimal K is zero. Adjust your inputs.");
+      return;
+    }
 
-//   // Define key types for mus and lambda objects
-//   type MuKeys = 'mu0' | 'mu1' | 'mu2' | 'mu3' | 'mu4';
-//   type LambdaKeys = 'lambda0' | 'lambda1' | 'lambda2' | 'lambda3' | 'lambda4';
-  
-//   const handleCalculate = () => {
-//     const Ks = []
-    
-//     for (let i = 0; i < 5; i++) {
-//       Ks.push(findOptimalK_robust(
-//         mus[`mu${i}` as MuKeys],
-//         lambda[`lambda${i}` as LambdaKeys]
-//       ));
+    const needs = calculateStaffNeeds(optimalK, optimalK1, optimalK2, optimalK3, optimalK4);
 
-//       console.log(findOptimalK_robust(
-//         mus[`mu${i}` as MuKeys],
-//         lambda[`lambda${i}` as LambdaKeys]
-//       ));
+    setResults({
+      optimalK,
+      efficiencyValue: maxH,
+      ...needs
+    });
+  };
 
-//     }
-//     // You may want to extract the optimalK and maxH from Ks[0] or aggregate as needed
-//     const { optimalK, maxH } = Ks[0] || { optimalK: 0, maxH: 0 };
-//     const optimalK1 = Ks[1]?.optimalK ?? 0;
-//     const optimalK2 = Ks[2]?.optimalK ?? 0;
-//     const optimalK3 = Ks[3]?.optimalK ?? 0;
-//     const optimalK4 = Ks[4]?.optimalK ?? 0;
+  const handleSave = async () => {
+    if (!results) return;
+    setLoading(true);
+    setSuccessMsg(null);
+    setSaveErrorMsg(null);
 
-//     const { totalStaffNeeded, supervisoryStaff, managementStaffLevel1, managementStaffLevel2, topManagementStaff, staffDistribution } = calculateStaffNeeds(optimalK, optimalK1, optimalK2, optimalK3, optimalK4);
+    try {
+      const payload = {
+        optimalK: results.optimalK,
+        totalStaffNeeded: results.totalStaffNeeded,
+        supervisoryStaff: results.supervisoryStaff,
+        managementLevel1: results.managementStaffLevel1,
+        managementLevel2: results.managementStaffLevel2,
+        topManagement: results.topManagementStaff,
+        lecturers: results.staffDistribution.lecturers,
+        seniorLecturers: results.staffDistribution.seniorLecturers,
+        professors: results.staffDistribution.professors,
+        efficiencyValue: results.efficiencyValue
+      };
 
-//     setResults({
-//       optimalK,
-//       totalStaffNeeded,
-//       supervisoryStaff,
-//       managementStaffLevel1,
-//       managementStaffLevel2,
-//       topManagementStaff,
-//       staffDistribution,
-//       efficiencyValue: maxH,
-//     });
-//   };
+      const res = await fetch("/api/studentTeacherRatio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAccessToken()}`
+        },
+        body: JSON.stringify(payload)
+      });
 
-//   return (
-//     <div className="w-full mx-auto p-8 bg-white rounded-lg shadow-md">
-//       <h1 className="text-2xl font-bold mb-6 text-center">Student-Teacher Ratio Calculator</h1>
-      
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//         <div className="bg-gray-50 p-4 rounded-md">
-//           <h2 className="text-xl font-semibold mb-4">Input Parameters</h2>
-          
-//           <div className="grid grid-cols-2 gap-4">
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Total work hours (D)</label>
-//               <input
-//                 type="number"
-//                 name="D"
-//                 value={params.D}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Total weekly hours (G)</label>
-//               <input
-//                 type="number"
-//                 name="G"
-//                 value={params.G}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Lecture hours/course (Y)</label>
-//               <input
-//                 type="number"
-//                 name="Y"
-//                 value={params.Y}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Courses per week (α)</label>
-//               <input
-//                 type="number"
-//                 name="alpha"
-//                 value={params.alpha}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Consultation ratio (t₁)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="t1"
-//                 value={params.t1}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Research ratio (t₂)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="t2"
-//                 value={params.t2}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Assessment ratio (t₃)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="t3"
-//                 value={params.t3}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Assessment time (t₄)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="t4"
-//                 value={params.t4}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Student arrival rate (λ)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="lambda"
-//                 value={params.lambda}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Service rate (μ)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="mu"
-//                 value={params.mu}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Research probability (S₀)</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="S0"
-//                 value={params.S0}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Student population</label>
-//               <input
-//                 type="number"
-//                 name="studentPopulation"
-//                 value={params.studentPopulation}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-//           </div>
-          
-//           <h3 className="font-medium mt-4 mb-2">Academic Staff Mix</h3>
-//           <div className="grid grid-cols-3 gap-2">
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Lecturers</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="staffMix.lecturers"
-//                 value={params.staffMix.lecturers}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Senior Lecturers</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="staffMix.seniorLecturers"
-//                 value={params.staffMix.seniorLecturers}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-            
-//             <div>
-//               <label className="block text-sm font-medium text-gray-700">Professors</label>
-//               <input
-//                 type="number"
-//                 step="0.1"
-//                 name="staffMix.professors"
-//                 value={params.staffMix.professors}
-//                 onChange={handleInputChange}
-//                 className="w-full px-3 py-2 border rounded-md"
-//               />
-//             </div>
-//           </div>
-          
-//           <div className="mt-6">
-//             <button
-//               onClick={handleCalculate}
-//               className="w-full bg-pes text-white font-medium py-2 px-4 rounded-md hover:bg-blue-700"
-//             >
-//               Calculate Optimal Ratio
-//             </button>
-//           </div>
-//         </div>
-        
-//         <div className="bg-gray-50 p-4 rounded-md">
-//           <h2 className="text-xl font-semibold mb-4">Results</h2>
-          
-//           <div className="space-y-4">
-//             <div>
-//               <h3 className="font-medium text-gray-700">Optimal Student-Teacher Ratio (K*)</h3>
-//               <div className="text-xl font-bold">{results.optimalK}</div>
-//               <div className="text-sm text-gray-500">Efficiency value: {results.efficiencyValue.toFixed(4)}</div>
-//             </div>
-            
-//             <div>
-//               <h3 className="font-medium text-gray-700">Number of Academic Staff</h3>
-//               <div className="text-xl font-bold">{results.totalStaffNeeded}</div>
-//               <div className="text-sm text-gray-500">Based on student population of {params.studentPopulation}</div>
-//             </div>
+      if (!res.ok) throw new Error("Failed to save data");
 
-//             {/* //NEED TO DO */}
-//             <h2 className="text-xl font-semibold mt-8">Required Institutions Staff</h2>
-//             <div>
-//               <h3 className="font-medium text-gray-700">Number of Supervisory Staff (N1*)</h3>
-//               <div className="text-xl font-bold">{results.supervisoryStaff}</div>
-//             </div>
+      setSuccessMsg("✅ Successfully saved to database");
+    } catch (err: any) {
+      console.error(err);
+      setSaveErrorMsg("Error saving data to the database");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//             <div>
-//               <h3 className="font-medium text-gray-700">Number of Management Staff level 1(registry)</h3>
-//               <div className="text-xl font-bold">{results.managementStaffLevel1}</div>
-//             </div>
-            
-//             <div>
-//               <h3 className="font-medium text-gray-700">Number of Management Staff level 2(registry)</h3>
-//               <div className="text-xl font-bold">{results.managementStaffLevel2}</div>
-//             </div>
-
-//             <div>
-//               <h3 className="font-medium text-gray-700">Top Management Staff level (registry)</h3>
-//               <div className="text-xl font-bold">{results.topManagementStaff}</div>
-//             </div>
-
-//             <div>
-//               <h3 className="font-medium text-gray-700">Staff Distribution</h3>
-//               <div className="grid grid-cols-3 gap-2 mt-2">
-//                 <div className="bg-white p-3 rounded border">
-//                   <div className="text-lg font-bold">{results.staffDistribution.lecturers}</div>
-//                   <div className="text-sm text-gray-600">Lecturers</div>
-//                 </div>
-                
-//                 <div className="bg-white p-3 rounded border">
-//                   <div className="text-lg font-bold">{results.staffDistribution.seniorLecturers}</div>
-//                   <div className="text-sm text-gray-600">Senior Lecturers</div>
-//                 </div>
-                
-//                 <div className="bg-white p-3 rounded border">
-//                   <div className="text-lg font-bold">{results.staffDistribution.professors}</div>
-//                   <div className="text-sm text-gray-600">Professors</div>
-//                 </div>
-//               </div>
-//             </div>
-            
-//             <div className="mt-4 p-4 bg-blue-50 rounded-md border border-pes">
-//               <h3 className="font-medium text-pes">Interpretation</h3>
-//               <p className="text-sm text-pes mt-1">
-//                 For optimal teaching-learning efficiency, each teacher should have approximately {results.optimalK} students. 
-//                 With your current student population of {params.studentPopulation}, you need {results.totalStaffNeeded} academic staff 
-//                 members distributed as shown above.
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Home;
-
-import Link from 'next/link';
-
-export default function StudentTeacherIndex() {
   return (
-    <div className="p-10">
-      <h1 className="text-3xl font-bold mb-4">Student-Teacher ratio</h1>
-      {/* link to previous */}
-      <Link href="/models">{"<- back"}</Link>
-      <ul className="list-disc pl-5 space-y-2">
-        <li>
-          <Link href="/models/student-teacher/robust" className="text-blue-600 hover:underline">
-            Go to Robust Optimization
+    <div className="p-8 w-full mx-auto">
+      <div className="mb-4">
+        <Link
+          href="/models"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+        >
+          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
+        </Link>
+      </div>
+
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Student-Teacher Ratio Model</h1>
+          <p className="text-gray-600 mb-6 max-w-2xl">
+            Calculates the optimal student-teacher ratio (K) and estimates total academic and management staff required based on queuing theory and workload analysis.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/student-teacher/history"
+            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
           </Link>
-        </li>
-        <li>
-          <Link href="/models/student-teacher/ordinary" className="text-blue-600 hover:underline">
-            Go to Ordinary Optimization
-          </Link>
-        </li>
-      </ul>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* General Parameters */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Workload Parameters</h2>
+              <p className="text-xs text-gray-500">Core metrics determining lecturer availability</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Total Weekly Work Hrs (D)</span>
+                <InfoPopover text="Total official hours available for formal activities per week (e.g. 40)." />
+              </div>
+              <input
+                type="number"
+                value={params.D}
+                onChange={(e) => handleParamChange("D", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Total Weekly Hrs (G)</span>
+                <InfoPopover text="Total hours available in a week (24 * 7 = 168)." />
+              </div>
+              <input
+                type="number"
+                value={params.G}
+                onChange={(e) => handleParamChange("G", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Lecture Hrs/Course (Y)</span>
+                <InfoPopover text="Weekly lecture hours per single course." />
+              </div>
+              <input
+                type="number"
+                value={params.Y}
+                onChange={(e) => handleParamChange("Y", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Courses Lectured (α)</span>
+                <InfoPopover text="Number of courses to be lectured per week by one lecturer." />
+              </div>
+              <input
+                type="number"
+                value={params.alpha}
+                onChange={(e) => handleParamChange("alpha", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Proportions & Mix */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Distribution & Rates</h2>
+              <p className="text-xs text-gray-500">Student populations and time allocations</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Student Population</span>
+                <InfoPopover text="Total number of students in the department/faculty." />
+              </div>
+              <input
+                type="number"
+                value={params.studentPopulation}
+                onChange={(e) => handleParamChange("studentPopulation", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Consultation Prop (t1)</span>
+                <InfoPopover text="Proportion of non-lecture time allocated to student consultation." />
+              </div>
+              <input
+                type="number"
+                step="0.1"
+                value={params.t1}
+                onChange={(e) => handleParamChange("t1", Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="block">
+              <div className="text-xs font-semibold text-gray-700 mb-1.5 truncate">Lecturers Mix</div>
+              <input
+                type="number"
+                step="0.1"
+                value={params.staffMix.lecturers}
+                onChange={(e) => handleStaffMixChange("lecturers", Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="text-xs font-semibold text-gray-700 mb-1.5 truncate">Senior Lecturers Mix</div>
+              <input
+                type="number"
+                step="0.1"
+                value={params.staffMix.seniorLecturers}
+                onChange={(e) => handleStaffMixChange("seniorLecturers", Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm outline-none transition-all"
+              />
+            </div>
+            <div className="block">
+              <div className="text-xs font-semibold text-gray-700 mb-1.5 truncate">Professors Mix</div>
+              <input
+                type="number"
+                step="0.1"
+                value={params.staffMix.professors}
+                onChange={(e) => handleStaffMixChange("professors", Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm outline-none transition-all"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">These three mix values must sum to 1.0</p>
+        </div>
+      </div>
+
+      {calcErrorMsg && <p className="text-red-600 font-medium mb-4">{calcErrorMsg}</p>}
+
+      <button
+        onClick={handleCalculate}
+        className="px-6 py-2 bg-pes text-white rounded hover:bg-blue-900 transition-colors font-medium shadow-sm"
+      >
+        Calculate Student-Teacher Ratio
+      </button>
+
+      {results && (
+        <div className="mt-8 border-t border-gray-200 pt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Simulation Results</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-indigo-50 rounded-xl p-6 shadow-sm border border-indigo-100 flex flex-col justify-center">
+              <p className="text-sm font-medium text-indigo-800 mb-1">Optimal K (Ratio)</p>
+              <p className="text-4xl font-bold text-indigo-900">{results.optimalK}</p>
+              <p className="text-xs text-indigo-600 mt-2">Students per teacher</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col justify-center">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Academic Staff</p>
+              <p className="text-3xl font-bold text-gray-900">{results.totalStaffNeeded}</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col justify-center">
+              <p className="text-sm font-medium text-gray-500 mb-1">Supervisory Staff</p>
+              <p className="text-3xl font-bold text-gray-900">{results.supervisoryStaff}</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col justify-center">
+              <p className="text-sm font-medium text-gray-500 mb-1">Efficiency Value</p>
+              <p className="text-2xl font-bold text-gray-900">{results.efficiencyValue.toFixed(4)}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-4 border-b pb-2">Academic Staff Breakdown</h3>
+              <ul className="space-y-3">
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Lecturers:</span>
+                  <span className="font-medium bg-gray-100 px-3 py-1 rounded-full">{results.staffDistribution.lecturers}</span>
+                </li>
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Senior Lecturers:</span>
+                  <span className="font-medium bg-gray-100 px-3 py-1 rounded-full">{results.staffDistribution.seniorLecturers}</span>
+                </li>
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Professors:</span>
+                  <span className="font-medium bg-gray-100 px-3 py-1 rounded-full">{results.staffDistribution.professors}</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-4 border-b pb-2">Management Breakdown</h3>
+              <ul className="space-y-3">
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Level 1 Management:</span>
+                  <span className="font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{results.managementStaffLevel1}</span>
+                </li>
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Level 2 Management:</span>
+                  <span className="font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{results.managementStaffLevel2}</span>
+                </li>
+                <li className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Top Management:</span>
+                  <span className="font-medium bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{results.topManagementStaff}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {saveErrorMsg && <p className="text-red-600 font-medium mb-2">{saveErrorMsg}</p>}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Result"}
+            </button>
+            {successMsg && <span className="text-sm font-medium text-green-600">{successMsg}</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -28,13 +28,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const query = `
-      INSERT INTO personnel_redundancy 
-      (org, actual_staff, optimal_staff, low_threshold, moderate_threshold, pr_value, rating)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-
-    await prisma.$queryRawUnsafe(query, org, actual_staff, optimal_staff, low_threshold, moderate_threshold, pr_value, rating);
+    await prisma.personnel_redundancy.create({
+      data: {
+        org,
+        actual_staff: Number(actual_staff),
+        optimal_staff: Number(optimal_staff),
+        low_threshold: Number(low_threshold),
+        moderate_threshold: Number(moderate_threshold),
+        pr_value,
+        rating,
+      },
+    });
 
     return NextResponse.json({ success: true, message: "Record saved successfully" });
   } catch (err: any) {

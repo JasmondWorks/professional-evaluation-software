@@ -38,36 +38,48 @@ async function updateData(entry: Goals) {
   const title = `New Goal Created: ${entry.name}`
   const message = `${entry.description} (Due: ${entry.due_date})`
 
-  await prisma.$executeRaw`
-    INSERT INTO notifications (user_id, org, title, message)
-    SELECT id, org, ${title}, ${message}
-    FROM pesuser
-    WHERE org = (SELECT org FROM pesuser WHERE id = ${userIdNum})
-  `
+  // Resolve the goal owner's org, then notify every user in that org.
+  const owner = await prisma.pesuser.findUnique({
+    where: { id: userIdNum },
+    select: { org: true },
+  })
+  const orgName = owner?.org ?? null
 
-  const orgResult = await prisma.$queryRaw<
-    { name: string; evaluation: string[]; ongoing: boolean }[]
-  >`
-    SELECT name, evaluation, ongoing
-    FROM org
-    WHERE name = (SELECT org FROM pesuser WHERE id = ${userIdNum})
-  `
+  if (orgName) {
+    const orgUsers = await prisma.pesuser.findMany({
+      where: { org: orgName },
+      select: { id: true, org: true },
+    })
 
-  if (orgResult.length > 0) {
-    const orgName = orgResult[0].name
-    const evaluations = orgResult[0].evaluation || []
+    await prisma.notifications.createMany({
+      data: orgUsers.map((u) => ({
+        user_id: u.id,
+        org: u.org,
+        title,
+        message,
+      })),
+    })
 
-    const updatedEvaluations = evaluations.includes(entry.evaluation_type)
-      ? evaluations
-      : [...evaluations, entry.evaluation_type]
+    const orgRecord = await prisma.org.findUnique({
+      where: { name: orgName },
+      select: { name: true, evaluation: true },
+    })
 
-    await prisma.$executeRaw`
-      UPDATE org
-      SET evaluation = ${updatedEvaluations},
-          ongoing = true,
-          updated_at = NOW()
-      WHERE name = ${orgName}
-    `
+    if (orgRecord) {
+      const evaluations = orgRecord.evaluation || []
+      const updatedEvaluations = evaluations.includes(entry.evaluation_type)
+        ? evaluations
+        : [...evaluations, entry.evaluation_type]
+
+      await prisma.org.update({
+        where: { name: orgRecord.name },
+        data: {
+          evaluation: updatedEvaluations,
+          ongoing: true,
+          updated_at: new Date(),
+        },
+      })
+    }
   }
 
   return { message: 'success', status: 200, goalId }

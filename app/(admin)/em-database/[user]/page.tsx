@@ -55,15 +55,16 @@ export default function Page({ params }: { params: { user: string } }){
     useEffect( () => {
         async function fetchUser(){
             const access_token = getAccessToken() as string
-            const decoded: any = jwtDecode(access_token)
+            
            
             const data = await fetch('/api/getUserProfile', 
               {
                  method: "POST",
                  headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${access_token}`
                  },
-                 body: JSON.stringify({ user: params.user, org: decoded?.org }) // Converting the data object to a JSON string
+                 body: JSON.stringify({ user: params.user }) // Converting the data object to a JSON string
               }
            )
            let res = await data.json()
@@ -81,7 +82,8 @@ export default function Page({ params }: { params: { user: string } }){
         try {
             const res = await fetch("/api/users/delete", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json",
+                    "Authorization": `Bearer ${access_token}` },
             body: JSON.stringify({ org: user.org, email:user.email }),
             });
 

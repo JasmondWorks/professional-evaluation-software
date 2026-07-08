@@ -9,19 +9,13 @@ export async function GET(
   console.log("Fetching org:", orgName) 
 
   try {
-    const org = await prisma.$queryRaw`
-      SELECT
-        id,
-        name,
-        evaluation,
-        ongoing
-      FROM org
-      WHERE name = ${orgName}
-      LIMIT 1;
-    `
-    console.log("Org fetched:", org)    
+    const org = await prisma.org.findUnique({
+      where: { name: orgName },
+      select: { id: true, name: true, evaluation: true, ongoing: true },
+    })
+    console.log("Org fetched:", org)
 
-    if (!Array.isArray(org) || org.length === 0) {
+    if (!org) {
       return NextResponse.json(
         { status: 404, message: 'Org not found' },
         { status: 404 }
@@ -30,7 +24,7 @@ export async function GET(
 
     return NextResponse.json({
       status: 200,
-      data: org[0]
+      data: org
     })
   } catch (error) {
     console.error(error)

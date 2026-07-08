@@ -6,18 +6,10 @@ export async function POST(req: NextRequest) {
     const { name } = await req.json();
 
     const [first, second, hall, badges] = await Promise.all([
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'first_book' AS source FROM first_book_of_record WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'second_book' AS source FROM second_book_of_record WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'hall_of_fame' AS source FROM hall_of_fame WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'badges' AS source FROM badges WHERE name = ${name}
-      `
+      prisma.first_book_of_record.findMany({ where: { name } }),
+      prisma.second_book_of_record.findMany({ where: { name } }),
+      prisma.hall_of_fame.findMany({ where: { name } }),
+      prisma.badges.findMany({ where: { name } }),
     ]);
 
     // Map sources to URLs
@@ -38,7 +30,7 @@ export async function POST(req: NextRequest) {
             url = `/reward/badges/${name}`;
             break;
         }
-        return { ...item, url };
+        return { ...item, source: type, url };
       });
     };
 

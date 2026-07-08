@@ -13,19 +13,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use parameterized query to prevent SQL injection
-    const result: any = await prisma.$queryRawUnsafe(`
-      DELETE FROM pesuser
-      WHERE org = $1 AND email = $2
-      RETURNING *;
-    `, org, email);
+    // Fetch matching users first so we can report exactly what was removed.
+    const result = await prisma.pesuser.findMany({ where: { org, email } });
 
-    if (!result || result.length === 0) {
+    if (result.length === 0) {
       return NextResponse.json(
         { success: false, message: "No user found with that org/email" },
         { status: 404 }
       );
     }
+
+    await prisma.pesuser.deleteMany({ where: { org, email } });
 
     return NextResponse.json({
       success: true,

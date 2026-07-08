@@ -33,8 +33,8 @@ function getJWTSecret(): string {
 /**
  * Sign a JWT token
  */
-export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, expiresIn: string = '7d'): string {
-  return jwt.sign(payload, getJWTSecret(), { expiresIn });
+export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, expiresIn: any = '7d'): string {
+  return jwt.sign(payload as object, getJWTSecret(), { expiresIn });
 }
 
 /**

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { Prisma } from '@prisma/client'
 import { jwtDecode } from 'jwt-decode';
 
 function decodeJWT(jwt: string){
@@ -15,13 +16,11 @@ export async function POST(req: NextRequest) {
   }
   const { payload } = body;
   const value = body[payload];
-  console.log('i was hit')
   const token = authHeader.split(' ')[1];
   if (!token) {
     return NextResponse.json({ message: 'Token missing' }, { status: 401 });
   }
   const { org, user_id, dept } = decodeJWT(token);
-  console.log({ org, user_id, dept })
 
   const allowedFields = [
     'productivity',
@@ -38,31 +37,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Check if user appraisal already exists
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "index" WHERE org = $1`,
-      org,
-    ) as any[];
+    // Always create a new record for historical tracking
+    await prisma.index.create({
+      data: { org, dept, [payload]: value } as Prisma.indexUncheckedCreateInput,
+    });
 
-    if (existing.length === 0) {
-      // Insert new row with only the given field
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "index" (org, "${payload}") VALUES ($1, $2)`,
-        org,
-        value
-      );
-
-      return NextResponse.json({ message: 'saved successfully' }, { status: 201 });
-    } else {
-      // Update the field
-      await prisma.$executeRawUnsafe(
-        `UPDATE "index" SET "${payload}" = $1 WHERE org = $2`,
-        value,
-        org
-      );
-
-      return NextResponse.json({ message: 'index updated' }, { status: 200 });
-    }
+    return NextResponse.json({ message: 'saved successfully' }, { status: 201 });
   } catch (error) {
      console.error('Prisma query error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

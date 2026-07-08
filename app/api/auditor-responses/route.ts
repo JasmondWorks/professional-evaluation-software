@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../prisma.dev";
 import nodemailer from "nodemailer";
-
-const prisma = new PrismaClient();
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -46,19 +44,20 @@ export async function POST(req: Request) {
     }
 
     // Save into auditor_responses table
-    await prisma.$queryRawUnsafe(
-      `INSERT INTO auditor_responses (name, email, gsm, address, dob, image, responses, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'pending')
-       ON CONFLICT (email) DO UPDATE SET 
-         name = EXCLUDED.name,
-         gsm = EXCLUDED.gsm,
-         address = EXCLUDED.address,
-         dob = EXCLUDED.dob,
-         image = EXCLUDED.image,
-         responses = EXCLUDED.responses,
-         status = 'pending'`,
-      name, email, gsm, address, dobDate, image || null, JSON.stringify(responses)
-    );
+    const auditorData = {
+      name,
+      gsm,
+      address,
+      dob: dobDate,
+      image: image || null,
+      responses,
+      status: "pending",
+    };
+    await prisma.auditor_responses.upsert({
+      where: { email },
+      update: auditorData,
+      create: { email, ...auditorData },
+    });
 
     // Generate HTML table for the email
     const tableRows = questions

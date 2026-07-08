@@ -11,12 +11,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid org parameter" }, { status: 400 });
     }
 
-    // Use parameterized query to prevent SQL injection
-    const results = await prisma.$queryRaw<any[]>`
-      SELECT pesuser_name, dept, stress_theme, stress_feeling_frequency
-      FROM stress
-      WHERE org = ${org};
-    `;
+    const results = await prisma.stress.findMany({
+      where: { org },
+      select: {
+        pesuser_name: true,
+        dept: true,
+        stress_theme: true,
+        stress_feeling_frequency: true,
+      },
+    });
 
     return NextResponse.json(results);
   } catch (err) {

@@ -6,13 +6,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name } = body;
 
-    let whereClause = "";
-    if (name) whereClause = `WHERE pesuser_name = '${name.replace(/'/g, "''")}'`;
-
-    const results = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept, stress_theme, stress_feeling_frequency
-      FROM stress ${whereClause};
-    `);
+    const results = await prisma.stress.findMany({
+      where: name ? { pesuser_name: name } : undefined,
+      select: {
+        pesuser_name: true,
+        dept: true,
+        stress_theme: true,
+        stress_feeling_frequency: true,
+      },
+    });
 
     return NextResponse.json(results);
   } catch (err) {

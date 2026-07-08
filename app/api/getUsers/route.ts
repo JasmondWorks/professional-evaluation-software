@@ -2,31 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
-type user = {
-  id:number
-  name: string
-  email: string 
-  gsm: string
-  role: string
-  address: string
-  dept: string
-  faculty_college: string
-  dob: string
-  doa: string
-  poa : string
-  doc : string
-  post : string
-  dopp: string
-  level: string
-  image : string
-  org : string
-}
-
 async function getUsers( user: string | null ) {
-  const users: user[] = await prisma.$queryRawUnsafe('SELECT * FROM pesuser where org = $1', user?.toString())
-  
-  await prisma.$disconnect()
-  return users
+  if (!user) return []
+  return prisma.pesuser.findMany({ where: { org: user } })
 }
 
 export async function POST(request: NextRequest) {

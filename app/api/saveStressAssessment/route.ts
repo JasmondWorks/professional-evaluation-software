@@ -13,21 +13,20 @@ export async function POST(req: NextRequest) {
     const org = decoded?.org || "Unknown Org";
     const dept = decoded?.dept || "General";
 
-    // Combine both forms into one JSON summary
-    const stress_theme = JSON.stringify({
-      stressFeelings: form6,
-      stressCategories: form7,
+    // Store both forms as structured JSON in the dedicated assessment_data column
+    // (the stress_theme/stress_feeling_frequency columns are numeric survey scores).
+    await prisma.stress.create({
+      data: {
+        pesuser_name,
+        org,
+        dept,
+        assessment_data: {
+          stressFeelings: form6 ?? null,
+          stressCategories: form7 ?? null,
+          frequency: form6?.frequency ?? form7?.frequency ?? null,
+        },
+      },
     });
-
-    // You can also calculate an average feeling frequency or theme keyword
-    const stress_feeling_frequency =
-      form6?.frequency || form7?.frequency || "N/A";
-
-    // Save record using queryRaw
-    await prisma.$queryRaw`
-      INSERT INTO stress (pesuser_name, org, stress_theme, stress_feeling_frequency, dept)
-      VALUES (${pesuser_name}, ${org}, ${stress_theme}, ${stress_feeling_frequency}, ${dept})
-    `;
 
     return NextResponse.json({ success: true, message: "Stress data saved." });
   } catch (err: any) {

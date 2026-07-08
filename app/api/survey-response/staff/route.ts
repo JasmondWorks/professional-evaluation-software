@@ -21,11 +21,9 @@ export async function POST(req: Request) {
     }
 
     // === 1. Save to DB ===
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO staff_survey_responses (pesuser_name, pesuser_email, org, dept, responses)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [pesuser_name, pesuser_email, org, dept, JSON.stringify(responses)]
-    );
+    await prisma.staff_survey_responses.create({
+      data: { pesuser_name, pesuser_email, org, dept, responses },
+    });
 
     // === 2. Send email to admin ===
     const transporter = nodemailer.createTransport({

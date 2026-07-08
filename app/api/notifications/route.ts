@@ -14,13 +14,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const query = `
-      SELECT id, user_id, org, title, message, is_read, created_at
-      FROM notifications
-      WHERE org = $1
-      ORDER BY created_at DESC;
-    `;
-    const notifications = await prisma.$queryRawUnsafe(query, org);
+    const notifications = await prisma.notifications.findMany({
+      where: { org },
+      select: {
+        id: true,
+        user_id: true,
+        org: true,
+        title: true,
+        message: true,
+        is_read: true,
+        created_at: true,
+      },
+      orderBy: { created_at: "desc" },
+    });
 
     return NextResponse.json({ notifications });
   } catch (err) {
@@ -29,7 +35,5 @@ export async function POST(request: NextRequest) {
       { error: "Failed to fetch notifications" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

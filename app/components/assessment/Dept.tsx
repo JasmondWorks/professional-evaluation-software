@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type DeptProps = {
@@ -10,7 +11,9 @@ type DeptProps = {
 };
 
 export default function Dept({ data }: DeptProps) {
-  const [status, setStatus] = useState<null | "passed" | "outliers" | "notEnough">(null);
+  const [status, setStatus] = useState<
+    null | "passed" | "outliers" | "notEnough"
+  >(null);
   const [outliers, setOutliers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +23,9 @@ export default function Dept({ data }: DeptProps) {
     setOutliers([]);
 
     try {
-      const response = await fetch(`/api/getDataEntryByDept?dept=${encodeURIComponent(data.dept)}`);
+      const response = await fetch(
+        `/api/getDataEntryByDept?dept=${encodeURIComponent(data.dept)}`,
+      );
       const records = await response.json();
 
       if (!Array.isArray(records) || records.length < 15) {
@@ -81,8 +86,17 @@ export default function Dept({ data }: DeptProps) {
     <div className="flex flex-col p-6 my-2 mx-4 border rounded-md bg-white">
       <div className="flex justify-between">
         <div className="flex flex-col my-auto">
-          <p className="font-semibold text-md">{data.dept} department</p>
-          <p className="text-gray-300 text-sm">{data.total_unique_users} data entries recorded</p>
+          <p className="font-semibold text-md">
+            {data.dept.toLowerCase().endsWith("department")
+              ? data.dept
+              : `${data.dept} department`}
+          </p>
+          <p className="text-gray-300 text-sm">
+            {data.total_unique_users}{" "}
+            {data.total_unique_users === 1
+              ? "data entry recorded"
+              : "data entries recorded"}
+          </p>
         </div>
 
         <button
@@ -96,13 +110,15 @@ export default function Dept({ data }: DeptProps) {
 
       {status === "passed" && (
         <div className="mt-4">
-          <p className="text-green-600 font-semibold">✅ Data Integrity Passed</p>
-          <a
+          <p className="text-green-600 font-semibold">
+            ✅ Data Integrity Passed
+          </p>
+          <Link
             href={`/evaluation?dept=${data.dept}`}
             className="mt-3 inline-block text-center text-white bg-green-600 px-6 py-2 rounded-md hover:bg-green-700 transition-all"
           >
             Assess Employees
-          </a>
+          </Link>
         </div>
       )}
 

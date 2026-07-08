@@ -5,20 +5,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  await prisma.$executeRawUnsafe(
-    `DELETE FROM pesuser WHERE id = $1`,
-    Number(params.id)
-  );
+  await prisma.pesuser.deleteMany({ where: { id: Number(params.id) } });
 
   return NextResponse.json({ success: true });
 }
 
 export async function GET(  req: NextRequest, { params }: { params: { id: string } }) {
-    const user: any = await prisma.$queryRawUnsafe(
-    `SELECT * FROM pesuser WHERE id = $1`,
-    Number(params.id)
-  );
-  console.log(user)
+  const user = await prisma.pesuser.findUnique({
+    where: { id: Number(params.id) },
+  });
 
-  return NextResponse.json(user[0]);
+  return NextResponse.json(user);
 }

@@ -39,14 +39,12 @@ export async function POST(req: Request) {
       select: { image: true }
     });
 
-    const m_model: boolean[] = await prisma.$queryRaw`
-      SELECT maintenance_model
-      FROM org
-      WHERE name = ${user.org}
-      LIMIT 1;
-    `;
-
-    const maintenance = m_model[0];
+    const maintenance = user.org
+      ? await prisma.org.findUnique({
+          where: { name: user.org },
+          select: { maintenance_model: true },
+        })
+      : null;
 
     const logo = admin?.image || user.image || null;
 
@@ -61,7 +59,7 @@ export async function POST(req: Request) {
         dept: user.dept,
         productCategory: user.category,
         productPlan: user.plan,
-        maintenance_model: maintenance.maintenance_model
+        maintenance_model: maintenance?.maintenance_model ?? false
       },
       process.env.JWT_SECRET || 'fallback-secret-change-in-production'
     );

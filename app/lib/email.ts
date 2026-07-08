@@ -1,15 +1,15 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 /**
  * Email configuration
  */
 const emailConfig = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, // true for 465, false for other ports
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: true, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 };
 
@@ -17,12 +17,14 @@ const emailConfig = {
  * Create email transporter
  */
 function createTransporter() {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️  Email service not configured. Set SMTP_USER and SMTP_PASS in .env');
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn(
+      "⚠️  Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env",
+    );
     return null;
   }
 
-  return nodemailer.createTransporter(emailConfig);
+  return nodemailer.createTransport(emailConfig);
 }
 
 /**
@@ -30,7 +32,7 @@ function createTransporter() {
  */
 const templates = {
   passwordReset: (resetLink: string, userName: string) => ({
-    subject: 'Password Reset Request - PES',
+    subject: "Password Reset Request - PES",
     html: `
       <!DOCTYPE html>
       <html>
@@ -53,7 +55,7 @@ const templates = {
             <p>Hi ${userName},</p>
             <p>We received a request to reset your password for your PES account.</p>
             <p>Click the button below to reset your password:</p>
-            <a href="${resetLink}" class="button">Reset Password</a>
+            <Link href="${resetLink}" class="button">Reset Password</Link>
             <p>Or copy and paste this link into your browser:</p>
             <p style="word-break: break-all; color: #4F46E5;">${resetLink}</p>
             <p><strong>This link will expire in 1 hour.</strong></p>
@@ -83,7 +85,7 @@ const templates = {
   }),
 
   passwordChanged: (userName: string) => ({
-    subject: 'Password Changed Successfully - PES',
+    subject: "Password Changed Successfully - PES",
     html: `
       <!DOCTYPE html>
       <html>
@@ -126,7 +128,7 @@ const templates = {
   }),
 
   welcomeEmail: (userName: string, email: string, tempPassword: string) => ({
-    subject: 'Welcome to PES - Your Account Details',
+    subject: "Welcome to PES - Your Account Details",
     html: `
       <!DOCTYPE html>
       <html>
@@ -185,30 +187,30 @@ const templates = {
 export async function sendEmail(
   to: string,
   template: keyof typeof templates,
-  data: any
+  data: any,
 ): Promise<{ success: boolean; error?: string }> {
   const transporter = createTransporter();
 
   if (!transporter) {
     // In development, log email instead of sending
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📧 Email (Development Mode):');
-      console.log('To:', to);
-      console.log('Template:', template);
-      console.log('Data:', data);
-      const emailContent = templates[template](data);
-      console.log('Subject:', emailContent.subject);
-      console.log('Text:', emailContent.text);
+    if (process.env.NODE_ENV === "development") {
+      console.log("📧 Email (Development Mode):");
+      console.log("To:", to);
+      console.log("Template:", template);
+      console.log("Data:", data);
+      const emailContent = (templates as any)[template](...Object.values(data));
+      console.log("Subject:", emailContent.subject);
+      console.log("Text:", emailContent.text);
       return { success: true };
     }
-    return { success: false, error: 'Email service not configured' };
+    return { success: false, error: "Email service not configured" };
   }
 
   try {
-    const emailContent = templates[template](...Object.values(data));
-    
+    const emailContent = (templates as any)[template](...Object.values(data));
+
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject: emailContent.subject,
       text: emailContent.text,
@@ -217,10 +219,10 @@ export async function sendEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send email' 
+    console.error("Email send error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to send email",
     };
   }
 }
@@ -231,10 +233,10 @@ export async function sendEmail(
 export async function sendPasswordResetEmail(
   email: string,
   userName: string,
-  resetToken: string
+  resetToken: string,
 ): Promise<{ success: boolean; error?: string }> {
   const resetLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
-  return sendEmail(email, 'passwordReset', { resetLink, userName });
+  return sendEmail(email, "passwordReset", { resetLink, userName });
 }
 
 /**
@@ -242,9 +244,9 @@ export async function sendPasswordResetEmail(
  */
 export async function sendPasswordChangedEmail(
   email: string,
-  userName: string
+  userName: string,
 ): Promise<{ success: boolean; error?: string }> {
-  return sendEmail(email, 'passwordChanged', { userName });
+  return sendEmail(email, "passwordChanged", { userName });
 }
 
 /**
@@ -253,7 +255,7 @@ export async function sendPasswordChangedEmail(
 export async function sendWelcomeEmail(
   email: string,
   userName: string,
-  tempPassword: string
+  tempPassword: string,
 ): Promise<{ success: boolean; error?: string }> {
-  return sendEmail(email, 'welcomeEmail', { userName, email, tempPassword });
+  return sendEmail(email, "welcomeEmail", { userName, email, tempPassword });
 }

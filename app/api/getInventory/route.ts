@@ -3,9 +3,8 @@ import prisma from '../prisma.dev'
 
 
 async function getInventory( user: string | null ) {
-  const users = await prisma.$queryRawUnsafe('SELECT * FROM facilities where org = $1', user?.toString())
-  await prisma.$disconnect()
-  return users
+  if (!user) return []
+  return prisma.facilities.findMany({ where: { org: user } })
 }
 
 export async function POST(request: NextRequest) {

@@ -30,29 +30,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for existing record
-    const existing: any = await prisma.$queryRaw`
-      SELECT id FROM performance_result WHERE org = ${org}
-    `;
-
-    if (existing.length > 0) {
-      // Update
-      await prisma.$queryRaw`
-        UPDATE performance_result
-        SET total_score = ${total_score},
-            rating = ${rating},
-            thresholds = ${JSON.stringify(thresholds)},
-            criteria = ${JSON.stringify(criteria)},
-            updated_at = NOW()
-        WHERE org = ${org}
-      `;
-    } else {
-      // Insert
-      await prisma.$queryRaw`
-        INSERT INTO performance_result (org, total_score, rating, thresholds, criteria)
-        VALUES (${org}, ${total_score}, ${rating}, ${JSON.stringify(thresholds)}, ${JSON.stringify(criteria)})
-      `;
-    }
+    await prisma.performance_result.create({
+      data: { org, total_score, rating, thresholds, criteria },
+    });
 
     return NextResponse.json({ success: true, message: "Performance result saved" });
   } catch (err: any) {

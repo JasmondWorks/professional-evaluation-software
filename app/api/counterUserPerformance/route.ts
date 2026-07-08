@@ -6,14 +6,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name } = body;
 
-    let whereClause = "";
-    if (name) whereClause = `WHERE pesuser_name = '${name.replace(/'/g, "''")}'`;
-
-    const results = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept, competence, integrity, compatibility, use_of_resources
-      FROM counter_userperformance ${whereClause};
-    `);
-    console.log("Query results:", results);
+    const results = await prisma.counter_userperformance.findMany({
+      where: name ? { pesuser_name: name } : undefined,
+      select: {
+        pesuser_name: true,
+        dept: true,
+        competence: true,
+        integrity: true,
+        compatibility: true,
+        use_of_resources: true,
+      },
+    });
     return NextResponse.json(results);
   } catch (err) {
     console.error("Error fetching counter performance:", err);

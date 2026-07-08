@@ -4,9 +4,8 @@ import jwt from 'jsonwebtoken'
 
 
 async function getRoles( user: string | null ) {
-  const users = await prisma.$queryRawUnsafe('SELECT * FROM roles where org = $1', user?.toString())
-  await prisma.$disconnect()
-  return users
+  if (!user) return []
+  return prisma.roles.findMany({ where: { org: user } })
 }
 
 export async function POST(request: NextRequest) {
@@ -15,11 +14,11 @@ export async function POST(request: NextRequest) {
 
   if (token) {
     try {
-      let userName: string | null = null;
-      if (typeof user === 'object' && user !== null && 'name' in user) {
-        userName = (user as { name?: string }).name ?? null;
+      let userOrg: string | null = null;
+      if (typeof user === 'object' && user !== null && 'org' in user) {
+        userOrg = (user as { org?: string }).org ?? null;
       }
-      let userInfo = await getRoles(userName);
+      let userInfo = await getRoles(userOrg);
       return NextResponse.json(userInfo);
 
     } catch(err) {

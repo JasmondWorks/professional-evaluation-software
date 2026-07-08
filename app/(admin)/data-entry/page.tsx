@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EntrySection } from "../../components/EntrySection";
 import { jwtDecode } from "jwt-decode";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,7 @@ export default function DataEntryPage() {
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
 
   const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("access_token")
-      : null;
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const user = token ? jwtDecode<any>(token) : null;
 
@@ -98,7 +97,7 @@ export default function DataEntryPage() {
                     >
                       <span className="text-sm">{it.label}</span>
                       <div className="flex gap-4">
-                        <a
+                        <Link
                           href={it.templateUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -107,7 +106,7 @@ export default function DataEntryPage() {
                           }`}
                         >
                           Download Template
-                        </a>
+                        </Link>
                         <button
                           className={`px-4 py-1 rounded text-white ${
                             active ? "bg-pes" : "bg-gray-400 cursor-not-allowed"

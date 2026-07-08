@@ -24,15 +24,16 @@ export async function POST(request: NextRequest) {
     const orgName = decoded.org
 
     // Fetch current evaluation array
-    const result = await prisma.$queryRaw<{ evaluation: string[] }[]>`
-      SELECT evaluation FROM org WHERE name = ${orgName} LIMIT 1
-    `
+    const org = await prisma.org.findUnique({
+      where: { name: orgName },
+      select: { evaluation: true },
+    })
 
-    if (!result.length) {
+    if (!org) {
       return NextResponse.json({ error: 'Org not found' }, { status: 404 })
     }
 
-    const current: string[] = result[0].evaluation || []
+    const current: string[] = org.evaluation || []
 
     let updated: string[]
     if (enabled) {
@@ -41,14 +42,10 @@ export async function POST(request: NextRequest) {
       updated = current.filter((e) => e !== evaluation_type)
     }
 
-    await prisma.$executeRaw`
-      UPDATE org
-      SET evaluation = ${updated},
-          updated_at = NOW()
-      WHERE name = ${orgName}
-    `
-
-    await prisma.$disconnect()
+    await prisma.org.update({
+      where: { name: orgName },
+      data: { evaluation: updated, updated_at: new Date() },
+    })
 
     return NextResponse.json({ success: true, evaluation: updated })
   } catch (err) {

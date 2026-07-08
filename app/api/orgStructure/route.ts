@@ -31,25 +31,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Construct properly typed arrays
-    const numArray = `{${numerator.map(Number).join(",")}}`;
-    const denArray = `{${denominator.map(Number).join(",")}}`;
-
-    // Use proper casting for numeric[]
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO org_structure_results (
-        org, section, result, numerator, denominator, extra_data
-      )
-      VALUES (
-        ${org},
-        ${Number(section)},
-        ${Number(result)},
-        ${numArray}::numeric[],
-        ${denArray}::numeric[],
-        ${JSON.stringify(extra_data)}::jsonb
-      )
-      RETURNING *;
-    `;
+    const record = await prisma.org_structure_results.create({
+      data: {
+        org,
+        section: Number(section),
+        result: Number(result),
+        numerator: numerator.map(Number),
+        denominator: denominator.map(Number),
+        extra_data,
+      },
+    });
 
     return NextResponse.json({ success: true, record }, { status: 201 });
   } catch (err: any) {
