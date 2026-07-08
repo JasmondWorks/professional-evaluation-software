@@ -6,61 +6,54 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { org, name } = body;
 
-    let whereClause = "";
-    if (org) {
-      whereClause = `WHERE org = '${org.replace(/'/g, "''")}'`;
-    }
-    if (name) {
-      whereClause += (whereClause ? " AND " : "WHERE ") + `pesuser_name = '${name.replace(/'/g, "''")}'`;
-    }
+    const where = {
+      ...(org ? { org } : {}),
+      ...(name ? { pesuser_name: name } : {}),
+    };
+    const appraisalSelect = {
+      pesuser_name: true, dept: true,
+      teaching_quality_evaluation: true, research_quality_evaluation: true,
+      administrative_quality_evaluation: true, community_quality_evaluation: true,
+    } as const;
+    const performanceSelect = {
+      pesuser_name: true, dept: true,
+      competence: true, integrity: true, compatibility: true, use_of_resources: true,
+    } as const;
+    const stressSelect = {
+      pesuser_name: true, dept: true,
+      stress_theme: true, stress_feeling_frequency: true,
+    } as const;
+    const withSource = (rows: any[], source: string) =>
+      rows.map((r) => ({ ...r, source }));
 
     // --- Appraisals (main + counter) ---
-    const appraisals = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'main' AS source
-      FROM appraisal ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'counter' AS source
-      FROM counter_appraisal ${whereClause}
-    `);
+    const [mainAppraisals, counterAppraisals] = await Promise.all([
+      prisma.appraisal.findMany({ where, select: appraisalSelect }),
+      prisma.counter_appraisal.findMany({ where, select: appraisalSelect }),
+    ]);
+    const appraisals = [...withSource(mainAppraisals, "main"), ...withSource(counterAppraisals, "counter")];
 
     // --- Performance (main + counter) ---
-    const performances = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'main' AS source
-      FROM userperformance ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'counter' AS source
-      FROM counter_userperformance ${whereClause}
-    `);
+    const [mainPerformances, counterPerformances] = await Promise.all([
+      prisma.userperformance.findMany({ where, select: performanceSelect }),
+      prisma.counter_userperformance.findMany({ where, select: performanceSelect }),
+    ]);
+    const performances = [...withSource(mainPerformances, "main"), ...withSource(counterPerformances, "counter")];
 
     // --- Stress (main + counter) ---
-    const stresses = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             stress_theme, stress_feeling_frequency,
-             'main' AS source
-      FROM stress ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             stress_theme, stress_feeling_frequency,
-             'counter' AS source
-      FROM counter_stress ${whereClause}
-    `);
+    const [mainStresses, counterStresses] = await Promise.all([
+      prisma.stress.findMany({ where, select: stressSelect }),
+      prisma.counter_stress.findMany({ where, select: stressSelect }),
+    ]);
+    const stresses = [...withSource(mainStresses, "main"), ...withSource(counterStresses, "counter")];
 
     // --- Leadership scores (only one source) ---
-    const leadership = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources
-      FROM lead_scores;
-    `);
+    const leadership = await prisma.lead_scores.findMany({
+      select: {
+        pesuser_name: true, dept: true,
+        competence: true, integrity: true, compatibility: true, use_of_resources: true,
+      },
+    });
 
     // --- Helper to group by source ---
     const groupBySource = (rows: any[], type: string) => {

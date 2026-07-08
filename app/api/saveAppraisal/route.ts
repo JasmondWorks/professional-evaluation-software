@@ -38,26 +38,21 @@ export async function POST(request: NextRequest) {
       numericData[key] = numValue;
     }
 
-    if (isCounter) {
-      // Save counter appraisal (HOD scores)
-      await prisma.$executeRaw`
-        INSERT INTO counterappraisal (pesuser_name, org, dept, payload)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          payload = ${JSON.stringify(numericData)}::jsonb,
-          dept = ${dept || null}
-      `;
+    // The appraisal tables store evaluation scores as individual columns, so
+    // spread numericData (keyed by column name) into the row rather than a blob.
+    const delegate: any = isCounter ? prisma.counter_appraisal : prisma.appraisal;
+    const values = { ...numericData, dept: dept || null };
+
+    // Upsert on (pesuser_name, org) via constraint-independent find-then-write.
+    const existing = await delegate.findFirst({
+      where: { pesuser_name, org },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await delegate.updateMany({ where: { pesuser_name, org }, data: values });
     } else {
-      // Save regular appraisal (employee scores)
-      await prisma.$executeRaw`
-        INSERT INTO appraisal (pesuser_name, org, dept, payload)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          payload = ${JSON.stringify(numericData)}::jsonb,
-          dept = ${dept || null}
-      `;
+      await delegate.create({ data: { pesuser_name, org, ...values } });
     }
 
     return NextResponse.json(

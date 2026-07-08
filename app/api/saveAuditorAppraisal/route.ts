@@ -17,49 +17,46 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch dept from pesuser
-    const userResult = await prisma.$queryRawUnsafe<{ dept: string }[]>(
-      `SELECT dept FROM "pesuser" WHERE name = $1 AND org = $2 LIMIT 1`,
-      pesuser_name,
-      org
-    );
+    const user = await prisma.pesuser.findFirst({
+      where: { name: pesuser_name, org },
+      select: { dept: true },
+    });
 
-    if (userResult.length === 0 || !userResult[0].dept) {
+    if (!user?.dept) {
       return NextResponse.json(
         { message: "User not found or department missing" },
         { status: 404 }
       );
     }
 
-    const dept = userResult[0].dept;
-    const targetTable = isCounter || !isAuditor ? "counter_appraisal" : "appraisal";
+    const dept = user.dept;
+    const targetDelegate: any =
+      isCounter || !isAuditor ? prisma.counter_appraisal : prisma.appraisal;
 
-    // Build dynamic query for insert/update
-    const columns = Object.keys(payload).map((c) => `"${c}"`).join(", ");
-    const placeholders = Object.keys(payload).map((_, i) => `$${i + 4}`).join(", ");
-    const values = Object.values(payload);
+    // payload keys are appraisal score columns; spread them into the row.
+    // counter_appraisal has no unique on (pesuser_name, org, dept), so we can't
+    // rely on upsert — do a constraint-independent find-then-write.
+    const existing = await targetDelegate.findFirst({
+      where: { pesuser_name, org, dept },
+      select: { id: true },
+    });
 
-    const updates = Object.keys(payload)
-      .map((c) => `"${c}" = EXCLUDED."${c}"`)
-      .join(", ");
-
-    // Insert or replace
-    const query = `
-      INSERT INTO "${targetTable}" (pesuser_name, org, dept, ${columns})
-      VALUES ($1, $2, $3, ${placeholders})
-      ON CONFLICT (pesuser_name, org, dept)
-      DO UPDATE SET ${updates};
-    `;
-
-    await prisma.$executeRawUnsafe(query, pesuser_name, org, dept, ...values);
+    if (existing) {
+      await targetDelegate.updateMany({
+        where: { pesuser_name, org, dept },
+        data: { ...payload },
+      });
+    } else {
+      await targetDelegate.create({
+        data: { pesuser_name, org, dept, ...payload },
+      });
+    }
 
     // ✅ If this is a main appraisal, delete matching counter_appraisal scores
     if (!isCounter && isAuditor) {
-      await prisma.$executeRawUnsafe(
-        `DELETE FROM "counter_appraisal" WHERE pesuser_name = $1 AND org = $2 AND dept = $3`,
-        pesuser_name,
-        org,
-        dept
-      );
+      await prisma.counter_appraisal.deleteMany({
+        where: { pesuser_name, org, dept },
+      });
       console.log(`Deleted counter_appraisal scores for ${pesuser_name} (${org} / ${dept})`);
     }
 

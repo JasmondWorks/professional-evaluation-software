@@ -72,7 +72,10 @@ function Input({
         value={localValue}
         placeholder={placeholder}
         tabIndex={tabIndex}
-        onChange={(e) => setLocalValue(e.target.value)}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          commitValue(e.target.value);
+        }}
         onBlur={(e) => commitValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -148,7 +151,11 @@ function PhoneInput({
         name={name}
         value={localValue}
         placeholder={placeholder}
-        onChange={(e) => setLocalValue(e.target.value.replace(/[^\d+]/g, ''))}
+        onChange={(e) => {
+          const val = e.target.value.replace(/[^\d+]/g, '');
+          setLocalValue(val);
+          onChange(val);
+        }}
         onBlur={handleBlur}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {

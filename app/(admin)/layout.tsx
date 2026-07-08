@@ -1,5 +1,5 @@
 'use client'
-import '.././globals.css'
+
 import Navbar from '../components/navbar'
 import Sidebar from '../components/sidebar'
 import Dimmer from '../components/dimmer'
@@ -46,7 +46,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
   
   return (
     <Provider store={ store }>
-        <div className={ lato.className + 'bg-gray-10 flex flex-row relative justify-center w-screen' }
+        <div className={ lato.className + ' bg-gray-10 flex flex-row relative justify-center w-screen' }
         onChange={handleMobile}>
             <Dimmer />
             <Notification />

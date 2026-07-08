@@ -12,20 +12,15 @@ type Goals = {
 }
 
 async function updateData( entry: Goals ) {
-   const params = [ entry.name, entry.description, new Date(entry.due_date), entry.id, entry.user_id  ]
-   const query = `
-      UPDATE goals
-      SET
-         name = $1,
-         description = $2,
-         due_date = $3
-      WHERE id = $4
-      AND user_id = $5
-      RETURNING *;
-   `
-   await prisma.$queryRawUnsafe(query, ...params)
-  
-   await prisma.$disconnect()
+   await prisma.goals.updateMany({
+     where: { id: Number(entry.id), user_id: entry.user_id },
+     data: {
+       name: entry.name,
+       description: entry.description,
+       due_date: new Date(entry.due_date),
+     },
+   })
+
    return { message: 'success', status: 200 }
 }
 

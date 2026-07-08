@@ -1,52 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
-
-type user = {
-  id:number
-  name: string
-  email: string 
-  password: string
-  gsm: string
-  role: string
-  address: string
-  faculty_college: string
-  dob: string
-  doa: string
-  poa : string
-  doc : string
-  post : string
-  dopp: string
-  level: string
-  image : string
-  org : string
-}
+import type { Prisma } from '@prisma/client'
 
 async function getUser(userNameOrEmail: string | null, userId: number | null) {
   if (!userNameOrEmail && userId === null) {
     return null
   }
 
-  let query = 'SELECT * FROM pesuser WHERE 1=0'
-  const params: any[] = []
+  const or: Prisma.pesuserWhereInput[] = []
 
   if (userNameOrEmail) {
-    params.push(userNameOrEmail)
-    query += ` OR name = $${params.length} OR email = $${params.length}`
+    or.push({ name: userNameOrEmail }, { email: userNameOrEmail })
   }
 
   if (userId !== null && !isNaN(userId)) {
-    params.push(userId)
-    query += ` OR id = $${params.length}`
+    or.push({ id: userId })
   }
 
   try {
-    const users: user[] = await prisma.$queryRawUnsafe(query, ...params)
-    await prisma.$disconnect()
-    return users[0] || null
+    return await prisma.pesuser.findFirst({ where: { OR: or } })
   } catch (err) {
     console.error('Error fetching user in getUser:', err)
-    await prisma.$disconnect()
     return null
   }
 }

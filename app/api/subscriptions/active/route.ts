@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { jwtDecode } from "jwt-decode";
 
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get("email");
+  const token = req.headers.get("authorization")?.split(" ")[1];
+  
+  if (!token) {
+    return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
+  }
+
+  let email;
+  try {
+    const decoded: any = jwtDecode(token);
+    email = decoded?.email;
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
 
   if (!email) {
     return NextResponse.json(
-      { error: "Email is required" },
+      { error: "Email is required in token" },
       { status: 400 }
     );
   }

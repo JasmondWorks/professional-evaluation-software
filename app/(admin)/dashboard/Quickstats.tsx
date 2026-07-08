@@ -11,12 +11,7 @@ export default function Quickstats() {
     null,
     null,
   ]);
-
-  function convert(num: number) {
-    let temp = num.toString();
-    if (num < 100) while (temp.length < 3) temp = "0" + temp;
-    return temp;
-  }
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
     const access_token = localStorage.getItem("access_token") as string;
@@ -28,21 +23,16 @@ export default function Quickstats() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${access_token}`
           },
-          body: JSON.stringify({
-            user:
-              typeof temp_user === "object" &&
-              temp_user !== null &&
-              "name" in temp_user
-                ? (temp_user as any).name
-                : undefined,
-          }),
         });
 
         const res = await req.json();
         setQuickStats(res);
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoadingStats(false);
       }
     }
 
@@ -55,13 +45,13 @@ export default function Quickstats() {
         <div className="flex flex-col justify-center">
           <p className="m-1 text-sm">Number of Employees:</p>
           <p className="m-1 text-4xl font-bold">
-            {quickStats[0] ? (
-              <>{convert(quickStats[0])}</>
+            {!isLoadingStats ? (
+              <>{quickStats[0]?.toString()}</>
             ) : (
               <span>Loading...</span>
             )}
           </p>
-          <Link href="" className="m-1 text-xs underline cursor-pointer">
+          <Link href="/em-database" className="m-1 text-xs underline cursor-pointer">
             View All
           </Link>
         </div>
@@ -72,14 +62,14 @@ export default function Quickstats() {
         <div className="flex flex-col justify-center">
           <p className="m-1 text-sm">Completed Appraisals:</p>
           <p className="m-1 text-4xl font-bold text-black">
-            {quickStats[1] ? (
-              <>{convert(quickStats[1])}</>
+            {!isLoadingStats ? (
+              <>{quickStats[1]?.toString()}</>
             ) : (
               <span>Loading...</span>
             )}
           </p>
           <Link
-            href={``}
+            href="/performance"
             className="m-1 text-xs underline text-pes cursor-pointer"
           >
             View All
@@ -92,14 +82,14 @@ export default function Quickstats() {
         <div className="flex flex-col justify-center">
           <p className="m-1 text-sm">Pending Assesments:</p>
           <p className="m-1 text-4xl font-bold text-black">
-            {quickStats[2] ? (
-              <>{convert(quickStats[2])}</>
+            {!isLoadingStats ? (
+              <>{quickStats[2]?.toString()}</>
             ) : (
               <span>Loading...</span>
             )}
           </p>
           <Link
-            href={``}
+            href="/assessment"
             className="m-1 text-xs underline text-pes cursor-pointer"
           >
             View All

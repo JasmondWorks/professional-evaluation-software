@@ -89,7 +89,7 @@ export default function MaintenancePaymentPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reference: ref || reference, org }),
+        body: JSON.stringify({ reference: ref || reference }),
       });
 
       const data = await res.json();

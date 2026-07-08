@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
-type Performance = {
-  id: number
-  dept: string
-  type: string
-  yield: string
-  user_id: string
-}
-
 async function getUserData( user: string | null ) {
-  const goodPerformance: Performance[] = await prisma.$queryRawUnsafe('SELECT * FROM performance where user_id = $1 and type = $2', user?.toString(), 'good')
-  const badPerformance: Performance[] = await prisma.$queryRawUnsafe('SELECT * FROM performance where user_id = $1 and type = $2', user?.toString(), 'bad')
-  
-  await prisma.$disconnect()
+  if (!user) return { goodPerformance: [], badPerformance: [] }
+
+  const [goodPerformance, badPerformance] = await Promise.all([
+    prisma.performance.findMany({ where: { user_id: user, type: 'good' } }),
+    prisma.performance.findMany({ where: { user_id: user, type: 'bad' } }),
+  ])
+
   return { goodPerformance, badPerformance }
 }
 

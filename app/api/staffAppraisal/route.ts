@@ -39,56 +39,32 @@ export async function POST(req: NextRequest) {
       totalWastedCost,
     } = body;
 
-    const safe = (val: any, isString = false) => {
-      if (val === undefined || val === null || val === "") return "NULL";
-      return isString ? `'${val}'` : val;
-    };
+    // Normalise empty/undefined values to null, everything else to a number.
+    const num = (val: any) =>
+      val === undefined || val === null || val === "" ? null : Number(val);
 
-    const sql = `
-      INSERT INTO staff_appraisal_results (
+    const record = await prisma.staff_appraisal_results.create({
+      data: {
         org,
-        cwh,
-        cbh,
-        hd,
-        oq,
-        wq,
-        points,
-        rtp,
-        computed_appraisal_max_score,
-        hod_max_score,
-        na,
-        ta,
-        wasted_man_hours,
-        wasted_cost,
-        pidle,
-        lost_hours,
-        lost_cost,
-        total_wasted_cost
-      )
-      VALUES (
-        ${safe(org, true)},
-        ${safe(shared?.Cwh)},
-        ${safe(shared?.Cbh)},
-        ${safe(shared?.Hd)},
-        ${safe(OQ)},
-        ${safe(WQ)},
-        ${safe(points)},
-        ${safe(RTP)},
-        ${safe(staffAppraisalResult?.computedAppraisalMaxScore)},
-        ${safe(staffAppraisalResult?.hodMaxScore)},
-        ${safe(Na)},
-        ${safe(Ta)},
-        ${safe(unitOverloadingResult?.wastedManHours)},
-        ${safe(unitOverloadingResult?.wastedCost)},
-        ${safe(Pidle)},
-        ${safe(bossLostResult?.Lh)},
-        ${safe(bossLostResult?.cost)},
-        ${safe(totalWastedCost)}
-      )
-      RETURNING *;
-    `;
-
-    const [record]: any = await prisma.$queryRawUnsafe(sql);
+        cwh: num(shared?.Cwh),
+        cbh: num(shared?.Cbh),
+        hd: num(shared?.Hd),
+        oq: num(OQ),
+        wq: num(WQ),
+        points: num(points),
+        rtp: num(RTP),
+        computed_appraisal_max_score: num(staffAppraisalResult?.computedAppraisalMaxScore),
+        hod_max_score: num(staffAppraisalResult?.hodMaxScore),
+        na: num(Na),
+        ta: num(Ta),
+        wasted_man_hours: num(unitOverloadingResult?.wastedManHours),
+        wasted_cost: num(unitOverloadingResult?.wastedCost),
+        pidle: num(Pidle),
+        lost_hours: num(bossLostResult?.Lh),
+        lost_cost: num(bossLostResult?.cost),
+        total_wasted_cost: num(totalWastedCost),
+      },
+    });
     return NextResponse.json({ success: true, record }, { status: 201 });
   } catch (err: any) {
     console.error("Error saving appraisal:", err);

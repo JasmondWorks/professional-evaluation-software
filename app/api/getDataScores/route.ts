@@ -13,59 +13,65 @@ export async function GET(req: Request) {
   }
 
   try {
+    const appraisalSelect = {
+      teaching_quality_evaluation: true,
+      research_quality_evaluation: true,
+      administrative_quality_evaluation: true,
+      community_quality_evaluation: true,
+      pesuser_name: true,
+    } as const;
+    const performanceSelect = {
+      competence: true,
+      integrity: true,
+      compatibility: true,
+      use_of_resources: true,
+      pesuser_name: true,
+    } as const;
+
     // appraisal values
-    const appraisal = await prisma.$queryRaw<
-      { teaching_quality_evaluation: number | null; research_quality_evaluation: number | null; administrative_quality_evaluation: number | null; community_quality_evaluation: number | null; pesuser_name: string }[]
-    >`
-      SELECT teaching_quality_evaluation, research_quality_evaluation, administrative_quality_evaluation, community_quality_evaluation, pesuser_name
-      FROM appraisal
-      WHERE org = ${org};
-    `;
+    const appraisal = await prisma.appraisal.findMany({
+      where: { org },
+      select: appraisalSelect,
+    });
 
     // counter appraisal values
-    const counterAppraisal = await prisma.$queryRaw<
-      { teaching_quality_evaluation: number | null; research_quality_evaluation: number | null; administrative_quality_evaluation: number | null; community_quality_evaluation: number | null; pesuser_name: string }[]
-    >`
-      SELECT teaching_quality_evaluation, research_quality_evaluation, administrative_quality_evaluation, community_quality_evaluation, pesuser_name
-      FROM counter_appraisal
-      WHERE org = ${org};
-    `;
+    const counterAppraisal = await prisma.counter_appraisal.findMany({
+      where: { org },
+      select: appraisalSelect,
+    });
 
     // userperformance values
-    const userperformance = await prisma.$queryRaw<
-      { competence: number | null; integrity: number | null; compatibility: number | null; use_of_resources: number | null; pesuser_name: string }[]
-    >`
-      SELECT competence, integrity, compatibility, use_of_resources, pesuser_name
-      FROM userperformance
-      WHERE org = ${org};
-    `;
+    const userperformance = await prisma.userperformance.findMany({
+      where: { org },
+      select: performanceSelect,
+    });
 
     // counter userperformance values
-    const counterUserperformance = await prisma.$queryRaw<
-      { competence: number | null; integrity: number | null; compatibility: number | null; use_of_resources: number | null; pesuser_name: string }[]
-    >`
-      SELECT competence, integrity, compatibility, use_of_resources, pesuser_name
-      FROM counter_userperformance
-      WHERE org = ${org};
-    `;
+    const counterUserperformance = await prisma.counter_userperformance.findMany({
+      where: { org },
+      select: performanceSelect,
+    });
 
     // stress values
-    const stress = await prisma.$queryRaw<
-      { stress_category: string | null; stress_theme_form: string | null; stress_feeling_frequency_form: string | null; pesuser_name: string }[]
-    >`
-      SELECT stress_category, stress_theme_form, stress_feeling_frequency_form, pesuser_name
-      FROM stress
-      WHERE org = ${org};
-    `;
+    const stress = await prisma.stress.findMany({
+      where: { org },
+      select: {
+        stress_category: true,
+        stress_theme_form: true,
+        stress_feeling_frequency_form: true,
+        pesuser_name: true,
+      },
+    });
 
     // counter stress values
-    const counterStress = await prisma.$queryRaw<
-      { stress_theme_form: string | null; stress_feeling_frequency_form: string | null; pesuser_name: string }[]
-    >`
-      SELECT stress_theme_form, stress_feeling_frequency_form, pesuser_name
-      FROM counter_stress
-      WHERE org = ${org};
-    `;
+    const counterStress = await prisma.counter_stress.findMany({
+      where: { org },
+      select: {
+        stress_theme_form: true,
+        stress_feeling_frequency_form: true,
+        pesuser_name: true,
+      },
+    });
 
     return NextResponse.json({
       appraisal,

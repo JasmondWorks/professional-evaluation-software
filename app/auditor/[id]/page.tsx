@@ -1,11 +1,15 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const email = params.id; // Extracted email
+  const token = params.id; // Extracted token
+  const [email, setEmail] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [verificationError, setVerificationError] = useState("");
+  
   const [responses, setResponses] = useState<string[]>(Array(13).fill("")); // updated to match 12 questions
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false)
@@ -35,6 +39,31 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
   const handleFormChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const response = await fetch("/api/verify-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+          setEmail(data.email);
+        } else {
+          setVerificationError(data.message || "Invalid token");
+        }
+      } catch (error) {
+        setVerificationError("Failed to verify token");
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+    
+    verifyToken();
+  }, [token]);
 
   // ✅ check all required fields are filled
   const isFormComplete =
@@ -122,8 +151,27 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
       } catch (err) {
         console.log(err);
         // console.log(err);
-      }
+        }
     }
+
+  if (isVerifying) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-6 rounded-2xl shadow-md bg-white text-pes text-center">
+        <p className="text-xl font-medium animate-pulse">Verifying invitation...</p>
+      </div>
+    );
+  }
+
+  if (verificationError || !email) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-10 rounded-2xl shadow-md bg-white text-pes text-center space-y-4">
+        <div className="text-red-500 text-5xl mb-4">⚠️</div>
+        <h1 className="text-2xl font-semibold text-red-600">Access Denied</h1>
+        <p className="text-gray-600 font-medium">{verificationError || "Invalid or Expired Invitation Link"}</p>
+        <p className="text-sm text-gray-500 mt-4">Please contact the administrator to request a new invitation.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto h-fit overflow-scroll mt-10 p-6 rounded-2xl shadow-md bg-white text-pes">

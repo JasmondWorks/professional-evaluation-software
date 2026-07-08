@@ -19,45 +19,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const query = `
-      INSERT INTO personnel_utilization (
-        org, b, w, p0, t1, t2, t3, t4, s0, g, d, y, alpha,
-        lambda, mu, j, kmin, kmax, kstar, hstar,
-        constraints_ok, violations
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18,
-        $19, $20, $21, $22
-      )
-      RETURNING *;
-    `;
-
-    const saved = await prisma.$queryRawUnsafe(
-      query,
-      org,
-      params.B,
-      params.W,
-      params.P0,
-      params.t1,
-      params.t2,
-      params.t3,
-      params.t4,
-      params.S0,
-      params.G,
-      params.D,
-      params.Y,
-      params.alpha,
-      params.lambda,
-      params.mu,
-      params.J,
-      kmin,
-      kmax,
-      result.Kstar,
-      result.Hstar,
-      !violations || violations.length === 0,
-      violations && violations.length > 0 ? violations : []
-    );
+    const saved = await prisma.personnel_utilization.create({
+      data: {
+        org,
+        b: params.B,
+        w: params.W,
+        p0: params.P0,
+        t1: params.t1,
+        t2: params.t2,
+        t3: params.t3,
+        t4: params.t4,
+        s0: params.S0,
+        g: params.G,
+        d: params.D,
+        y: params.Y,
+        alpha: params.alpha,
+        lambda: params.lambda,
+        mu: params.mu,
+        j: params.J,
+        kmin,
+        kmax,
+        kstar: result.Kstar,
+        hstar: result.Hstar,
+        constraints_ok: !violations || violations.length === 0,
+        violations: violations && violations.length > 0 ? violations : [],
+      },
+    });
 
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {

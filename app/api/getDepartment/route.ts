@@ -4,9 +4,8 @@ import jwt from 'jsonwebtoken'
 
 
 async function getUser( user: string | null ) {
-  const users = await prisma.$queryRawUnsafe('SELECT * FROM pesuser where org = $1', user?.toString())
-  await prisma.$disconnect()
-  return users
+  if (!user) return []
+  return prisma.pesuser.findMany({ where: { org: user } })
 }
 
 export async function POST(request: NextRequest) {

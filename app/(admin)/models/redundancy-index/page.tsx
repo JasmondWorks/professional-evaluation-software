@@ -1,118 +1,177 @@
-'use client';
-
-import React, { useState } from 'react';import { getAccessToken } from '@/app/utils/auth';
-
+"use client";
+import React, { useState, useEffect } from "react";
+import { getAccessToken } from '@/app/utils/auth';
+import Link from "next/link";
+import { ArrowLeft2 } from "iconsax-react";
+import InfoPopover from "@/app/components/ui/InfoPopover";
 
 export default function RedundancyIndex() {
-  const [data, setData] = useState({ wasted: '', total: '' });
+  const [wasted, setWasted] = useState<number | "">("");
+  const [total, setTotal] = useState<number | "">("");
+
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [userToken, setUserToken] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function evaluateIndex() {
-    const wasted = parseFloat(data.wasted);
-    const total = parseFloat(data.total);
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) setUserToken(token);
+  }, []);
 
-    if (isNaN(wasted) || isNaN(total)) return alert('Please enter valid numbers');
-    if (total === 0) return alert('Total man-hours cannot be zero');
+  const evaluateIndex = () => {
+    setErrorMsg(null);
+    setSuccess(false);
 
-    const index = wasted / total;
-    setResult(Number(index.toFixed(4))); // keep to 4 decimals
-    setSuccessMsg('');
-  }
+    if (wasted === "" || total === "" || Number(total) === 0) {
+      setErrorMsg("Please enter valid wasted and total hours (total cannot be zero).");
+      return;
+    }
 
-  async function handleSubmit() {
-    if (result === null) return alert('Please evaluate the index first');
+    const index = Number(wasted) / Number(total);
+    setResult(Number(index.toFixed(4)));
+  };
 
+  const handleSubmit = async () => {
+    if (result === null) return;
     setLoading(true);
-    setSuccessMsg('');
+    setSuccess(false);
+    setErrorMsg(null);
 
     try {
-      const res = await fetch('/api/addPersonnelIndex', {
-        method: 'POST',
+      const res = await fetch("/api/addPersonnelIndex", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          authorization: `Bearer ${getAccessToken()}`,
+          "Content-Type": "application/json",
+          authorization: `Bearer ${userToken}`,
         },
         body: JSON.stringify({
-          payload: 'redundancy',
-          redundancy: Number(result), // ensure numeric type
+          payload: "redundancy",
+          redundancy: result,
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to save data');
+      if (!res.ok) throw new Error("Failed to save redundancy index");
 
-      setSuccessMsg('✅ Successfully saved to database');
-      setData({ wasted: '', total: '' });
-      setResult(null);
+      setSuccess(true);
     } catch (err) {
-      console.error('Error saving data:', err);
-      alert('Error saving redundancy index ❌');
+      console.error("Error:", err);
+      setErrorMsg("Something went wrong while saving data.");
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const isFilled = wasted !== "" && total !== "";
 
   return (
-    <div className="m-6">
-      <h1 className="font-bold text-3xl mb-6">Redundancy Index</h1>
-
-      <div className="flex gap-8 mb-6 flex-wrap">
-        <label className="flex flex-col w-72">
-          Wasted Man-hours
-          <input
-            type="number"
-            name="wasted"
-            value={data.wasted}
-            onChange={(e) => setData((d) => ({ ...d, wasted: e.target.value }))}
-            className="border px-4 py-2 rounded mt-1"
-            placeholder="Enter wasted hours"
-          />
-        </label>
-
-        <label className="flex flex-col w-72">
-          Total Establishment Man-hours
-          <input
-            type="number"
-            name="total"
-            value={data.total}
-            onChange={(e) => setData((d) => ({ ...d, total: e.target.value }))}
-            className="border px-4 py-2 rounded mt-1"
-            placeholder="Enter total hours"
-          />
-        </label>
+    <div className="p-8 w-full mx-auto">
+      <div className="mb-4">
+        <Link
+          href="/models"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+        >
+          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
+        </Link>
       </div>
+
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Model 24 — Redundancy Index</h1>
+          <p className="text-gray-600 mb-6 max-w-2xl">
+            Evaluate the proportion of wasted man-hours against the total establishment capacity.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/redundancy-index/history"
+            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Man-hour Variables</h2>
+              <p className="text-xs text-gray-500">Inputs calculating the redundancy metric</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Wasted Man-hours</span>
+                <InfoPopover text="Hours lost due to delays, idleness, or lack of tasks." />
+              </div>
+              <input
+                type="number"
+                value={wasted}
+                onChange={(e) => setWasted(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <span className="truncate">Total Establishment Man-hours</span>
+                <InfoPopover text="Total available man-hours across the organization or department." />
+              </div>
+              <input
+                type="number"
+                value={total}
+                onChange={(e) => setTotal(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {errorMsg && <p className="text-red-600 font-medium mb-4">{errorMsg}</p>}
+
+      <button
+        onClick={evaluateIndex}
+        disabled={!isFilled}
+        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-blue-900" : "bg-gray-400 cursor-not-allowed"}`}
+      >
+        Evaluate Redundancy
+      </button>
 
       {result !== null && (
-        <p className="text-green-700 font-semibold mb-3">
-          Redundancy Index: {result}
-        </p>
+        <div className="mt-8 border-t border-gray-200 pt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Model Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex items-center justify-between col-span-1 md:col-span-2 lg:col-span-1">
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Redundancy Index</p>
+                <p className="text-4xl font-bold text-pes">{result}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Result"}
+            </button>
+          </div>
+
+          {success && <p className="mt-4 text-sm font-medium text-green-600">✅ Successfully saved.</p>}
+        </div>
       )}
-
-      {successMsg && (
-        <p className="text-green-600 font-semibold mb-3">{successMsg}</p>
-      )}
-
-      <div className="flex gap-4">
-        <button
-          type="button"
-          className="bg-pes hover:opacity-90 text-white font-semibold px-12 py-3 rounded"
-          onClick={evaluateIndex}
-        >
-          Evaluate
-        </button>
-
-        <button
-          type="button"
-          className={`${
-            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-pes hover:opacity-90'
-          } text-white font-semibold px-12 py-3 rounded`}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? 'Saving...' : 'Save'}
-        </button>
-      </div>
     </div>
   );
 }

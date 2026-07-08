@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // Make sure prisma client is set up properly
+import { jwtDecode } from "jwt-decode";
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwtDecode<{ org: string }>(token);
+
     const body = await req.json();
 
     const {
@@ -26,39 +34,29 @@ export async function POST(req: Request) {
       standardManHours
     } = body;
 
-    // Insert using queryRaw
-    const insertQuery = `
-      INSERT INTO "StaffEstimation" (
-        "methodType", "staffNeeded", "basicTime", "relaxAllowance", "loadFactor", 
-        "numTasks", "timePerTask", "availableHoursPerPerson",
-        "observedTime", "estimatedTime", "correctiveFactor", "personsEstimate",
-        "A", "B", "confidenceLimit", "utilizationFactor", "annualManHours", "standardManHours"
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
-      )
-      RETURNING *;
-    `;
-
-    const result = await prisma.$queryRawUnsafe(insertQuery,
-      methodType,
-      staffNeeded,
-      basicTime,
-      relaxAllowance,
-      loadFactor,
-      numTasks,
-      timePerTask,
-      availableHoursPerPerson,
-      observedTime,
-      estimatedTime,
-      correctiveFactor,
-      personsEstimate,
-      A,
-      B,
-      confidenceLimit,
-      utilizationFactor,
-      annualManHours,
-      standardManHours
-    );
+    const result = await prisma.staffEstimation.create({
+      data: {
+        methodType,
+        staffNeeded,
+        basicTime,
+        relaxAllowance,
+        loadFactor,
+        numTasks,
+        timePerTask,
+        availableHoursPerPerson,
+        observedTime,
+        estimatedTime,
+        correctiveFactor,
+        personsEstimate,
+        A,
+        B,
+        confidenceLimit,
+        utilizationFactor,
+        annualManHours,
+        standardManHours,
+        org: decoded.org,
+      },
+    });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
@@ -68,11 +66,5 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  try {
-    const results = await prisma.$queryRawUnsafe(`SELECT * FROM "StaffEstimation" ORDER BY "createdAt" DESC`);
-    return NextResponse.json({ success: true, data: results });
-  } catch (error) {
-    console.error("Error fetching records:", error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
-  }
+  return NextResponse.json({ error: "Method not allowed. Use GET in getStaffEstimation route instead." }, { status: 405 });
 }

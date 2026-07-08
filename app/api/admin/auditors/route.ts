@@ -14,9 +14,9 @@ const transporter = nodemailer.createTransport({
 // Get all pending auditors
 export async function GET() {
   try {
-    const auditors = await prisma.$queryRawUnsafe(
-      `SELECT * FROM auditor_responses ORDER BY created_at DESC`
-    );
+    const auditors = await prisma.auditor_responses.findMany({
+      orderBy: { created_at: "desc" },
+    });
     return NextResponse.json(auditors);
   } catch (error: any) {
     console.error("Error fetching auditors:", error);
@@ -34,32 +34,26 @@ export async function POST(req: Request) {
     }
 
     // Fetch auditor details
-    const auditor: any = await prisma.$queryRawUnsafe(
-      `SELECT * FROM auditor_responses WHERE id = $1`,
-      id
-    );
+    const a = await prisma.auditor_responses.findUnique({ where: { id } });
 
-    if (!auditor || auditor.length === 0) {
+    if (!a) {
       return NextResponse.json({ error: "Auditor not found" }, { status: 404 });
     }
 
-    const a = auditor[0];
-
     if (action === "approve") {
       // Check if auditor already exists in pesuser
-      const existingAuditor: any = await prisma.$queryRawUnsafe(
-        `SELECT id, audit_count FROM pesuser WHERE email = $1 AND role = 'auditor'`,
-        a.email
-      );
+      const existingAuditor = await prisma.pesuser.findFirst({
+        where: { email: a.email, role: "auditor" },
+        select: { id: true, audit_count: true },
+      });
 
-      if (existingAuditor.length > 0) {
-        const count = existingAuditor[0].audit_count;
-        if (count >= 3) {
+      if (existingAuditor) {
+        if ((existingAuditor.audit_count ?? 0) >= 3) {
           // Reject automatically
-          await prisma.$queryRawUnsafe(
-            `UPDATE auditor_responses SET status = 'rejected' WHERE id = $1`,
-            id
-          );
+          await prisma.auditor_responses.update({
+            where: { id },
+            data: { status: "rejected" },
+          });
           return NextResponse.json({
             success: false,
             message: "Auditor audit limit reached (3), automatically rejected",
@@ -67,31 +61,32 @@ export async function POST(req: Request) {
         }
 
         // Increment audit_count if under limit
-        await prisma.$queryRawUnsafe(
-          `UPDATE pesuser SET audit_count = audit_count + 1 WHERE id = $1`,
-          existingAuditor[0].id
-        );
+        await prisma.pesuser.update({
+          where: { id: existingAuditor.id },
+          data: { audit_count: { increment: 1 } },
+        });
       } else {
         // New auditor, insert with audit_count = 1
-        await prisma.$queryRawUnsafe(
-          `INSERT INTO pesuser (name, email, password, gsm, role, address, dob, image, audit_count) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)`,
-          a.name,
-          a.email,
-          "default_password",
-          a.gsm,
-          "auditor",
-          a.address,
-          a.dob,
-          a.image
-        );
+        await prisma.pesuser.create({
+          data: {
+            name: a.name,
+            email: a.email,
+            password: "default_password",
+            gsm: a.gsm,
+            role: "auditor",
+            address: a.address,
+            dob: a.dob,
+            image: a.image,
+            audit_count: 1,
+          },
+        });
       }
 
       // Update auditor_responses status
-      await prisma.$queryRawUnsafe(
-        `UPDATE auditor_responses SET status = 'approved' WHERE id = $1`,
-        id
-      );
+      await prisma.auditor_responses.update({
+        where: { id },
+        data: { status: "approved" },
+      });
 
       // Send success email
       await transporter.sendMail({
@@ -117,10 +112,10 @@ export async function POST(req: Request) {
     }
 
     if (action === "reject") {
-      await prisma.$queryRawUnsafe(
-        `UPDATE auditor_responses SET status = 'rejected' WHERE id = $1`,
-        id
-      );
+      await prisma.auditor_responses.update({
+        where: { id },
+        data: { status: "rejected" },
+      });
       return NextResponse.json({ success: true, message: "Auditor rejected" });
     }
   } catch (error: any) {

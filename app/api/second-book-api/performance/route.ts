@@ -8,32 +8,31 @@ export async function GET(req: Request) {
   const offset = (page - 1) * limit;
 
   try {
-    const records = await prisma.$queryRawUnsafe(`
-      SELECT 
-        id,
-        name,
-        achievement AS title,
-        category,
-        sub_category AS "subCategory",
-        image_url AS "imageUrl",
-        TO_CHAR(date_achieved, 'YYYY') AS year,
-        description
-      FROM second_book_of_record
-      WHERE category = 'performance'
-      ORDER BY date_achieved DESC
-      LIMIT ${limit} OFFSET ${offset};
-    `);
+    const [records, total] = await Promise.all([
+      prisma.second_book_of_record.findMany({
+        where: { category: "performance" },
+        orderBy: { date_achieved: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.second_book_of_record.count({ where: { category: "performance" } }),
+    ]);
 
-    const totalCount: { total: number }[] = await prisma.$queryRawUnsafe(`
-      SELECT COUNT(*)::int AS total 
-      FROM second_book_of_record
-      WHERE category = 'performance';
-    `);
+    const data = records.map((r) => ({
+      id: r.id,
+      name: r.name,
+      title: r.achievement,
+      category: r.category,
+      subCategory: r.sub_category,
+      imageUrl: r.image_url,
+      year: r.date_achieved ? new Date(r.date_achieved).getFullYear().toString() : null,
+      description: r.description,
+    }));
 
     return NextResponse.json({
-      data: records,
-      total: totalCount[0].total,
-      totalPages: Math.ceil(totalCount[0].total / limit),
+      data,
+      total,
+      totalPages: Math.ceil(total / limit),
       page,
     });
   } catch (error) {

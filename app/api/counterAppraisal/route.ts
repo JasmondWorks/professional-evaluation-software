@@ -4,13 +4,17 @@ import prisma from "../prisma.dev";
 export async function POST(req: Request) {
   try {
     const { pesuser_name } = await req.json();
-    let whereClause = "";
-    if (pesuser_name) whereClause = `WHERE pesuser_name = '${pesuser_name.replace(/'/g, "''")}'`;
-    const results = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept, teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation
-      FROM counter_appraisal ${whereClause};
-    `);
+    const results = await prisma.counter_appraisal.findMany({
+      where: pesuser_name ? { pesuser_name } : undefined,
+      select: {
+        pesuser_name: true,
+        dept: true,
+        teaching_quality_evaluation: true,
+        research_quality_evaluation: true,
+        administrative_quality_evaluation: true,
+        community_quality_evaluation: true,
+      },
+    });
     return NextResponse.json(results);
   } catch (err) {
     console.error("Error fetching counter appraisal:", err);

@@ -31,6 +31,7 @@ model OptimizationResult {
   t4                 Float?
   S0                 Float?
   createdAt          DateTime? @default(now()) @db.Timestamp(6)
+  org                String?   @db.VarChar(255)
 }
 
 model StaffEstimation {
@@ -54,6 +55,7 @@ model StaffEstimation {
   utilizationFactor       Float?
   annualManHours          Float?
   standardManHours        Float?
+  org                     String?   @db.VarChar(255)
 }
 
 model appraisal {
@@ -120,13 +122,15 @@ model counter_appraisal {
 }
 
 model counter_stress {
-  id                       Int       @id @default(autoincrement())
-  pesuser_name             String    @db.VarChar(255)
-  org                      String?   @db.VarChar(255)
-  dept                     String?   @db.VarChar(255)
-  created_at               DateTime? @default(now()) @db.Timestamp(6)
-  stress_theme             Int?
-  stress_feeling_frequency Int?
+  id                            Int       @id @default(autoincrement())
+  pesuser_name                  String    @db.VarChar(255)
+  org                           String?   @db.VarChar(255)
+  dept                          String?   @db.VarChar(255)
+  created_at                    DateTime? @default(now()) @db.Timestamp(6)
+  stress_theme                  Int?
+  stress_feeling_frequency      Int?
+  stress_theme_form             Int?
+  stress_feeling_frequency_form Int?
 }
 
 model counter_userperformance {
@@ -200,9 +204,10 @@ model index {
   id           Int      @id @default(autoincrement())
   redundancy   Decimal? @db.Decimal
   productivity Decimal? @db.Decimal
-  utility      Decimal? @db.Decimal
-  dept         String?  @db.VarChar(255)
+  utility      Decimal?  @db.Decimal
+  dept         String?   @db.VarChar(255)
   org          String?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model lead_scores {
@@ -379,6 +384,7 @@ model pesuser {
   plan             String?         @db.VarChar(100)
   resettoken       String?         @db.VarChar(255)
   resettokenexpiry DateTime?       @db.Timestamp(6)
+  audit_count      Int?            @default(0)
   updated_at       DateTime?       @default(now()) @db.Timestamp(6)
   notifications    notifications[]
   subscriptions    subscriptions[]
@@ -471,12 +477,16 @@ model staff_survey_responses {
 }
 
 model stress {
-  id                       Int     @id @default(autoincrement())
-  pesuser_name             String  @db.VarChar(255)
-  org                      String? @db.VarChar(255)
-  stress_theme             Int?
-  stress_feeling_frequency Int?
-  dept                     String? @db.VarChar(255)
+  id                            Int     @id @default(autoincrement())
+  pesuser_name                  String  @db.VarChar(255)
+  org                           String? @db.VarChar(255)
+  stress_theme                  Int?
+  stress_feeling_frequency      Int?
+  stress_category               Int?
+  stress_theme_form             Int?
+  stress_feeling_frequency_form Int?
+  assessment_data               Json?
+  dept                          String? @db.VarChar(255)
 }
 
 model stress_analysis_results {
@@ -588,4 +598,50 @@ model userperformance {
   resolve          Boolean? @default(false)
 
   @@unique([pesuser_name, org, dept], map: "userperformance_unique")
+}
+
+model student_teacher_ratio {
+  id                    Int       @id @default(autoincrement())
+  org                   String?   @db.VarChar(255)
+  dept                  String?   @db.VarChar(255)
+  optimalK              Int?
+  totalStaffNeeded      Int?
+  supervisoryStaff      Int?
+  managementLevel1      Int?
+  managementLevel2      Int?
+  topManagement         Int?
+  lecturers             Int?
+  seniorLecturers       Int?
+  professors            Int?
+  efficiencyValue       Decimal?  @db.Decimal(10, 4)
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+}
+model stress_evaluation_history {
+  id              Int       @id @default(autoincrement())
+  org             String?   @db.VarChar(255)
+  stress_factor   Float?
+  pressure_factor Float?
+  conflict_factor Float?
+  anova_result    String?   @db.Text
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+}
+
+// Counter-appraisal totals (used by /api/counterTotals).
+model counter_totals {
+  id          Int       @id @default(autoincrement())
+  section     Int
+  result      Decimal?  @db.Decimal
+  numerator   Decimal[] @db.Decimal
+  denominator Decimal[] @db.Decimal
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+// HOD → user data-entry assignments (used by /api/hod-assign).
+model hod_assignments {
+  id         Int       @id @default(autoincrement())
+  hod_id     Int
+  user_id    Int
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([hod_id, user_id])
 }

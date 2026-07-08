@@ -1,10 +1,10 @@
 "use client";
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
-import { MoreDotIcon } from "@/icons";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
+// import { MoreDotIcon } from "@/icons";
+// import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useState } from "react";
-import { Dropdown } from "../ui/dropdown/Dropdown";
+// import { Dropdown } from "../ui/dropdown/Dropdown";
 import LoadingButton from "../ui/LoadingButton";
 
 // Dynamically import the ReactApexChart component
@@ -116,7 +116,7 @@ export default function MonthlySalesChart() {
         </h3>
 
         <div className="relative inline-block">
-          <LoadingButton onClick={toggleDropdown} className="dropdown-toggle">
+          {/* <LoadingButton onClick={toggleDropdown} className="dropdown-toggle">
             <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" />
           </LoadingButton>
           <Dropdown
@@ -136,7 +136,7 @@ export default function MonthlySalesChart() {
             >
               Delete
             </DropdownItem>
-          </Dropdown>
+          </Dropdown> */}
         </div>
       </div>
 

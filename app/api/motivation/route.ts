@@ -35,19 +35,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO motivation (
-        org, total_score, rating, thresholds, categories
-      )
-      VALUES (
-        ${org},
-        ${Number(total_score)},
-        ${rating},
-        ${JSON.stringify(thresholds)}::jsonb,
-        ${JSON.stringify(categories)}::jsonb
-      )
-      RETURNING *;
-    `;
+    const record = await prisma.motivation.create({
+      data: {
+        org,
+        total_score: Number(total_score),
+        rating,
+        thresholds,
+        categories,
+      },
+    });
 
     return NextResponse.json({ success: true, record }, { status: 201 });
   } catch (err: any) {

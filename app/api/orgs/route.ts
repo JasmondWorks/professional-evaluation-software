@@ -5,9 +5,7 @@ import prisma from "../prisma.dev";
 
 export async function GET(req: NextRequest) {
   try {
-    const orgs = await prisma.$queryRaw<{ id: number; name: string }[]>`
-      SELECT id, name FROM org;
-    `;
+    const orgs = await prisma.org.findMany({ select: { id: true, name: true } });
     return NextResponse.json(orgs);
   } catch (error) {
     console.error(error);

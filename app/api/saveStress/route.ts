@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { Prisma } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
 
@@ -22,30 +23,22 @@ export async function POST(req: NextRequest) {
 
   try {
     // Check if user stress already exists
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "stress" WHERE pesuser_name = $1 AND dept = $2`,
-      pesuser_name,
-      dept
-    ) as any[];
+    const existing = await prisma.stress.findFirst({
+      where: { pesuser_name, dept },
+    });
 
-    if (existing.length === 0) {
-      // Insert new row with only the given field
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "stress" (pesuser_name, dept, "${payload}") VALUES ($1, $2, $3)`,
-        pesuser_name,
-        dept,
-        value
-      );
+    // `payload` is validated against allowedFields above, so the dynamic key is safe.
+    if (!existing) {
+      await prisma.stress.create({
+        data: { pesuser_name, dept, [payload]: value } as Prisma.stressUncheckedCreateInput,
+      });
 
       return NextResponse.json({ message: 'stress created' }, { status: 201 });
     } else {
-      // Update the field
-      await prisma.$executeRawUnsafe(
-        `UPDATE "stress" SET "${payload}" = $1 WHERE pesuser_name = $2 AND dept = $3`,
-        value,
-        pesuser_name,
-        dept
-      );
+      await prisma.stress.updateMany({
+        where: { pesuser_name, dept },
+        data: { [payload]: value } as Prisma.stressUncheckedUpdateManyInput,
+      });
       return NextResponse.json({ message: 'stress updated' }, { status: 200 });
     }
   } catch (error) {

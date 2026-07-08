@@ -10,18 +10,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     // Upsert the lead's scores
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO lead_scores (pesuser_name, dept, competence, integrity, compatibility, use_of_resources)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (pesuser_name, dept)
-       DO UPDATE SET competence = $3, integrity = $4, compatibility = $5, use_of_resources = $6`,
-      pesuser_name,
-      dept,
-      scores.competence ?? null,
-      scores.integrity ?? null,
-      scores.compatibility ?? null,
-      scores.use_of_resources ?? null
-    );
+    const values = {
+      competence: scores.competence ?? null,
+      integrity: scores.integrity ?? null,
+      compatibility: scores.compatibility ?? null,
+      use_of_resources: scores.use_of_resources ?? null,
+    };
+    await prisma.lead_scores.upsert({
+      where: { pesuser_name_dept: { pesuser_name, dept } },
+      update: values,
+      create: { pesuser_name, dept, ...values },
+    });
     return NextResponse.json({ message: 'Lead scores saved' }, { status: 200 });
   } catch (error) {
     console.error('Error saving lead scores:', error);

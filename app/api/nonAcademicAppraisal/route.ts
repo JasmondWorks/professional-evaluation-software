@@ -16,62 +16,21 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { metrics, weights, thresholds, totalScore, rating } = body;
 
-    // Check if record exists
-    const existing: any = await prisma.$queryRawUnsafe(
-      `SELECT id FROM non_academic_appraisal WHERE org = $1 LIMIT 1`,
-      org
-    );
+    const fields = {
+      output: metrics.output,
+      quality: metrics.quality,
+      efficiency: metrics.efficiency,
+      attendance: metrics.attendance,
+      teamwork: metrics.teamwork,
+      total_score: totalScore,
+      rating,
+      thresholds,
+      weights,
+    };
 
-    if (existing.length > 0) {
-      // Update existing record
-      await prisma.$queryRawUnsafe(
-        `
-        UPDATE non_academic_appraisal
-        SET output = $1,
-            quality = $2,
-            efficiency = $3,
-            attendance = $4,
-            teamwork = $5,
-            total_score = $6,
-            rating = $7,
-            thresholds = $8::jsonb,
-            weights = $9::jsonb,
-            updated_at = NOW()
-        WHERE org = $10
-      `,
-        metrics.output,
-        metrics.quality,
-        metrics.efficiency,
-        metrics.attendance,
-        metrics.teamwork,
-        totalScore,
-        rating,
-        JSON.stringify(thresholds),
-        JSON.stringify(weights),
-        org
-      );
-    } else {
-      // Insert new record
-      await prisma.$queryRawUnsafe(
-        `
-        INSERT INTO non_academic_appraisal (
-          org, output, quality, efficiency, attendance, teamwork,
-          total_score, rating, thresholds, weights, created_at, updated_at
-        )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,NOW(),NOW())
-      `,
-        org,
-        metrics.output,
-        metrics.quality,
-        metrics.efficiency,
-        metrics.attendance,
-        metrics.teamwork,
-        totalScore,
-        rating,
-        JSON.stringify(thresholds),
-        JSON.stringify(weights)
-      );
-    }
+    await prisma.non_academic_appraisal.create({
+      data: { org, ...fields },
+    });
 
     return NextResponse.json({ success: true, message: "Appraisal saved successfully." });
   } catch (err: any) {

@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     await prisma.pesuser.update({
       where: { id: user.id },
       data: {
-        resetToken,
-        resetTokenExpiry
+        resettoken: resetToken,
+        resettokenexpiry: resetTokenExpiry
       }
     })
 
@@ -99,8 +99,8 @@ export async function PUT(request: NextRequest) {
     // Find user with valid token
     const user = await prisma.pesuser.findFirst({
       where: {
-        resetToken: token,
-        resetTokenExpiry: {
+        resettoken: token,
+        resettokenexpiry: {
           gt: new Date()
         }
       }
@@ -121,8 +121,8 @@ export async function PUT(request: NextRequest) {
       where: { id: user.id },
       data: {
         password: hashedPassword,
-        resetToken: null,
-        resetTokenExpiry: null
+        resettoken: null,
+        resettokenexpiry: null
       }
     })
 

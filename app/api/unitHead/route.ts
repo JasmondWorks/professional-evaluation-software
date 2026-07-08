@@ -20,21 +20,19 @@ export async function POST(req: NextRequest) {
     if (!org)
       return NextResponse.json({ error: "Missing org" }, { status: 400 });
 
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO unit_head_overloading 
-      (org, actual_hours, num_subordinates, extra_complexity, optimal_hours, optimal_k, complexity_factor, overload_ratio, status)
-      VALUES (
-        '${org}',
-        ${actualHours},
-        ${numSubs},
-        ${extraComplexity},
-        ${optimalHours},
-        ${optimalK || 0},
-        ${CF},
-        ${OR},
-        '${status}'
-      )
-    `);
+    await prisma.unit_head_overloading.create({
+      data: {
+        org,
+        actual_hours: actualHours,
+        num_subordinates: numSubs,
+        extra_complexity: extraComplexity,
+        optimal_hours: optimalHours,
+        optimal_k: optimalK || 0,
+        complexity_factor: CF,
+        overload_ratio: OR,
+        status,
+      },
+    });
 
     return NextResponse.json({ message: "Record saved successfully" });
   } catch (error) {

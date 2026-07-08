@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Add, SearchNormal1 } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
+import Table, { TableColumn } from "@/app/components/ui/Table";
 
 type Role = {
   id: string | number;
@@ -14,6 +15,7 @@ type Role = {
 
 export default function Roles() {
   const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function getRoles() {
@@ -22,7 +24,7 @@ export default function Roles() {
         const req = await fetch("/api/getRoles", {
           method: "POST",
           headers: {
-            "Content-Type": "appliation/json",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ token: data }),
         });
@@ -32,10 +34,32 @@ export default function Roles() {
         setRoles(res);
       } catch (error) {
         console.log(error);
+      } finally {
+        setLoading(false);
       }
     }
     getRoles();
   }, []);
+
+  const columns: TableColumn<Role>[] = [
+    {
+      key: "sn",
+      label: "S/N",
+      width: "10%",
+      render: (_, index) => index + 1,
+    },
+    { key: "name", label: "Name", width: "40%" },
+    {
+      key: "assigned",
+      label: "Assigned Users",
+      width: "50%",
+      render: (i) => (
+        <p className="rounded-full w-fit px-4 py-1 bg-gray-100 text-gray-700">
+          {`${i.assigned} ${i.assigned !== 1 ? "users" : "user"}`}
+        </p>
+      ),
+    },
+  ];
 
   return (
     <div className="flex justify-center w-full h-full">
@@ -66,44 +90,13 @@ export default function Roles() {
           </div>
         </div>
 
-        <div className="bg-[#fafafa] h-12 w-full text-bold flex">
-          <div className="rw w-full flex text-gray-400">
-            <div className="w-[10%] my-auto ms-4">S/N</div>
-            <div className="w-[25%] my-auto ms-4">Name</div>
-            <div className="w-[25%] my-auto ms-4">Role</div>
-            <div className="w-[40%] my-auto ms-4">Department</div>
-          </div>
-        </div>
         <div className="flex flex-col justify-between">
-          {roles.length > 0 ? (
-            roles?.map((i, key) => {
-              return (
-                <div
-                  key={i.id}
-                  className="rw h-12 w-full flex my-1 hover:bg-slate-50"
-                >
-                  <div className="w-[10%] my-auto font-semibold ms-4">
-                    {key + 1}
-                  </div>
-                  <div className="w-[35%] my-auto font-semibold ms-4">
-                    {i.name}
-                  </div>
-                  <div className={`w-[30%] my-auto font-semibold ms-4`}>
-                    <p className={` rounded-full w-fit px-4 py-1`}>
-                      {`${i.assigned} ${i.assigned > 1 ? "users" : " user"}`}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="flex flex-col w-full">
-              <div className="rw h-12 my-1 w-full flex bg-gray-100 rounded-md animate-pulse"></div>
-              <div className="rw h-12 my-1 w-full flex bg-gray-100 rounded-md animate-pulse"></div>
-              <div className="rw h-12 my-1 w-full flex bg-gray-100 rounded-md animate-pulse"></div>
-              <div className="rw h-12 my-1 w-full flex bg-gray-100 rounded-md animate-pulse"></div>
-            </div>
-          )}
+          <Table 
+            columns={columns}
+            data={roles}
+            loading={loading}
+            emptyMessage="No roles found. Create a role to get started."
+          />
         </div>
       </div>
     </div>

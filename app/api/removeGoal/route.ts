@@ -21,13 +21,9 @@ export async function POST(request: NextRequest) {
     ) as { name: string; userID: number }
 
     // Delete the goal, scoped to the user so they can only delete their own goals
-    await prisma.$executeRawUnsafe(
-      'DELETE FROM goals WHERE id = $1 AND user_id = $2',
-      Number(goalId),
-      String(decoded.userID)
-    )
-
-    await prisma.$disconnect()
+    await prisma.goals.deleteMany({
+      where: { id: Number(goalId), user_id: String(decoded.userID) },
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

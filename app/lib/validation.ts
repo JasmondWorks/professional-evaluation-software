@@ -115,7 +115,7 @@ export const saveAppraisalSchema = z.object({
   org: z.union([z.string(), z.number()]),
   dept: z.union([z.string(), z.number()]).optional(),
   isCounter: z.boolean().optional(),
-  payload: z.record(z.union([z.string(), z.number()])),
+  payload: z.record(z.string(), z.union([z.string(), z.number()])),
 });
 
 // Stress Schemas
@@ -197,9 +197,16 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
  */
 export function formatZodErrors(errors: z.ZodError): Record<string, string> {
   const formatted: Record<string, string> = {};
-  errors.errors.forEach((err) => {
-    const path = err.path.join('.');
-    formatted[path] = err.message;
-  });
+  if ('issues' in errors) {
+    (errors.issues as any[]).forEach((err: any) => {
+      const path = err.path.join('.');
+      formatted[path] = err.message;
+    });
+  } else if ('errors' in errors) {
+    (errors as any).errors.forEach((err: any) => {
+      const path = err.path.join('.');
+      formatted[path] = err.message;
+    });
+  }
   return formatted;
 }

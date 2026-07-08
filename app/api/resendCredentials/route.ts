@@ -22,15 +22,15 @@ async function sendLoginEmail(to: string, name: string, password: string) {
       port: 465,
       secure: true,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     })
 
     await transporter.verify()
 
     await transporter.sendMail({
-      from: `"Admin" <${process.env.SMTP_USER}>`,
+      from: `"Admin" <${process.env.EMAIL_USER}>`,
       to,
       subject: 'Your Login Credentials',
       html: `
@@ -60,24 +60,23 @@ export async function POST(req: Request) {
     }
 
     // Check user exists
-    const users: any[] = await prisma.$queryRaw`
-      SELECT id, name FROM pesuser WHERE email = ${email}
-    `
+    const user = await prisma.pesuser.findUnique({
+      where: { email },
+      select: { id: true, name: true },
+    })
 
-    if (!users.length) {
+    if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 })
     }
 
-    const user = users[0]
     const newPassword = generateUniquePassword()
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 
     // Update password in DB
-    await prisma.$executeRaw`
-      UPDATE pesuser SET password = ${hashedPassword} WHERE email = ${email}
-    `
-
-    await prisma.$disconnect()
+    await prisma.pesuser.update({
+      where: { email },
+      data: { password: hashedPassword },
+    })
 
     const emailSent = await sendLoginEmail(email, user.name, newPassword)
 

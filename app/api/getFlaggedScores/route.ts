@@ -1,47 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { jwtDecode } from "jwt-decode";
 
 export async function POST(req: NextRequest) {
   try {
-    const { org } = await req.json();
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let whereClause = "WHERE pending = TRUE";
-    if (org) {
-      // escape quotes to prevent SQL injection
-      whereClause += ` AND org = '${org.replace(/'/g, "''")}'`;
+    let org;
+    try {
+      const decoded: any = jwtDecode(token);
+      org = decoded?.org;
+    } catch {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
+    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+
+    const where = { pending: true, ...(org ? { org } : {}) };
+    const appraisalSelect = {
+      pesuser_name: true,
+      dept: true,
+      teaching_quality_evaluation: true,
+      research_quality_evaluation: true,
+      administrative_quality_evaluation: true,
+      community_quality_evaluation: true,
+    } as const;
+    const performanceSelect = {
+      pesuser_name: true,
+      dept: true,
+      competence: true,
+      integrity: true,
+      compatibility: true,
+      use_of_resources: true,
+    } as const;
+
+    const withSource = (rows: any[], source: string) =>
+      rows.map((r) => ({ ...r, source }));
+
     // --- Appraisals (main + counter) ---
-    const appraisals = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'main' AS source
-      FROM appraisal
-      ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'counter' AS source
-      FROM counter_appraisal
-      ${whereClause}
-    `);
+    const [mainAppraisals, counterAppraisals] = await Promise.all([
+      prisma.appraisal.findMany({ where, select: appraisalSelect }),
+      prisma.counter_appraisal.findMany({ where, select: appraisalSelect }),
+    ]);
+    const appraisals = [
+      ...withSource(mainAppraisals, "main"),
+      ...withSource(counterAppraisals, "counter"),
+    ];
 
     // --- Performance (main + counter) ---
-    const performances = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'main' AS source
-      FROM userperformance
-      ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'counter' AS source
-      FROM counter_userperformance
-      ${whereClause}
-    `);
+    const [mainPerformances, counterPerformances] = await Promise.all([
+      prisma.userperformance.findMany({ where, select: performanceSelect }),
+      prisma.counter_userperformance.findMany({ where, select: performanceSelect }),
+    ]);
+    const performances = [
+      ...withSource(mainPerformances, "main"),
+      ...withSource(counterPerformances, "counter"),
+    ];
 
     // --- Helper to group by source ---
     const groupBySource = (rows: any[], type: string) => {

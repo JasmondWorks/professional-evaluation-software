@@ -44,17 +44,19 @@ async function addUser(info: reqInfo) {
         mr_sel } = info
      
     try {
-        await prisma.$queryRaw`
-            INSERT INTO roles (name, assigned, org)
-            VALUES (${role_name}, ${ 1 }, ${org});
-        `
+        await prisma.roles.create({
+            data: { name: role_name, assigned: 1, org },
+        })
 
-        await prisma.$queryRaw`
-            INSERT INTO permission (manage_user, access_em, ae_all, ae_sub, ae_sel, define_performance, dp_all, dp_sub, dp_sel, access_hierachy, manage_review, mr_all, mr_sub, mr_sel, user_id)
-            VALUES (${manage_user}, ${access_em}, ${ ae_all }, ${ae_sub}, ${ae_sel}, ${define_performance}, ${dp_all}, ${ dp_sub }, ${ dp_sel }, ${access_hierachy}, ${ manage_review }, ${mr_all}, ${mr_sub}, ${mr_sel}, ${org});
-        `
+        await prisma.permission.create({
+            data: {
+                manage_user, access_em, ae_all, ae_sub, ae_sel,
+                define_performance, dp_all, dp_sub, dp_sel, access_hierachy,
+                manage_review, mr_all, mr_sub, mr_sel,
+                user_id: org,
+            },
+        })
 
-        await prisma.$disconnect()
         return `success`
     } catch(error) {
         return error

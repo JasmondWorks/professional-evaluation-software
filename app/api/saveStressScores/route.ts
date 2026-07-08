@@ -12,38 +12,36 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch dept from pesuser
-    const userResult = await prisma.$queryRawUnsafe<{ dept: string }[]>(
-      `SELECT dept FROM "pesuser" WHERE name = $1 AND org = $2 LIMIT 1`,
-      pesuser_name,
-      org
-    )
+    const user = await prisma.pesuser.findFirst({
+      where: { name: pesuser_name, org },
+      select: { dept: true },
+    })
 
-    if (userResult.length === 0 || !userResult[0].dept) {
+    if (!user?.dept) {
       return NextResponse.json({ message: 'User not found or department missing' }, { status: 404 })
     }
 
-    const dept = userResult[0].dept
+    const dept = user.dept
 
     // Insert or update into userperformance
-    await prisma.$executeRawUnsafe(
-      `
-      INSERT INTO "userperformance" (pesuser_name, org, dept, competence, integrity, compatibility, use_of_resources)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (pesuser_name, org, dept)
-      DO UPDATE SET
-        competence = EXCLUDED.competence,
-        integrity = EXCLUDED.integrity,
-        compatibility = EXCLUDED.compatibility,
-        use_of_resources = EXCLUDED.use_of_resources
-      `,
-      pesuser_name,
-      org,
-      dept,
-      competence ?? null,
-      integrity ?? null,
-      compatibility ?? null,
-      use_of_resources ?? null
-    )
+    await prisma.userperformance.upsert({
+      where: { pesuser_name_org_dept: { pesuser_name, org, dept } },
+      update: {
+        competence: competence ?? null,
+        integrity: integrity ?? null,
+        compatibility: compatibility ?? null,
+        use_of_resources: use_of_resources ?? null,
+      },
+      create: {
+        pesuser_name,
+        org,
+        dept,
+        competence: competence ?? null,
+        integrity: integrity ?? null,
+        compatibility: compatibility ?? null,
+        use_of_resources: use_of_resources ?? null,
+      },
+    })
 
     return NextResponse.json({ message: 'userperformance saved/updated' }, { status: 200 })
   } catch (error) {

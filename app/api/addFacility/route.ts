@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { jwtDecode } from 'jwt-decode'
 import nodemailer from "nodemailer";
 
 type Facility = {
@@ -13,27 +14,48 @@ type Facility = {
 }
 
 async function updateData( entry: Facility, org:string ) {
-   const params = [ entry.symbol, entry.description, entry.location, entry.id, entry.type, Number(entry.rating), entry.remark, org]
-   const query = `
-        INSERT INTO facilities (identification_symbol, description_of_facility, location, facility_register_id_no, type, priority_rating, remarks, org)
-        VALUES ( $1, $2, $3, $4, $5, $6, $7, $8 );
-   `
-   await prisma.$queryRawUnsafe(query, ...params)
+   await prisma.facilities.create({
+     data: {
+       identification_symbol: entry.symbol,
+       description_of_facility: entry.description,
+       location: entry.location,
+       facility_register_id_no: entry.id,
+       type: entry.type,
+       priority_rating: String(entry.rating),
+       remarks: entry.remark,
+       org,
+     },
+   })
 
-   await prisma.$disconnect()
    return { message: 'success', status: 200 }
 }
 
 export async function POST(request: NextRequest) {
-  const {data, org} = await request.json();
+  const token = request.headers.get("authorization")?.split(" ")[1];
+  
+  if (!token) {
+    return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
+  }
+
+  let org;
+  try {
+    const decoded: any = jwtDecode(token);
+    org = decoded?.org;
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  const { data } = await request.json();
   console.log(data, org)
 
   if (data) {
     try {
       let goals = await updateData(data, org)
       console.log(goals)
-      const query1 = `select email from pesuser where org = $1 and role = $2`
-      const userData: {email: string}[] = await prisma.$queryRawUnsafe(query1, org ,"admin")
+      const adminUser = await prisma.pesuser.findFirst({
+        where: { org, role: "admin" },
+        select: { email: true },
+      })
 
 
       // ✅ Send email notification
@@ -49,7 +71,7 @@ export async function POST(request: NextRequest) {
 
         const mailOptions = {
         from: `"Super Admin" <${process.env.EMAIL_USER}>`,
-        to: userData[0].email,
+        to: adminUser?.email,
         subject: "New Entry added",
         text: `Hello,\n\nA user at ${org} has filled entries for maintenance models.\n\nBest,\nPES team`,
         };

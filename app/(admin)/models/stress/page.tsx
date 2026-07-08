@@ -12,18 +12,17 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import Link from "next/link";
+import { ArrowLeft2, Calculator, Chart2, Save2, DocumentText, Warning2 } from "iconsax-react";
 
 const generateNormalCurve = (mean = 50, stdDev = 15) => {
   const data = [];
-  // peak of the PDF at the mean
   const peak = 1 / (stdDev * Math.sqrt(2 * Math.PI));
 
   for (let y = 0; y <= 100; y += 0.5) {
     const pdf =
       (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
       Math.exp(-0.5 * ((y - mean) / stdDev) ** 2);
-
-    // scale so the peak reaches 100 on the x-axis — makes the bell fully visible
     data.push({ y, density: (pdf / peak) * 100 });
   }
 
@@ -32,29 +31,23 @@ const generateNormalCurve = (mean = 50, stdDev = 15) => {
 
 const mean = (arrayData: number[]) => {
   if (arrayData.length === 0) return 0;
-
   const sum = arrayData.reduce((acc, current) => acc + current, 0);
-
   return sum / arrayData.length;
 };
 
-// ===== Types =====
 interface StressEntry {
   id: number;
   user_name: string;
   org: string;
   dept: string;
-
   organizational: number;
   student: number;
   administrative: number;
   negative_public_attitude: number;
-
   teacher: number;
   parents: number;
   occupational: number;
   academic_program: number;
-
   personal: number;
   misc: number;
 }
@@ -63,36 +56,23 @@ interface GroupedData {
   [group: string]: number[];
 }
 
-// ===== ANOVA =====
 const computeANOVA = (groups: GroupedData) => {
   const allValues = Object.values(groups).flat();
   const overallMean = mean(allValues);
-
   const n = allValues.length;
   const k = Object.keys(groups).length;
-
-  const ssto = allValues.reduce(
-    (sum, v) => sum + Math.pow(v - overallMean, 2),
-    0
-  );
-
+  const ssto = allValues.reduce((sum, v) => sum + Math.pow(v - overallMean, 2), 0);
   let sstr = 0;
-
   Object.keys(groups).forEach((g) => {
     const groupMean = mean(groups[g]);
     sstr += groups[g].length * Math.pow(groupMean - overallMean, 2);
   });
-
   const sse = ssto - sstr;
-
   const dfBetween = k - 1;
   const dfWithin = n - k;
-
   const msBetween = sstr / dfBetween;
   const msWithin = sse / dfWithin;
-
   const fStatistic = msBetween / msWithin;
-
   const criticalValue = 2.89;
 
   const conclusion =
@@ -100,37 +80,41 @@ const computeANOVA = (groups: GroupedData) => {
       ? "Reject H₀ — significant differences between groups."
       : "Accept H₀ — no significant difference between groups.";
 
-  return { conclusion };
+  return { fStatistic, criticalValue, conclusion };
 };
 
 export default function StressAnalysisTool() {
-  const [activeTab, setActiveTab] = useState<"analysis" | "results">(
-    "analysis"
-  );
+  const [activeTab, setActiveTab] = useState<"analysis" | "results">("analysis");
   const [stressData, setStressData] = useState<StressEntry[]>([]);
   const [anovaResult, setAnovaResult] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       const token = localStorage.getItem("access_token");
-
       if (!token) return;
 
-      const decoded: any = jwt.decode(token);
-      setRole(decoded?.role || null);
+      try {
+        const decoded: any = jwt.decode(token);
+        setRole(decoded?.role || null);
 
-      const res = await fetch("/api/getStressDataScores", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ org: decoded?.org }),
-      });
-
-      const data = await res.json();
-      setStressData(data);
+        const res = await fetch("/api/getStressDataScores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ org: decoded?.org }),
+        });
+        const data = await res.json();
+        setStressData(data);
+      } catch (e) {
+        console.error("Failed to load stress data");
+      } finally {
+        setLoading(false);
+      }
     }
-
     fetchData();
   }, []);
 
@@ -174,249 +158,337 @@ export default function StressAnalysisTool() {
 
   const runANOVA = () => {
     const grouped: GroupedData = {};
-
     const stressValues: number[] = [];
     const pressureValues: number[] = [];
     const conflictValues: number[] = [];
 
-    console.log(enrichedData);
-
     enrichedData.forEach((e) => {
       if (!grouped[e.dept]) grouped[e.dept] = [];
       grouped[e.dept].push(e.stressFactor);
-
       stressValues.push(e.stressFactor);
       pressureValues.push(e.pressureFactor);
       conflictValues.push(e.conflictFactor);
     });
 
     setAnovaResult(computeANOVA(grouped));
-
     setSummary({
       stress: mean(stressValues),
       pressure: mean(pressureValues),
       conflict: mean(conflictValues),
     });
-
     setActiveTab("results");
   };
 
+  const handleSave = async () => {
+    if (!summary) return;
+    setSaving(true);
+    setMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/saveStressEvaluation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          stress: summary.stress,
+          pressure: summary.pressure,
+          conflict: summary.conflict,
+          anovaResult
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMsg({ type: "success", text: "Evaluation saved successfully!" });
+      } else {
+        setMsg({ type: "error", text: data.error || "Failed to save evaluation." });
+      }
+    } catch (e) {
+      setMsg({ type: "error", text: "Network error when saving evaluation." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full p-12 flex justify-center items-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pes mx-auto"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* HEADER */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Stress Evaluation
-          </h1>
+    <div className="p-8 w-full mx-auto max-w-7xl">
+      <div className="mb-4">
+        <Link
+          href="/models"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+        >
+          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
+        </Link>
+      </div>
+
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Stress Evaluation Tool</h1>
+          <p className="text-gray-600 mb-6 max-w-2xl">
+            Analyze self-reported stress, pressure, and conflict factors across departments using ANOVA.
+          </p>
         </div>
-
-        {/* TABS */}
-        <div className="flex gap-2 mb-4 print:hidden">
-          <button
-            onClick={() => setActiveTab("analysis")}
-            className={`px-4 py-2 rounded ${
-              activeTab === "analysis"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100"
-            }`}
+        <div className="flex gap-3">
+          <Link
+            href="/models/stress/history"
+            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
           >
-            Analysis
-          </button>
-
-          <button
-            onClick={() => setActiveTab("results")}
-            className={`px-4 py-2 rounded ${
-              activeTab === "results"
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100"
-            }`}
-          >
-            Results
-          </button>
+            <DocumentText size="16" />
+            View History
+          </Link>
         </div>
+      </div>
 
-        {/* ANALYSIS */}
-        {activeTab === "analysis" && (
-          <div className="bg-white p-6 rounded shadow print:hidden">
+      {/* TABS */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200 print:hidden">
+        <button
+          onClick={() => setActiveTab("analysis")}
+          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === "analysis"
+              ? "border-pes text-pes"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          Analysis Configuration
+        </button>
+        <button
+          onClick={() => setActiveTab("results")}
+          disabled={!summary}
+          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === "results"
+              ? "border-pes text-pes"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          }`}
+        >
+          Evaluation Results
+        </button>
+      </div>
+
+      {/* ANALYSIS TAB */}
+      {activeTab === "analysis" && (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+            <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Calculator size="24" variant="Bold" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Run Statistical Analysis</h2>
+              <p className="text-sm text-gray-500">Perform ANOVA to detect significant differences between departments.</p>
+            </div>
+          </div>
+          
+          <div className="max-w-2xl">
+            <p className="text-gray-700 mb-6 leading-relaxed text-sm">
+              This tool automatically aggregates {enrichedData.length} individual stress reports collected from your organization. 
+              By running the ANOVA (Analysis of Variance) test, it determines whether stress levels vary significantly across different departments.
+            </p>
+            
             {isAdmin ? (
               <button
                 onClick={runANOVA}
-                className="bg-green-600 text-white px-5 py-2 rounded"
+                className="w-full sm:w-auto px-8 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
               >
-                Run ANOVA
+                <Chart2 size="18" />
+                Run ANOVA & Generate Report
               </button>
             ) : (
-              <p className="text-red-600 font-semibold text-sm">Only admins can run ANOVA analysis.</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+                <Warning2 className="text-red-600 mt-0.5" size="20" />
+                <div>
+                  <h4 className="text-sm font-bold text-red-900 mb-1">Access Denied</h4>
+                  <p className="text-xs text-red-700">Only administrators can run the ANOVA analysis and generate organizational reports.</p>
+                </div>
+              </div>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* RESULTS */}
-        {activeTab === "results" && (
-          <div className="bg-white p-6 rounded shadow">
-            {isAdmin && (
-              <div className="flex justify-end mb-4 print:hidden">
-                <button 
+      {/* RESULTS TAB */}
+      {activeTab === "results" && summary && (
+        <div className="space-y-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Stress</span>
+              <span className="text-4xl font-bold text-red-600">{(summary.stress * 100).toFixed(1)}%</span>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Pressure</span>
+              <span className="text-4xl font-bold text-orange-500">{(summary.pressure * 100).toFixed(1)}%</span>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
+              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Conflict</span>
+              <span className="text-4xl font-bold text-yellow-500">{(summary.conflict * 100).toFixed(1)}%</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left Column - Data */}
+            <div className="lg:col-span-1 space-y-6">
+              
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">ANOVA Results</h3>
+                {anovaResult && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">F-Statistic:</span>
+                      <span className="font-semibold">{anovaResult.fStatistic?.toFixed(3) || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Critical Value:</span>
+                      <span className="font-semibold">{anovaResult.criticalValue || "2.89"}</span>
+                    </div>
+                    <div className={`mt-4 p-3 rounded-md text-sm font-semibold border ${
+                      anovaResult.conclusion.includes("Reject") 
+                        ? "bg-red-50 text-red-800 border-red-200" 
+                        : "bg-green-50 text-green-800 border-green-200"
+                    }`}>
+                      {anovaResult.conclusion}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">Save Evaluation</h3>
+                {msg && (
+                  <div className={`mb-4 p-3 rounded-md text-sm font-medium border ${
+                    msg.type === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
+                  }`}>
+                    {msg.text}
+                  </div>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2 mb-3"
+                  >
+                    {saving ? "Saving..." : (
+                      <>
+                        <Save2 size="18" />
+                        Save Results to Database
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
                 >
-                  Print Results
+                  <DocumentText size="18" />
+                  Print Report
                 </button>
               </div>
-            )}
-            {/* SUMMARY TABLE */}
-            {summary && (
-              <table className="w-full border border-gray-300 mb-6">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border px-4 py-2">Stress Factor</th>
-                    <th className="border px-4 py-2">Pressure Factor</th>
-                    <th className="border px-4 py-2">Conflict</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border px-4 py-2 text-center">
-                      {(summary.stress * 100).toFixed(2)}%
-                    </td>
-                    <td className="border px-4 py-2 text-center">
-                      {(summary.pressure * 100).toFixed(2)}%
-                    </td>
-                    <td className="border px-4 py-2 text-center">
-                      {(summary.conflict * 100).toFixed(2)}%
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-
-            {/* PER USER TABLE */}
-            <table className="w-full border border-gray-300 mt-4">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="border px-4 py-2">Name</th>
-                  <th className="border px-4 py-2">Dept</th>
-                  <th className="border px-4 py-2">Stress</th>
-                  <th className="border px-4 py-2">Pressure</th>
-                  <th className="border px-4 py-2">Conflict</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrichedData.map((s) => (
-                  <tr key={s.id}>
-                    <td className="border px-4 py-2">{s.user_name}</td>
-                    <td className="border px-4 py-2">{s.dept}</td>
-                    <td className="border px-4 py-2">
-                      {(s.stressFactor * 100).toFixed(1)}%
-                    </td>
-                    <td className="border px-4 py-2">
-                      {(s.pressureFactor * 100).toFixed(1)}%
-                    </td>
-                    <td className="border px-4 py-2">
-                      {(s.conflictFactor * 100).toFixed(1)}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* GRAPH */}
-            <div className="mt-10 w-[45rem] overflow-visible">
-              <h3 className="text-base font-semibold text-gray-700 mb-1">Stress Distribution (Normal Curve)</h3>
-              <p className="text-xs text-gray-400 mb-4">
-                Y-axis: stress score (0–100) · Bell curve centred at mean 50 · Reference lines show normal range (32–68)
-              </p>
-              <ResponsiveContainer width="100%" height={450}>
-                <ComposedChart
-                  data={generateNormalCurve(50, 15)}
-                  layout="vertical"
-                  margin={{ right: 220, left: 80, bottom: 20, top: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
-
-                  {/* X axis = density (0–100 scaled) */}
-                  <XAxis
-                    type="number"
-                    dataKey="density"
-                    domain={[0, 110]}
-                    hide
-                  />
-
-                  {/* Y axis = stress score 0–100, 0 at bottom */}
-                  <YAxis
-                    type="number"
-                    dataKey="y"
-                    domain={[0, 100]}
-                    ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
-                    reversed
-                  />
-
-                  <Tooltip
-                    formatter={(val: any) => [`${Number(val).toFixed(1)}`, "Density"]}
-                    labelFormatter={(label) => `Stress score: ${label}`}
-                  />
-
-                  {/* The bell curve */}
-                  <Line
-                    type="monotone"
-                    dataKey="density"
-                    stroke="#4f46e5"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Normal curve"
-                  />
-
-                  {/* Min −1σ ≈ 32 */}
-                  <ReferenceLine
-                    y={32}
-                    stroke="blue"
-                    label={{ value: "Min 32%", position: "left", fill: "blue", fontSize: 12 }}
-                  />
-
-                  {/* Max +1σ ≈ 68 */}
-                  <ReferenceLine
-                    y={68}
-                    stroke="red"
-                    label={{ value: "Max 68%", position: "left", fill: "red", fontSize: 12 }}
-                  />
-
-                  {/* Average / mean */}
-                  <ReferenceLine
-                    y={50}
-                    stroke="black"
-                    strokeDasharray="5 5"
-                    label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }}
-                  />
-
-                  {/* Acquired stress — stressFactor sums to ~0–1 range, so * 100 gives 0–100 */}
-                  {summary && (
-                    <ReferenceLine
-                      y={Math.min(100, summary.stress * 100)}
-                      stroke="#16a34a"
-                      strokeWidth={2}
-                      label={{
-                        value: `Acquired stress  ${(summary.stress * 100).toFixed(1)}%`,
-                        position: "right",
-                        fill: "#16a34a",
-                        fontSize: 12,
-                        fontWeight: 600,
-                      }}
-                    />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
             </div>
 
-            {/* ANOVA */}
-            {anovaResult && (
-              <div className="mt-6">
-                <p>{anovaResult.conclusion}</p>
+            {/* Right Column - Chart */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-hidden h-full">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Stress Distribution (Normal Curve)</h3>
+                <p className="text-xs text-gray-500 mb-6">
+                  Y-axis: stress score (0–100) · Bell curve centred at mean 50 · Reference lines show normal range (32–68)
+                </p>
+                <div className="w-full -ml-16">
+                  <ResponsiveContainer width="100%" height={450}>
+                    <ComposedChart
+                      data={generateNormalCurve(50, 15)}
+                      layout="vertical"
+                      margin={{ right: 200, left: 20, bottom: 20, top: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
+                      <XAxis type="number" dataKey="density" domain={[0, 110]} hide />
+                      <YAxis
+                        type="number"
+                        dataKey="y"
+                        domain={[0, 100]}
+                        ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                        reversed
+                      />
+                      <Tooltip
+                        formatter={(val: any) => [`${Number(val).toFixed(1)}`, "Density"]}
+                        labelFormatter={(label) => `Stress score: ${label}`}
+                      />
+                      <Line type="monotone" dataKey="density" stroke="#4f46e5" strokeWidth={2} dot={false} name="Normal curve" />
+                      <ReferenceLine y={32} stroke="blue" label={{ value: "Min 32%", position: "left", fill: "blue", fontSize: 12 }} />
+                      <ReferenceLine y={68} stroke="red" label={{ value: "Max 68%", position: "left", fill: "red", fontSize: 12 }} />
+                      <ReferenceLine y={50} stroke="black" strokeDasharray="5 5" label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }} />
+                      <ReferenceLine
+                        y={Math.min(100, summary.stress * 100)}
+                        stroke="#16a34a"
+                        strokeWidth={2}
+                        label={{
+                          value: `Acquired stress ${(summary.stress * 100).toFixed(1)}%`,
+                          position: "right",
+                          fill: "#16a34a",
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            )}
+            </div>
+
           </div>
-        )}
-      </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">Individual Records</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">Name</th>
+                    <th className="px-6 py-3 font-semibold">Dept</th>
+                    <th className="px-6 py-3 font-semibold text-right">Stress Factor</th>
+                    <th className="px-6 py-3 font-semibold text-right">Pressure Factor</th>
+                    <th className="px-6 py-3 font-semibold text-right">Conflict Factor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {enrichedData.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-900">{s.user_name}</td>
+                      <td className="px-6 py-3 text-gray-600">{s.dept}</td>
+                      <td className="px-6 py-3 text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                          {(s.stressFactor * 100).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                          {(s.pressureFactor * 100).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                          {(s.conflictFactor * 100).toFixed(1)}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }

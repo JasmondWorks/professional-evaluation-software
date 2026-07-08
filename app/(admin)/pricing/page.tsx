@@ -6,13 +6,13 @@ import Subscriptionbutton from "../../components/subscription/paypal";
 import PaystackButton from "@/app/components/subscription/paystackButton";
 import PayPalProviderWrapper from "../../components/subscription/paypalWrapper";
 import { packages } from "../../lib/utils/packages";
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
-
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from "@/app/utils/auth";
 
 export default function Home() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [maintenance, setMaintenance] = useState(false)
+  const [maintenance, setMaintenance] = useState(false);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -28,7 +28,11 @@ export default function Home() {
 
     const fetchSubscription = async () => {
       try {
-        const res = await fetch(`/api/subscriptions/active?email=${email}`);
+        const res = await fetch(`/api/subscriptions/active`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
         if (data.active) setActivePlan(data.plan?.toLowerCase());
       } catch (err) {
@@ -54,7 +58,12 @@ export default function Home() {
 
   // --- CANCEL PLAN HANDLER ---
   const handleCancelPlan = async () => {
-    if (!confirm("Are you sure you want to cancel all plans? This will delete your account and all related data.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to cancel all plans? This will delete your account and all related data.",
+      )
+    )
+      return;
 
     try {
       const res = await fetch("/api/subscriptions/cancel", {
@@ -80,7 +89,7 @@ export default function Home() {
 
   const renderPlan = (
     planKey: "basic" | "standard" | "premium",
-    color?: string
+    color?: string,
   ) => {
     const plan = packages[planKey];
     const isActive = activePlan === planKey;
@@ -91,7 +100,11 @@ export default function Home() {
         ["basic", "standard", "premium"].indexOf(activePlan);
 
     const disabledStyle = isActive ? "opacity-60 pointer-events-none" : "";
-    const label = isActive ? "Current Plan" : canUpgrade ? "Upgrade" : "Subscribe";
+    const label = isActive
+      ? "Current Plan"
+      : canUpgrade
+        ? "Upgrade"
+        : "Subscribe";
 
     return (
       <div
@@ -131,9 +144,7 @@ export default function Home() {
               </button>
             }
           >
-            <Subscriptionbutton
-              plan={planKey}
-            />
+            <Subscriptionbutton plan={planKey} />
           </Suspense>
 
           <PaystackButton
@@ -142,12 +153,17 @@ export default function Home() {
               planKey === "basic"
                 ? "PLN_w4hf2tk7k3mu66a"
                 : planKey === "standard"
-                ? "PLN_pl6nmfsedqvm0oa"
-                : "PLN_bquiv8u3t2otwuh"
+                  ? "PLN_pl6nmfsedqvm0oa"
+                  : "PLN_bquiv8u3t2otwuh"
             }
             label={label}
           />
-          <a href={`/prices?plan=${planKey}`} className={`hover:underline ${color ? "text-white" : "text-pes"}`}>view plan</a>
+          <Link
+            href={`/prices?plan=${planKey}`}
+            className={`hover:underline ${color ? "text-white" : "text-pes"}`}
+          >
+            view plan
+          </Link>
         </div>
       </div>
     );
@@ -172,8 +188,7 @@ export default function Home() {
         </div>
 
         {/* Other Packages */}
-        {
-          (!maintenance)?
+        {!maintenance ? (
           <div className="flex flex-col px-12 p-12 ms-6 mb-6 me-6 bg-white">
             <h1 className="text-xl my-3 font-bold">Other Available Packages</h1>
             <div className="border border-gray-100 rounded-lg px-6 pb-6 flex flex-col">
@@ -188,14 +203,14 @@ export default function Home() {
               </div>
               <p className="text-sm">
                 This maintenance model helps by providing predictive maintenance
-                intervals for your equipment(s) to optimize efficiency and reduce
-                wastage.
+                intervals for your equipment(s) to optimize efficiency and
+                reduce wastage.
               </p>
             </div>
           </div>
-          : <></>
-        }
-
+        ) : (
+          <></>
+        )}
       </main>
     </PayPalProviderWrapper>
   );
