@@ -1,6 +1,9 @@
 import prisma from "../../prisma.dev";
 import { NextResponse } from "next/server";
 
+// This route queries the DB per request — never prerender/cache it at build time.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const users = await prisma.pesuser.findMany({ orderBy: { org: "asc" } });
 
