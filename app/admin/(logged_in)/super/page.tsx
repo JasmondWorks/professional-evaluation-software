@@ -2,6 +2,9 @@ import prisma from "../../../../app/api/prisma.dev"
 import Link from "next/link"
 import React from "react"
 
+// Fetches super-admins from the DB at request time — must not be prerendered at build.
+export const dynamic = "force-dynamic"
+
 type SuperAdmin = {
   id: number
   name: string

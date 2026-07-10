@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // Make sure prisma client is set up properly
 import { jwtDecode } from "jwt-decode";
