@@ -99,7 +99,9 @@ export default function Home() {
       ["basic", "standard", "premium"].indexOf(planKey) >
         ["basic", "standard", "premium"].indexOf(activePlan);
 
-    const disabledStyle = isActive ? "opacity-60 pointer-events-none" : "";
+    // Only the subscribe/pay actions are disabled for the current plan — the
+    // rest of the card (incl. "view plan") must stay interactive.
+    const payDisabled = isActive ? "opacity-60 pointer-events-none" : "";
     const label = isActive
       ? "Current Plan"
       : canUpgrade
@@ -110,7 +112,7 @@ export default function Home() {
       <div
         className={`price-card ${
           color ? color : "bg-white"
-        } ${color ? "text-white" : ""} h-112 w-72 border rounded-3xl flex flex-col justify-between p-4 ${disabledStyle} ${
+        } ${color ? "text-white" : ""} h-112 w-72 border rounded-3xl flex flex-col justify-between p-4 ${
           canUpgrade ? "border-blue-400 shadow-lg" : ""
         }`}
       >
@@ -137,27 +139,29 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col mt-4 gap-2">
-          <Suspense
-            fallback={
-              <button className="border-pes bg-white rounded-lg p-4">
-                Loading...
-              </button>
-            }
-          >
-            <Subscriptionbutton plan={planKey} />
-          </Suspense>
+          <div className={`flex flex-col gap-2 ${payDisabled}`}>
+            <Suspense
+              fallback={
+                <button className="border-pes bg-white rounded-lg p-4">
+                  Loading...
+                </button>
+              }
+            >
+              <Subscriptionbutton plan={planKey} />
+            </Suspense>
 
-          <PaystackButton
-            email={email}
-            planCode={
-              planKey === "basic"
-                ? "PLN_w4hf2tk7k3mu66a"
-                : planKey === "standard"
-                  ? "PLN_pl6nmfsedqvm0oa"
-                  : "PLN_bquiv8u3t2otwuh"
-            }
-            label={label}
-          />
+            <PaystackButton
+              email={email}
+              planCode={
+                planKey === "basic"
+                  ? "PLN_w4hf2tk7k3mu66a"
+                  : planKey === "standard"
+                    ? "PLN_pl6nmfsedqvm0oa"
+                    : "PLN_bquiv8u3t2otwuh"
+              }
+              label={label}
+            />
+          </div>
           <Link
             href={`/prices?plan=${planKey}`}
             className={`hover:underline ${color ? "text-white" : "text-pes"}`}

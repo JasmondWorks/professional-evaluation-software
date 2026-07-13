@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, origin } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -16,7 +16,10 @@ export async function POST(request: Request) {
     const secret =
       process.env.JWT_SECRET || "fallback-secret-change-in-production";
     const token = jwt.sign({ email }, secret, { expiresIn: "7d" });
-    const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,
+    // which previously produced dead localhost invite links.
+    const BASE_URL =
+      origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const secureLink = `${BASE_URL}/auditor/${token}`;
 
     // Simulate sending an email (replace this with your email-sending logic)
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
           <p>Please click the button below to securely accept the invitation and access the platform:</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <Link href="${secureLink}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation</Link>
+            <a href="${secureLink}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation</a>
           </div>
           
           <p style="font-size: 14px; color: #555;">If the button above isn't clickable, copy and paste the following link into your web browser:</p>
