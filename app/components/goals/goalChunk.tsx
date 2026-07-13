@@ -2,7 +2,11 @@
 import { useEffect, useState } from "react"
 import { getAccessToken } from "@/app/utils/auth"
 
-export default function Goals(){
+export default function Goals({
+   onGoalsLoaded,
+}: {
+   onGoalsLoaded?: (goals: any[]) => void
+} = {}){
    const [goals, setGoals] = useState<any[]>([])
    const [loading, setLoading] = useState(true)
    const [error, setError] = useState('')
@@ -32,7 +36,9 @@ export default function Goals(){
          }
 
          const data = await res.json();
-         setGoals(data);
+         const list = Array.isArray(data) ? data : [];
+         setGoals(list);
+         onGoalsLoaded?.(list);
       } catch (err) {
          console.error('Error fetching goals:', err);
          setError('Failed to load goals');
@@ -43,10 +49,26 @@ export default function Goals(){
 
    function colorGrade( num: any ): string{
       if( typeof(num) == 'number' ){
-        return (num < 50)? 'red' : 'green';       
+        return (num < 50)? 'red' : 'green';
       }
       else if ( typeof(num) == 'string' ) return 'yellow'
       return ''
+   }
+
+   // Whole days between now and the goal's due_date (null when no/invalid date).
+   function daysLeft( due: any ): number | null {
+      if ( !due ) return null
+      const d = new Date(due)
+      if ( isNaN(d.getTime()) ) return null
+      return Math.ceil(( d.getTime() - Date.now() ) / ( 1000 * 60 * 60 * 24 ))
+   }
+
+   function daysLeftLabel( due: any ): string {
+      const dl = daysLeft(due)
+      if ( dl === null ) return 'No due date'
+      if ( dl < 0 ) return `Overdue by ${Math.abs(dl)} day${Math.abs(dl) === 1 ? '' : 's'}`
+      if ( dl === 0 ) return 'Due today'
+      return `${dl} day${dl === 1 ? '' : 's'} left`
    }
 
    useEffect(() => {
@@ -77,9 +99,9 @@ export default function Goals(){
                         <p className={ ` text-${ colorGrade(i.status) }-500 ` }> 
                            { typeof( i.status ) == 'string'? `${ i.status }` : `${ i.status }% Completed` } 
                         </p>
-                        <p className={ ` text-${ colorGrade(i.daysleft) }-500 ` }>
-                           { `${ i.daysleft } days left` }
-                        </p>        
+                        <p className={ ` text-${ (daysLeft(i.due_date) ?? 0) < 3 ? 'red' : 'green' }-500 ` }>
+                           { daysLeftLabel(i.due_date) }
+                        </p>
                      </div>
                      <hr />                          
                   </div>
