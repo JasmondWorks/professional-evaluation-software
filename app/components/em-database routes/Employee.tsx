@@ -118,7 +118,7 @@ export default function Employee() {
         },
         body: JSON.stringify({
           email: selectedEmployee.email,
-          org: selectedEmployee.org || "University of Lagos",
+          org: selectedEmployee.org || "",
           dept: selectedEmployee.dept,
         }),
       });

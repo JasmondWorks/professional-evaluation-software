@@ -194,6 +194,8 @@ export default function FormOne({
   // The "Employee Academic" (lecturer) role only applies to academic products.
   // Non-academic products (Company, Public) must not offer it.
   const [isAcademic, setIsAcademic] = useState(true);
+  // Custom roles created on the Role & Permission page (from the roles table).
+  const [customRoles, setCustomRoles] = useState<{ name: string }[]>([]);
   useEffect(() => {
     try {
       const token = localStorage.getItem('access_token');
@@ -201,8 +203,20 @@ export default function FormOne({
       const decoded: any = jwtDecode(token);
       const category = String(decoded?.productCategory ?? decoded?.category ?? '').toLowerCase();
       if (category) setIsAcademic(category === 'academic');
+
+      // Pull org-specific custom roles so they're selectable here too.
+      fetch('/api/getRoles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setCustomRoles(data.filter((r) => r?.name));
+        })
+        .catch(() => {});
     } catch {
-      /* keep default */
+      /* keep defaults */
     }
   }, []);
 
@@ -328,6 +342,13 @@ export default function FormOne({
             {isAcademic && <option value="lecturer">Employee Academic</option>}
             <option value="industrial-engineer">Employee Non-Academic (industrial/production engineer)</option>
             <option value="hod">Department Lead</option>
+            {customRoles.length > 0 && (
+              <optgroup label="Custom Roles">
+                {customRoles.map((r) => (
+                  <option key={r.name} value={r.name}>{r.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
           {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
         </div>
