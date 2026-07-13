@@ -3,8 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
 export default function AddAuditorPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -23,7 +21,9 @@ export default function AddAuditorPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, link: `${BASE_URL}/auditor/${email}` }),
+        // Send the email + the current site origin; the server signs a token
+        // and builds the invite link so it works on any deployment domain.
+        body: JSON.stringify({ email, origin: window.location.origin }),
       });
 
       if (response.ok) {
