@@ -1124,18 +1124,16 @@ const WorkSamplingPageInner: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <SaveIndicator />
-                {studyDbId && (
-                  <button
-                    onClick={() => {
-                      setIsListView(true);
-                      setStudyDbId(null);
-                      router.push("/evaluation/staff/sampling");
-                    }}
-                    className="text-xs text-indigo-600 underline border-none bg-transparent cursor-pointer"
-                  >
-                    &larr; Back to List
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setIsListView(true);
+                    setStudyDbId(null);
+                    router.push("/evaluation/staff/sampling");
+                  }}
+                  className="text-xs text-indigo-600 underline border-none bg-transparent cursor-pointer"
+                >
+                  &larr; Back to List
+                </button>
                 {studyDbId && (
                   <button
                     onClick={() => {
