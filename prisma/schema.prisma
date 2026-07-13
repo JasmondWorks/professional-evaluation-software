@@ -645,3 +645,53 @@ model hod_assignments {
 
   @@unique([hod_id, user_id])
 }
+
+// ---- Work Sampling (staff-number model) ----
+// These tables were previously created via ad-hoc raw DDL and are absent from
+// fresh databases; modelled here so `db push` provisions them everywhere.
+model WorkSamplingStudy {
+  id                         Int                       @id @default(autoincrement())
+  org                        String?
+  department                 String?
+  analyst                    String?
+  authorizedBy               String?
+  confidenceLevel            Float?
+  desiredAccuracy            Float?
+  preliminaryP               Float?
+  totalObservationsRequired  Int?
+  studyMonth                 String?
+  studyMonths                Json?
+  observationsPerDay         Int?
+  workingHoursPerDay         Float?
+  workStartTime              String?
+  minCycleDuration           Float?
+  maxDuration                Float?
+  estimatedStudyDays         Float?
+  availableAnnualHours       Float?
+  defaultPerformanceAllowance Float?
+  lockedDates                Json?
+  lockedTimes                Json?
+  createdAt                  DateTime?                 @default(now()) @db.Timestamp(6)
+  positions                  WorkSamplingPosition[]
+}
+
+model WorkSamplingPosition {
+  id                  Int                       @id @default(autoincrement())
+  studyId             Int
+  name                String
+  department          String?
+  performanceAllowance Float?
+  study               WorkSamplingStudy         @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  observations        WorkSamplingObservation[]
+}
+
+model WorkSamplingObservation {
+  id                Int                  @id @default(autoincrement())
+  positionId        Int
+  date              String
+  time              String
+  isBusy            Boolean?
+  performanceRating Float?
+  notes             String?
+  position          WorkSamplingPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+}
