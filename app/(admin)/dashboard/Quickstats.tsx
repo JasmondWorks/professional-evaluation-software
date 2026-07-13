@@ -69,7 +69,7 @@ export default function Quickstats() {
             )}
           </p>
           <Link
-            href="/performance"
+            href="/completed-appraisals"
             className="m-1 text-xs underline text-pes cursor-pointer"
           >
             View All
