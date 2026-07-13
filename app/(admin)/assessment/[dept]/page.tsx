@@ -37,21 +37,34 @@ export default function Page({ params }: { params: { dept: string } }) {
       fetch(`/api/getPerformanceByDept?dept=${encodeURIComponent(dept)}`).then(res => res.json()),
     ])
       .then(([appraisals, performances]) => {
-        // Merge appraisal + performance by user
-        const combined: CombinedEntry[] = appraisals.map((a: AppraisalEntry) => {
-          const perf = performances.find((p: PerformanceEntry) => p.pesuser_name === a.pesuser_name);
+        const appraisalList: AppraisalEntry[] = Array.isArray(appraisals) ? appraisals : [];
+        const performanceList: PerformanceEntry[] = Array.isArray(performances) ? performances : [];
+
+        // Union of everyone who has appraisal OR performance data (not just
+        // appraisal-driven) so performance-only staff are still analysed.
+        const byName = new Map<string, { pesuser_name: string; dept: string; a?: AppraisalEntry; p?: PerformanceEntry }>();
+        for (const a of appraisalList) {
+          byName.set(a.pesuser_name, { pesuser_name: a.pesuser_name, dept: a.dept, a });
+        }
+        for (const p of performanceList) {
+          const existing = byName.get(p.pesuser_name);
+          if (existing) existing.p = p;
+          else byName.set(p.pesuser_name, { pesuser_name: p.pesuser_name, dept: p.dept, p });
+        }
+
+        const combined: CombinedEntry[] = Array.from(byName.values()).map(({ pesuser_name, dept, a, p }) => {
           const scores = [
-            a.teaching_quality,
-            a.community_quality,
-            a.administrative_quality,
-            a.research_quality,
-            perf?.competence,
-            perf?.compatibility,
-            perf?.integrity,
-            perf?.use_of_resources,
+            a?.teaching_quality,
+            a?.community_quality,
+            a?.administrative_quality,
+            a?.research_quality,
+            p?.competence,
+            p?.compatibility,
+            p?.integrity,
+            p?.use_of_resources,
           ].filter((s): s is number => typeof s === "number");
 
-          return { pesuser_name: a.pesuser_name, dept: a.dept, scores };
+          return { pesuser_name, dept, scores };
         });
 
         setData(combined);
