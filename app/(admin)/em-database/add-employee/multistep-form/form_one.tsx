@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 type FormProps = {
   formdata: Record<string, any>;
@@ -190,6 +191,21 @@ export default function FormOne({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // The "Employee Academic" (lecturer) role only applies to academic products.
+  // Non-academic products (Company, Public) must not offer it.
+  const [isAcademic, setIsAcademic] = useState(true);
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const decoded: any = jwtDecode(token);
+      const category = String(decoded?.productCategory ?? decoded?.category ?? '').toLowerCase();
+      if (category) setIsAcademic(category === 'academic');
+    } catch {
+      /* keep default */
+    }
+  }, []);
+
   function validateField(name: string, value: string) {
     let error = '';
 
@@ -309,7 +325,7 @@ export default function FormOne({
             className="font-medium text-lg text-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
           >
             <option value="" disabled>Select a role</option>
-            <option value="lecturer">Employee Academic</option>
+            {isAcademic && <option value="lecturer">Employee Academic</option>}
             <option value="industrial-engineer">Employee Non-Academic (industrial/production engineer)</option>
             <option value="hod">Department Lead</option>
           </select>
