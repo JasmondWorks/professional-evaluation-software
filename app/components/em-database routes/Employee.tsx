@@ -8,6 +8,15 @@ import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import Table, { TableColumn } from "@/app/components/ui/Table";
 
+// The assign-role modal choices map to these actual DB roles.
+const ROLE_FROM_CHOICE: Record<string, string> = {
+  hod: "hod",
+  admin: "dept-admin",
+  prod: "industrial-engineer",
+};
+// A staff member counts as "assigned" once they hold one of these management roles.
+const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
+
 type User = {
   id: number;
   name: string;
@@ -121,9 +130,10 @@ export default function Employee() {
       notify.success(data.message || `Role assigned successfully`);
       setIsModalOpen(false);
       
-      // Update the role in the UI optimistically or refetch
-      setEmployees(employees.map(emp => 
-        emp.id === selectedEmployee.id ? { ...emp, role: selectedRole } : emp
+      // Reflect the actual DB role (e.g. "admin" choice -> "dept-admin").
+      const assignedRole = ROLE_FROM_CHOICE[selectedRole] ?? selectedRole;
+      setEmployees(employees.map(emp =>
+        emp.id === selectedEmployee.id ? { ...emp, role: assignedRole } : emp
       ));
 
     } catch (err) {
@@ -200,17 +210,27 @@ export default function Employee() {
                 align: "center",
                 render: (i) => (
                   <div className="flex justify-center gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedEmployee(i);
-                        setIsModalOpen(true);
-                      }}
-                      className="text-xs border border-blue-200 bg-blue-50 text-pes rounded px-3 py-1 hover:bg-blue-100 font-medium transition-colors"
-                    >
-                      Assign Role
-                    </button>
+                    {(() => {
+                      const assigned = ASSIGNED_ROLES.includes(i.role);
+                      return (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedEmployee(i);
+                            setIsModalOpen(true);
+                          }}
+                          title={assigned ? "Click to reassign" : "Assign a role"}
+                          className={`text-xs border rounded px-3 py-1 font-medium transition-colors ${
+                            assigned
+                              ? "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
+                              : "border-blue-200 bg-blue-50 text-pes hover:bg-blue-100"
+                          }`}
+                        >
+                          {assigned ? "Role Assigned" : "Assign Role"}
+                        </button>
+                      );
+                    })()}
                     <button
                       onClick={(e) => {
                         e.preventDefault();
