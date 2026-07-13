@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import { jwtDecode } from "jwt-decode";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.split(" ")[1];
   
