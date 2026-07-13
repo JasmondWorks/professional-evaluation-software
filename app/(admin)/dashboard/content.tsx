@@ -22,7 +22,6 @@ export default function Dashboard() {
   const isCompleted = (g: any) => Number(g?.status) >= 100;
   const activeGoalsCount = goals.filter((g) => !isCompleted(g)).length;
   const completedGoalsCount = goals.filter(isCompleted).length;
-  const pad = (n: number) => String(n).padStart(2, "0");
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
@@ -85,12 +84,12 @@ export default function Dashboard() {
             <div className="text-white flex justify-between w-full py-4">
               <div className="bg-orng flex flex-col justify-between p-4 rounded-md text-center w-4_5">
                 <p className="font-light">Active Goals Set</p>
-                <p className="text-4xl font-semibold">{pad(activeGoalsCount)}</p>
+                <p className="text-4xl font-semibold">{activeGoalsCount}</p>
               </div>
 
               <div className="bg-grn flex flex-col justify-between p-4 rounded-md text-center w-4_5">
                 <p className="font-light">Goals Completed</p>
-                <p className="text-4xl font-semibold">{pad(completedGoalsCount)}</p>
+                <p className="text-4xl font-semibold">{completedGoalsCount}</p>
               </div>
             </div>
 
