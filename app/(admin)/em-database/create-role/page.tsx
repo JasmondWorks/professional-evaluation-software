@@ -77,7 +77,7 @@ export default function CreateRole() {
                   onChange={handleChange}
                   name="role_name"
                   type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-thin px-4 py-2 pb-4"
+                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-gray-800 placeholder:font-thin placeholder:text-gray-400 px-4 py-2 pb-4"
                   id="name"
                   placeholder="Enter a name that represents the role's responsibilities and purpose."
                 />
@@ -88,7 +88,7 @@ export default function CreateRole() {
                   onChange={handleChange}
                   name="description"
                   type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-thin px-4 py-2 pb-16"
+                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-gray-800 placeholder:font-thin placeholder:text-gray-400 px-4 py-2 pb-16"
                   id="description"
                   placeholder="Provide a brief description outlining the role's key responsibilities and purpose."
                 />
