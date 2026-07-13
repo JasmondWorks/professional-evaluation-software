@@ -15,7 +15,14 @@ import { getAccessToken } from "@/app/utils/auth";
 export default function Dashboard() {
   const [performanceView, setPerformanceView] = useState("employee");
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [goals, setGoals] = useState<any[]>([]);
   const router = useRouter();
+
+  // A goal is "completed" at 100%; anything below is still active.
+  const isCompleted = (g: any) => Number(g?.status) >= 100;
+  const activeGoalsCount = goals.filter((g) => !isCompleted(g)).length;
+  const completedGoalsCount = goals.filter(isCompleted).length;
+  const pad = (n: number) => String(n).padStart(2, "0");
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
@@ -78,19 +85,19 @@ export default function Dashboard() {
             <div className="text-white flex justify-between w-full py-4">
               <div className="bg-orng flex flex-col justify-between p-4 rounded-md text-center w-4_5">
                 <p className="font-light">Active Goals Set</p>
-                <p className="text-4xl font-semibold">{`00`}</p>
+                <p className="text-4xl font-semibold">{pad(activeGoalsCount)}</p>
               </div>
 
               <div className="bg-grn flex flex-col justify-between p-4 rounded-md text-center w-4_5">
                 <p className="font-light">Goals Completed</p>
-                <p className="text-4xl font-semibold">{`00`}</p>
+                <p className="text-4xl font-semibold">{pad(completedGoalsCount)}</p>
               </div>
             </div>
 
             <p className="text-xl text-black my-auto p-4">
               Active Goal Metrics
             </p>
-            <Goalchunk />
+            <Goalchunk onGoalsLoaded={setGoals} />
             <div className="viewgoals flex justify-end my-4">
               <Link
                 href={`/goals`}
