@@ -36,6 +36,9 @@ export default function Goals(){
     const [user, setUser] = useState({name: '', role: '', org: '', id: ''})
     const [evaluation, setEvaluation] = useState<EvaluationType[]>([])
     const [toggling, setToggling] = useState<EvaluationType | null>(null)
+    // Toggles whenever the "new goal" modal opens/closes — used to refetch the
+    // list right after a goal is created (no page reload needed).
+    const newGoalFlag = useSelector((state: any) => state.goal?.new)
 
     useEffect(() => {
         const access_token = getAccessToken() as string
@@ -62,7 +65,7 @@ export default function Goals(){
         }
 
         fetchGoal()
-    }, [])
+    }, [newGoalFlag])
 
     // Fetch current org evaluation state for admin
     useEffect(() => {
