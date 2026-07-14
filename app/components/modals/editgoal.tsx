@@ -76,8 +76,9 @@ export default function Editgoal(){
                 headers: {
                     'Content-Type': 'application/json', 
                 },
-                body: JSON.stringify({ 
-                    ...data, 
+                body: JSON.stringify({
+                    ...data,
+                    id: String(data.id), // schema expects a string id
                     user_id: String((user as any).userID),
                     token
                 })

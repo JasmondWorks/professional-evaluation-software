@@ -22,7 +22,6 @@ async function ensureColumnsExist() {
 // POST — create a new study (with parameters)
 export async function POST(req: NextRequest) {
   try {
-    await ensureColumnsExist();
     const body = await req.json();
     const {
       org,
@@ -47,47 +46,35 @@ export async function POST(req: NextRequest) {
       lockedTimes,
     } = body;
 
-    const query = `
-      INSERT INTO "WorkSamplingStudy" (
-        org, department, analyst, "authorizedBy",
-        "confidenceLevel", "desiredAccuracy", "preliminaryP",
-        "totalObservationsRequired", "studyMonth", "studyMonths",
-        "observationsPerDay", "workingHoursPerDay", "workStartTime",
-        "minCycleDuration", "maxDuration", "estimatedStudyDays",
-        "availableAnnualHours", "defaultPerformanceAllowance",
-        "lockedDates", "lockedTimes"
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-      )
-      RETURNING *;
-    `;
+    // Prisma serializes the Json columns (studyMonths/lockedDates/lockedTimes)
+    // natively — the old raw insert stringified them, causing a jsonb/text
+    // type error (42804) that broke study creation and, in turn, Add Position.
+    const study = await prisma.workSamplingStudy.create({
+      data: {
+        org: org ?? null,
+        department: department ?? null,
+        analyst: analyst ?? null,
+        authorizedBy: authorizedBy ?? null,
+        confidenceLevel: confidenceLevel ?? null,
+        desiredAccuracy: desiredAccuracy ?? null,
+        preliminaryP: preliminaryP ?? null,
+        totalObservationsRequired: totalObservationsRequired ?? null,
+        studyMonth: studyMonth ?? null,
+        studyMonths: studyMonths ?? undefined,
+        observationsPerDay: observationsPerDay ?? null,
+        workingHoursPerDay: workingHoursPerDay ?? null,
+        workStartTime: workStartTime ?? null,
+        minCycleDuration: minCycleDuration ?? null,
+        maxDuration: maxDuration ?? null,
+        estimatedStudyDays: estimatedStudyDays ?? null,
+        availableAnnualHours: availableAnnualHours ?? null,
+        defaultPerformanceAllowance: defaultPerformanceAllowance ?? null,
+        lockedDates: lockedDates ?? undefined,
+        lockedTimes: lockedTimes ?? undefined,
+      },
+    });
 
-    const result = await prisma.$queryRawUnsafe(
-      query,
-      org ?? null,
-      department ?? null,
-      analyst ?? null,
-      authorizedBy ?? null,
-      confidenceLevel ?? null,
-      desiredAccuracy ?? null,
-      preliminaryP ?? null,
-      totalObservationsRequired ?? null,
-      studyMonth ?? null,
-      studyMonths ? JSON.stringify(studyMonths) : null,
-      observationsPerDay ?? null,
-      workingHoursPerDay ?? null,
-      workStartTime ?? null,
-      minCycleDuration ?? null,
-      maxDuration ?? null,
-      estimatedStudyDays ?? null,
-      availableAnnualHours ?? null,
-      defaultPerformanceAllowance ?? null,
-      lockedDates ? JSON.stringify(lockedDates) : null,
-      lockedTimes ? JSON.stringify(lockedTimes) : null,
-    );
-
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: study });
   } catch (error) {
     console.error("Error creating work sampling study:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
