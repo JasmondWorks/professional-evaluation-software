@@ -1,14 +1,21 @@
 'use client'
 import Link from "next/link";
+import { ArrowLeft } from "iconsax-react";
 import { usePathname } from "next/navigation";
 
 export default function Layout({ children, }: { children: React.ReactNode }){
    const pathname = usePathname()
-   console.log(pathname)
 
     return (
         <main className="w-full">
             <div className="bg-white pt-6 px-4">
+                <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-3"
+                >
+                    <ArrowLeft size={18} />
+                    Back to Dashboard
+                </Link>
                 <h1 className="text-2xl font-bold text-gray-800">
                     Determination of Supervisory / staff
                 </h1>
