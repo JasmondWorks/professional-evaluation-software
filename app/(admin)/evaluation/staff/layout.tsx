@@ -4,40 +4,36 @@ import { usePathname } from "next/navigation";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  console.log(pathname);
+
+  const tabs = [
+    { href: "/evaluation/staff", label: "Plain Estimating", exact: true },
+    { href: "/evaluation/staff/factored", label: "Factored Estimating" },
+    { href: "/evaluation/staff/sampling", label: "Work Sampling" },
+  ];
 
   return (
     <main className="flex flex-col w-full h-full bg-gray-100">
-      {/* This is the evaluations page */}
-      {/* <ul className="w-full bg-white flex flex-start">
-                <Link className={ `px-4 border-b-2 py-4 border-${ pathname == `/evaluation/staff` ? 'pes' : '' }` } href={ `/evaluation/staff`}>Non-academic staff</Link>
-                <Link className={ `px-4 border-b-2 py-4 border-${ pathname == `/evaluation/staff/academic` ? 'pes' : '' }` } href={ `/evaluation/staff/academic`}>Academic staff</Link>
-            </ul> */}
-      {
-        <>
-          <div className="flex ms-auto w-fit p-4">
+      <div className="flex flex-wrap gap-2 ms-auto w-fit p-4">
+        {tabs.map((t) => {
+          const active = t.exact
+            ? pathname === t.href
+            : pathname.startsWith(t.href);
+          return (
             <Link
-              className="me-4 hover:underline hover:text-pes"
-              href="/evaluation/staff"
+              key={t.href}
+              href={t.href}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                active
+                  ? "bg-pes text-white"
+                  : "text-gray-600 bg-white border border-gray-200 hover:border-pes hover:text-pes"
+              }`}
             >
-              Plain Estimating
+              {t.label}
             </Link>
-            <Link
-              className="me-4 hover:underline hover:text-pes"
-              href="/evaluation/staff/factored"
-            >
-              Factored Estimating
-            </Link>
-            <Link
-              className="me-4 hover:underline hover:text-pes"
-              href="/evaluation/staff/sampling"
-            >
-              Work Sampling
-            </Link>
-          </div>
-          {children}
-        </>
-      }
+          );
+        })}
+      </div>
+      {children}
     </main>
   );
 }

@@ -273,13 +273,21 @@ const WorkSamplingPageInner: React.FC = () => {
     }
   };
 
+  const studyIdParam = searchParams.get("studyId");
   useEffect(() => {
-    const idParam = searchParams.get("studyId");
-    if (!idParam) return;
+    // Drive the view from the URL so opening a study from the list (which only
+    // changes ?studyId=) actually switches out of list view and loads it.
+    if (!studyIdParam) {
+      setIsListView(true);
+      return;
+    }
+    setIsListView(false);
+    // Already have this study in memory (e.g. just created it) — don't reload.
+    if (String(latestSavePayload.current.studyDbId ?? "") === studyIdParam) return;
 
     setLoading(true);
     isLoadingFromDb.current = true;
-    fetch(`/api/workSampling/studies/${idParam}`)
+    fetch(`/api/workSampling/studies/${studyIdParam}`)
       .then((r) => r.json())
       .then((json) => {
         if (!json.success) return;
@@ -360,7 +368,7 @@ const WorkSamplingPageInner: React.FC = () => {
           isLoadingFromDb.current = false;
         }, 100);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [studyIdParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derived early so effects below can reference it
   const selectedPosition = useMemo(
