@@ -23,34 +23,47 @@ export default function Dept({ data }: DeptProps) {
     setOutliers([]);
 
     try {
-      const response = await fetch(
-        `/api/getDataEntryByDept?dept=${encodeURIComponent(data.dept)}`,
-      );
-      const records = await response.json();
+      const dept = encodeURIComponent(data.dept);
+      // Pull actual appraisal + performance scores for the department. (The old
+      // getDataEntryByDept endpoint required auth and returned only names, so it
+      // always produced "not enough data".)
+      const [appraisals, performances] = await Promise.all([
+        fetch(`/api/getAppraisalByDept?dept=${dept}`)
+          .then((r) => r.json())
+          .catch(() => []),
+        fetch(`/api/getPerformanceByDept?dept=${dept}`)
+          .then((r) => r.json())
+          .catch(() => []),
+      ]);
 
-      if (!Array.isArray(records) || records.length < 15) {
-        setStatus("notEnough");
-        return;
-      }
+      const appraisalList: any[] = Array.isArray(appraisals) ? appraisals : [];
+      const performanceList: any[] = Array.isArray(performances) ? performances : [];
 
-      const fields = [
-        "teaching_quality_evaluation",
-        "community_quality_evaluation",
-        "administrative_quality_evaluation",
-        "research_quality_evaluation",
-        "competence",
-        "compatibility",
-        "integrity",
-        "use_of_resources",
-      ];
-
+      // Sum each user's available scores across both sources (union of users).
       const userScores: { [user: string]: number } = {};
-      records.forEach((rec: any) => {
-        const total = fields.reduce((sum, f) => sum + (Number(rec[f]) || 0), 0);
-        if (!isNaN(total)) {
-          userScores[rec.pesuser_name] = total;
-        }
-      });
+      const addScores = (name: string, vals: unknown[]) => {
+        if (!name) return;
+        const nums = vals.filter((v): v is number => typeof v === "number" && !isNaN(v));
+        if (nums.length === 0) return;
+        userScores[name] = (userScores[name] ?? 0) + nums.reduce((s, x) => s + x, 0);
+      };
+
+      appraisalList.forEach((a) =>
+        addScores(a.pesuser_name, [
+          a.teaching_quality,
+          a.community_quality,
+          a.administrative_quality,
+          a.research_quality,
+        ]),
+      );
+      performanceList.forEach((p) =>
+        addScores(p.pesuser_name, [
+          p.competence,
+          p.compatibility,
+          p.integrity,
+          p.use_of_resources,
+        ]),
+      );
 
       const scores = Object.values(userScores);
       if (scores.length < 15) {
