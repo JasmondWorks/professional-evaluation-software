@@ -8,19 +8,18 @@ async function getInventory( user: string | null ) {
 }
 
 export async function POST(request: NextRequest) {
-  const { name } = await request.json();
+  // The client posts the decoded token; facilities are scoped by org (not name).
+  const body = await request.json();
+  const org = body?.org ?? body?.name;
 
-  if (name) {
+  if (org) {
     try {
-      let userInfo = await getInventory(name)
-      console.log(userInfo);
-      
+      const userInfo = await getInventory(org)
       return NextResponse.json(userInfo)
-
     } catch(err) {
       console.error(err)
       return NextResponse.json([])
-    }    
+    }
   }
-  return NextResponse.redirect(new URL('/not-found', request.url))
-} 
+  return NextResponse.json([])
+}
