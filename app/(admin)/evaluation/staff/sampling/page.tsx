@@ -2816,20 +2816,38 @@ const WorkSamplingPageInner: React.FC = () => {
                             <label className="block text-xs font-medium text-gray-700 mb-1">
                               Use Factor
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              placeholder="e.g. 0.85"
-                              value={samplingUseFactor}
-                              onChange={(e) =>
-                                setSamplingUseFactor(
-                                  e.target.value === ""
-                                    ? ""
-                                    : Number(e.target.value),
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
-                            />
+                            {/* Decimal 0–1 only, with a slider (matches the
+                                advanced-constraints control in Personnel Utilisation). */}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={samplingUseFactor === "" ? 0 : samplingUseFactor}
+                                onChange={(e) =>
+                                  setSamplingUseFactor(parseFloat(e.target.value))
+                                }
+                                className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                placeholder="0.85"
+                                value={samplingUseFactor}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  if (v === "") return setSamplingUseFactor("");
+                                  const n = parseFloat(v);
+                                  if (isNaN(n)) return;
+                                  // clamp to a valid 0–1 decimal
+                                  setSamplingUseFactor(Math.min(1, Math.max(0, n)));
+                                }}
+                                className="w-16 flex-shrink-0 rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+                              />
+                            </div>
                           </div>
                         </div>
 
