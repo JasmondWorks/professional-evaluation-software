@@ -217,7 +217,7 @@ export default function Goals(){
                     {
                         goals?.map((i, key) => {
                             return(
-                                <div key={key} className={ `${ grid? 'w-72 py-6': 'flex justify-between w-full py-1' } bg-white rounded-md border border-gray-100 px-12` } onClick={ async () => { console.log(i); dispatch( viewGoal({ payload: i, type: 'view' }) )} }>
+                                <div key={key} className={ `${ grid? 'w-72 py-6': 'grid grid-cols-3 gap-4 items-center w-full py-1 text-left' } bg-white rounded-md border border-gray-100 px-12 cursor-pointer` } onClick={ async () => { dispatch( viewGoal({ payload: i, type: 'view' }) )} }>
                                     <h1 className={ `${ grid? 'text-xl font-bold': '' } my-2` }>
                                         { i.name }
                                     </h1>
