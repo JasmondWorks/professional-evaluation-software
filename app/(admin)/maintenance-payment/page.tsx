@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "iconsax-react";
 import {jwtDecode} from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 
 
@@ -116,6 +118,14 @@ export default function MaintenancePaymentPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow">
+
+        <Link
+          href="/pricing"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-4"
+        >
+          <ArrowLeft size={18} />
+          Back to Pricing
+        </Link>
 
         <h1 className="text-2xl font-bold mb-2 text-indigo-900">
           Maintenance Plan

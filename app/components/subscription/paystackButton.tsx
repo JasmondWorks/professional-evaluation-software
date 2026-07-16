@@ -25,11 +25,13 @@ export default function PaystackButton({ email, planCode, label }: PaystackButto
       const data = await response.json();
 
       if (data.authorization_url) {
-        window.open(data.authorization_url, "_blank");
-      } else {
-        alert("Subscription initialization failed");
+        // Redirect in the same tab. window.open(..., "_blank") after an await
+        // loses the user-gesture context and gets silently popup-blocked.
+        window.location.href = data.authorization_url;
+        return;
       }
 
+      alert(data.error || "Subscription initialization failed");
     } catch (err) {
       console.error(err);
       alert("Payment start failed");
