@@ -343,9 +343,15 @@ export default function FormOne({
             <option value="industrial-engineer">Employee Non-Academic (industrial/production engineer)</option>
             <option value="hod">Department Lead</option>
             {customRoles.length > 0 && (
-              <optgroup label="Custom Roles">
+              <optgroup label="── Custom Roles ──" className="bg-gray-100 text-gray-500 italic">
                 {customRoles.map((r) => (
-                  <option key={r.name} value={r.name}>{r.name}</option>
+                  <option
+                    key={r.name}
+                    value={r.name}
+                    className="bg-gray-50 text-gray-600 italic"
+                  >
+                    {r.name}
+                  </option>
                 ))}
               </optgroup>
             )}
