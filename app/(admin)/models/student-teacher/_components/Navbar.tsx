@@ -14,9 +14,17 @@ export default function NavBar() {
   return (
     <nav className="bg-gray-900 text-white shadow-md mb-8">
       <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-        <h1 className="text-lg font-semibold tracking-wide">
-          Student–Teacher Optimization
-        </h1>
+        <div className="flex flex-col">
+          <Link
+            href="/models"
+            className="text-xs text-gray-400 hover:text-white transition w-fit"
+          >
+            &larr; Back to Models
+          </Link>
+          <h1 className="text-lg font-semibold tracking-wide">
+            Student–Teacher Optimization
+          </h1>
+        </div>
 
         <div className="flex space-x-6">
           {links.map((link) => {
