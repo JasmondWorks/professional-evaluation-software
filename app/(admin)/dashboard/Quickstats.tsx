@@ -5,7 +5,12 @@ import React, { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
 
-export default function Quickstats() {
+export default function Quickstats({
+  openEvaluations,
+}: {
+  // Goals still open for data entry (computed on the dashboard from the goals list).
+  openEvaluations?: number;
+} = {}) {
   const [quickStats, setQuickStats] = useState<number[] | null[]>([
     null,
     null,
@@ -80,7 +85,7 @@ export default function Quickstats() {
 
       <div className="stat_3 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] bg-white  max-sm:w-full">
         <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Pending Assesments:</p>
+          <p className="m-1 text-sm">Pending Appraisals:</p>
           <p className="m-1 text-4xl font-bold text-black">
             {!isLoadingStats ? (
               <>{quickStats[2]?.toString()}</>
@@ -90,6 +95,22 @@ export default function Quickstats() {
           </p>
           <Link
             href="/assessment"
+            className="m-1 text-xs underline text-pes cursor-pointer"
+          >
+            View All
+          </Link>
+        </div>
+        <Timer size={64} className="text-gray-100 font-bold mb-auto" />
+      </div>
+
+      <div className="stat_4 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] bg-white max-sm:w-full">
+        <div className="flex flex-col justify-center">
+          <p className="m-1 text-sm">Open Evaluations:</p>
+          <p className="m-1 text-4xl font-bold text-black">
+            {openEvaluations ?? 0}
+          </p>
+          <Link
+            href="/goals"
             className="m-1 text-xs underline text-pes cursor-pointer"
           >
             View All
