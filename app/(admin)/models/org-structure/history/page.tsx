@@ -27,15 +27,21 @@ export default function OrgStructureHistory() {
   }, []);
 
   const fetchHistory = async () => {
+    // Reset loading/error on every run so Refresh gives visible feedback
+    // (previously loading was only ever set false, so clicking did nothing visible).
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/getOrgStructure", {
+        // avoid any cached response so Refresh always fetches fresh rows
+        cache: "no-store",
         headers: {
           Authorization: `Bearer ${getAccessToken()}`
         }
       });
       if (!res.ok) throw new Error("Failed to fetch history");
       const data = await res.json();
-      setHistory(data);
+      setHistory(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error(err);
       setError("Error loading history.");
@@ -83,9 +89,10 @@ export default function OrgStructureHistory() {
         </div>
         <button
           onClick={fetchHistory}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          disabled={loading}
+          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Refresh Data
+          {loading ? "Refreshing…" : "Refresh Data"}
         </button>
       </div>
 

@@ -105,7 +105,7 @@ export default function Quickstats({
 
       <div className="stat_4 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] bg-white max-sm:w-full">
         <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Open Evaluations:</p>
+          <p className="m-1 text-sm">Pending Assessments:</p>
           <p className="m-1 text-4xl font-bold text-black">
             {openEvaluations ?? 0}
           </p>
