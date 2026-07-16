@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 type ChangePasswordRequest = {
   email: string
