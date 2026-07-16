@@ -94,7 +94,7 @@ export default function Goals({
             <div className='metrics flex flex-col justify-normal p-4 py-1'>
                {goals.map((i, key) => (
                   <div key={key}>
-                     <div className='goal-metrics w-full flex justify-between my-4 text-sm'>
+                     <div className='goal-metrics w-full grid grid-cols-3 gap-4 items-center my-4 text-sm text-left'>
                         <p>{ i.name }</p>
                         <p className={ ` text-${ colorGrade(i.status) }-500 ` }> 
                            { typeof( i.status ) == 'string'? `${ i.status }` : `${ i.status }% Completed` } 

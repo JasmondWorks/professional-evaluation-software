@@ -205,26 +205,30 @@ async function addUser(info: ReqInfo, randPassword: string) {
       select: { id: true },
     })
 
-    // permission booleans are stored in String? columns (schema/DB drift), so cast.
+    // Permission columns are text ("on" / NULL), matching the Add-Role form and
+    // existing rows — passing booleans made prisma.permission.create() throw at
+    // runtime (user got created, then this failed, so no email was sent).
+    const flag = (v: unknown) => (v ? "on" : null)
+
     await prisma.permission.create({
       data: {
-        manage_user: manage_user || false,
-        access_em: access_em || false,
-        ae_all: ae_all || false,
-        ae_sub: ae_sub || false,
-        ae_sel: ae_sel || false,
-        define_performance: define_performance || false,
-        dp_all: dp_all || false,
-        dp_sub: dp_sub || false,
-        dp_sel: dp_sel || false,
-        access_hierachy: access_hierachy || false,
-        manage_review: manage_review || false,
-        mr_all: mr_all || false,
-        mr_sub: mr_sub || false,
-        mr_sel: mr_sel || false,
+        manage_user: flag(manage_user),
+        access_em: flag(access_em),
+        ae_all: flag(ae_all),
+        ae_sub: flag(ae_sub),
+        ae_sel: flag(ae_sel),
+        define_performance: flag(define_performance),
+        dp_all: flag(dp_all),
+        dp_sub: flag(dp_sub),
+        dp_sel: flag(dp_sel),
+        access_hierachy: flag(access_hierachy),
+        manage_review: flag(manage_review),
+        mr_all: flag(mr_all),
+        mr_sub: flag(mr_sub),
+        mr_sel: flag(mr_sel),
         user_id: String(user.id),
         org: org || null,
-      } as unknown as Prisma.permissionUncheckedCreateInput,
+      },
     })
 
     await addAssigned(info)
