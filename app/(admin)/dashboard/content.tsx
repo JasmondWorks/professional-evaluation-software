@@ -18,10 +18,22 @@ export default function Dashboard() {
   const [goals, setGoals] = useState<any[]>([]);
   const router = useRouter();
 
-  // A goal is "completed" at 100%; anything below is still active.
+  // A goal is "completed" at 100%; anything below is still active (overdue ones
+  // included — they still need doing).
   const isCompleted = (g: any) => Number(g?.status) >= 100;
   const activeGoalsCount = goals.filter((g) => !isCompleted(g)).length;
   const completedGoalsCount = goals.filter(isCompleted).length;
+
+  // "Open Evaluations" = still incomplete AND not past its due date, i.e.
+  // evaluations currently open to staff for data entry.
+  const isWithinDue = (g: any) => {
+    if (!g?.due_date) return false;
+    const d = new Date(g.due_date);
+    return !isNaN(d.getTime()) && d.getTime() >= Date.now();
+  };
+  const openEvaluationsCount = goals.filter(
+    (g) => !isCompleted(g) && isWithinDue(g),
+  ).length;
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
@@ -55,7 +67,7 @@ export default function Dashboard() {
   return (
     <main className="w-full flex flex-col bg-gray-50">
       {user?.role == "admin" ? (
-        <Quickstats />
+        <Quickstats openEvaluations={openEvaluationsCount} />
       ) : (
         <div className="flex flex-col m-8 p-8 bg-white">
           <ProfileChunk />
