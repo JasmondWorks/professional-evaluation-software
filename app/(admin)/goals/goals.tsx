@@ -9,13 +9,29 @@ import { getAccessToken } from '@/app/utils/auth';
 
 
 function colorGrade( num: any ): string{
-    return (num < 50)? 'red' : 'green';       
+    return (num < 50)? 'red' : 'green';
+}
+
+// Whole days between now and a goal's due_date (null when missing/invalid).
+function daysLeft( due: any ): number | null {
+    if ( !due ) return null
+    const d = new Date(due)
+    if ( isNaN(d.getTime()) ) return null
+    return Math.ceil(( d.getTime() - Date.now() ) / ( 1000 * 60 * 60 * 24 ))
+}
+
+function daysLeftLabel( due: any ): string {
+    const dl = daysLeft(due)
+    if ( dl === null ) return 'No due date'
+    if ( dl < 0 ) return `Overdue by ${Math.abs(dl)} day${Math.abs(dl) === 1 ? '' : 's'}`
+    if ( dl === 0 ) return 'Due today'
+    return `${dl} day${dl === 1 ? '' : 's'} left`
 }
 
 type Goal = {
+    id?: number;
     name: string;
     status: number | string;
-    daysLeft: number;
     due_date: string;
     evaluation_type?: string;
 }
@@ -133,10 +149,16 @@ export default function Goals(){
                             const isEnabled = evaluation.includes(type)
                             const isLoading = toggling === type
 
-                            // Find the most recent goal for this type to show due date
-                            const relatedGoal = goals.find(
+                            // Most recently created goal of this type (highest id) —
+                            // .find() returned the oldest, showing a stale "past due".
+                            const matching = goals.filter(
                                 (g: any) => g.name?.toLowerCase().includes(type) || g.evaluation_type === type
                             )
+                            const relatedGoal = matching.length
+                                ? matching.reduce((latest: any, g: any) =>
+                                    Number(g.id ?? 0) > Number(latest.id ?? 0) ? g : latest
+                                  )
+                                : undefined
                             const dueDate = relatedGoal?.due_date
                                 ? new Date(relatedGoal.due_date).toLocaleDateString()
                                 : null
@@ -214,8 +236,8 @@ export default function Goals(){
 
                                     <p className='flex my-auto'>
                                         <CalendarRemove />
-                                        <span className={ `mx-2 text-${ typeof(i.daysLeft) == 'number' ? colorGrade(i.daysLeft): 'yellow' }-500 ` }>
-                                            { i.daysLeft } days left
+                                        <span className={ `mx-2 text-${ (daysLeft(i.due_date) ?? -1) < 3 ? 'red' : 'green' }-500 ` }>
+                                            { daysLeftLabel(i.due_date) }
                                         </span>
                                     </p>
                                 </div>                                    
