@@ -18,9 +18,9 @@ type reqInfo = {
 }
 
 const amounts = {
-  PLN_w4hf2tk7k3mu66a: {code: 'basic', amount: 100},
-  PLN_pl6nmfsedqvm0oa: {code:'standard', amount: 200},
-  PLN_bquiv8u3t2otwuh: {code:'premium', amount: 300}
+  PLN_eowlq7d4cp4r0dp: {code: 'basic', amount: 100},
+  PLN_cle5ip7jtxfpj5k: {code:'standard', amount: 200},
+  PLN_paglu0ly0z641mm: {code:'premium', amount: 300}
 }
 
 type planCodes = keyof typeof amounts
@@ -32,7 +32,7 @@ async function addToDb(info: reqInfo) {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const planDetails = amounts[planCode as keyof typeof amounts] || amounts['PLN_w4hf2tk7k3mu66a'];
+  const planDetails = amounts[planCode as keyof typeof amounts] || amounts['PLN_eowlq7d4cp4r0dp'];
   const amount = planDetails.amount;
 
   // Unique per signup — must not be shared across requests (reference is @unique).

@@ -32,9 +32,9 @@ const slides = [
 ];
 
 const PLAN_CODES = {
-  basic: "PLN_w4hf2tk7k3mu66a",
-  standard: "PLN_pl6nmfsedqvm0oa",
-  premium: "PLN_bquiv8u3t2otwuh",
+  basic: "PLN_eowlq7d4cp4r0dp",
+  standard: "PLN_cle5ip7jtxfpj5k",
+  premium: "PLN_paglu0ly0z641mm",
 };
 
 type PlanType = keyof typeof PLAN_CODES;
