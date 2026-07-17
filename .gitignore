@@ -54,3 +54,5 @@ next-env.d.ts
 
 # ESLint cache
 .eslintcache
+
+docs/
