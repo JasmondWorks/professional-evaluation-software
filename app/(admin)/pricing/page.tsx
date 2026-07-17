@@ -154,10 +154,10 @@ export default function Home() {
               email={email}
               planCode={
                 planKey === "basic"
-                  ? "PLN_w4hf2tk7k3mu66a"
+                  ? "PLN_eowlq7d4cp4r0dp"
                   : planKey === "standard"
-                    ? "PLN_pl6nmfsedqvm0oa"
-                    : "PLN_bquiv8u3t2otwuh"
+                    ? "PLN_cle5ip7jtxfpj5k"
+                    : "PLN_paglu0ly0z641mm"
               }
               label={label}
             />
