@@ -16,7 +16,7 @@ export default function SetNotification(){
     }
 
     return (
-        <div className={`notification ${ isVisible? 'visible': 'invisible' } rounded-lg shadow-lg p-6 z-30 flex flex-col w-11/12 max-w-md max-h-[90vh] overflow-y-auto bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}>
+        <div className={`notification ${ isVisible? 'visible': 'invisible' } rounded-lg shadow-lg p-6 z-30 flex flex-col w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}>
             <div className='flex justify-between mb-4'>
                 <h1 className='font-semibold'>Set a deadline for entry</h1>
                 <CloseCircle onClick={ () => dispatch( setNotificationView()) } className='ms-auto hover:text-red-500'/>
