@@ -47,10 +47,14 @@ export const createGoalSchema = z.object({
   description: z.string().min(1, 'Description required').max(1000),
   due_date: z.string().refine(
     (date) => {
-      const d = new Date(date);
-      return d > new Date();
+      // A date input gives "YYYY-MM-DD" (midnight), so comparing against the
+      // current instant would wrongly reject today. Compare date-only in local
+      // time so today and any future day are accepted.
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      return date >= todayStr;
     },
-    { message: 'Due date must be in the future' }
+    { message: 'Due date cannot be in the past' }
   ),
   user_id: z.string().min(1, 'User ID required'),
   evaluation_type: z.enum(['appraisal', 'performance', 'stress']),
@@ -62,10 +66,14 @@ export const updateGoalSchema = z.object({
   description: z.string().min(1, 'Description required').max(1000),
   due_date: z.string().refine(
     (date) => {
-      const d = new Date(date);
-      return d > new Date();
+      // A date input gives "YYYY-MM-DD" (midnight), so comparing against the
+      // current instant would wrongly reject today. Compare date-only in local
+      // time so today and any future day are accepted.
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      return date >= todayStr;
     },
-    { message: 'Due date must be in the future' }
+    { message: 'Due date cannot be in the past' }
   ),
   user_id: z.string().min(1, 'User ID required'),
 });
