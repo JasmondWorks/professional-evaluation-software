@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
+import { ArrowLeft2 } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import {
   findOptimalK_ordinary,
@@ -107,8 +108,11 @@ export default function OrdinaryOptimization() {
     <div className="p-10">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Link href="/models/student-teacher" className="text-blue-600 hover:underline">
-            {"<- back"}
+          <Link
+            href="/models/student-teacher"
+            className="inline-flex items-center gap-1.5 bg-white border border-gray-300 shadow-sm text-gray-700 px-3 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors"
+          >
+            <ArrowLeft2 size="16" className="text-gray-500" /> Back
           </Link>
           <h1 className="text-2xl font-bold">Ordinary Optimization</h1>
         </div>
