@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction } from 'react';
+import { ChangeEvent, useEffect, useRef, useState, Dispatch, SetStateAction } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 type FormProps = {
@@ -174,6 +174,119 @@ function PhoneInput({
 }
 
 // --------------------------------------
+// Custom Role dropdown — a native <select> can't space or style its options
+// (and the "Custom Roles" divider looked like a disabled row). This listbox
+// gives each option real padding and renders a clear divider that separates
+// the system roles above from the org's custom roles below.
+// --------------------------------------
+type RoleOption = { value: string; label: string };
+
+function RoleSelect({
+  value,
+  presetRoles,
+  customRoles,
+  onSelect,
+  tabIndex,
+  hasError,
+}: {
+  value: string;
+  presetRoles: RoleOption[];
+  customRoles: { name: string }[];
+  onSelect: (value: string) => void;
+  tabIndex?: number;
+  hasError?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selectedLabel =
+    [...presetRoles, ...customRoles.map((r) => ({ value: r.name, label: r.name }))]
+      .find((o) => o.value === value)?.label ?? '';
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  function choose(v: string) {
+    onSelect(v);
+    setOpen(false);
+  }
+
+  const optionClass = (v: string) =>
+    `w-full text-left px-5 py-3 text-base transition-colors hover:bg-gray-50 ${
+      value === v ? 'bg-indigo-50 text-pes font-semibold' : 'text-gray-700'
+    }`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        tabIndex={tabIndex}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false);
+          else if ((e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') && !open) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+        className={`w-full flex items-center justify-between font-medium text-lg py-3 px-6 border rounded-sm outline-0 text-left transition-colors ${
+          hasError ? 'border-red-400' : open ? 'border-gray-400' : 'border-gray-300'
+        } ${selectedLabel ? 'text-gray-800' : 'text-gray-500'}`}
+      >
+        <span className="truncate">{selectedLabel || 'Select a role'}</span>
+        <svg
+          className={`w-5 h-5 text-gray-400 shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <ul
+          role="listbox"
+          className="absolute z-20 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl py-2 max-h-72 overflow-y-auto"
+        >
+          {presetRoles.map((o) => (
+            <li key={o.value}>
+              <button type="button" onClick={() => choose(o.value)} className={optionClass(o.value)}>
+                {o.label}
+              </button>
+            </li>
+          ))}
+
+          {customRoles.length > 0 && (
+            <>
+              <li className="flex items-center gap-3 px-5 pt-4 pb-2 select-none" aria-hidden>
+                <span className="h-px flex-1 bg-gray-200" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  Custom Roles
+                </span>
+                <span className="h-px flex-1 bg-gray-200" />
+              </li>
+              {customRoles.map((r) => (
+                <li key={r.name}>
+                  <button type="button" onClick={() => choose(r.name)} className={optionClass(r.name)}>
+                    {r.name}
+                  </button>
+                </li>
+              ))}
+            </>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------
 // MAIN FORM COMPONENT
 // --------------------------------------
 export default function FormOne({
@@ -325,37 +438,24 @@ export default function FormOne({
       <div className="grid grid-cols-3 gap-6 w-full">
         <div className="flex flex-col">
           <label className="my-2 text-sm">Present post:</label>
-          <select
-            name="role"
+          <RoleSelect
             value={formdata.role || ''}
-            onChange={handleChange}
-            tabIndex={11}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                advanceFocus(e.currentTarget);
-              }
+            presetRoles={[
+              ...(isAcademic ? [{ value: 'lecturer', label: 'Employee Academic' }] : []),
+              {
+                value: 'industrial-engineer',
+                label: 'Employee Non-Academic (industrial/production engineer)',
+              },
+              { value: 'hod', label: 'Department Lead' },
+            ]}
+            customRoles={customRoles}
+            onSelect={(v) => {
+              updateFields({ role: v });
+              validateField('role', v);
             }}
-            className="font-medium text-lg text-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
-          >
-            <option value="" disabled>Select a role</option>
-            {isAcademic && <option value="lecturer">Employee Academic</option>}
-            <option value="industrial-engineer">Employee Non-Academic (industrial/production engineer)</option>
-            <option value="hod">Department Lead</option>
-            {customRoles.length > 0 && (
-              <optgroup label="───────  CUSTOM ROLES  ───────">
-                {customRoles.map((r) => (
-                  <option
-                    key={r.name}
-                    value={r.name}
-                    className="text-gray-700 not-italic font-medium"
-                  >
-                    {r.name}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
+            tabIndex={11}
+            hasError={!!errors.role}
+          />
           {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
         </div>
         <Input {...inputProps} name="dopp" label="Date appointed to present post:" type="date" tabIndex={12} />
