@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { successView } from '@/app/state/success/successSlice';
 import { newGoal } from '@/app/state/goals/goalSlice';
+import { notify } from '@/lib/toast';
 import { RootState } from '../../state/store';
 import { CloseCircle } from 'iconsax-react';
 import { useState } from 'react';
@@ -106,7 +106,7 @@ export default function Newgoal() {
       
       if (result.status === 200) {
         dispatch(newGoal());
-        dispatch(successView());
+        notify.success('Goal created successfully');
         router.push('/goals');
       } else {
         setError('Failed to create goal. Please try again.');
