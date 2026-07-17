@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/app/components/useAuth";import { getAccessToken } from '@/app/utils/auth';
-
+import { useAuth } from "@/app/components/useAuth";
+import { getAccessToken } from "@/app/utils/auth";
+import { Eye } from "iconsax-react";
+import { EyeOff } from "lucide-react";
 
 type formdata = {
   email: string;
@@ -20,6 +22,7 @@ export default function Home() {
     text: "",
     color: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const schema = Yup.object({
@@ -118,13 +121,23 @@ export default function Home() {
               <label htmlFor="password" className="mb-1">
                 Password:
               </label>
-              <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
-                type="password"
-                name="password"
-                id="password"
-                required
-              />
+              <div className="relative w-full">
+                <Field
+                  className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  id="password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <button

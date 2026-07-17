@@ -1263,46 +1263,55 @@ const WorkSamplingPageInner: React.FC = () => {
                     and Analysis tabs will focus on it.
                   </p>
 
-                  <div className="grid md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-50 rounded-lg">
-                    <input
-                      type="text"
-                      placeholder="Position Name"
-                      value={newPosition.name}
-                      onChange={(e) =>
-                        setNewPosition((p) => ({ ...p, name: e.target.value }))
-                      }
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Department"
-                      value={newPosition.department}
-                      onChange={(e) =>
-                        setNewPosition((p) => ({
-                          ...p,
-                          department: e.target.value,
-                        }))
-                      }
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    />
-                    <input
-                      type="number"
-                      placeholder="PA %"
-                      min={0}
-                      max={100}
-                      value={newPosition.performanceAllowance}
-                      onChange={(e) =>
-                        setNewPosition((p) => ({
-                          ...p,
-                          performanceAllowance: Number(e.target.value),
-                        }))
-                      }
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                      title="Performance Allowance % (from Table 5.2)"
-                    />
+                  <div className="grid md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-50 rounded-lg items-end">
+                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                      Position Name
+                      <input
+                        type="text"
+                        placeholder="e.g. Machine Operator"
+                        value={newPosition.name}
+                        onChange={(e) =>
+                          setNewPosition((p) => ({ ...p, name: e.target.value }))
+                        }
+                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                      />
+                    </label>
+                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                      Department
+                      <input
+                        type="text"
+                        placeholder="e.g. Production"
+                        value={newPosition.department}
+                        onChange={(e) =>
+                          setNewPosition((p) => ({
+                            ...p,
+                            department: e.target.value,
+                          }))
+                        }
+                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                      />
+                    </label>
+                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                      Performance Allowance (%)
+                      <input
+                        type="number"
+                        placeholder="15"
+                        min={0}
+                        max={100}
+                        value={newPosition.performanceAllowance}
+                        onChange={(e) =>
+                          setNewPosition((p) => ({
+                            ...p,
+                            performanceAllowance: Number(e.target.value),
+                          }))
+                        }
+                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                        title="Performance Allowance % (from Table 5.2)"
+                      />
+                    </label>
                     <button
                       onClick={addPosition}
-                      className="flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg font-medium hover:opacity-90"
+                      className="flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 h-[48px]"
                       style={{ backgroundColor: "#322b80" }}
                     >
                       <Plus size={20} /> Add Position

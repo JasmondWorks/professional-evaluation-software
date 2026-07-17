@@ -155,7 +155,7 @@ export default function Dashboard() {
                 <div className="line w-full bg-slate-100 h-1"></div>
               </div>
 
-              <Performance />
+              <Performance view={performanceView} />
             </div>
           </div>
         ) : (

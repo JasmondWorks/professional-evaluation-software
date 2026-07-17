@@ -7,6 +7,7 @@ import * as Yup from "yup";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/components/useAuth";
 import { notify } from "@/lib/toast";
+import { Eye, EyeOff } from "lucide-react";
 
 type formdata = {
   email: string;
@@ -17,6 +18,7 @@ export default function Home() {
   const { setRole } = useAuth();
   // Inline error state for the specific network/server error message.
   const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const schema = Yup.object({
@@ -117,14 +119,24 @@ export default function Home() {
               <label htmlFor="password" className="mb-1">
                 Password:
               </label>
-              <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
-                type="password"
-                name="password"
-                id="password"
-                required
-                tabIndex={2}
-              />
+              <div className="relative w-full">
+                <Field
+                  className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  id="password"
+                  required
+                  tabIndex={2}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-row justify-between mb-8">

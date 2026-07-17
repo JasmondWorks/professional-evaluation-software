@@ -10,13 +10,14 @@ type userData = {
    user_id:string
 }
 
-export default function Performance(){
+export default function Performance({ view = "employee" }: { view?: string }) {
    const [performance, setPerformance] = useState<{ goodPerformance: userData[] | null, badPerformance: userData[] | null }>({ goodPerformance: null, badPerformance: null })
    const [loading, setLoading] = useState(true)
    const [error, setError] = useState('')
 
    async function getPerformance(){
       try {
+         setLoading(true);
          const access_token = getAccessToken();
          
          if (!access_token) {
@@ -31,7 +32,8 @@ export default function Performance(){
                'Content-Type': 'application/json'
             },
             body:JSON.stringify({
-               token: access_token
+               token: access_token,
+               view: view
             })
          });
 
@@ -51,7 +53,7 @@ export default function Performance(){
 
    useEffect(() => {
       getPerformance()
-   }, [])
+   }, [view])
 
    const LoadingState = () => (
       <div className="p-4 m-2 bg-gray-50 rounded-sm flex justify-between">
@@ -68,7 +70,7 @@ export default function Performance(){
 
    return(
       <>
-         <p className='text-xl text-black  my-auto px-4 py-1'>Overperforming Employees</p>
+         <p className='text-xl text-black  my-auto px-4 py-1'>Overperforming {view === "team" ? "Teams" : "Employees"}</p>
          {loading ? (
             <LoadingState />
          ) : error ? (
@@ -80,8 +82,8 @@ export default function Performance(){
                {performance.goodPerformance.map((i, key) => (
                   <div key={key}>
                      <div className='goal-metrics w-full flex justify-between my-4 text-sm'>
-                        <p>{ i.user_id }</p>
-                        <p> { i.dept } </p>
+                        <p>{ view === "team" ? i.dept : i.user_id }</p>
+                        <p> { view === "team" ? "" : i.dept } </p>
                         <p className={ ` text-green-500 flex` }>
                            <ArrowUp className='mt-auto font-thin'/>
                            { `${ i.yield }%` }
@@ -93,7 +95,7 @@ export default function Performance(){
             </div>                     
          )}
 
-         <p className='text-xl text-black  my-auto px-4 py-1'>Underperforming Employees</p>
+         <p className='text-xl text-black  my-auto px-4 py-1'>Underperforming {view === "team" ? "Teams" : "Employees"}</p>
 
          {loading ? (
             <LoadingState />
@@ -106,8 +108,8 @@ export default function Performance(){
                {performance.badPerformance.map((i, key) => (
                   <div key={key}>
                      <div className='goal-metrics w-full flex justify-between my-4 text-sm'>
-                        <p>{ i.user_id }</p>
-                        <p> { i.dept } </p>
+                        <p>{ view === "team" ? i.dept : i.user_id }</p>
+                        <p> { view === "team" ? "" : i.dept } </p>
                         <p className={ ` text-red-500 flex` }>
                            <ArrowDown className='mt-auto mx-1 font-thin' />
                            { `${ i.yield }%` }
