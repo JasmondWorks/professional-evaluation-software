@@ -126,6 +126,7 @@ export default function StaffEstimationHistoryPage() {
                       {run.methodType === "Method1" && `Basic Time: ${run.basicTime}, Tasks: ${run.numTasks}`}
                       {run.methodType === "Method2" && `Observed: ${run.observedTime}, Tasks: ${run.numTasks}`}
                       {run.methodType === "Method3" && `A: ${run.A}, B: ${run.B}, Confidence: ${run.confidenceLimit}%`}
+                      {run.methodType === "Work Sampling" && `Available Hours: ${run.availableHoursPerPerson}, Use Factor: ${run.utilizationFactor}`}
                     </td>
                     <td className="px-6 py-4 font-bold text-pes text-right">
                       {run.staffNeeded}

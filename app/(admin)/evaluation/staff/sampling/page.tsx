@@ -26,7 +26,7 @@ import {
   ChevronRight,
   AlertCircle,
 } from "lucide-react";
-import { getCurrentUser } from "@/app/utils/auth";
+import { getCurrentUser, getAccessToken } from "@/app/utils/auth";
 import { useAuth } from "@/app/components/useAuth";
 import Link from "next/link";
 
@@ -950,7 +950,7 @@ const WorkSamplingPageInner: React.FC = () => {
     0,
   );
 
-  const handleCalculateSamplingStaff = (e: React.MouseEvent) => {
+  const handleCalculateSamplingStaff = async (e: React.MouseEvent) => {
     e.preventDefault();
     setSamplingStaffError(null);
     if (
@@ -967,6 +967,33 @@ const WorkSamplingPageInner: React.FC = () => {
     const staff =
       TAM / (Number(samplingAvailableHours) * Number(samplingUseFactor));
     setSamplingCalculatedStaff(staff);
+
+    // Persist the result so it shows up in Staff Number > History.
+    try {
+      setSaveStatus("saving");
+      const res = await fetch("/api/staffEstimation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAccessToken()}`,
+        },
+        body: JSON.stringify({
+          methodType: "Work Sampling",
+          staffNeeded: staff,
+          availableHoursPerPerson: Number(samplingAvailableHours),
+          utilizationFactor: Number(samplingUseFactor),
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Failed to save");
+      showSaved();
+    } catch (err) {
+      console.error("Failed to save staff estimate", err);
+      setSaveStatus("error");
+      setSamplingStaffError(
+        "Staff number calculated, but saving to history failed.",
+      );
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -2853,13 +2880,21 @@ const WorkSamplingPageInner: React.FC = () => {
 
                         {role === "super-admin" || role === "admin" ? (
                           <div className="space-y-3">
-                            <button
-                              onClick={handleCalculateSamplingStaff}
-                              className="flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow"
-                              style={{ backgroundColor: "#322b80" }}
-                            >
-                              Calculate Number of Staff
-                            </button>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <button
+                                onClick={handleCalculateSamplingStaff}
+                                className="flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow"
+                                style={{ backgroundColor: "#322b80" }}
+                              >
+                                Save &amp; Calculate Number of Staff
+                              </button>
+                              <Link
+                                href="/models/staff-number/history"
+                                className="text-sm font-medium text-indigo-600 hover:underline"
+                              >
+                                View History &rarr;
+                              </Link>
+                            </div>
 
                             {samplingStaffError && (
                               <p className="text-red-500 text-xs font-medium">
