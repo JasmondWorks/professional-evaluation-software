@@ -6,7 +6,7 @@ import { RootState } from '@/app/state/store'
 import { CloseCircle } from 'iconsax-react'
 import { useState } from 'react';
 import jwt from 'jsonwebtoken'
-import { successView } from '@/app/state/success/successSlice';
+import { notify } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
 import LoadingButton from '../ui/LoadingButton';
 
@@ -93,7 +93,7 @@ export default function Editgoal(){
             
             if (responseData.status === 200) {
                 dispatch( uneditGoal())
-                dispatch( successView())
+                notify.success('Goal updated successfully')
                 router.push('/goals')
             } else {
                 setError('Failed to update goal. Please try again.');

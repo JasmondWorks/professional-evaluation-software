@@ -14,7 +14,6 @@ import Deletegoal from '../components/modals/deletegoal'
 import SetNotification from '../components/modals/setnotification'
 import NotificationSent from '../components/modals/notification_sent'
 import RoleCreated from '../components/modals/role_created'
-import Success from '../components/modals/success'
 import Viewgoal from '../components/modals/viewgoal'
 import Failure from '../components/modals/failure'
 import { useEffect, useState } from 'react'
@@ -51,7 +50,6 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
             <Dimmer />
             <Notification />
             <SetNotification />
-            <Success />
             <Failure />
             <Action />
             <Newgoal />
