@@ -62,7 +62,7 @@ function sanitizeString(val?: string | null) {
 
 
 // ---------------- SEND EMAIL (IN SAME FILE) -----------------
-async function sendLoginEmail(to: string, name: string, password: string) {
+async function sendLoginEmail(to: string, name: string, password: string, replyTo?: string) {
 
   console.log("Preparing email transport...")
 
@@ -98,6 +98,7 @@ async function sendLoginEmail(to: string, name: string, password: string) {
 
     const info = await transporter.sendMail({
       from: `"Admin" <${process.env.EMAIL_USER}>`,
+      replyTo: replyTo || process.env.EMAIL_USER,
       to,
       subject: "Your Login Credentials",
       html
@@ -280,10 +281,17 @@ export async function POST(req: Request) {
 
     if (result === 'success') {
 
+      // Find org admin for reply-to
+      const orgAdmin = await prisma.pesuser.findFirst({
+        where: { org: reqInfo.org, role: { in: ['admin', 'Super user'] } },
+        select: { email: true }
+      })
+
       const emailSent = await sendLoginEmail(
         reqInfo.email,
         reqInfo.name,
-        randPassword
+        randPassword,
+        orgAdmin?.email
       )
 
       if (!emailSent) {

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Upload, BarChart3, FileText } from 'lucide-react';
-import { getAccessToken } from '@/app/utils/auth';
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Upload, BarChart3, FileText } from "lucide-react";
+import { getAccessToken } from "@/app/utils/auth";
 
 /* ----------------- Types ----------------- */
 interface DataPoint {
@@ -73,8 +73,11 @@ const variance = (arr: number[]) => {
 };
 
 /* IQR outlier detection */
-function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outlier[] } {
-  const values = dataset.map(d => d.value).sort((a, b) => a - b);
+function filterIQR(dataset: DataPoint[]): {
+  cleaned: DataPoint[];
+  outliers: Outlier[];
+} {
+  const values = dataset.map((d) => d.value).sort((a, b) => a - b);
   const q1 = values[Math.floor(values.length * 0.25)];
   const q3 = values[Math.floor(values.length * 0.75)];
   const iqr = q3 - q1;
@@ -84,7 +87,7 @@ function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outl
   const cleaned: DataPoint[] = [];
   const outliers: Outlier[] = [];
 
-  dataset.forEach(d => {
+  dataset.forEach((d) => {
     if (d.value < lower || d.value > upper) {
       outliers.push({ department: d.department, user: d.user, value: d.value });
     } else {
@@ -98,28 +101,40 @@ function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outl
 /* Z-score outlier detection */
 function detectZScoreOutliers(groups: GroupData[]): Outlier[] {
   const outliers: Outlier[] = [];
-  groups.forEach(g => {
+  groups.forEach((g) => {
     const stdDev = Math.sqrt(g.variance);
     if (stdDev === 0) return;
-    g.values.forEach(v => {
+    g.values.forEach((v) => {
       const z = Math.abs((v - g.mean) / stdDev);
-      if (z > 2.58) outliers.push({ department: g.department, user: g.user, value: v, zScore: z });
+      if (z > 2.58)
+        outliers.push({
+          department: g.department,
+          user: g.user,
+          value: v,
+          zScore: z,
+        });
     });
   });
   return outliers;
 }
 
 /* ----------------- ResultsView ----------------- */
-const ResultsView: React.FC<{ results: StatisticalResults; dept: string; type: string }> = ({ results, dept, type }) => (
+const ResultsView: React.FC<{
+  results: StatisticalResults;
+  dept: string;
+  type: string;
+}> = ({ results, dept, type }) => (
   <div className="mb-8">
     <h2 className="text-xl font-bold mb-2">
       <BarChart3 className="inline mr-2" /> {type} Results for {dept}
     </h2>
     <p
       className={`font-semibold mb-4 ${
-        results.passedCount >= 15 && results.iqrOutliers.length === 0 && results.zScoreOutliers.length === 0
-          ? 'text-green-600'
-          : 'text-red-600'
+        results.passedCount >= 15 &&
+        results.iqrOutliers.length === 0 &&
+        results.zScoreOutliers.length === 0
+          ? "text-green-600"
+          : "text-red-600"
       }`}
     >
       {results.passedCount} users passed data integrity test
@@ -127,10 +142,14 @@ const ResultsView: React.FC<{ results: StatisticalResults; dept: string; type: s
 
     {results.iqrOutliers.length > 0 && (
       <div className="mb-4">
-        <h3 className="font-semibold text-red-600">IQR Outliers ({results.iqrOutliers.length})</h3>
+        <h3 className="font-semibold text-red-600">
+          IQR Outliers ({results.iqrOutliers.length})
+        </h3>
         <ul className="list-disc pl-6">
           {results.iqrOutliers.map((o, i) => (
-            <li key={i}>{o.user} – {o.value}</li>
+            <li key={i}>
+              {o.user} – {o.value}
+            </li>
           ))}
         </ul>
       </div>
@@ -138,10 +157,14 @@ const ResultsView: React.FC<{ results: StatisticalResults; dept: string; type: s
 
     {results.zScoreOutliers.length > 0 && (
       <div className="mb-4">
-        <h3 className="font-semibold text-red-600">Z-Score Outliers ({results.zScoreOutliers.length})</h3>
+        <h3 className="font-semibold text-red-600">
+          Z-Score Outliers ({results.zScoreOutliers.length})
+        </h3>
         <ul className="list-disc pl-6">
           {results.zScoreOutliers.map((o, i) => (
-            <li key={i}>{o.user} – {o.value} (z={o.zScore?.toFixed(2)})</li>
+            <li key={i}>
+              {o.user} – {o.value} (z={o.zScore?.toFixed(2)})
+            </li>
           ))}
         </ul>
       </div>
@@ -154,60 +177,99 @@ export default function StatisticalAnalysisPage() {
   const searchParams = useSearchParams();
   const dept = searchParams.get("dept") || "Unknown Department";
 
-  const [appraisalResults, setAppraisalResults] = useState<StatisticalResults | null>(null);
-  const [performanceResults, setPerformanceResults] = useState<StatisticalResults | null>(null);
+  const [appraisalResults, setAppraisalResults] =
+    useState<StatisticalResults | null>(null);
+  const [performanceResults, setPerformanceResults] =
+    useState<StatisticalResults | null>(null);
 
   useEffect(() => {
     const fetchDataset = async () => {
       const token = getAccessToken();
-      const res = await fetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await fetch(
+        `/api/getDataScores?dept=${encodeURIComponent(dept)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!res.ok) {
-        console.error('Failed to fetch data scores:', res.status, res.statusText);
+        console.error(
+          "Failed to fetch data scores:",
+          res.status,
+          res.statusText,
+        );
         return;
       }
 
       const data: Data = await res.json();
 
-      const appraisal = (data.appraisal ?? []).flatMap(a => [
-        { department: dept, user: a.pesuser_name, value: a.teaching_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.research_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.administrative_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.community_quality_evaluation },
+      const appraisal = (data.appraisal ?? []).flatMap((a) => [
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.teaching_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.research_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.administrative_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.community_quality_evaluation,
+        },
       ]);
 
-      const performance = (data.userperformance ?? []).flatMap(u => [
+      const performance = (data.userperformance ?? []).flatMap((u) => [
         { department: dept, user: u.pesuser_name, value: u.competence },
         { department: dept, user: u.pesuser_name, value: u.integrity },
         { department: dept, user: u.pesuser_name, value: u.compatibility },
         { department: dept, user: u.pesuser_name, value: u.use_of_resources },
       ]);
 
-      runAnalysis(appraisal, 'appraisal');
-      runAnalysis(performance, 'performance');
+      runAnalysis(appraisal, "appraisal");
+      runAnalysis(performance, "performance");
     };
     fetchDataset();
   }, [dept]);
 
-  const runAnalysis = (dataset: DataPoint[], type: 'appraisal' | 'performance') => {
+  const runAnalysis = (
+    dataset: DataPoint[],
+    type: "appraisal" | "performance",
+  ) => {
     if (dataset.length === 0) return;
 
     // Step 1: filter outliers (IQR)
     const { cleaned, outliers: iqrOutliers } = filterIQR(dataset);
 
     // Step 2: group per user
-    const grouped = cleaned.reduce((acc, d) => {
-      const key = d.user;
-      if (!acc[key]) acc[key] = { department: d.department, user: d.user, values: [] as number[] };
-      acc[key].values.push(d.value);
-      return acc;
-    }, {} as Record<string, { department: string; user: string; values: number[] }>);
+    const grouped = cleaned.reduce(
+      (acc, d) => {
+        const key = d.user;
+        if (!acc[key])
+          acc[key] = {
+            department: d.department,
+            user: d.user,
+            values: [] as number[],
+          };
+        acc[key].values.push(d.value);
+        return acc;
+      },
+      {} as Record<
+        string,
+        { department: string; user: string; values: number[] }
+      >,
+    );
 
-    const groups: GroupData[] = Object.values(grouped).map(g => ({
+    const groups: GroupData[] = Object.values(grouped).map((g) => ({
       ...g,
       mean: mean(g.values),
       variance: variance(g.values),
@@ -233,18 +295,26 @@ export default function StatisticalAnalysisPage() {
       isNormallyDistributed: true,
       hasEqualVariances: true,
       recommendedAlpha: 0.05,
-      analysisRecommendation: '',
+      analysisRecommendation: "",
       passedCount: groups.length,
     };
 
-    if (type === 'appraisal') setAppraisalResults(results);
+    if (type === "appraisal") setAppraisalResults(results);
     else setPerformanceResults(results);
   };
 
   return (
-    <div className="container mx-auto py-10">
-      {appraisalResults && <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />}
-      {performanceResults && <ResultsView results={performanceResults} dept={dept} type="Performance" />}
+    <div className="container mx-auto py-10 px-5">
+      {appraisalResults && (
+        <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />
+      )}
+      {performanceResults && (
+        <ResultsView
+          results={performanceResults}
+          dept={dept}
+          type="Performance"
+        />
+      )}
     </div>
   );
 }
