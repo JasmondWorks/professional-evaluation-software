@@ -10,7 +10,7 @@ export default function RoleCreated() {
 
   return (
     <div
-      className={`notification ${isVisible ? "visible" : "invisible"} rounded-sm shadow-lg p-12 z-30 flex flex-col w-4/12 bg-white absolute top-1/2 -translate-y-1/2`}
+      className={`notification ${isVisible ? "visible" : "invisible"} rounded-lg shadow-lg p-6 z-30 flex flex-col w-11/12 max-w-md max-h-[90vh] overflow-y-auto bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
     >
       <div className="flex flex-col">
         <Verify
