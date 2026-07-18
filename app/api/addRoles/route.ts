@@ -48,12 +48,16 @@ async function addUser(info: reqInfo) {
             data: { name: role_name, assigned: 1, org },
         })
 
+        // Store this role's permission TEMPLATE, namespaced by role name so it
+        // can be looked up later (e.g. to pre-fill Add-Employee). The old
+        // `user_id: org` keying was ambiguous across roles and unread by anything.
         await prisma.permission.create({
             data: {
                 manage_user, access_em, ae_all, ae_sub, ae_sel,
                 define_performance, dp_all, dp_sub, dp_sel, access_hierachy,
                 manage_review, mr_all, mr_sub, mr_sel,
-                user_id: org,
+                user_id: `role:${org}:${role_name}`,
+                org,
             },
         })
 

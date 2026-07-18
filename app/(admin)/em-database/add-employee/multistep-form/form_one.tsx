@@ -362,6 +362,26 @@ export default function FormOne({
     validateField(name, value);
   }
 
+  // When a role is selected, pre-fill Step 2's permission checkboxes from that
+  // role's saved template (custom roles created on the Role & Permission page).
+  // Presets have no template, so their permissions are cleared for manual entry.
+  async function applyRolePermissions(role: string) {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      const res = await fetch('/api/getRolePermissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, role }),
+      });
+      if (!res.ok) return;
+      const perms = await res.json();
+      updateFields(perms);
+    } catch {
+      /* non-fatal — the admin can still set permissions manually in Step 2 */
+    }
+  }
+
   async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     const labelName = e.target.id;
@@ -452,6 +472,7 @@ export default function FormOne({
             onSelect={(v) => {
               updateFields({ role: v });
               validateField('role', v);
+              applyRolePermissions(v);
             }}
             tabIndex={11}
             hasError={!!errors.role}
