@@ -3,6 +3,7 @@ import prisma from '../prisma.dev'
 import { Prisma } from '@prisma/client'
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcryptjs'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 const randombytes = require('randombytes');
 
@@ -253,7 +254,16 @@ async function addUser(info: ReqInfo, randPassword: string) {
 // ---------------- POST HANDLER -----------------
 export async function POST(req: Request) {
 
+  // Server-side authorization: caller must be an admin or hold the "access_em"
+  // capability. Client-side gating alone can't protect this write endpoint.
+  const auth = authorize(tokenFromRequest(req), { anyOf: ['access_em'] })
+  if (!auth.ok) return auth.response
+
   const reqInfo: ReqInfo = await req.json()
+
+  // Bind the new employee to the caller's own org — never trust the org sent in
+  // the body, so a user can't create employees in another organization.
+  if (auth.user.org) reqInfo.org = auth.user.org
 
   const randPassword = generateUniquePassword();
 
