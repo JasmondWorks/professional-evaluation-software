@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize } from '../_lib/authGuard'
 
 
 async function getUser(user: string | null) {
@@ -71,30 +71,17 @@ async function getUser(user: string | null) {
 export async function POST(request: NextRequest) {
 
   const { token } = await request.json()
-  const decoded = jwt.decode(token)
 
-  console.log('Decoded JWT:', decoded)
+  // Employee database is visible to admins, HODs, or anyone granted access_em.
+  // Uses the verified token's org, so the list is always scoped to the caller.
+  const auth = authorize(token, { roles: ['hod'], anyOf: ['access_em'] })
+  if (!auth.ok) return auth.response
 
-  if (token) {
-    try {
-
-      let userName: string | null = null
-
-      if (decoded && typeof decoded === 'object' && 'org' in decoded) {
-        userName = (decoded as { org?: string }).org ?? null
-      }
-
-      let userInfo = await getUser(userName)
-
-      return NextResponse.json(userInfo)
-
-    } catch (err) {
-
-      console.error(err)
-      return NextResponse.json([])
-
-    }
+  try {
+    const userInfo = await getUser(auth.user.org ?? null)
+    return NextResponse.json(userInfo)
+  } catch (err) {
+    console.error(err)
+    return NextResponse.json([])
   }
-
-  return NextResponse.redirect(new URL('/not-found', request.url))
 }
