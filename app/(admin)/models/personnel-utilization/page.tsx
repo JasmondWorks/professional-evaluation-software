@@ -28,8 +28,6 @@ export default function PersonnelUtilizationPage() {
     lambda: 1.847,
     mu: 6.5834,
   });
-  const [kmin, setKmin] = useState(1);
-  const [kmax, setKmax] = useState(30);
   const [result, setResult] = useState<OptimalKResult | null>(null);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,13 +54,11 @@ export default function PersonnelUtilizationPage() {
     if (!Number.isFinite(params.lambda) || params.lambda <= 0) return false;
     if (!Number.isFinite(params.mu) || params.mu <= 0) return false;
     if (params.lambda >= params.mu) return false; // Eq. 8.9: λ < μ
-    if (!Number.isFinite(kmin) || !Number.isFinite(kmax) || kmin < 1 || kmax < kmin)
-      return false;
     return true;
   };
 
   const calculate = () => {
-    const r = findOptimalK(params, kmin, kmax);
+    const r = findOptimalK(params);
     setResult(r);
   };
 
@@ -99,8 +95,8 @@ export default function PersonnelUtilizationPage() {
           rho: result.rho,
           p0: result.P0,
           lbar: result.Lbar,
-          kmin,
-          kmax,
+          kmin: 1,
+          kmax: result.table.length,
           kstar: result.Kstar,
           hstar: result.Hstar,
         }),
@@ -179,39 +175,7 @@ export default function PersonnelUtilizationPage() {
         </div>
       )}
 
-      {/* K range */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <label className="block border-gray-200 border rounded p-4">
-          <div className="text-sm font-medium">K min</div>
-          <input
-            type="number"
-            value={kmin}
-            min={1}
-            step={1}
-            onChange={(e) => {
-              setKmin(Number(e.target.value));
-              setResult(null);
-            }}
-            className="mt-1 block w-full rounded-md border border-gray-400 outline-pes shadow-sm p-2"
-          />
-          <div className="text-xs text-gray-500">Minimum span of control to search</div>
-        </label>
-        <label className="block border-gray-200 border rounded p-4">
-          <div className="text-sm font-medium">K max</div>
-          <input
-            type="number"
-            value={kmax}
-            min={1}
-            step={1}
-            onChange={(e) => {
-              setKmax(Number(e.target.value));
-              setResult(null);
-            }}
-            className="mt-1 block w-full rounded-md border border-gray-400 outline-pes shadow-sm p-2"
-          />
-          <div className="text-xs text-gray-500">Maximum span of control to search</div>
-        </label>
-      </div>
+
 
       <button
         onClick={calculate}
