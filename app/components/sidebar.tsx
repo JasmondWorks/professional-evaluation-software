@@ -23,6 +23,8 @@ import { useAuth } from './useAuth';
 import RoleCreated from './modals/role_created';
 import { LucideDatabase } from 'lucide-react';
 import LoadingButton from './ui/LoadingButton';
+import { resolveEffectiveRole, PermissionKey } from './utils/roles';
+import { usePermissions } from './usePermissions';
 
 
 export default function Sidebar({is_sidebar_active, handleSideBar}: 
@@ -32,6 +34,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    // Initialize with default values to prevent undefined access
    const [user, setUser] = useState({ name: '', role: '', org: '', logo: '', maintenance_model: false})
    const { role } = useAuth(); // Optional, depending on if useAuth is faster
+   const { can } = usePermissions();
 
    useEffect(() => {
       // SSR safety check
@@ -60,12 +63,12 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
     // Definition of all tabs
    const tabs = [
       { key: 1, name: 'Dashboard', icon: <Home3 />, href: '/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
-      { key: 4, name: 'Employee Database', icon: <People />, href: '/em-database', role_access: [ 'admin', 'hod'] }, 
+      { key: 4, name: 'Employee Database', icon: <People />, href: '/em-database', role_access: [ 'admin', 'hod'], requires: 'access_em' as PermissionKey },
       { key: 4, name: 'All Organizations', icon: <People />, href: '/organizations', role_access: [ 'super-admin' ] }, 
       { key: 5, name: 'Goals', icon: <Setting4 />, href: '/goals', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w'] }, 
       { key: 3, name: 'Data Entry', icon: <LucideDatabase />, href: '/data-entry', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] }, 
-      { key: 6, name: 'Assessment', icon: <Award />, href: '/assessment', role_access: ['super-admin', 'admin'] },
-      { key: 11, name: 'Staff Determination', icon: <Data2 />, href: '/evaluation', role_access: ['super-admin', 'admin', 'industrial-engineer'] },
+      { key: 6, name: 'Assessment', icon: <Award />, href: '/assessment', role_access: ['super-admin', 'admin'], requires: 'manage_review' as PermissionKey },
+      { key: 11, name: 'Staff Determination', icon: <Data2 />, href: '/evaluation', role_access: ['super-admin', 'admin', 'industrial-engineer'], requires: 'define_performance' as PermissionKey },
       { key: 7, name: 'Performance Review', icon: <Teacher />, href: '/performance', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w'] },
       { key: 2, name: 'Profile', icon: <ProfileCircle />, href: '/profile', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: <DollarCircle />, href: '/pricing', role_access: ['super-admin', 'admin'] },
@@ -73,9 +76,20 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       { key: 10, name: 'Other Models', icon: <Setting2 />, href: '/models', role_access: ['industrial-engineer', 'super-admin', 'admin'] }
    ]
 
-   // Filter tabs based on the user's role
-   // If role is empty (initial load), this returns empty array, which is safe
-   const allowedTabs = tabs.filter(tab => tab.role_access.includes(user.role));
+   // Filter tabs by capability first, then role. Unknown/custom roles fall back
+   // to the baseline employee surface (resolveEffectiveRole), and any tab with a
+   // `requires` capability is also shown to whoever was granted that permission
+   // — so a custom role like "Paginator" with access_em still sees Employee
+   // Database even though its name is in no allow-list. Empty role (initial
+   // load) resolves to the baseline, which is safe.
+   const effectiveRole = user.role ? resolveEffectiveRole(user.role) : null;
+   const allowedTabs = effectiveRole
+      ? tabs.filter(tab => {
+           const requires = (tab as { requires?: PermissionKey }).requires;
+           if (requires && can(requires)) return true;
+           return tab.role_access.includes(effectiveRole);
+        })
+      : [];
 
    // Helper to determine active state
    const isActive = (href: string) => pathname === href || `/${pathname.split('/')[1]}` === href;
