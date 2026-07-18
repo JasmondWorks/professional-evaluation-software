@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // adjust path
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ success: false, message: "Authorization header missing" }, { status: 401 });
-    }
-    const token = authHeader.split(" ")[1];
-    const decoded = jwtDecode<{ org: string }>(token);
-    const org = decoded.org;
+    // Deleting users requires the manage_user capability (or admin tier). Uses
+    // the verified token's org so deletions are scoped to the caller's org.
+    const auth = authorize(tokenFromRequest(req), { anyOf: ["manage_user"] });
+    if (!auth.ok) return auth.response;
+    const org = auth.user.org;
 
     const body = await req.json();
     const { email } = body;
