@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 401 });
-    }
-
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
+    // Saving performance-metric results requires define_performance (or admin).
+    const auth = authorize(tokenFromRequest(req), {
+      roles: ["industrial-engineer"],
+      anyOf: ["define_performance"],
+    });
+    if (!auth.ok) return auth.response;
+    const org = auth.user.org;
     if (!org) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
