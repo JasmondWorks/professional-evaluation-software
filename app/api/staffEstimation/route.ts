@@ -1,16 +1,17 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // Make sure prisma client is set up properly
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
-    }
-    const token = authHeader.split(" ")[1];
-    const decoded = jwtDecode<{ org: string }>(token);
+    // Staff determination is for admins, industrial engineers, or anyone
+    // granted define_performance.
+    const auth = authorize(tokenFromRequest(req), {
+      roles: ["industrial-engineer"],
+      anyOf: ["define_performance"],
+    });
+    if (!auth.ok) return auth.response;
 
     const body = await req.json();
 
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
         utilizationFactor,
         annualManHours,
         standardManHours,
-        org: decoded.org,
+        org: auth.user.org ?? undefined,
       },
     });
 
