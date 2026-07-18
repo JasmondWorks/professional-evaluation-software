@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { compactPermissions } from '@/app/components/utils/roles'
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
@@ -48,6 +49,13 @@ export async function POST(req: Request) {
 
     const logo = admin?.image || user.image || null;
 
+    // Embed the user's granted capabilities so the client can gate UI on
+    // permissions (which work for any role) rather than the role name alone.
+    const permissionRow = await prisma.permission.findFirst({
+      where: { user_id: String(user.id) },
+    });
+    const perms = compactPermissions(permissionRow);
+
     const token = jwt.sign(
       {
         userID: user.id,
@@ -59,7 +67,8 @@ export async function POST(req: Request) {
         dept: user.dept,
         productCategory: user.category,
         productPlan: user.plan,
-        maintenance_model: maintenance?.maintenance_model ?? false
+        maintenance_model: maintenance?.maintenance_model ?? false,
+        perms
       },
       process.env.JWT_SECRET || 'fallback-secret-change-in-production'
     );
