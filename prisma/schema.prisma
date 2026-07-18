@@ -410,10 +410,14 @@ model plans {
 }
 
 model roles {
-  id       Int     @default(autoincrement())
-  name     String  @id @db.VarChar(255)
+  id       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(255)
   assigned Int?
   org      String? @db.VarChar(255)
+
+  // Role names are unique PER ORG, not globally — otherwise one org creating
+  // "Paginator" blocks every other org from ever using that name.
+  @@unique([name, org])
 }
 
 model second_book_of_record {
