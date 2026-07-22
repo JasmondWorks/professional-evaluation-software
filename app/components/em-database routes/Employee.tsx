@@ -8,15 +8,15 @@ import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import Table, { TableColumn } from "@/app/components/ui/Table";
 import RoleSelect from "@/app/components/ui/RoleSelect";
-import { PRESET_ROLES } from "@/app/components/utils/roles";
+import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 
-// The preset options offered in the Assign-Role dropdown — identical to the
-// Add-Employee form. Custom roles are appended below at runtime.
-const ASSIGN_PRESET_OPTIONS = [
-  { value: "lecturer", label: "Employee Academic" },
-  { value: "industrial-engineer", label: "Employee Non-Academic (industrial/production engineer)" },
-  { value: "hod", label: "Department Lead" },
-];
+// Every system preset role, built from the canonical list so this dropdown can
+// never diverge from the roles that actually exist (Roles table, seeding, etc.).
+// Custom roles are appended below at runtime.
+const ASSIGN_PRESET_OPTIONS = PRESET_ROLES.map((r) => ({
+  value: r,
+  label: PRESET_ROLE_LABELS[r],
+}));
 // A staff member counts as "assigned" once they hold one of these management roles.
 const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
 
