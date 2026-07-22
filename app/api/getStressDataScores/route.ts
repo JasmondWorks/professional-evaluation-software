@@ -48,7 +48,22 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json(data , { status: 200 });
+    // Enrich each entry with the staff member's faculty so results can be
+    // aggregated at faculty level (stress_scores itself only stores dept).
+    // Matched by name within the org; unmatched fall into "Unknown Faculty".
+    const users = await prisma.pesuser.findMany({
+      where: { org },
+      select: { name: true, faculty_college: true },
+    });
+    const facultyByName = new Map<string, string>(
+      users.map((u) => [u.name, u.faculty_college || "Unknown Faculty"] as [string, string]),
+    );
+    const enriched = data.map((d) => ({
+      ...d,
+      faculty: facultyByName.get(d.user_name ?? "") || "Unknown Faculty",
+    }));
+
+    return NextResponse.json(enriched, { status: 200 });
   } catch (error) {
     console.error("Error fetching stress scores:", error);
     return NextResponse.json(

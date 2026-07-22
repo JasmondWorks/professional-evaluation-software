@@ -40,6 +40,7 @@ interface StressEntry {
   user_name: string;
   org: string;
   dept: string;
+  faculty?: string;
   organizational: number;
   student: number;
   administrative: number;
@@ -158,6 +159,46 @@ export default function StressAnalysisTool() {
       conflictFactor: conflict,
     };
   });
+
+  // Aggregate the per-staff factors up to a grouping level (department, faculty,
+  // or the whole institution). The client requires ONLY these grouped levels —
+  // no individual results are shown or saved.
+  type LevelRow = {
+    name: string;
+    count: number;
+    stress: number;
+    pressure: number;
+    conflict: number;
+  };
+  const aggregateBy = (keyFn: (e: (typeof enrichedData)[number]) => string): LevelRow[] => {
+    const groups: Record<string, typeof enrichedData> = {};
+    enrichedData.forEach((e) => {
+      const key = keyFn(e) || "Unknown";
+      (groups[key] ||= []).push(e);
+    });
+    return Object.entries(groups)
+      .map(([name, rows]) => ({
+        name,
+        count: rows.length,
+        stress: mean(rows.map((r) => r.stressFactor)),
+        pressure: mean(rows.map((r) => r.pressureFactor)),
+        conflict: mean(rows.map((r) => r.conflictFactor)),
+      }))
+      .sort((a, b) => b.stress - a.stress);
+  };
+  const departmentResults = aggregateBy((e) => e.dept);
+  const facultyResults = aggregateBy((e) => e.faculty || "Unknown Faculty");
+  const institutionResults: LevelRow[] = enrichedData.length
+    ? [
+        {
+          name: "Whole Institution",
+          count: enrichedData.length,
+          stress: mean(enrichedData.map((r) => r.stressFactor)),
+          pressure: mean(enrichedData.map((r) => r.pressureFactor)),
+          conflict: mean(enrichedData.map((r) => r.conflictFactor)),
+        },
+      ]
+    : [];
 
   const runANOVA = () => {
     const grouped: GroupedData = {};
@@ -447,48 +488,59 @@ export default function StressAnalysisTool() {
 
           </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">Individual Records</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 font-semibold">Name</th>
-                    <th className="px-6 py-3 font-semibold">Dept</th>
-                    <th className="px-6 py-3 font-semibold text-right">Stress Factor</th>
-                    <th className="px-6 py-3 font-semibold text-right">Pressure Factor</th>
-                    <th className="px-6 py-3 font-semibold text-right">Conflict Factor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {enrichedData.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-3 font-medium text-gray-900">{s.user_name}</td>
-                      <td className="px-6 py-3 text-gray-600">{s.dept}</td>
-                      <td className="px-6 py-3 text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                          {(s.stressFactor * 100).toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                          {(s.pressureFactor * 100).toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                          {(s.conflictFactor * 100).toFixed(1)}%
-                        </span>
-                      </td>
+          {/* Grouped results — departmental, faculty, institutional ONLY.
+              No individual staff results are shown (per requirement). */}
+          {([
+            { title: "Departmental Results", subject: "Department", rows: departmentResults },
+            { title: "Faculty Results", subject: "Faculty", rows: facultyResults },
+            { title: "Institutional Result", subject: "Level", rows: institutionResults },
+          ] as const).map((section) => (
+            <div key={section.title} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 className="text-lg font-bold text-gray-900">{section.title}</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold">{section.subject}</th>
+                      <th className="px-6 py-3 font-semibold text-right">Staff</th>
+                      <th className="px-6 py-3 font-semibold text-right">Stress</th>
+                      <th className="px-6 py-3 font-semibold text-right">Pressure</th>
+                      <th className="px-6 py-3 font-semibold text-right">Conflict</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {section.rows.length === 0 ? (
+                      <tr><td colSpan={5} className="px-6 py-4 text-gray-400 text-center">No data</td></tr>
+                    ) : (
+                      section.rows.map((r) => (
+                        <tr key={r.name} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-6 py-3 font-medium text-gray-900">{r.name}</td>
+                          <td className="px-6 py-3 text-right text-gray-600">{r.count}</td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                              {(r.stress * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                              {(r.pressure * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {(r.conflict * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          ))}
 
         </div>
       )}
