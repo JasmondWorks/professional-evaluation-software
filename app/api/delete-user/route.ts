@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     // Deleting users requires the manage_user capability (or admin tier). Uses
     // the verified token's org so deletions are scoped to the caller's org.
-    const auth = authorize(tokenFromRequest(req), { anyOf: ["manage_user"] });
+    const auth = authorize(tokenFromRequest(req), { anyOf: ["can_manage_user_roles"] });
     if (!auth.ok) return auth.response;
     const org = auth.user.org;
 

@@ -7,9 +7,9 @@
 // knowable and carried in the JWT (see /api/login + compactPermissions).
 //
 //   const { can } = usePermissions();
-//   {can('access_em') && <EditEmployeesButton />}
+//   {can('can_access_employee_data') && <EditEmployeesButton />}
 //
-//   <Can permission="manage_review"><ReviewPanel /></Can>
+//   <Can permission="can_manage_performance_reviews"><ReviewPanel /></Can>
 
 import { ReactNode, useEffect, useState } from 'react';
 import jwt from 'jsonwebtoken';

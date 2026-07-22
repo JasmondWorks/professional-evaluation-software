@@ -24,6 +24,7 @@ type User = {
   password: string;
   gsm: string;
   role: string;
+  display_role?: string;
   address: string;
   faculty_college: string;
   dob: string;
@@ -198,7 +199,7 @@ export default function Employee() {
                 align: "center",
                 render: (i) => (
                   <p className={`rounded-full w-fit px-4 py-1 bg-${roleColor(i.role)}-100 text-${roleColor(i.role)}-500 mx-auto`}>
-                    {i.role}
+                    {i.display_role || i.role}
                   </p>
                 ),
               },

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     // granted define_performance.
     const auth = authorize(tokenFromRequest(req), {
       roles: ["industrial-engineer"],
-      anyOf: ["define_performance"],
+      anyOf: ["can_define_performance_metrics"],
     });
     if (!auth.ok) return auth.response;
 

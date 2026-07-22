@@ -1,61 +1,35 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-
+import { PERMISSION_KEYS, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
 
 type reqInfo = {
     role_name: string
     description: string
     org: string
-    manage_user: string
-    access_em: string
-    ae_all: string
-    ae_sub: string
-    ae_sel: string
-    define_performance: string
-    dp_all: string
-    dp_sub: string
-    dp_sel: string
-    access_hierachy: string
-    manage_review: string
-    mr_all: string
-    mr_sub: string
-    mr_sel: string
-}
-
+    base_role: string
+} & Partial<Record<PermissionKey, boolean>>
 
 async function addUser(info: reqInfo) {
-    const { 
-        role_name,
-        description,
-        org,
-        manage_user, 
-        access_em, 
-        ae_all, 
-        ae_sub, 
-        ae_sel, 
-        define_performance, 
-        dp_all, 
-        dp_sub, 
-        dp_sel, 
-        access_hierachy, 
-        manage_review, 
-        mr_all, 
-        mr_sub, 
-        mr_sel } = info
-     
+    const { role_name, org, base_role } = info
+
+    // Which system preset this custom role behaves as (defaults to baseline).
+    const baseRole = resolveBaseRole(base_role)
+
+    // Copy the granted capabilities (booleans) straight from the body.
+    const permissionData = Object.fromEntries(
+        PERMISSION_KEYS.map((k) => [k, Boolean(info[k])]),
+    )
+
     try {
         await prisma.roles.create({
-            data: { name: role_name, assigned: 1, org },
+            data: { name: role_name, assigned: 1, org, base_role: baseRole },
         })
 
         // Store this role's permission TEMPLATE, namespaced by role name so it
-        // can be looked up later (e.g. to pre-fill Add-Employee). The old
-        // `user_id: org` keying was ambiguous across roles and unread by anything.
+        // can be looked up later (e.g. to pre-fill Add-Employee).
         await prisma.permission.create({
             data: {
-                manage_user, access_em, ae_all, ae_sub, ae_sel,
-                define_performance, dp_all, dp_sub, dp_sel, access_hierachy,
-                manage_review, mr_all, mr_sub, mr_sel,
+                ...permissionData,
                 user_id: `role:${org}:${role_name}`,
                 org,
             },
@@ -69,12 +43,12 @@ async function addUser(info: reqInfo) {
 
 export async function POST(req: Request) {
   const reqInfo = await req.json()
-  
+
    try {
       let data = await addUser(reqInfo)
       console.log(data);
       if (data == 'success') {
-        return NextResponse.json({ message: 'added employee successfully!', status: 200 })      
+        return NextResponse.json({ message: 'Role created successfully!', status: 200 })
       } else {
         return NextResponse.json({ message: 'There was a problem', status: 500})
       }

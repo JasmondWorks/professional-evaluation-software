@@ -11,6 +11,7 @@ type user = {
    password: string
    gsm: string
    role: string
+   display_role?: string
    address: string
    faculty_college: string
    dob: string
@@ -75,7 +76,7 @@ export default function ProfileChunk(){
 
             <div className='flex flex-col min-w-[30rem] py-2 px-4'>
                {user ? <DataField label="Email" value={user.email.toLowerCase()} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
-               {user ? <DataField label="Present role" value={titleCase(user.role)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
+               {user ? <DataField label="Present role" value={titleCase(user.display_role || user.role)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
                {user ? <DataField label="Faculty/college" value={titleCase(user.faculty_college)} /> : <div className="my-2 flex flex-col"><TextFallback/></div>}
 
                {/* <div className='my-2 flex flex-col'>

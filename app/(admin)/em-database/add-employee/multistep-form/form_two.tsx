@@ -25,7 +25,7 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
          <div className="grid grid-cols-2 m-4">
             <div className="border-b border-e p-4 flex flex-col">
                <label className="flex">
-                  <input name="manage_user" checked={formdata.manage_user === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
+                  <input name="can_manage_user_roles" checked={formdata.can_manage_user_roles === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
                   <span className="w-10/12">
                      <h1 className="text-lg">Manage User Roles</h1>
                      <p>Create, Edit, and Delete User roles.</p>
@@ -35,7 +35,7 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
 
             <div className="border-b border-e p-4 flex flex-col">
                <label className="flex">
-                  <input name="access_em" checked={formdata.access_em === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
+                  <input name="can_access_employee_data" checked={formdata.can_access_employee_data === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
                   <span className="w-10/12">
                      <h1 className="text-lg">Access Employee Data</h1>
                      <p>View and edit the details of employees.</p>
@@ -43,15 +43,15 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
                </label>
                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
                   <label className="flex me-4">
-                     <input name="ae_all" checked={formdata.ae_all === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="access_employee_all" checked={formdata.access_employee_all === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>All Employees</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="ae_sub" checked={formdata.ae_sub === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="access_employee_subordinates" checked={formdata.access_employee_subordinates === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Subordinates</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="ae_sel" checked={formdata.ae_sel === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="access_employee_selected" checked={formdata.access_employee_selected === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Selected Employees</span>
                   </label>     
                </div>
@@ -59,7 +59,7 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
 
             <div className="border-b border-e p-4 flex flex-col">
                <label className="flex">
-                  <input name="define_performance" checked={formdata.define_performance === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
+                  <input name="can_define_performance_metrics" checked={formdata.can_define_performance_metrics === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
                   <span className="w-10/12">
                      <h1 className="text-lg">Define Performance Metrics</h1>
                      <p>View and edit the Performance Metrics of employees.</p>
@@ -67,15 +67,15 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
                </label>
                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
                   <label className="flex me-4">
-                     <input name="dp_all" checked={formdata.dp_all === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="define_performance_all" checked={formdata.define_performance_all === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>All Employees</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="dp_sub" checked={formdata.dp_sub === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="define_performance_subordinates" checked={formdata.define_performance_subordinates === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Subordinates</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="dp_sel" checked={formdata.dp_sel === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="define_performance_selected" checked={formdata.define_performance_selected === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Selected Employees</span>
                   </label>     
                </div>
@@ -83,7 +83,7 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
 
             <div className="border-b border-e p-4 flex flex-col">
                <label className="flex">
-                  <input name="access_hierachy" checked={formdata.access_hierachy === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
+                  <input name="can_access_reporting_hierarchy" checked={formdata.can_access_reporting_hierarchy === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
                   <span className="w-10/12">
                      <h1 className="text-lg">Access Reporting Hierarchy</h1>
                      <p>Define and modify the organizational reporting structure. Assigning managers to employees and creating teams</p>
@@ -93,7 +93,7 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
 
             <div className="border-b border-e p-4 flex flex-col">
                <label className="flex">
-                  <input name="manage_review" checked={formdata.manage_review === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
+                  <input name="can_manage_performance_reviews" checked={formdata.can_manage_performance_reviews === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="h-6 w-6 mt-1 me-3" />
                   <span className="w-10/12">
                      <h1 className="text-lg">Manage Performance Reviews</h1>
                      <p>Schedule, modify or cancel performance review meetings for any employee</p>
@@ -101,15 +101,15 @@ export default function Formtwo({ formdata, updateFields, setStepValid }: FormPr
                </label>
                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
                   <label className="flex me-4">
-                     <input name="mr_all" checked={formdata.mr_all === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="manage_reviews_all" checked={formdata.manage_reviews_all === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>All Employees</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="mr_sub" checked={formdata.mr_sub === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="manage_reviews_subordinates" checked={formdata.manage_reviews_subordinates === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Subordinates</span>
                   </label>     
                   <label className="flex me-4">
-                     <input name="mr_sel" checked={formdata.mr_sel === 'on'} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked ? 'on' : '' }) } type="checkbox" className="me-1" />
+                     <input name="manage_reviews_selected" checked={formdata.manage_reviews_selected === true} onChange={ (event) => updateFields({...formdata, [event?.target.name]: event.target.checked }) } type="checkbox" className="me-1" />
                      <span>Selected Employees</span>
                   </label>     
                </div>

@@ -14,6 +14,7 @@ async function getUser(user: string | null) {
       email: true,
       gsm: true,
       role: true,
+      display_role: true,
       address: true,
       dept: true,
       faculty_college: true,
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
   // Employee database is visible to admins, HODs, or anyone granted access_em.
   // Uses the verified token's org, so the list is always scoped to the caller.
-  const auth = authorize(token, { roles: ['hod'], anyOf: ['access_em'] })
+  const auth = authorize(token, { roles: ['hod'], anyOf: ['can_access_employee_data'] })
   if (!auth.ok) return auth.response
 
   try {

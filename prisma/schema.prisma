@@ -302,23 +302,23 @@ model performance_result {
 }
 
 model permission {
-  id                 Int     @id @default(autoincrement())
-  manage_user        String?
-  access_em          String?
-  ae_all             String?
-  ae_sub             String?
-  ae_sel             String?
-  define_performance String?
-  dp_all             String?
-  dp_sub             String?
-  dp_sel             String?
-  access_hierachy    String?
-  manage_review      String?
-  mr_all             String?
-  mr_sub             String?
-  mr_sel             String?
-  user_id            String? @db.VarChar(255)
-  org                String? @db.VarChar(255)
+  id                              Int     @id @default(autoincrement())
+  can_manage_user_roles           Boolean @default(false)
+  can_access_employee_data        Boolean @default(false)
+  access_employee_all             Boolean @default(false)
+  access_employee_subordinates    Boolean @default(false)
+  access_employee_selected        Boolean @default(false)
+  can_define_performance_metrics  Boolean @default(false)
+  define_performance_all          Boolean @default(false)
+  define_performance_subordinates Boolean @default(false)
+  define_performance_selected     Boolean @default(false)
+  can_access_reporting_hierarchy  Boolean @default(false)
+  can_manage_performance_reviews  Boolean @default(false)
+  manage_reviews_all              Boolean @default(false)
+  manage_reviews_subordinates     Boolean @default(false)
+  manage_reviews_selected         Boolean @default(false)
+  user_id                         String? @db.VarChar(255)
+  org                             String? @db.VarChar(255)
 }
 
 model personnel_redundancy {
@@ -366,7 +366,11 @@ model pesuser {
   email            String          @unique @db.VarChar(255)
   password         String          @db.VarChar(255)
   gsm              String?         @db.VarChar(50)
+  // Functional role — always a system PRESET so role-based UI stays predictable.
   role             String?         @db.VarChar(50)
+  // Human-facing role label to SHOW (e.g. the custom role name "Paginator").
+  // Falls back to `role` when the employee holds a preset directly.
+  display_role     String?         @db.VarChar(255)
   address          String?
   faculty_college  String?         @db.VarChar(255)
   dob              DateTime?       @db.Date
@@ -414,6 +418,11 @@ model roles {
   name     String  @db.VarChar(255)
   assigned Int?
   org      String? @db.VarChar(255)
+
+  // Which system preset this custom role behaves as for role-based UI
+  // (sidebar, conditional components). Employees created with this role get
+  // `base_role` written into pesuser.role so those checks stay predictable.
+  base_role String? @db.VarChar(50)
 
   // Role names are unique PER ORG, not globally — otherwise one org creating
   // "Paginator" blocks every other org from ever using that name.

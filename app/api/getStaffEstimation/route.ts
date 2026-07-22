@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {
       roles: ["industrial-engineer"],
-      anyOf: ["define_performance"],
+      anyOf: ["can_define_performance_metrics"],
     });
     if (!auth.ok) return auth.response;
 
