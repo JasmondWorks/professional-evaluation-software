@@ -1,37 +1,46 @@
 // Shared role / permission primitives.
 //
-// Roles in this system are open-ended: an org admin can create custom roles
-// (e.g. "Paginator") that we can't enumerate at build time. So the UI must not
-// gate on the role *name* alone — a custom role matches none of the hardcoded
-// allow-lists and would otherwise see an empty app. Two mechanisms fix that:
-//
-//   1. resolveEffectiveRole() maps any unknown role down to a safe baseline
-//      ("employee-w"), so a custom-role user always gets the standard employee
-//      surface instead of nothing.
-//   2. PERMISSION_KEYS are the finite, knowable capabilities (from the
-//      `permission` table). Capability checks work for ANY role, preset or
-//      custom, and are the preferred way to gate features going forward.
+// Roles are open-ended: an org admin can create custom roles (e.g. "Paginator").
+// To keep role-based UI predictable, a custom role is created with a `base_role`
+// — one of the system PRESETS below — and employees created with that role get
+// the preset written into pesuser.role, while the custom name is kept in
+// pesuser.display_role for display. Fine-grained access is then driven by
+// PERMISSIONS (a fixed, knowable set), not the role name.
 
-// The roles the app special-cases by name. "super-admin"/"admin" are platform
-// tiers we own; the rest are the presets offered by the Add-Employee form.
-export const KNOWN_ROLES = [
-  'super-admin',
+// System preset roles that drive role-based UI. A custom role must map onto one
+// of these. "super-admin" is a platform tier (not assignable as a base role).
+export const PRESET_ROLES = [
   'admin',
+  'hod',
   'lecturer',
   'industrial-engineer',
-  'hod',
   'employee-w',
   'auditor',
 ] as const;
 
+export type PresetRole = (typeof PRESET_ROLES)[number];
+
+// Human-friendly labels for the presets (used in dropdowns).
+export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
+  admin: 'Admin',
+  hod: 'Department Lead (HOD)',
+  lecturer: 'Employee — Academic',
+  'industrial-engineer': 'Employee — Non-Academic',
+  'employee-w': 'Employee (baseline)',
+  auditor: 'Auditor',
+};
+
+// All roles the app special-cases by name (presets + platform super-admin).
+export const KNOWN_ROLES = ['super-admin', ...PRESET_ROLES] as const;
+
 export type KnownRole = (typeof KNOWN_ROLES)[number];
 
-// Baseline surface for anyone whose role we don't recognize (custom roles).
-export const FALLBACK_ROLE: KnownRole = 'employee-w';
+// Baseline surface for anyone whose role we don't recognize.
+export const FALLBACK_ROLE: PresetRole = 'employee-w';
 
-// Map a raw role string to a role the UI knows how to place. Unknown/custom
-// roles fall back to the baseline employee surface (plus any capabilities they
-// were explicitly granted — see PERMISSION_KEYS / usePermissions).
+// Map a raw role string to a role the UI knows how to place. With Approach B,
+// pesuser.role is always a preset, so this normally passes through unchanged;
+// it stays as a safety net for legacy/custom values.
 export function resolveEffectiveRole(role?: string | null): KnownRole {
   if (role && (KNOWN_ROLES as readonly string[]).includes(role)) {
     return role as KnownRole;
@@ -39,37 +48,45 @@ export function resolveEffectiveRole(role?: string | null): KnownRole {
   return FALLBACK_ROLE;
 }
 
-// The capabilities stored per user in the `permission` table. These are the
-// closed set the UI can safely branch on regardless of role name.
+// Normalize an arbitrary base-role choice to a valid preset (defaults to baseline).
+export function resolveBaseRole(base?: string | null): PresetRole {
+  if (base && (PRESET_ROLES as readonly string[]).includes(base)) {
+    return base as PresetRole;
+  }
+  return FALLBACK_ROLE;
+}
+
+// The capabilities stored per user/role in the `permission` table. Descriptive
+// names, stored as booleans. This is the closed set the UI can safely branch on
+// regardless of role name.
 export const PERMISSION_KEYS = [
-  'manage_user',
-  'access_em',
-  'ae_all',
-  'ae_sub',
-  'ae_sel',
-  'define_performance',
-  'dp_all',
-  'dp_sub',
-  'dp_sel',
-  'access_hierachy',
-  'manage_review',
-  'mr_all',
-  'mr_sub',
-  'mr_sel',
+  'can_manage_user_roles',
+  'can_access_employee_data',
+  'access_employee_all',
+  'access_employee_subordinates',
+  'access_employee_selected',
+  'can_define_performance_metrics',
+  'define_performance_all',
+  'define_performance_subordinates',
+  'define_performance_selected',
+  'can_access_reporting_hierarchy',
+  'can_manage_performance_reviews',
+  'manage_reviews_all',
+  'manage_reviews_subordinates',
+  'manage_reviews_selected',
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
-// Permission columns are stored as text ("on" / null). Compact a raw row into a
-// small { key: true } object suitable for embedding in the JWT — only granted
-// capabilities are kept, so the token stays lean.
+// Compact a raw permission row (boolean columns) into a small { key: true }
+// object suitable for embedding in the JWT — only granted capabilities are kept.
 export function compactPermissions(
-  row: Partial<Record<PermissionKey, string | null>> | null | undefined,
+  row: Partial<Record<PermissionKey, boolean | null>> | null | undefined,
 ): Partial<Record<PermissionKey, true>> {
   const out: Partial<Record<PermissionKey, true>> = {};
   if (!row) return out;
   for (const key of PERMISSION_KEYS) {
-    if (row[key] === 'on') out[key] = true;
+    if (row[key] === true) out[key] = true;
   }
   return out;
 }

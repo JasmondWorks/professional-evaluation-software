@@ -7,13 +7,24 @@ import jwt from "jsonwebtoken";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
+import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 
 export default function CreateRole() {
-  const [formData, setFormData] = useState({});
+  // base_role defaults to the baseline preset so the role is always mappable.
+  const [formData, setFormData] = useState<Record<string, any>>({
+    base_role: "employee-w",
+  });
   const router = useRouter();
 
-  function handleChange(event: { target: { name: any; value: any } }) {
-    setFormData({ ...formData, [event.target.name]: event.target.value });
+  function handleChange(
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
+    const target = event.target as HTMLInputElement;
+    const { name, value, type } = target;
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? target.checked : value,
+    });
   }
 
   async function handleSubmit(event: { preventDefault: () => void }) {
@@ -112,7 +123,7 @@ export default function CreateRole() {
                 <label className="flex">
                   <input
                     onChange={handleChange}
-                    name="manage_user"
+                    name="can_manage_user_roles"
                     type="checkbox"
                     className="h-6 w-6 mt-1 me-3"
                   />
@@ -130,7 +141,7 @@ export default function CreateRole() {
                 <label className="flex">
                   <input
                     onChange={handleChange}
-                    name="access_em"
+                    name="can_access_employee_data"
                     type="checkbox"
                     className="h-6 w-6 mt-1 me-3"
                   />
@@ -143,7 +154,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="ae_all"
+                      name="access_employee_all"
                       type="checkbox"
                       className="me-1"
                     />
@@ -152,7 +163,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="ae_sub"
+                      name="access_employee_subordinates"
                       type="checkbox"
                       className="me-1"
                     />
@@ -161,7 +172,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="ae_sel"
+                      name="access_employee_selected"
                       type="checkbox"
                       className="me-1"
                     />
@@ -174,7 +185,7 @@ export default function CreateRole() {
                 <label className="flex">
                   <input
                     onChange={handleChange}
-                    name="define_performance"
+                    name="can_define_performance_metrics"
                     type="checkbox"
                     className="h-6 w-6 mt-1 me-3"
                   />
@@ -187,7 +198,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="dp_all"
+                      name="define_performance_all"
                       type="checkbox"
                       className="me-1"
                     />
@@ -196,7 +207,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="dp_sub"
+                      name="define_performance_subordinates"
                       type="checkbox"
                       className="me-1"
                     />
@@ -205,7 +216,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="dp_sel"
+                      name="define_performance_selected"
                       type="checkbox"
                       className="me-1"
                     />
@@ -218,7 +229,7 @@ export default function CreateRole() {
                 <label className="flex">
                   <input
                     onChange={handleChange}
-                    name="access_hierachy"
+                    name="can_access_reporting_hierarchy"
                     type="checkbox"
                     className="h-6 w-6 mt-1 me-3"
                   />
@@ -236,7 +247,7 @@ export default function CreateRole() {
                 <label className="flex">
                   <input
                     onChange={handleChange}
-                    name="manage_review"
+                    name="can_manage_performance_reviews"
                     type="checkbox"
                     className="h-6 w-6 mt-1 me-3"
                   />
@@ -252,7 +263,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="mr_all"
+                      name="manage_reviews_all"
                       type="checkbox"
                       className="me-1"
                     />
@@ -261,7 +272,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="mr_sub"
+                      name="manage_reviews_subordinates"
                       type="checkbox"
                       className="me-1"
                     />
@@ -270,7 +281,7 @@ export default function CreateRole() {
                   <label className="flex me-4">
                     <input
                       onChange={handleChange}
-                      name="mr_sel"
+                      name="manage_reviews_selected"
                       type="checkbox"
                       className="me-1"
                     />
@@ -285,15 +296,24 @@ export default function CreateRole() {
         <div className="flex flex-col">
           <div className="border-r w-1/2 me-auto">
             <div className="bg-gray-50 border-b h-[3rem] flex">
-              <h1 className="my-auto mx-4 font-semibold">Reporting Hierachy</h1>
+              <h1 className="my-auto mx-4 font-semibold">Behaves Like</h1>
             </div>
             <div className="m-4">
-              <p>{`Here, you can define who a specific role reports to within the organization. Choose the supervisory role that oversees the position you're creating or editing.`}</p>
-              <label htmlFor="" className="flex my-8">
-                <span className="my-auto">Reporting to:</span>
-                <select name="" id="" className="p-4 mx-2 border rounded-sm">
-                  <option value="super-admin">Super Admin</option>
-                  <option value="admin">Admin</option>
+              <p>{`Choose which system role this custom role behaves as. Employees given this role will see that preset's screens and navigation, while still showing this role's name and using the permissions above.`}</p>
+              <label htmlFor="base_role" className="flex my-8">
+                <span className="my-auto">Base role:</span>
+                <select
+                  name="base_role"
+                  id="base_role"
+                  value={formData.base_role || "employee-w"}
+                  onChange={handleChange}
+                  className="p-4 mx-2 border rounded-sm"
+                >
+                  {PRESET_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {PRESET_ROLE_LABELS[r]}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>

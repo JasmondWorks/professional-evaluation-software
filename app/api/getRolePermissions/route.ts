@@ -19,10 +19,10 @@ export async function POST(req: Request) {
       where: { user_id: `role:${user.org}:${role}` },
     });
 
-    // Return only the permission flags as an "on"/"" map the form can bind to.
-    const perms: Record<string, string> = {};
+    // Return the permission flags as a boolean map the form can bind to.
+    const perms: Record<string, boolean> = {};
     for (const key of PERMISSION_KEYS) {
-      perms[key] = (row as any)?.[key] === 'on' ? 'on' : '';
+      perms[key] = (row as any)?.[key] === true;
     }
     return NextResponse.json(perms);
   } catch (err) {

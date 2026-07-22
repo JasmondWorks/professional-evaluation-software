@@ -61,6 +61,8 @@ export async function POST(req: Request) {
         userID: user.id,
         name: user.name,
         role: user.role,
+        // The human-facing role label (custom role name); falls back to role.
+        displayRole: user.display_role || user.role,
         org: user.org,
         email: user.email,
         logo,

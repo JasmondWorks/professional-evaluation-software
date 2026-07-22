@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     // Saving performance-metric results requires define_performance (or admin).
     const auth = authorize(tokenFromRequest(req), {
       roles: ["industrial-engineer"],
-      anyOf: ["define_performance"],
+      anyOf: ["can_define_performance_metrics"],
     });
     if (!auth.ok) return auth.response;
     const org = auth.user.org;

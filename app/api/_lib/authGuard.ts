@@ -4,7 +4,7 @@
 // the endpoint directly. Protected routes must verify the JWT and check the
 // caller's capability/role here, on the server.
 //
-//   const auth = authorize(tokenFromRequest(req), { anyOf: ['access_em'] });
+//   const auth = authorize(tokenFromRequest(req), { anyOf: ['can_access_employee_data'] });
 //   if (!auth.ok) return auth.response;
 //   // auth.user is the verified payload (role, org, perms, …)
 //
