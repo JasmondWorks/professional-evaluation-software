@@ -78,6 +78,36 @@ export const PERMISSION_KEYS = [
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
+// Default capability template for each system preset. Used when seeding preset
+// roles into a new org so they behave sensibly out of the box (and so the Roles
+// table can show/edit their permissions like any custom role). Anything not
+// listed defaults to false. These are starting points — an admin can edit them.
+export const PRESET_PERMISSION_DEFAULTS: Record<PresetRole, PermissionKey[]> = {
+  admin: [...PERMISSION_KEYS], // full access
+  hod: [
+    'can_access_employee_data',
+    'access_employee_subordinates',
+    'can_define_performance_metrics',
+    'define_performance_subordinates',
+    'can_access_reporting_hierarchy',
+    'can_manage_performance_reviews',
+    'manage_reviews_subordinates',
+  ],
+  'industrial-engineer': ['can_define_performance_metrics', 'define_performance_all'],
+  auditor: ['can_access_employee_data', 'access_employee_all', 'can_manage_performance_reviews', 'manage_reviews_all'],
+  lecturer: [], // self-service employee — no management capabilities
+  'employee-w': [],
+};
+
+// Build a full boolean permission map for a preset from its default list.
+export function presetPermissionMap(preset: PresetRole): Record<PermissionKey, boolean> {
+  const granted = new Set(PRESET_PERMISSION_DEFAULTS[preset] ?? []);
+  return Object.fromEntries(PERMISSION_KEYS.map((k) => [k, granted.has(k)])) as Record<
+    PermissionKey,
+    boolean
+  >;
+}
+
 // Compact a raw permission row (boolean columns) into a small { key: true }
 // object suitable for embedding in the JWT — only granted capabilities are kept.
 export function compactPermissions(
