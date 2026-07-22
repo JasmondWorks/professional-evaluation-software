@@ -7,13 +7,16 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import Table, { TableColumn } from "@/app/components/ui/Table";
+import RoleSelect from "@/app/components/ui/RoleSelect";
+import { PRESET_ROLES } from "@/app/components/utils/roles";
 
-// The assign-role modal choices map to these actual DB roles.
-const ROLE_FROM_CHOICE: Record<string, string> = {
-  hod: "hod",
-  admin: "dept-admin",
-  prod: "industrial-engineer",
-};
+// The preset options offered in the Assign-Role dropdown — identical to the
+// Add-Employee form. Custom roles are appended below at runtime.
+const ASSIGN_PRESET_OPTIONS = [
+  { value: "lecturer", label: "Employee Academic" },
+  { value: "industrial-engineer", label: "Employee Non-Academic (industrial/production engineer)" },
+  { value: "hod", label: "Department Lead" },
+];
 // A staff member counts as "assigned" once they hold one of these management roles.
 const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
 
@@ -46,9 +49,32 @@ export default function Employee() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("hod");
+  const [customRoles, setCustomRoles] = useState<{ name: string }[]>([]);
 
   const [resendingId, setResendingId] = useState<number | null>(null);
   const router = useRouter();
+
+  // Load the org's custom roles for the Assign-Role dropdown (preset roles come
+  // from ASSIGN_PRESET_OPTIONS; getRoles also returns presets, so filter them).
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+    fetch("/api/getRoles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data))
+          setCustomRoles(
+            data.filter(
+              (r) => r?.name && !(PRESET_ROLES as readonly string[]).includes(r.name),
+            ),
+          );
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleResend(email: string, id: number) {
     setResendingId(id);
@@ -111,7 +137,7 @@ export default function Employee() {
     
     try {
       const token = getAccessToken();
-      const res = await fetch(`api/assign-${selectedRole}`, {
+      const res = await fetch(`/api/assign-role`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,22 +145,20 @@ export default function Employee() {
         },
         body: JSON.stringify({
           email: selectedEmployee.email,
-          org: selectedEmployee.org || "",
-          dept: selectedEmployee.dept,
+          role: selectedRole,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `Failed to assign ${selectedRole}`);
+      if (!res.ok) throw new Error(data.error || `Failed to assign role`);
 
       notify.dismiss(toastId);
       notify.success(data.message || `Role assigned successfully`);
       setIsModalOpen(false);
-      
-      // Reflect the actual DB role (e.g. "admin" choice -> "dept-admin").
-      const assignedRole = ROLE_FROM_CHOICE[selectedRole] ?? selectedRole;
+
+      // Show the selected role name as the employee's display role immediately.
       setEmployees(employees.map(emp =>
-        emp.id === selectedEmployee.id ? { ...emp, role: assignedRole } : emp
+        emp.id === selectedEmployee.id ? { ...emp, display_role: selectedRole } : emp
       ));
 
     } catch (err) {
@@ -264,21 +288,18 @@ export default function Employee() {
               Select a new role for <span className="font-semibold text-gray-800">{selectedEmployee.name}</span>.
               <br />
               <span className="inline-block mt-2">
-                Current Role: <span className="font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1 text-xs">{selectedEmployee.role}</span>
+                Current Role: <span className="font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1 text-xs">{selectedEmployee.display_role || selectedEmployee.role}</span>
               </span>
             </p>
 
             <div className="flex flex-col gap-2 mb-8">
               <label className="text-sm font-medium text-gray-700">Role</label>
-              <select
+              <RoleSelect
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pes focus:border-pes outline-none bg-gray-50/50"
-              >
-                <option value="hod">Department HOD</option>
-                <option value="admin">Department Admin</option>
-                <option value="prod">Production Engineer</option>
-              </select>
+                presetRoles={ASSIGN_PRESET_OPTIONS}
+                customRoles={customRoles}
+                onSelect={setSelectedRole}
+              />
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

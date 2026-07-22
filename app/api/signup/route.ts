@@ -116,6 +116,14 @@ export async function POST(req: Request) {
       name, email, password, type, category, plan, planCode, org, logo,
     });
 
+    // Seed the system preset roles for the new org so they exist as real roles.
+    try {
+      const { seedPresetRoles } = await import('../_lib/seedRoles');
+      await seedPresetRoles(org);
+    } catch (seedErr) {
+      console.error('preset role seeding failed (non-fatal):', seedErr);
+    }
+
     const token = jwt.sign(
       {
         userID: user.id.toString(),
