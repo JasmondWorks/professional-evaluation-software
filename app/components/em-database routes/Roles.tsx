@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Add, SearchNormal1, CloseCircle, Edit2, Trash } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
-import Link from "next/link";
+import { jwtDecode } from "jwt-decode";
 import Table, { TableColumn } from "@/app/components/ui/Table";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import {
@@ -46,6 +46,14 @@ export default function Roles() {
   const [delRole, setDelRole] = useState<Role | null>(null);
   const [replacement, setReplacement] = useState<string>("employee-w");
   const [deleting, setDeleting] = useState(false);
+
+  // Create modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [cName, setCName] = useState("");
+  const [cDesc, setCDesc] = useState("");
+  const [cBase, setCBase] = useState("employee-w");
+  const [cPerms, setCPerms] = useState<Record<string, boolean>>({});
+  const [creating, setCreating] = useState(false);
 
   async function loadRoles() {
     const token = getAccessToken();
@@ -163,6 +171,54 @@ export default function Roles() {
     }
   }
 
+  function openCreate() {
+    setCName("");
+    setCDesc("");
+    setCBase("employee-w");
+    setCPerms({});
+    setCreateOpen(true);
+  }
+
+  async function submitCreate() {
+    const name = cName.trim();
+    if (!name) {
+      notify.error("Role name is required.");
+      return;
+    }
+    if (isPreset(name.toLowerCase())) {
+      notify.error("That name is reserved for a system preset role.");
+      return;
+    }
+    setCreating(true);
+    const toastId = notify.loading("Creating role…");
+    try {
+      const token = getAccessToken() || "";
+      const decoded: any = token ? jwtDecode(token) : {};
+      const res = await fetch("/api/addRoles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role_name: name,
+          description: cDesc,
+          org: decoded?.org || "",
+          base_role: cBase,
+          ...cPerms,
+        }),
+      });
+      const data = await res.json();
+      notify.dismiss(toastId);
+      if (data.status !== 200) throw new Error(data.message || "Failed to create role");
+      notify.success("Role created");
+      setCreateOpen(false);
+      loadRoles();
+    } catch (e) {
+      notify.dismiss(toastId);
+      notify.error(e instanceof Error ? e.message : "Failed to create role");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const orderedRoles = useMemo(() => {
     const filtered = roles.filter((r) =>
       roleLabel(r.name).toLowerCase().includes(search.toLowerCase()),
@@ -276,13 +332,13 @@ export default function Roles() {
             </label>
           </div>
           <div className="flex justify-between my-auto mx-3 max-md:mx-0 max-md:self-center text-xs">
-            <Link
-              href="/em-database/create-role"
+            <button
+              onClick={openCreate}
               className="flex justify-center bg-pes text-white px-10 py-2 m-4 border h-fit border-pes my-auto text-center"
             >
               <span className="my-auto">Create Role</span>
               <Add size={20} className="my-auto ms-2" />
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -410,6 +466,63 @@ export default function Roles() {
             <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
             <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-70">
               {deleting ? "Deleting…" : delRole.assigned > 0 ? "Reassign & Delete" : "Delete Role"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* CREATE MODAL */}
+      {createOpen && (
+        <Modal title="Create a role" onClose={() => setCreateOpen(false)} wide>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Role Name</label>
+              <input
+                value={cName}
+                onChange={(e) => setCName(e.target.value)}
+                placeholder="e.g. Registry Officer"
+                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Role Description</label>
+              <input
+                value={cDesc}
+                onChange={(e) => setCDesc(e.target.value)}
+                placeholder="Brief description of the role's purpose"
+                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Behaves Like</label>
+              <select
+                value={cBase}
+                onChange={(e) => setCBase(e.target.value)}
+                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+              >
+                {PRESET_ROLES.map((r) => (
+                  <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Which system role this custom role behaves as (screens & navigation).
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Permissions</label>
+              <div className="mt-1 border rounded-md">
+                <PermissionSelector
+                  value={cPerms}
+                  onChange={(patch) => setCPerms((prev) => ({ ...prev, ...patch }))}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
+            <button onClick={() => setCreateOpen(false)} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={submitCreate} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-900 rounded-lg disabled:opacity-70">
+              {creating ? "Creating…" : "Create Role"}
             </button>
           </div>
         </Modal>
