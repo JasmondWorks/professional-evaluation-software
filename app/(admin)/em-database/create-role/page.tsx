@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
+import PermissionSelector from "@/app/components/ui/PermissionSelector";
 
 export default function CreateRole() {
   // base_role defaults to the baseline preset so the role is always mappable.
@@ -119,176 +120,10 @@ export default function CreateRole() {
                 </p>
               </div>
 
-              <div className="border-b p-4">
-                <label className="flex">
-                  <input
-                    onChange={handleChange}
-                    name="can_manage_user_roles"
-                    type="checkbox"
-                    className="h-6 w-6 mt-1 me-3"
-                  />
-                  <span className="w-10/12">
-                    <h1 className="text-lg">Manage User Roles</h1>
-                    <p>
-                      Create, edit, and delete user roles, defining their
-                      specific permissions and responsibilities.
-                    </p>
-                  </span>
-                </label>
-              </div>
-
-              <div className="border-b p-4 flex flex-col">
-                <label className="flex">
-                  <input
-                    onChange={handleChange}
-                    name="can_access_employee_data"
-                    type="checkbox"
-                    className="h-6 w-6 mt-1 me-3"
-                  />
-                  <span className="w-10/12">
-                    <h1 className="text-lg">Access Employee Data</h1>
-                    <p>View and edit the details of employees.</p>
-                  </span>
-                </label>
-                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="access_employee_all"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>All Employees</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="access_employee_subordinates"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Subordinates</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="access_employee_selected"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Selected Employees</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="border-b p-4 flex flex-col">
-                <label className="flex">
-                  <input
-                    onChange={handleChange}
-                    name="can_define_performance_metrics"
-                    type="checkbox"
-                    className="h-6 w-6 mt-1 me-3"
-                  />
-                  <span className="w-10/12">
-                    <h1 className="text-lg">Define Performance Metrics</h1>
-                    <p>View and edit the performance metrics of employees.</p>
-                  </span>
-                </label>
-                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="define_performance_all"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>All Employees</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="define_performance_subordinates"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Subordinates</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="define_performance_selected"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Selected Employees</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="border-b p-4 flex flex-col">
-                <label className="flex">
-                  <input
-                    onChange={handleChange}
-                    name="can_access_reporting_hierarchy"
-                    type="checkbox"
-                    className="h-6 w-6 mt-1 me-3"
-                  />
-                  <span className="w-10/12">
-                    <h1 className="text-lg">Access Reporting Hierachy</h1>
-                    <p>
-                      Define and modify the organizational reporting structure,
-                      assigning managers to employees and creating teams.
-                    </p>
-                  </span>
-                </label>
-              </div>
-
-              <div className="border-b p-4 flex flex-col">
-                <label className="flex">
-                  <input
-                    onChange={handleChange}
-                    name="can_manage_performance_reviews"
-                    type="checkbox"
-                    className="h-6 w-6 mt-1 me-3"
-                  />
-                  <span className="w-10/12">
-                    <h1 className="text-lg">Manage Performance Reviews</h1>
-                    <p>
-                      Schedule, modify, or cancel performance review meetings
-                      for any employee.
-                    </p>
-                  </span>
-                </label>
-                <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="manage_reviews_all"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>All Employees</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="manage_reviews_subordinates"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Subordinates</span>
-                  </label>
-                  <label className="flex me-4">
-                    <input
-                      onChange={handleChange}
-                      name="manage_reviews_selected"
-                      type="checkbox"
-                      className="me-1"
-                    />
-                    <span>Selected Employees</span>
-                  </label>
-                </div>
-              </div>
+              <PermissionSelector
+                value={formData}
+                onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
+              />
             </div>
           </div>
         </div>
