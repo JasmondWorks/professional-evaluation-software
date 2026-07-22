@@ -1,13 +1,16 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Add, SearchNormal1, CloseCircle } from "iconsax-react";
+import { Add, SearchNormal1, CloseCircle, Edit2, Trash } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
+import { notify } from "@/lib/toast";
 import Link from "next/link";
 import Table, { TableColumn } from "@/app/components/ui/Table";
+import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import {
   PRESET_ROLES,
   PRESET_ROLE_LABELS,
+  PERMISSION_TREE,
   PermissionKey,
 } from "@/app/components/utils/roles";
 
@@ -16,24 +19,6 @@ type Role = {
   name: string;
   assigned: number;
   base_role?: string | null;
-};
-
-// Friendly labels for the permission flags shown in the modal.
-const PERMISSION_LABELS: Record<PermissionKey, string> = {
-  can_manage_user_roles: "Manage User Roles",
-  can_access_employee_data: "Access Employee Data",
-  access_employee_all: "— All Employees",
-  access_employee_subordinates: "— Subordinates",
-  access_employee_selected: "— Selected Employees",
-  can_define_performance_metrics: "Define Performance Metrics",
-  define_performance_all: "— All Employees",
-  define_performance_subordinates: "— Subordinates",
-  define_performance_selected: "— Selected Employees",
-  can_access_reporting_hierarchy: "Access Reporting Hierarchy",
-  can_manage_performance_reviews: "Manage Performance Reviews",
-  manage_reviews_all: "— All Employees",
-  manage_reviews_subordinates: "— Subordinates",
-  manage_reviews_selected: "— Selected Employees",
 };
 
 const isPreset = (name: string) =>
@@ -46,43 +31,59 @@ export default function Roles() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // View-permissions modal state
+  // View-permissions modal
   const [permRole, setPermRole] = useState<Role | null>(null);
   const [perms, setPerms] = useState<Record<string, boolean> | null>(null);
   const [permsLoading, setPermsLoading] = useState(false);
 
-  useEffect(() => {
-    async function getRoles() {
-      const token = getAccessToken();
-      try {
-        const req = await fetch("/api/getRoles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
-        const res = await req.json();
-        if (Array.isArray(res)) setRoles(res);
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setLoading(false);
-      }
+  // Edit modal
+  const [editRole, setEditRole] = useState<Role | null>(null);
+  const [editPerms, setEditPerms] = useState<Record<string, boolean>>({});
+  const [editBase, setEditBase] = useState<string>("employee-w");
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete modal
+  const [delRole, setDelRole] = useState<Role | null>(null);
+  const [replacement, setReplacement] = useState<string>("employee-w");
+  const [deleting, setDeleting] = useState(false);
+
+  async function loadRoles() {
+    const token = getAccessToken();
+    try {
+      const req = await fetch("/api/getRoles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const res = await req.json();
+      if (Array.isArray(res)) setRoles(res);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
-    getRoles();
+  }
+
+  useEffect(() => {
+    loadRoles();
   }, []);
+
+  async function fetchPermsFor(roleName: string): Promise<Record<string, boolean>> {
+    const token = getAccessToken();
+    const res = await fetch("/api/getRolePermissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, role: roleName }),
+    });
+    return res.json();
+  }
 
   async function openPermissions(role: Role) {
     setPermRole(role);
     setPerms(null);
     setPermsLoading(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch("/api/getRolePermissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, role: role.name }),
-      });
-      setPerms(await res.json());
+      setPerms(await fetchPermsFor(role.name));
     } catch {
       setPerms({});
     } finally {
@@ -90,7 +91,78 @@ export default function Roles() {
     }
   }
 
-  // Presets first, then custom; each alphabetical. Filtered by search.
+  async function openEdit(role: Role) {
+    setEditRole(role);
+    setEditBase(role.base_role || "employee-w");
+    setEditPerms({});
+    try {
+      setEditPerms(await fetchPermsFor(role.name));
+    } catch {
+      setEditPerms({});
+    }
+  }
+
+  async function saveEdit() {
+    if (!editRole) return;
+    setEditSaving(true);
+    const toastId = notify.loading("Saving role…");
+    try {
+      const token = getAccessToken();
+      const res = await fetch("/api/updateRole", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          roleName: editRole.name,
+          base_role: isPreset(editRole.name) ? undefined : editBase,
+          permissions: editPerms,
+        }),
+      });
+      const data = await res.json();
+      notify.dismiss(toastId);
+      if (!res.ok) throw new Error(data.error || "Failed to update role");
+      notify.success(data.message || "Role updated");
+      setEditRole(null);
+      loadRoles();
+    } catch (e) {
+      notify.dismiss(toastId);
+      notify.error(e instanceof Error ? e.message : "Failed to update role");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!delRole) return;
+    setDeleting(true);
+    const toastId = notify.loading("Deleting role…");
+    try {
+      const token = getAccessToken();
+      const res = await fetch("/api/deleteRole", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          roleName: delRole.name,
+          replacementRole: delRole.assigned > 0 ? replacement : undefined,
+        }),
+      });
+      const data = await res.json();
+      notify.dismiss(toastId);
+      if (!res.ok) throw new Error(data.error || "Failed to delete role");
+      notify.success(
+        data.reassigned
+          ? `Role deleted; ${data.reassigned} staff reassigned.`
+          : "Role deleted.",
+      );
+      setDelRole(null);
+      loadRoles();
+    } catch (e) {
+      notify.dismiss(toastId);
+      notify.error(e instanceof Error ? e.message : "Failed to delete role");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const orderedRoles = useMemo(() => {
     const filtered = roles.filter((r) =>
       roleLabel(r.name).toLowerCase().includes(search.toLowerCase()),
@@ -103,37 +175,40 @@ export default function Roles() {
     });
   }, [roles, search]);
 
+  // Roles a holder can be reassigned to when deleting (everything except the
+  // role being deleted).
+  const replacementOptions = useMemo(
+    () => (delRole ? orderedRoles.filter((r) => r.name !== delRole.name) : []),
+    [orderedRoles, delRole],
+  );
+
   const grantedList = perms
     ? (Object.keys(perms) as PermissionKey[]).filter((k) => perms[k])
     : [];
 
   const columns: TableColumn<Role>[] = [
-    { key: "sn", label: "S/N", width: "8%", render: (_, index) => index + 1 },
+    { key: "sn", label: "S/N", width: "6%", render: (_, index) => index + 1 },
     {
       key: "name",
       label: "Name",
-      width: "28%",
+      width: "24%",
       render: (r) => <span className="font-medium">{roleLabel(r.name)}</span>,
     },
     {
       key: "type",
       label: "Type",
-      width: "14%",
+      width: "12%",
       render: (r) =>
         isPreset(r.name) ? (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700">
-            Preset
-          </span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700">Preset</span>
         ) : (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-amber-50 text-amber-700">
-            Custom
-          </span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-amber-50 text-amber-700">Custom</span>
         ),
     },
     {
       key: "base",
       label: "Behaves Like",
-      width: "18%",
+      width: "16%",
       render: (r) => (
         <span className="text-gray-600 text-sm">
           {isPreset(r.name) ? "—" : roleLabel(r.base_role || "employee-w")}
@@ -142,25 +217,44 @@ export default function Roles() {
     },
     {
       key: "assigned",
-      label: "Assigned Users",
-      width: "16%",
+      label: "Users",
+      width: "12%",
       render: (r) => (
-        <span className="rounded-full w-fit px-4 py-1 bg-gray-100 text-gray-700">
-          {`${r.assigned ?? 0} ${r.assigned !== 1 ? "users" : "user"}`}
+        <span className="rounded-full w-fit px-3 py-1 bg-gray-100 text-gray-700 text-sm">
+          {`${r.assigned ?? 0}`}
         </span>
       ),
     },
     {
-      key: "permissions",
-      label: "Permissions",
-      width: "16%",
+      key: "actions",
+      label: "Actions",
+      width: "30%",
       render: (r) => (
-        <button
-          onClick={() => openPermissions(r)}
-          className="text-pes text-sm font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 transition-colors"
-        >
-          View Permissions
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => openPermissions(r)}
+            className="text-pes text-xs font-medium border border-pes/30 rounded-md px-2.5 py-1.5 hover:bg-pes/5 transition-colors"
+          >
+            View
+          </button>
+          <button
+            onClick={() => openEdit(r)}
+            className="text-gray-700 text-xs font-medium border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-gray-50 transition-colors inline-flex items-center gap-1"
+          >
+            <Edit2 size={14} /> Edit
+          </button>
+          <button
+            onClick={() => {
+              setDelRole(r);
+              setReplacement("employee-w");
+            }}
+            disabled={isPreset(r.name)}
+            title={isPreset(r.name) ? "System roles can't be deleted" : "Delete role"}
+            className="text-red-600 text-xs font-medium border border-red-200 rounded-md px-2.5 py-1.5 hover:bg-red-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash size={14} /> Delete
+          </button>
+        </div>
       ),
     },
   ];
@@ -171,10 +265,7 @@ export default function Roles() {
         <div className="flex justify-between h-[5rem] max-md:h-fit w-full max-md:py-2 max-md:flex-col max-md:gap-2">
           <div className="flex justify-between my-auto mx-4 bg-white">
             <label htmlFor="em-search" className="relative h-fit max-md:w-full">
-              <SearchNormal1
-                className="text-gray-300 absolute top-1/2 left-6 -translate-y-1/2"
-                size={20}
-              />
+              <SearchNormal1 className="text-gray-300 absolute top-1/2 left-6 -translate-y-1/2" size={20} />
               <input
                 type="text"
                 value={search}
@@ -184,7 +275,6 @@ export default function Roles() {
               />
             </label>
           </div>
-
           <div className="flex justify-between my-auto mx-3 max-md:mx-0 max-md:self-center text-xs">
             <Link
               href="/em-database/create-role"
@@ -206,41 +296,151 @@ export default function Roles() {
         </div>
       </div>
 
-      {/* View Permissions modal */}
+      {/* VIEW PERMISSIONS MODAL */}
       {permRole && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 m-4 border border-gray-100">
-            <div className="flex justify-between items-start mb-1">
-              <h2 className="text-xl font-bold text-gray-800">
-                Permissions for {roleLabel(permRole.name)}
-              </h2>
-              <button onClick={() => setPermRole(null)} aria-label="Close">
-                <CloseCircle className="text-gray-400 hover:text-red-500" />
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-5">
-              {isPreset(permRole.name) ? "System preset role" : "Custom role"}
-            </p>
-
-            {permsLoading ? (
-              <p className="text-sm text-gray-400 py-6 text-center">Loading…</p>
-            ) : grantedList.length === 0 ? (
-              <p className="text-sm text-gray-400 py-6 text-center">
-                No permissions granted to this role.
-              </p>
-            ) : (
-              <ul className="space-y-2 max-h-80 overflow-y-auto">
-                {grantedList.map((k) => (
-                  <li key={k} className="flex items-center gap-2 text-sm text-gray-700">
+        <Modal title={`Permissions for ${roleLabel(permRole.name)}`} onClose={() => setPermRole(null)}>
+          <p className="text-sm text-gray-500 mb-5">
+            {isPreset(permRole.name) ? "System preset role" : "Custom role"}
+          </p>
+          {permsLoading ? (
+            <p className="text-sm text-gray-400 py-6 text-center">Loading…</p>
+          ) : grantedList.length === 0 ? (
+            <p className="text-sm text-gray-400 py-6 text-center">No permissions granted to this role.</p>
+          ) : (
+            <ul className="space-y-2 max-h-80 overflow-y-auto">
+              {PERMISSION_TREE.filter((n) => perms?.[n.key]).map((n) => (
+                <li key={n.key} className="text-sm text-gray-700">
+                  <div className="flex items-center gap-2 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                    {PERMISSION_LABELS[k] || k}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+                    {n.label}
+                  </div>
+                  {n.children.filter((c) => perms?.[c.key]).length > 0 && (
+                    <div className="ms-5 text-xs text-gray-500">
+                      {n.children.filter((c) => perms?.[c.key]).map((c) => c.label).join(" · ")}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Modal>
       )}
+
+      {/* EDIT MODAL */}
+      {editRole && (
+        <Modal title={`Edit ${roleLabel(editRole.name)}`} onClose={() => setEditRole(null)} wide>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Role Name</label>
+              <input
+                value={roleLabel(editRole.name)}
+                disabled
+                className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Role name can't be changed.</p>
+            </div>
+
+            {!isPreset(editRole.name) && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Behaves Like</label>
+                <select
+                  value={editBase}
+                  onChange={(e) => setEditBase(e.target.value)}
+                  className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                >
+                  {PRESET_ROLES.map((r) => (
+                    <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Permissions</label>
+              <div className="mt-1 border rounded-md">
+                <PermissionSelector
+                  value={editPerms}
+                  onChange={(patch) => setEditPerms((prev) => ({ ...prev, ...patch }))}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400">
+              Saving updates this role and everyone currently assigned to it.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
+            <button onClick={() => setEditRole(null)} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={saveEdit} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-900 rounded-lg disabled:opacity-70">
+              {editSaving ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* DELETE MODAL */}
+      {delRole && (
+        <Modal title={`Delete "${roleLabel(delRole.name)}"?`} onClose={() => setDelRole(null)}>
+          {delRole.assigned > 0 ? (
+            <>
+              <p className="text-sm text-gray-600 mb-4">
+                <span className="font-semibold text-gray-800">{delRole.assigned}</span>{" "}
+                staff member{delRole.assigned === 1 ? "" : "s"} currently hold this role. They must be
+                reassigned to another role before it can be deleted.
+              </p>
+              <label className="text-sm font-medium text-gray-700">Reassign them to</label>
+              <select
+                value={replacement}
+                onChange={(e) => setReplacement(e.target.value)}
+                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg mb-2"
+              >
+                {replacementOptions.map((r) => (
+                  <option key={r.name} value={r.name}>{roleLabel(r.name)}</option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <p className="text-sm text-gray-600 mb-4">
+              No staff hold this role. It will be permanently deleted.
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
+            <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-70">
+              {deleting ? "Deleting…" : delRole.assigned > 0 ? "Reassign & Delete" : "Delete Role"}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// Small shared modal shell.
+function Modal({
+  title,
+  onClose,
+  children,
+  wide,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className={`bg-white rounded-xl shadow-xl w-full ${wide ? "max-w-lg" : "max-w-md"} p-6 border border-gray-100 max-h-[90vh] overflow-y-auto`}>
+        <div className="flex justify-between items-start mb-1">
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <button onClick={onClose} aria-label="Close">
+            <CloseCircle className="text-gray-400 hover:text-red-500" />
+          </button>
+        </div>
+        <div className="mt-3">{children}</div>
+      </div>
     </div>
   );
 }

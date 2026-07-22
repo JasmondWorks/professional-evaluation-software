@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft } from "iconsax-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import jwt from "jsonwebtoken";
 import { useRouter } from "next/navigation";
@@ -122,7 +122,9 @@ export default function CreateRole() {
 
               <PermissionSelector
                 value={formData}
-                onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
+                onChange={(patch) =>
+                  setFormData((prev) => ({ ...prev, ...patch }))
+                }
               />
             </div>
           </div>
