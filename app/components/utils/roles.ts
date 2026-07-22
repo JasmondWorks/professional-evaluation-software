@@ -78,6 +78,62 @@ export const PERMISSION_KEYS = [
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
 
+// The single source of truth for the permission hierarchy: each top-level
+// capability and its scope children. UI (Create Role, employee wizard, View
+// Permissions) renders from this so the structure lives in exactly one place;
+// a child is only meaningful when its parent is granted.
+export type PermissionNode = {
+  key: PermissionKey;
+  label: string;
+  description: string;
+  children: { key: PermissionKey; label: string }[];
+};
+
+export const PERMISSION_TREE: PermissionNode[] = [
+  {
+    key: 'can_manage_user_roles',
+    label: 'Manage User Roles',
+    description: 'Create, edit, and delete user roles, defining their specific permissions and responsibilities.',
+    children: [],
+  },
+  {
+    key: 'can_access_employee_data',
+    label: 'Access Employee Data',
+    description: 'View and edit the details of employees.',
+    children: [
+      { key: 'access_employee_all', label: 'All Employees' },
+      { key: 'access_employee_subordinates', label: 'Subordinates' },
+      { key: 'access_employee_selected', label: 'Selected Employees' },
+    ],
+  },
+  {
+    key: 'can_define_performance_metrics',
+    label: 'Define Performance Metrics',
+    description: 'View and edit the performance metrics of employees.',
+    children: [
+      { key: 'define_performance_all', label: 'All Employees' },
+      { key: 'define_performance_subordinates', label: 'Subordinates' },
+      { key: 'define_performance_selected', label: 'Selected Employees' },
+    ],
+  },
+  {
+    key: 'can_access_reporting_hierarchy',
+    label: 'Access Reporting Hierarchy',
+    description: 'Define and modify the organizational reporting structure, assigning managers to employees and creating teams.',
+    children: [],
+  },
+  {
+    key: 'can_manage_performance_reviews',
+    label: 'Manage Performance Reviews',
+    description: 'Schedule, modify, or cancel performance review meetings for any employee.',
+    children: [
+      { key: 'manage_reviews_all', label: 'All Employees' },
+      { key: 'manage_reviews_subordinates', label: 'Subordinates' },
+      { key: 'manage_reviews_selected', label: 'Selected Employees' },
+    ],
+  },
+];
+
 // Default capability template for each system preset. Used when seeding preset
 // roles into a new org so they behave sensibly out of the box (and so the Roles
 // table can show/edit their permissions like any custom role). Anything not
