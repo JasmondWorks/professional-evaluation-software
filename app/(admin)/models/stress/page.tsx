@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
+import { factors } from "@/app/lib/stress/scoring";
+import { CategoryValues } from "@/app/lib/stress/scoring";
 import {
   ComposedChart,
   Line,
@@ -125,38 +127,26 @@ export default function StressAnalysisTool() {
   const isAdmin = role === "super-admin" || role === "admin";
 
   const enrichedData = stressData.map((s) => {
-    const rawStress =
-      Number(s.organizational) / 383 +
-      Number(s.student) / 175 +
-      Number(s.administrative) / 166 +
-      Number(s.negative_public_attitude) / 9 +
-      Number(s.teacher) / 92 +
-      Number(s.parents) / 50 +
-      Number(s.occupational) / 30 +
-      Number(s.academic_program) / 23 +
-      Number(s.personal) / 26 +
-      Number(s.misc) / 27;
-
-    const rawPressure =
-      Number(s.organizational) / 383 +
-      Number(s.student) / 175 +
-      Number(s.administrative) / 166 +
-      Number(s.academic_program) / 23 +
-      Number(s.negative_public_attitude) / 9;
-
-    const conflict =
-      Number(s.organizational) / 383 +
-      Number(s.student) / 175 +
-      Number(s.administrative) / 166 +
-      Number(s.teacher) / 92 +
-      Number(s.parents) / 50 +
-      Number(s.academic_program) / 23;
-
+    // Category values come from Form 5 (stress_scores). The scoring module turns
+    // them into the three 0–100 factors — one place, no hardcoded divisors.
+    const values: CategoryValues = {
+      organizational: Number(s.organizational),
+      student: Number(s.student),
+      administrative: Number(s.administrative),
+      teacher: Number(s.teacher),
+      parents: Number(s.parents),
+      occupational: Number(s.occupational),
+      personal: Number(s.personal),
+      academic_program: Number(s.academic_program),
+      negative_public_attitude: Number(s.negative_public_attitude),
+      misc: Number(s.misc),
+    };
+    const f = factors(values);
     return {
       ...s,
-      stressFactor: rawStress,
-      pressureFactor: rawPressure,
-      conflictFactor: conflict,
+      stressFactor: f.stress,
+      pressureFactor: f.pressure,
+      conflictFactor: f.conflict,
     };
   });
 
@@ -364,15 +354,15 @@ export default function StressAnalysisTool() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Stress</span>
-              <span className="text-4xl font-bold text-red-600">{(summary.stress * 100).toFixed(1)}%</span>
+              <span className="text-4xl font-bold text-red-600">{(summary.stress).toFixed(1)}%</span>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Pressure</span>
-              <span className="text-4xl font-bold text-orange-500">{(summary.pressure * 100).toFixed(1)}%</span>
+              <span className="text-4xl font-bold text-orange-500">{(summary.pressure).toFixed(1)}%</span>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Overall Conflict</span>
-              <span className="text-4xl font-bold text-yellow-500">{(summary.conflict * 100).toFixed(1)}%</span>
+              <span className="text-4xl font-bold text-yellow-500">{(summary.conflict).toFixed(1)}%</span>
             </div>
           </div>
 
@@ -469,11 +459,11 @@ export default function StressAnalysisTool() {
                       <ReferenceLine y={68} stroke="red" label={{ value: "Max 68%", position: "left", fill: "red", fontSize: 12 }} />
                       <ReferenceLine y={50} stroke="black" strokeDasharray="5 5" label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }} />
                       <ReferenceLine
-                        y={Math.min(100, summary.stress * 100)}
+                        y={Math.min(100, summary.stress)}
                         stroke="#16a34a"
                         strokeWidth={2}
                         label={{
-                          value: `Acquired stress ${(summary.stress * 100).toFixed(1)}%`,
+                          value: `Acquired stress ${(summary.stress).toFixed(1)}%`,
                           position: "right",
                           fill: "#16a34a",
                           fontSize: 12,
@@ -520,17 +510,17 @@ export default function StressAnalysisTool() {
                           <td className="px-6 py-3 text-right text-gray-600">{r.count}</td>
                           <td className="px-6 py-3 text-right">
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                              {(r.stress * 100).toFixed(1)}%
+                              {(r.stress).toFixed(1)}%
                             </span>
                           </td>
                           <td className="px-6 py-3 text-right">
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                              {(r.pressure * 100).toFixed(1)}%
+                              {(r.pressure).toFixed(1)}%
                             </span>
                           </td>
                           <td className="px-6 py-3 text-right">
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                              {(r.conflict * 100).toFixed(1)}%
+                              {(r.conflict).toFixed(1)}%
                             </span>
                           </td>
                         </tr>
