@@ -34,6 +34,27 @@ model OptimizationResult {
   org                String?   @db.VarChar(255)
 }
 
+// A stress evaluation cycle for an org: the two collection windows, the current
+// phase, and the per-category limits computed by "Run Setting" (the mean of
+// Form 5 across all staff), which Form 6 then uses as its category maxes.
+model StressCycle {
+  id                 Int       @id @default(autoincrement())
+  org                String    @db.VarChar(255)
+  // settings_open | settings_closed | feeling_open | evaluated
+  phase              String    @default("settings_open") @db.VarChar(30)
+  mode               String    @default("once") @db.VarChar(20)
+  settings_opens_at  DateTime?
+  settings_closes_at DateTime?
+  feeling_opens_at   DateTime?
+  feeling_closes_at  DateTime?
+  category_limits    Json?
+  created_by         String?   @db.VarChar(255)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([org])
+}
+
 model StaffEstimation {
   id                      Int       @id @default(autoincrement())
   methodType              String    @db.VarChar(50)

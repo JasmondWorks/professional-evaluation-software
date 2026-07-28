@@ -94,6 +94,9 @@ export default function StressAnalysisTool() {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [runningSetting, setRunningSetting] = useState(false);
+  const [settingLimits, setSettingLimits] = useState<Record<string, number> | null>(null);
+  const [settingMsg, setSettingMsg] = useState<string | null>(null);
   const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
 
   useEffect(() => {
@@ -213,6 +216,28 @@ export default function StressAnalysisTool() {
     setActiveTab("results");
   };
 
+  // "Run/Evaluate Setting": average Form 5 across staff into the per-category
+  // limits that Form 6 will use, and store them on the org's stress cycle.
+  const handleRunSetting = async () => {
+    setRunningSetting(true);
+    setSettingMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/run-setting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to run setting");
+      setSettingLimits(data.limits);
+      setSettingMsg(`Setting computed from ${data.staffCount} staff submission(s). These limits now drive Form 6.`);
+    } catch (e) {
+      setSettingMsg(e instanceof Error ? e.message : "Failed to run setting");
+    } finally {
+      setRunningSetting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!summary) return;
     setSaving(true);
@@ -307,6 +332,38 @@ export default function StressAnalysisTool() {
         </button>
       </div>
 
+      {/* RUN SETTING (intermediate step) */}
+      {activeTab === "analysis" && isAdmin && (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
+          <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Step 1 — Run Setting</h2>
+              <p className="text-sm text-gray-500 max-w-xl">
+                After Form 5 (stress category) closes, compute the per-category limits (the mean across all staff). These limits become the maximums used by Form 6 (themes &amp; feeling).
+              </p>
+            </div>
+            <button
+              onClick={handleRunSetting}
+              disabled={runningSetting}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-60"
+            >
+              {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
+            </button>
+          </div>
+          {settingMsg && <p className="text-sm text-gray-600 mb-3">{settingMsg}</p>}
+          {settingLimits && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
+              {Object.entries(settingLimits).map(([k, v]) => (
+                <div key={k} className="bg-gray-50 rounded-md p-3 text-center">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-400 truncate">{k.replace(/_/g, " ")}</p>
+                  <p className="text-lg font-bold text-gray-800">{Number(v).toFixed(1)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ANALYSIS TAB */}
       {activeTab === "analysis" && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
@@ -315,7 +372,7 @@ export default function StressAnalysisTool() {
               <Calculator size="24" variant="Bold" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Run Statistical Analysis</h2>
+              <h2 className="text-xl font-bold text-gray-900">Step 2 — Run Statistical Analysis</h2>
               <p className="text-sm text-gray-500">Perform ANOVA to detect significant differences between departments.</p>
             </div>
           </div>
