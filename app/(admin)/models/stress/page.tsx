@@ -110,25 +110,28 @@ export default function StressAnalysisTool() {
   const [themeReport, setThemeReport] = useState<any>(null);
   const { data: cycleStatus, refetch: refetchCycle } = useActiveCycle();
   const [closing, setClosing] = useState(false);
+  const [reopening, setReopening] = useState(false);
 
-  const handleCloseWindow = async () => {
-    setClosing(true);
+  const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
+    setBusy(true);
     try {
       const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/close-window", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to close window");
+      if (!res.ok) throw new Error(data.error || "Action failed");
       setCycleMsg(data.message);
       refetchCycle();
     } catch (e) {
-      setCycleMsg(e instanceof Error ? e.message : "Failed to close window");
+      setCycleMsg(e instanceof Error ? e.message : "Action failed");
     } finally {
-      setClosing(false);
+      setBusy(false);
     }
   };
+  const handleCloseWindow = () => postCycleAction("/api/stress/close-window", setClosing);
+  const handleReopenWindow = () => postCycleAction("/api/stress/reopen-window", setReopening);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -421,6 +424,19 @@ export default function StressAnalysisTool() {
                 : cycleStatus.form5?.open
                   ? "Close Form 5 now"
                   : "Close Form 6/7 now"}
+            </button>
+          )}
+          {(cycleStatus.phase === "settings_closed" || cycleStatus.phase === "feeling_closed") && (
+            <button
+              onClick={handleReopenWindow}
+              disabled={reopening}
+              className="px-5 py-2.5 border border-green-200 text-green-700 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
+            >
+              {reopening
+                ? "Reopening…"
+                : cycleStatus.phase === "settings_closed"
+                  ? "Reopen Form 5"
+                  : "Reopen Form 6/7"}
             </button>
           )}
         </div>
