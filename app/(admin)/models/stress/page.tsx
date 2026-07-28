@@ -384,11 +384,22 @@ export default function StressAnalysisTool() {
                       <span className="font-semibold">{anovaResult.criticalValue || "2.89"}</span>
                     </div>
                     <div className={`mt-4 p-3 rounded-md text-sm font-semibold border ${
-                      anovaResult.conclusion.includes("Reject") 
-                        ? "bg-red-50 text-red-800 border-red-200" 
+                      anovaResult.conclusion.includes("Reject")
+                        ? "bg-red-50 text-red-800 border-red-200"
                         : "bg-green-50 text-green-800 border-green-200"
                     }`}>
                       {anovaResult.conclusion}
+                    </div>
+                    {/* Reset rule: a rejected H₀ means the stress feeling shifted
+                        significantly, so the setting (Form 5) must be re-run. */}
+                    <div className={`mt-2 p-3 rounded-md text-sm border ${
+                      anovaResult.conclusion.includes("Reject")
+                        ? "bg-amber-50 text-amber-800 border-amber-200"
+                        : "bg-gray-50 text-gray-600 border-gray-200"
+                    }`}>
+                      {anovaResult.conclusion.includes("Reject")
+                        ? "The feeling is changed and there is need for reset of the setting."
+                        : "Not violated, still within range."}
                     </div>
                   </div>
                 )}
@@ -455,8 +466,10 @@ export default function StressAnalysisTool() {
                         labelFormatter={(label) => `Stress score: ${label}`}
                       />
                       <Line type="monotone" dataKey="density" stroke="#4f46e5" strokeWidth={2} dot={false} name="Normal curve" />
-                      <ReferenceLine y={32} stroke="blue" label={{ value: "Min 32%", position: "left", fill: "blue", fontSize: 12 }} />
-                      <ReferenceLine y={68} stroke="red" label={{ value: "Max 68%", position: "left", fill: "red", fontSize: 12 }} />
+                      <ReferenceLine y={32} stroke="blue" label={{ value: "Minimum stress 32%", position: "left", fill: "blue", fontSize: 12 }} />
+                      <ReferenceLine y={68} stroke="red" label={{ value: "Maximum stress limit 68%", position: "left", fill: "red", fontSize: 12 }} />
+                      {/* Warning line 5% below the max limit (68% − 5% = 63%). */}
+                      <ReferenceLine y={63} stroke="#eab308" strokeDasharray="6 4" strokeWidth={2} label={{ value: "Warning 63%", position: "right", fill: "#a16207", fontSize: 12, fontWeight: 600 }} />
                       <ReferenceLine y={50} stroke="black" strokeDasharray="5 5" label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }} />
                       <ReferenceLine
                         y={Math.min(100, summary.stress)}
