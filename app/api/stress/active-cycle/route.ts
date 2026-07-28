@@ -38,10 +38,15 @@ export async function GET(req: Request) {
       cycle.phase === 'feeling_open' &&
       withinWindow(cycle.feeling_opens_at, cycle.feeling_closes_at)
 
-    // Has this staff member already submitted Form 5 for THIS cycle?
+    // Has this staff member already submitted Form 5 / Form 6 for THIS cycle?
     const submitted = userName
       ? (await prisma.stress_scores.count({
           where: { org: org ?? undefined, user_name: userName, cycle_id: cycle.id },
+        })) > 0
+      : false
+    const form6Submitted = userName
+      ? (await prisma.stress.count({
+          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id },
         })) > 0
       : false
 
@@ -52,7 +57,7 @@ export async function GET(req: Request) {
         message: 'The stress category form (Form 5) is open. Please complete it.',
         href: FORM5_URL,
       }
-    } else if (form6Open) {
+    } else if (form6Open && !form6Submitted) {
       cta = {
         message: 'The stress theme & feeling form (Form 6) is open. Please complete it.',
         href: FORM6_URL,
@@ -63,7 +68,7 @@ export async function GET(req: Request) {
       active: true,
       phase: cycle.phase,
       form5: { open: form5Open, submitted },
-      form6: { open: form6Open },
+      form6: { open: form6Open, submitted: form6Submitted },
       cta,
     })
   } catch (err) {
