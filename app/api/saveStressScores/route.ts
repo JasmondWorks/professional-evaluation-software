@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { effectivePhase } from '../_lib/stressCycle'
 
 // Saves a staff member's Stress Category (Form 5) totals into stress_scores.
 // (Previously this endpoint was a mis-copied performance saver: it read
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
       where: { org },
       orderBy: { created_at: 'desc' },
     })
-    if (!cycle || cycle.phase !== 'settings_open') {
+    if (!cycle || effectivePhase(cycle) !== 'settings_open') {
       return NextResponse.json(
         { message: 'The stress category form is not currently open for submissions.' },
         { status: 409 },

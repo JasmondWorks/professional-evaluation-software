@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import { authorize, tokenFromRequest } from '../../_lib/authGuard'
+import { syncCyclePhase } from '../../_lib/stressCycle'
 
 // The org's current stress cycle from the perspective of the logged-in user:
 // what phase it's in, whether each form is open right now, and whether THIS
@@ -26,6 +27,9 @@ export async function GET(req: Request) {
     if (!cycle || cycle.phase === 'evaluated') {
       return NextResponse.json({ active: false })
     }
+
+    // Advance the phase if a window's close date has passed.
+    cycle.phase = await syncCyclePhase(prisma, cycle)
 
     const now = Date.now()
     const withinWindow = (opens: Date | null, closes: Date | null) =>
