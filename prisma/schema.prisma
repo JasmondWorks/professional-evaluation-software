@@ -524,6 +524,8 @@ model stress {
   stress_feeling_frequency_form Int?
   assessment_data               Json?
   dept                          String? @db.VarChar(255)
+  // Which cycle this Form 6/7 submission belongs to (one submission per cycle).
+  cycle_id                      Int?
 }
 
 model stress_analysis_results {

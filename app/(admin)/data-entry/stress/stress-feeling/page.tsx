@@ -58,12 +58,15 @@ export default function MultiStepStressForm() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.message || "Could not submit the form.");
+        return;
+      }
       setSuccess(true);
-      alert("✅ All forms saved successfully!");
     } catch (err) {
       console.error(err);
-      alert("❌ Error saving stress assessment");
+      alert("Error saving stress assessment");
     } finally {
       setLoading(false);
     }
@@ -85,6 +88,18 @@ export default function MultiStepStressForm() {
       />
     );
   }
+  // Already submitted this cycle (now or earlier) → thank-you screen.
+  if (success || cycle?.form6?.submitted) {
+    return (
+      <StatusScreen
+        title="Your theme & feeling form is submitted ✅"
+        body="Thanks — your response has been recorded for this cycle. You fill this form once; the results are compiled by your organization."
+        ctaLabel="Back to dashboard"
+        ctaHref="/dashboard"
+      />
+    );
+  }
+
   if (!cycle?.form6?.open) {
     return (
       <StatusScreen
