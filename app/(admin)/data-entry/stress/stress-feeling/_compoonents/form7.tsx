@@ -1,12 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
-
-type JWTPayload = {
-  name?: string;
-  role?: string;
-  org?: number;
-};
 
 const feelings = [
   "Anger Towards Others",
@@ -35,39 +28,21 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchScores = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        if (!token) return setLoading(false);
-
-        const decoded = jwtDecode<JWTPayload>(token);
-        const user_name = decoded.name;
-        const org = decoded.org;
-        if (!user_name || !org) return setLoading(false);
-
-        const res = await fetch(`/api/getStressScores`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ user_name }),
-        });
-        const info = await res.json();
-        if (!info.data) return setLoading(false);
-
-        const numericScores: Record<string, number> = Object.fromEntries(
-          Object.entries(info.data).map(([key, val]) => [key, Number(val) || 0])
-        );
-        setMaxScores(numericScores);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching scores:", err);
-        setLoading(false);
-      }
-    };
-
-    fetchScores();
+    // Maximums come from the CYCLE limits (mean of Form 5 across all staff), not
+    // the individual's own Form 5 scores.
+    const token = localStorage.getItem("access_token");
+    fetch(`/api/stress/limits`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        const limits = (d?.limits || {}) as Record<string, number>;
+        const rounded: Record<string, number> = {};
+        for (const [k, v] of Object.entries(limits)) {
+          rounded[k] = Math.max(0, Math.round(Number(v) || 0));
+        }
+        setMaxScores(rounded);
+      })
+      .catch((err) => console.error("Error fetching cycle limits:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleChange = (cat: string, feel: string, val: number) => {
