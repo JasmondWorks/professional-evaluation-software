@@ -137,6 +137,10 @@ export default function DataEntryPage() {
             to={"/data-entry/students"}
             title={"Student data entries"}
           />
+          <EntrySection
+            to={"/data-entry/stress/approvals"}
+            title={"Stress entries — approve your department"}
+          />
         </>
       )}
     </div>

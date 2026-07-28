@@ -526,6 +526,11 @@ model stress {
   dept                          String? @db.VarChar(255)
   // Which cycle this Form 6/7 submission belongs to (one submission per cycle).
   cycle_id                      Int?
+  // HOD/Dean approval: staff entries are "submitted" until the department head
+  // (HOD) or Dean verifies and approves them for stress determination.
+  approved                      Boolean @default(false)
+  approved_by                   String? @db.VarChar(255)
+  approved_at                   DateTime?
 }
 
 model stress_analysis_results {

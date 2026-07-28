@@ -113,6 +113,14 @@ export default function MultiStepStressForm() {
 
   return (
     <div className="w-full p-8">
+      <div className="flex justify-end mb-4 print:hidden">
+        <button
+          onClick={() => window.print()}
+          className="text-sm border border-gray-300 rounded-md px-4 py-2 text-gray-700 hover:bg-gray-50"
+        >
+          Print this form (guide)
+        </button>
+      </div>
       {loading && <p className="text-gray-500">Saving your responses...</p>}
       {success && (
         <p className="text-green-600 font-semibold">
