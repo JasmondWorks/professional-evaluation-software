@@ -9,11 +9,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export type FormStatus = "not_yet" | "open" | "closed";
+export type FormState = {
+  open: boolean;
+  status: FormStatus;
+  submitted: boolean;
+  opensAt?: string | null;
+  closesAt?: string | null;
+};
 export type ActiveCycle = {
   active: boolean;
   phase?: string;
-  form5?: { open: boolean; submitted: boolean };
-  form6?: { open: boolean; submitted: boolean };
+  form5?: FormState;
+  form6?: FormState;
   cta?: { message: string; href: string } | null;
 };
 

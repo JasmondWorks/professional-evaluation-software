@@ -92,11 +92,27 @@ export default function MultiStepStressForm() {
     );
   }
 
+  if (cycle?.form6?.status === "closed") {
+    return (
+      <StatusScreen
+        title="The theme & feeling form has closed"
+        body="Submissions for this form are now closed for the current cycle."
+        ctaLabel="Back to dashboard"
+        ctaHref="/dashboard"
+      />
+    );
+  }
+
   if (!cycle?.form6?.open) {
+    const opens = cycle?.form6?.opensAt ? new Date(cycle.form6.opensAt).toLocaleString() : null;
     return (
       <StatusScreen
         title="The theme & feeling form isn't open yet"
-        body="Form 6 opens once the stress category form (Form 5) has closed and your organization has computed the setting. Please check back, or complete Form 5 first if it's still open."
+        body={
+          opens
+            ? `This form opens on ${opens}. It becomes available once Form 5 has closed and the setting is computed.`
+            : "Form 6 opens once the stress category form (Form 5) has closed and your organization has computed the setting. Please check back, or complete Form 5 first if it's still open."
+        }
         ctaLabel="Go to the Stress Category form"
         ctaHref="/data-entry/stress/stress-category"
       />

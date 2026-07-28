@@ -131,9 +131,24 @@ export default function StressForm5() {
     );
   }
 
-  // Cycle running but Form 5 window is closed (moved on to Form 6). The staff
-  // member didn't fill it — they may still proceed to Form 6.
-  if (!cycle.form5?.open) {
+  // Scheduled but not open yet (before its open date) — NOT the same as closed.
+  if (cycle.form5?.status === "not_yet") {
+    const opens = cycle.form5.opensAt ? new Date(cycle.form5.opensAt).toLocaleString() : null;
+    return (
+      <StatusScreen
+        title="The stress category form hasn't opened yet"
+        body={
+          opens
+            ? `This form opens on ${opens}. You'll be notified on your dashboard when it's ready to fill.`
+            : "This form isn't open for submissions yet. You'll be notified on your dashboard when it's ready."
+        }
+      />
+    );
+  }
+
+  // Cycle running but Form 5 window has closed. The staff member didn't fill it —
+  // they may still proceed to Form 6.
+  if (cycle.form5?.status === "closed" || !cycle.form5?.open) {
     return (
       <StatusScreen
         title="The stress category form has closed"

@@ -111,6 +111,7 @@ export default function StressAnalysisTool() {
   const { data: cycleStatus, refetch: refetchCycle } = useActiveCycle();
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [opening, setOpening] = useState(false);
 
   const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
     setBusy(true);
@@ -132,6 +133,7 @@ export default function StressAnalysisTool() {
   };
   const handleCloseWindow = () => postCycleAction("/api/stress/close-window", setClosing);
   const handleReopenWindow = () => postCycleAction("/api/stress/reopen-window", setReopening);
+  const handleOpenWindow = () => postCycleAction("/api/stress/open-window", setOpening);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -401,46 +403,50 @@ export default function StressAnalysisTool() {
         </button>
       </div>
 
-      {/* CURRENT CYCLE STATUS + close-early control */}
-      {activeTab === "analysis" && isAdmin && cycleStatus?.active && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-gray-400">Current cycle phase</p>
-            <p className="text-lg font-bold text-gray-900">
-              {cycleStatus.phase === "settings_open" && "Form 5 open — collecting stress categories"}
-              {cycleStatus.phase === "settings_closed" && "Form 5 closed — run the setting"}
-              {cycleStatus.phase === "feeling_open" && "Form 6/7 open — collecting themes & feelings"}
-              {cycleStatus.phase === "feeling_closed" && "Form 6/7 closed — ready to evaluate"}
-            </p>
+      {/* CURRENT CYCLE STATUS + window controls */}
+      {activeTab === "analysis" && isAdmin && cycleStatus?.active && (() => {
+        const f5 = cycleStatus.form5;
+        const f6 = cycleStatus.form6;
+        // The one form that's currently in play, with its label + status.
+        const inSettings = cycleStatus.phase === "settings_open" || cycleStatus.phase === "settings_closed";
+        const form = inSettings ? f5 : f6;
+        const label = inSettings ? "Form 5 (stress category)" : "Form 6/7 (themes & feeling)";
+        const opensStr = form?.opensAt ? new Date(form.opensAt).toLocaleString() : null;
+        const statusText =
+          form?.status === "not_yet"
+            ? `${label} — scheduled${opensStr ? `, opens ${opensStr}` : ""}`
+            : form?.status === "open"
+              ? `${label} — open, collecting responses`
+              : `${label} — closed`;
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">Current cycle phase</p>
+              <p className="text-lg font-bold text-gray-900">{statusText}</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {form?.status === "not_yet" && (
+                <button onClick={handleOpenWindow} disabled={opening}
+                  className="px-5 py-2.5 border border-green-200 text-green-700 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50">
+                  {opening ? "Opening…" : `Open ${inSettings ? "Form 5" : "Form 6/7"} now`}
+                </button>
+              )}
+              {form?.status === "open" && (
+                <button onClick={handleCloseWindow} disabled={closing}
+                  className="px-5 py-2.5 border border-red-200 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50">
+                  {closing ? "Closing…" : `Close ${inSettings ? "Form 5" : "Form 6/7"} now`}
+                </button>
+              )}
+              {(cycleStatus.phase === "settings_closed" || cycleStatus.phase === "feeling_closed") && (
+                <button onClick={handleReopenWindow} disabled={reopening}
+                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50">
+                  {reopening ? "Reopening…" : `Reopen ${inSettings ? "Form 5" : "Form 6/7"}`}
+                </button>
+              )}
+            </div>
           </div>
-          {(cycleStatus.form5?.open || cycleStatus.form6?.open) && (
-            <button
-              onClick={handleCloseWindow}
-              disabled={closing}
-              className="px-5 py-2.5 border border-red-200 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
-            >
-              {closing
-                ? "Closing…"
-                : cycleStatus.form5?.open
-                  ? "Close Form 5 now"
-                  : "Close Form 6/7 now"}
-            </button>
-          )}
-          {(cycleStatus.phase === "settings_closed" || cycleStatus.phase === "feeling_closed") && (
-            <button
-              onClick={handleReopenWindow}
-              disabled={reopening}
-              className="px-5 py-2.5 border border-green-200 text-green-700 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
-            >
-              {reopening
-                ? "Reopening…"
-                : cycleStatus.phase === "settings_closed"
-                  ? "Reopen Form 5"
-                  : "Reopen Form 6/7"}
-            </button>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* START CYCLE (admin) */}
       {activeTab === "analysis" && isAdmin && (
@@ -577,13 +583,19 @@ export default function StressAnalysisTool() {
                 After Form 5 (stress category) closes, compute the per-category limits (the mean across all staff). These limits become the maximums used by Form 6 (themes &amp; feeling).
               </p>
             </div>
-            <button
-              onClick={handleRunSetting}
-              disabled={runningSetting}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-60"
-            >
-              {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
-            </button>
+            <div className="flex flex-col items-start sm:items-end">
+              <button
+                onClick={handleRunSetting}
+                disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
+                title={cycleStatus?.phase !== "settings_closed" ? "Close Form 5 first" : undefined}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
+              </button>
+              {cycleStatus?.active && cycleStatus.phase !== "settings_closed" && (
+                <span className="text-xs text-gray-400 mt-2">Available once Form 5 is closed</span>
+              )}
+            </div>
           </div>
           {settingMsg && <p className="text-sm text-gray-600 mb-3">{settingMsg}</p>}
           {settingLimits && (
