@@ -105,6 +105,18 @@ export default function StressAnalysisTool() {
   });
   const [startingCycle, setStartingCycle] = useState(false);
   const [cycleMsg, setCycleMsg] = useState<string | null>(null);
+  const [approvalStatus, setApprovalStatus] = useState<any>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    fetch("/api/stress/org-approval-status", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setApprovalStatus(d))
+      .catch(() => {});
+  }, []);
   const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
 
   useEffect(() => {
@@ -393,6 +405,53 @@ export default function StressAnalysisTool() {
             {startingCycle ? "Starting…" : "Start Cycle"}
           </button>
           {cycleMsg && <p className="text-sm text-gray-600 mt-3">{cycleMsg}</p>}
+        </div>
+      )}
+
+      {/* ESTAB / PERSONNEL: departmental & faculty submission/approval status */}
+      {activeTab === "analysis" && isAdmin && approvalStatus?.active && (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Submission &amp; Approval Status</h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Which departments and faculties have submitted and been approved by their heads for this cycle.
+          </p>
+          {(["departments", "faculties"] as const).map((group) => (
+            <div key={group} className="mb-6 last:mb-0">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2 capitalize">{group}</h3>
+              <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-4 py-2 font-semibold capitalize">{group === "departments" ? "Department" : "Faculty"}</th>
+                      <th className="px-4 py-2 font-semibold text-right">Staff</th>
+                      <th className="px-4 py-2 font-semibold text-right">Submitted</th>
+                      <th className="px-4 py-2 font-semibold text-right">Approved</th>
+                      <th className="px-4 py-2 font-semibold text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(approvalStatus[group] as any[]).map((d) => (
+                      <tr key={d.name}>
+                        <td className="px-4 py-2 font-medium text-gray-800">{d.name}</td>
+                        <td className="px-4 py-2 text-right text-gray-600">{d.staff}</td>
+                        <td className="px-4 py-2 text-right text-gray-600">{d.submitted}</td>
+                        <td className="px-4 py-2 text-right text-gray-600">{d.approved}</td>
+                        <td className="px-4 py-2 text-right">
+                          {d.cleared ? (
+                            <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">Cleared</span>
+                          ) : (
+                            <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                              Pending{d.pendingApproval > 0 ? ` (${d.pendingApproval} to approve)` : ""}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
