@@ -39,7 +39,7 @@ const categoryMap: Record<string, string> = {
   Miscellaneous: "misc",
 };
 
-export default function Form6({ onSave }: { onSave: (data: number) => void }) {
+export default function Form6({ onSave }: { onSave: (data: any) => void }) {
   const [values, setValues] = useState<Record<string, Record<string, number>>>({});
   const [maxScores, setMaxScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -84,31 +84,26 @@ export default function Form6({ onSave }: { onSave: (data: number) => void }) {
   const getColPercent = (theme: string) =>
     grandTotal > 0 ? ((getColTotal(theme) / grandTotal) * 100).toFixed(2) : "0.00";
 
-  const handleNext = () => {
-    const scores: Record<string, number> = {};
-    categories.forEach((cat) => {
-      const dbField = categoryMap[cat];
-      scores[dbField] = getRowTotal(cat);
+  // Report the FULL matrix up to the page whenever it changes, so the whole
+  // category×theme grid is saved (not just a single total). `values` is keyed by
+  // category LABEL; also expose totals keyed by category KEY for aggregation.
+  useEffect(() => {
+    const categoryTotals: Record<string, number> = {};
+    categories.forEach((c) => {
+      categoryTotals[categoryMap[c]] = getRowTotal(c);
     });
-
-    const data = {
-      scores,
-      totals: {
-        rowTotals: categories.map((c) => ({
-          category: c,
-          total: getRowTotal(c),
-        })),
-        colTotals: themes.map((t) => ({
-          theme: t,
-          total: getColTotal(t),
-          percent: getColPercent(t),
-        })),
-        grandTotal,
-      },
-    };
-
-    onSave(data.totals.grandTotal);
-  };
+    onSave({
+      values,
+      categoryTotals,
+      themeTotals: themes.map((t) => ({
+        theme: t,
+        total: getColTotal(t),
+        percent: getColPercent(t),
+      })),
+      grandTotal,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values]);
 
   if (loading) return <p className="p-12">Loading stress scores...</p>;
 

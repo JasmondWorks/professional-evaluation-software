@@ -64,8 +64,9 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
   const totalElements = categories.length * feelings.length;
   const ratio = totalElements > 0 ? getGrandTotal() / totalElements : 0;
 
-  const handleSubmit = () => {
-    const data = {
+  // Report the full feelings matrix up to the page whenever it changes.
+  useEffect(() => {
+    onSave({
       values,
       totals: {
         rowTotals: categories.map((c) => ({
@@ -80,10 +81,9 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
         grandTotal: getGrandTotal(),
         ratio: ratio.toFixed(4),
       },
-    };
-
-    onSave(data);
-  };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values]);
 
   if (loading) return <p className="p-12">Loading stress scores...</p>;
 
