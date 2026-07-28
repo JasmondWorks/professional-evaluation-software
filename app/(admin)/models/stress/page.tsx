@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import { factors } from "@/app/lib/stress/scoring";
 import { CategoryValues } from "@/app/lib/stress/scoring";
+import { useActiveCycle } from "@/app/components/useActiveCycle";
 import {
   ComposedChart,
   Line,
@@ -107,6 +108,27 @@ export default function StressAnalysisTool() {
   const [cycleMsg, setCycleMsg] = useState<string | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<any>(null);
   const [themeReport, setThemeReport] = useState<any>(null);
+  const { data: cycleStatus, refetch: refetchCycle } = useActiveCycle();
+  const [closing, setClosing] = useState(false);
+
+  const handleCloseWindow = async () => {
+    setClosing(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/close-window", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to close window");
+      setCycleMsg(data.message);
+      refetchCycle();
+    } catch (e) {
+      setCycleMsg(e instanceof Error ? e.message : "Failed to close window");
+    } finally {
+      setClosing(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -375,6 +397,34 @@ export default function StressAnalysisTool() {
           Evaluation Results
         </button>
       </div>
+
+      {/* CURRENT CYCLE STATUS + close-early control */}
+      {activeTab === "analysis" && isAdmin && cycleStatus?.active && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-400">Current cycle phase</p>
+            <p className="text-lg font-bold text-gray-900">
+              {cycleStatus.phase === "settings_open" && "Form 5 open — collecting stress categories"}
+              {cycleStatus.phase === "settings_closed" && "Form 5 closed — run the setting"}
+              {cycleStatus.phase === "feeling_open" && "Form 6/7 open — collecting themes & feelings"}
+              {cycleStatus.phase === "feeling_closed" && "Form 6/7 closed — ready to evaluate"}
+            </p>
+          </div>
+          {(cycleStatus.form5?.open || cycleStatus.form6?.open) && (
+            <button
+              onClick={handleCloseWindow}
+              disabled={closing}
+              className="px-5 py-2.5 border border-red-200 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              {closing
+                ? "Closing…"
+                : cycleStatus.form5?.open
+                  ? "Close Form 5 now"
+                  : "Close Form 6/7 now"}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* START CYCLE (admin) */}
       {activeTab === "analysis" && isAdmin && (
