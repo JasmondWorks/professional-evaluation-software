@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import { STRESS_INSTRUMENT, CategoryKey } from "@/app/lib/stress/instrument";
 import { scoreItem } from "@/app/lib/stress/scoring";
 import { notify } from "@/lib/toast";
+import { useActiveCycle } from "@/app/components/useActiveCycle";
 
 type JWTPayload = {
   name?: string;
@@ -44,28 +45,13 @@ function StatusScreen({
   );
 }
 
-type CycleState = {
-  active: boolean;
-  form5?: { open: boolean; submitted: boolean };
-};
-
 export default function StressForm5() {
   const [values, setValues] = useState<Record<string, number>>({});
   const [currentStep, setCurrentStep] = useState(0);
-  const [cycle, setCycle] = useState<CycleState | null>(null);
-  const [loadingCycle, setLoadingCycle] = useState(true);
+  // Live cycle status — polls + refetches on focus, so the form opens/closes
+  // and the "already submitted" state update without a page refresh.
+  const { data: cycle, loading: loadingCycle } = useActiveCycle();
   const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    fetch("/api/stress/active-cycle", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((d) => setCycle(d))
-      .catch(() => setCycle({ active: false }))
-      .finally(() => setLoadingCycle(false));
-  }, []);
 
   const handleChange = (key: string, val: number) => {
     setValues((prev) => ({ ...prev, [key]: val }));
