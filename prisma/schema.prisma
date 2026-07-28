@@ -48,6 +48,9 @@ model StressCycle {
   feeling_opens_at   DateTime?
   feeling_closes_at  DateTime?
   category_limits    Json?
+  // Set when the evaluation's 5% rule fires — the next cycle must re-collect
+  // Form 5 (settings) rather than reuse the stored limits.
+  needs_reset        Boolean   @default(false)
   created_by         String?   @db.VarChar(255)
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
   updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
@@ -558,6 +561,9 @@ model stress_scores {
   dept                     String?  @db.VarChar(255)
   user_id                  String?  @db.Uuid
   user_name                String?  @db.VarChar(255)
+  // Which stress cycle this Form 5 submission belongs to (scopes "Run Setting"
+  // and enforces one submission per staff per cycle).
+  cycle_id                 Int?
 }
 
 model subscription_events {

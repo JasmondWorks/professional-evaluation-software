@@ -16,10 +16,19 @@ export async function POST(req: Request) {
   if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
-    const rows = await prisma.stress_scores.findMany({ where: { org } })
+    const cycle = await prisma.stressCycle.findFirst({
+      where: { org },
+      orderBy: { created_at: 'desc' },
+    })
+    if (!cycle) {
+      return NextResponse.json({ error: 'No active stress cycle. Start a cycle first.' }, { status: 400 })
+    }
+
+    // Only this cycle's Form 5 submissions feed the setting.
+    const rows = await prisma.stress_scores.findMany({ where: { org, cycle_id: cycle.id } })
     if (rows.length === 0) {
       return NextResponse.json(
-        { error: 'No Form 5 (stress category) submissions yet for this organization.' },
+        { error: 'No Form 5 (stress category) submissions yet for this cycle.' },
         { status: 400 },
       )
     }
@@ -33,24 +42,11 @@ export async function POST(req: Request) {
 
     const limits = meanLimits(staffValues)
 
-    // Store on the org's cycle (reuse the latest, else create one).
-    const existing = await prisma.stressCycle.findFirst({
-      where: { org },
-      orderBy: { created_at: 'desc' },
+    // Store the limits on this cycle and open the feeling phase (Form 6).
+    await prisma.stressCycle.update({
+      where: { id: cycle.id },
+      data: { category_limits: limits, phase: 'feeling_open' },
     })
-    const cycle = existing
-      ? await prisma.stressCycle.update({
-          where: { id: existing.id },
-          data: { category_limits: limits, phase: 'feeling_open' },
-        })
-      : await prisma.stressCycle.create({
-          data: {
-            org,
-            phase: 'feeling_open',
-            category_limits: limits,
-            created_by: String(auth.user.userID ?? ''),
-          },
-        })
 
     return NextResponse.json(
       { message: 'Setting computed.', staffCount: rows.length, limits, cycleId: cycle.id },

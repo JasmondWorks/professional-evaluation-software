@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import { STRESS_INSTRUMENT, CategoryKey } from "@/app/lib/stress/instrument";
 import { scoreItem } from "@/app/lib/stress/scoring";
+import { notify } from "@/lib/toast";
 
 type JWTPayload = {
   name?: string;
@@ -10,9 +12,60 @@ type JWTPayload = {
   org?: string;
 };
 
+const FORM6_URL = "/data-entry/stress/stress-feeling";
+
+// A friendly full-screen state (no open form to fill).
+function StatusScreen({
+  title,
+  body,
+  ctaLabel,
+  ctaHref,
+}: {
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}) {
+  return (
+    <div className="w-full p-12 flex justify-center">
+      <div className="max-w-lg w-full bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm mt-10">
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
+        <p className="text-gray-600 mb-6">{body}</p>
+        {ctaLabel && ctaHref && (
+          <Link
+            href={ctaHref}
+            className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-900 transition-colors"
+          >
+            {ctaLabel}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type CycleState = {
+  active: boolean;
+  form5?: { open: boolean; submitted: boolean };
+};
+
 export default function StressForm5() {
   const [values, setValues] = useState<Record<string, number>>({});
   const [currentStep, setCurrentStep] = useState(0);
+  const [cycle, setCycle] = useState<CycleState | null>(null);
+  const [loadingCycle, setLoadingCycle] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    fetch("/api/stress/active-cycle", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setCycle(d))
+      .catch(() => setCycle({ active: false }))
+      .finally(() => setLoadingCycle(false));
+  }, []);
 
   const handleChange = (key: string, val: number) => {
     setValues((prev) => ({ ...prev, [key]: val }));
@@ -34,9 +87,9 @@ export default function StressForm5() {
       const token = localStorage.getItem("access_token");
       const user: JWTPayload = jwtDecode(token || "");
 
-      await fetch("/api/saveStressScores", {
+      const res = await fetch("/api/saveStressScores", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
@@ -46,15 +99,66 @@ export default function StressForm5() {
         }),
       });
 
-      alert("Stress scores submitted successfully ✅");
+      const data = await res.json();
+      if (!res.ok) {
+        notify.error(data.message || "Could not submit the form.");
+        return;
+      }
+      notify.success("Your stress category form has been submitted.");
+      setSubmitted(true);
     } catch (err) {
       console.error(err);
-      alert("Error submitting stress scores ❌");
+      notify.error("Something went wrong submitting the form.");
     }
   };
 
   const currentCategory = STRESS_INSTRUMENT[currentStep];
 
+  // ---- Cycle gating: decide whether the form is fillable ----
+  if (loadingCycle) {
+    return (
+      <div className="w-full p-12 flex justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+      </div>
+    );
+  }
+
+  // Just submitted (this session) or already submitted for the cycle → thank-you + nudge to Form 6.
+  if (submitted || cycle?.form5?.submitted) {
+    return (
+      <StatusScreen
+        title="You're all set for the stress category form ✅"
+        body="Thanks — your response has been recorded for this cycle. You only fill this form once. When the theme & feeling form (Form 6) opens, you'll complete that next."
+        ctaLabel="Go to the Theme & Feeling form"
+        ctaHref={FORM6_URL}
+      />
+    );
+  }
+
+  // No cycle running.
+  if (!cycle?.active) {
+    return (
+      <StatusScreen
+        title="No stress exercise is open right now"
+        body="Your organization hasn't opened a stress exercise at the moment. You'll be notified on your dashboard when the form is available."
+      />
+    );
+  }
+
+  // Cycle running but Form 5 window is closed (moved on to Form 6). The staff
+  // member didn't fill it — they may still proceed to Form 6.
+  if (!cycle.form5?.open) {
+    return (
+      <StatusScreen
+        title="The stress category form has closed"
+        body="Submissions for this form are now closed. You didn't submit it during the window, but you can still continue to the theme & feeling form."
+        ctaLabel="Continue to the Theme & Feeling form"
+        ctaHref={FORM6_URL}
+      />
+    );
+  }
+
+  // Form 5 is open and not yet submitted → the wizard.
   return (
     <div className="w-full p-12">
       <h1 className="text-2xl font-bold mb-6">
