@@ -81,9 +81,21 @@ export async function GET(req: Request) {
       }
     }
 
+    // Advance heads-up: a form is scheduled but not open yet (and there's no
+    // more urgent CTA). Lets staff know something is coming without acting yet.
+    let notice: { message: string } | null = null
+    if (!cta) {
+      if (form5Status === 'not_yet' && !submitted && cycle.settings_opens_at) {
+        notice = { message: `The stress category form opens ${new Date(cycle.settings_opens_at).toLocaleString()}.` }
+      } else if (cycle.phase !== 'feeling_open' && form6Status === 'not_yet' && submitted && !form6Submitted) {
+        notice = { message: 'The theme & feeling form will open once the category form closes and your organization computes the setting.' }
+      }
+    }
+
     return NextResponse.json({
       active: true,
       phase: cycle.phase,
+      notice,
       form5: {
         open: form5Open,
         status: form5Status,

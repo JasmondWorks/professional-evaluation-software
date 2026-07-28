@@ -12,24 +12,38 @@ export default function StressCycleBanner() {
   // Polls + refetches on focus, so the banner appears/updates without a refresh.
   const { data } = useActiveCycle();
   const cta = data?.cta ?? null;
+  const notice = data?.notice ?? null;
 
-  if (!cta) return null;
-
-  return (
-    <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-indigo-200 bg-indigo-50 px-5 py-4">
-      <div className="flex items-center gap-3">
-        <Notification size={22} className="text-indigo-600 shrink-0" variant="Bold" />
-        <div>
-          <p className="text-sm font-semibold text-indigo-900">A stress exercise is open</p>
-          <p className="text-sm text-indigo-800">{cta.message}</p>
+  // Urgent: a form is open for this user → coloured banner with an action.
+  if (cta) {
+    return (
+      <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-indigo-200 bg-indigo-50 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <Notification size={22} className="text-indigo-600 shrink-0" variant="Bold" />
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">A stress exercise is open</p>
+            <p className="text-sm text-indigo-800">{cta.message}</p>
+          </div>
         </div>
+        <Link
+          href={cta.href}
+          className="shrink-0 bg-pes text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-900 transition-colors"
+        >
+          Open the form
+        </Link>
       </div>
-      <Link
-        href={cta.href}
-        className="shrink-0 bg-pes text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-900 transition-colors"
-      >
-        Open the form
-      </Link>
-    </div>
-  );
+    );
+  }
+
+  // Heads-up: a form is scheduled/coming → quieter informational banner.
+  if (notice) {
+    return (
+      <div className="mx-6 mt-4 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-5 py-3">
+        <Notification size={20} className="text-gray-400 shrink-0" />
+        <p className="text-sm text-gray-600">{notice.message}</p>
+      </div>
+    );
+  }
+
+  return null;
 }
