@@ -128,8 +128,8 @@ export default function MultiStepStressForm() {
         </p>
       )}
 
-      {step === 1 && <Form6 onSave={(data) => setForm6Data(data)} />}
-      {step === 2 && <Form7 onSave={(data) => setForm7Data(data)} />}
+      {step === 1 && <Form6 onSave={setForm6Data} />}
+      {step === 2 && <Form7 onSave={setForm7Data} />}
 
       <div className="mt-8 flex justify-between">
         {step > 1 && (

@@ -106,15 +106,19 @@ export default function StressAnalysisTool() {
   const [startingCycle, setStartingCycle] = useState(false);
   const [cycleMsg, setCycleMsg] = useState<string | null>(null);
   const [approvalStatus, setApprovalStatus] = useState<any>(null);
+  const [themeReport, setThemeReport] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
-    fetch("/api/stress/org-approval-status", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const auth = { headers: { Authorization: `Bearer ${token}` } };
+    fetch("/api/stress/org-approval-status", auth)
       .then((r) => r.json())
       .then((d) => setApprovalStatus(d))
+      .catch(() => {});
+    fetch("/api/stress/theme-report", auth)
+      .then((r) => r.json())
+      .then((d) => setThemeReport(d))
       .catch(() => {});
   }, []);
   const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
@@ -452,6 +456,48 @@ export default function StressAnalysisTool() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* THEME & FEELING REPORT (aggregated Form 6/7) */}
+      {activeTab === "analysis" && isAdmin && themeReport?.active && themeReport.staffCount > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Theme &amp; Feeling Report</h2>
+          <p className="text-sm text-gray-500 mb-5">
+            Aggregated from {themeReport.staffCount} theme &amp; feeling (Form 6/7) submission(s).
+          </p>
+
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Most frequent stress themes</h3>
+          <div className="overflow-x-auto border border-gray-100 rounded-lg mb-6">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-600">
+                <tr>
+                  <th className="px-4 py-2 font-semibold">Theme</th>
+                  <th className="px-4 py-2 font-semibold text-right">Total frequency</th>
+                  <th className="px-4 py-2 font-semibold text-right">% of all themes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {(themeReport.themes as any[]).map((t) => (
+                  <tr key={t.theme}>
+                    <td className="px-4 py-2 font-medium text-gray-800">{t.theme}</td>
+                    <td className="px-4 py-2 text-right text-gray-600">{t.total}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-gray-800">{t.percent.toFixed(2)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Dominant feeling per stress category</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {(themeReport.categories as any[]).map((c) => (
+              <div key={c.key} className="bg-gray-50 rounded-md p-3">
+                <p className="text-[11px] uppercase tracking-wide text-gray-400 truncate">{c.label}</p>
+                <p className="text-sm font-bold text-gray-800">{c.dominant || "—"}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
