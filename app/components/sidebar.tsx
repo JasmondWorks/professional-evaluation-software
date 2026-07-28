@@ -62,15 +62,15 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
     // Definition of all tabs
    const tabs = [
-      { key: 1, name: 'Dashboard', icon: <Home3 />, href: '/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
-      { key: 4, name: 'Employee Database', icon: <People />, href: '/em-database', role_access: [ 'admin', 'hod'], requires: 'can_access_employee_data' as PermissionKey },
+      { key: 1, name: 'Dashboard', icon: <Home3 />, href: '/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 4, name: 'Employee Database', icon: <People />, href: '/em-database', role_access: [ 'admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
       { key: 4, name: 'All Organizations', icon: <People />, href: '/organizations', role_access: [ 'super-admin' ] }, 
-      { key: 5, name: 'Goals', icon: <Setting4 />, href: '/goals', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w'] }, 
-      { key: 3, name: 'Data Entry', icon: <LucideDatabase />, href: '/data-entry', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] }, 
+      { key: 5, name: 'Goals', icon: <Setting4 />, href: '/goals', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] }, 
+      { key: 3, name: 'Data Entry', icon: <LucideDatabase />, href: '/data-entry', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] }, 
       { key: 6, name: 'Assessment', icon: <Award />, href: '/assessment', role_access: ['super-admin', 'admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
       { key: 11, name: 'Staff Determination', icon: <Data2 />, href: '/evaluation', role_access: ['super-admin', 'admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
-      { key: 7, name: 'Performance Review', icon: <Teacher />, href: '/performance', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w'] },
-      { key: 2, name: 'Profile', icon: <ProfileCircle />, href: '/profile', role_access: ['lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
+      { key: 7, name: 'Performance Review', icon: <Teacher />, href: '/performance', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
+      { key: 2, name: 'Profile', icon: <ProfileCircle />, href: '/profile', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: <DollarCircle />, href: '/pricing', role_access: ['super-admin', 'admin'] },
       // { key: 9, name: 'Maintenance Model', icon: <Setting3 />, href: '/maintenance', role_access: [ 'industrial-engineer', 'super-admin', (user.maintenance_model? 'admin': '')] },
       { key: 10, name: 'Other Models', icon: <Setting2 />, href: '/models', role_access: ['industrial-engineer', 'super-admin', 'admin'] }

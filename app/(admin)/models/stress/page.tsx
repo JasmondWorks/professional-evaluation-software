@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { factors } from "@/app/lib/stress/scoring";
 import { CategoryValues } from "@/app/lib/stress/scoring";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
+import { orgTerms } from "@/app/lib/orgTerms";
 import {
   ComposedChart,
   Line,
@@ -93,6 +94,8 @@ export default function StressAnalysisTool() {
   const [anovaResult, setAnovaResult] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
+  const terms = orgTerms(category);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [runningSetting, setRunningSetting] = useState(false);
@@ -159,6 +162,7 @@ export default function StressAnalysisTool() {
       try {
         const decoded: any = jwt.decode(token);
         setRole(decoded?.role || null);
+        setCategory(decoded?.productCategory ?? decoded?.category ?? null);
 
         const res = await fetch("/api/getStressDataScores", {
           method: "POST",
@@ -489,16 +493,16 @@ export default function StressAnalysisTool() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-1">Submission &amp; Approval Status</h2>
           <p className="text-sm text-gray-500 mb-5">
-            Which departments and faculties have submitted and been approved by their heads for this cycle.
+            Which departments and {terms.unitPlural.toLowerCase()} have submitted and been approved by their heads for this cycle.
           </p>
           {(["departments", "faculties"] as const).map((group) => (
             <div key={group} className="mb-6 last:mb-0">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2 capitalize">{group}</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{group === "departments" ? "Departments" : terms.unitPlural}</h3>
               <div className="overflow-x-auto border border-gray-100 rounded-lg">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 text-gray-600">
                     <tr>
-                      <th className="px-4 py-2 font-semibold capitalize">{group === "departments" ? "Department" : "Faculty"}</th>
+                      <th className="px-4 py-2 font-semibold">{group === "departments" ? "Department" : terms.unit}</th>
                       <th className="px-4 py-2 font-semibold text-right">Staff</th>
                       <th className="px-4 py-2 font-semibold text-right">Submitted</th>
                       <th className="px-4 py-2 font-semibold text-right">Approved</th>
