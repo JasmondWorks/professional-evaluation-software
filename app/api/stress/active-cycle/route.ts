@@ -32,15 +32,28 @@ export async function GET(req: Request) {
     cycle.phase = await syncCyclePhase(prisma, cycle)
 
     const now = Date.now()
-    const withinWindow = (opens: Date | null, closes: Date | null) =>
-      (!opens || now >= opens.getTime()) && (!closes || now <= closes.getTime())
+    const before = (d: Date | null) => !!d && now < d.getTime()
 
-    const form5Open =
-      cycle.phase === 'settings_open' &&
-      withinWindow(cycle.settings_opens_at, cycle.settings_closes_at)
-    const form6Open =
-      cycle.phase === 'feeling_open' &&
-      withinWindow(cycle.feeling_opens_at, cycle.feeling_closes_at)
+    // Three distinct states per form — crucially, "not_yet" (scheduled, before
+    // its open date) is NOT the same as "closed" (after its window / past phase).
+    let form5Status: 'not_yet' | 'open' | 'closed'
+    if (cycle.phase === 'settings_open') {
+      form5Status = before(cycle.settings_opens_at) ? 'not_yet' : 'open'
+    } else {
+      form5Status = 'closed'
+    }
+
+    let form6Status: 'not_yet' | 'open' | 'closed'
+    if (cycle.phase === 'feeling_open') {
+      form6Status = before(cycle.feeling_opens_at) ? 'not_yet' : 'open'
+    } else if (cycle.phase === 'settings_open' || cycle.phase === 'settings_closed') {
+      form6Status = 'not_yet'
+    } else {
+      form6Status = 'closed'
+    }
+
+    const form5Open = form5Status === 'open'
+    const form6Open = form6Status === 'open'
 
     // Has this staff member already submitted Form 5 / Form 6 for THIS cycle?
     const submitted = userName
@@ -71,8 +84,20 @@ export async function GET(req: Request) {
     return NextResponse.json({
       active: true,
       phase: cycle.phase,
-      form5: { open: form5Open, submitted },
-      form6: { open: form6Open, submitted: form6Submitted },
+      form5: {
+        open: form5Open,
+        status: form5Status,
+        submitted,
+        opensAt: cycle.settings_opens_at,
+        closesAt: cycle.settings_closes_at,
+      },
+      form6: {
+        open: form6Open,
+        status: form6Status,
+        submitted: form6Submitted,
+        opensAt: cycle.feeling_opens_at,
+        closesAt: cycle.feeling_closes_at,
+      },
       cta,
     })
   } catch (err) {
