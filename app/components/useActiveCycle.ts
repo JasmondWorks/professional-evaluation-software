@@ -23,6 +23,7 @@ export type ActiveCycle = {
   form5?: FormState;
   form6?: FormState;
   cta?: { message: string; href: string } | null;
+  notice?: { message: string } | null;
 };
 
 export function useActiveCycle(pollMs = 30000) {
