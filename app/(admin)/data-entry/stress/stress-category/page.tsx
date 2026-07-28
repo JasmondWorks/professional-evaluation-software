@@ -199,19 +199,22 @@ export default function StressForm5() {
               <tr key={j}>
                 <td className="border px-2 py-1">{item.label}</td>
                 {Array.from({ length: 10 }, (_, i) => (
-                  <td key={i} className="border px-2 py-1 text-center">
-                    <input
-                      type="radio"
-                      name={`${currentCategory.key}-${item.label}`}
-                      value={i + 1}
-                      checked={values[`${currentCategory.key}-${item.label}`] === i + 1}
-                      onChange={(e) =>
-                        handleChange(
-                          `${currentCategory.key}-${item.label}`,
-                          parseInt(e.target.value)
-                        )
-                      }
-                    />
+                  <td key={i} className="border p-0 text-center">
+                    <label className="flex h-10 w-full cursor-pointer items-center justify-center hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name={`${currentCategory.key}-${item.label}`}
+                        value={i + 1}
+                        checked={values[`${currentCategory.key}-${item.label}`] === i + 1}
+                        onChange={(e) =>
+                          handleChange(
+                            `${currentCategory.key}-${item.label}`,
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500"
+                      />
+                    </label>
                   </td>
                 ))}
                 {/* <td className="border px-2 py-1 text-center">{item.weight}</td> */}
