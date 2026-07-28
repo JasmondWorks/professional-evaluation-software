@@ -98,6 +98,7 @@ export default function StressAnalysisTool() {
   const [runningSetting, setRunningSetting] = useState(false);
   const [settingLimits, setSettingLimits] = useState<Record<string, number> | null>(null);
   const [settingMsg, setSettingMsg] = useState<string | null>(null);
+  const [feelingClosesAt, setFeelingClosesAt] = useState("");
   const [cycleWindows, setCycleWindows] = useState({
     settingsOpensAt: "",
     settingsClosesAt: "",
@@ -297,11 +298,12 @@ export default function StressAnalysisTool() {
       const res = await fetch("/api/stress/run-setting", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ feelingClosesAt: feelingClosesAt || null }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to run setting");
       setSettingLimits(data.limits);
-      setSettingMsg(`Setting computed from ${data.staffCount} staff submission(s). These limits now drive Form 6.`);
+      setSettingMsg(`Setting computed from ${data.staffCount} staff submission(s). Form 6/7 is now open${feelingClosesAt ? ` until ${new Date(feelingClosesAt).toLocaleString()}` : ""}.`);
     } catch (e) {
       setSettingMsg(e instanceof Error ? e.message : "Failed to run setting");
     } finally {
@@ -453,14 +455,12 @@ export default function StressAnalysisTool() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           <h2 className="text-xl font-bold text-gray-900">Start a Stress Cycle</h2>
           <p className="text-sm text-gray-500 max-w-2xl mt-1 mb-4">
-            Open a new stress exercise for your organization. Staff fill Form 5 during its window; once it closes you run the setting and Form 6 opens. Only one cycle can run at a time; if a setting already exists and hasn&apos;t been flagged for reset, the system starts straight at Form 6.
+            Open a new stress exercise for your organization. Set the Form 5 window here; <strong>Form 6/7 opens automatically when you run the setting</strong> (its timing depends on when Form 5 closes, so you set its close date at that point — not now). Only one cycle can run at a time; if a setting already exists and hasn&apos;t been flagged for reset, the system starts straight at Form 6.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
             {[
               { k: "settingsOpensAt", label: "Form 5 opens" },
               { k: "settingsClosesAt", label: "Form 5 closes" },
-              { k: "feelingOpensAt", label: "Form 6 opens" },
-              { k: "feelingClosesAt", label: "Form 6 closes" },
             ].map((f) => (
               <label key={f.k} className="flex flex-col text-sm font-medium text-gray-700">
                 {f.label}
@@ -583,7 +583,17 @@ export default function StressAnalysisTool() {
                 After Form 5 (stress category) closes, compute the per-category limits (the mean across all staff). These limits become the maximums used by Form 6 (themes &amp; feeling).
               </p>
             </div>
-            <div className="flex flex-col items-start sm:items-end">
+            <div className="flex flex-col items-start sm:items-end gap-2">
+              <label className="flex flex-col text-xs font-medium text-gray-500">
+                Form 6/7 closes on (optional)
+                <input
+                  type="datetime-local"
+                  value={feelingClosesAt}
+                  onChange={(e) => setFeelingClosesAt(e.target.value)}
+                  disabled={cycleStatus?.phase !== "settings_closed"}
+                  className="mt-1 px-3 py-2 border border-gray-300 rounded-lg font-normal disabled:opacity-50"
+                />
+              </label>
               <button
                 onClick={handleRunSetting}
                 disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
@@ -593,7 +603,7 @@ export default function StressAnalysisTool() {
                 {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
               </button>
               {cycleStatus?.active && cycleStatus.phase !== "settings_closed" && (
-                <span className="text-xs text-gray-400 mt-2">Available once Form 5 is closed</span>
+                <span className="text-xs text-gray-400">Available once Form 5 is closed</span>
               )}
             </div>
           </div>

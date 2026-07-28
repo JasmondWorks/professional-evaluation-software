@@ -42,10 +42,20 @@ export async function POST(req: Request) {
 
     const limits = meanLimits(staffValues)
 
-    // Store the limits on this cycle and open the feeling phase (Form 6).
+    // Optional Form 6 close date — set now, since its timing depends on when the
+    // setting is computed (which is exactly now).
+    const body = await req.json().catch(() => ({}))
+    const feelingClosesAt = body?.feelingClosesAt ? new Date(body.feelingClosesAt) : null
+
+    // Store the limits on this cycle and open the feeling phase (Form 6) right now.
     await prisma.stressCycle.update({
       where: { id: cycle.id },
-      data: { category_limits: limits, phase: 'feeling_open' },
+      data: {
+        category_limits: limits,
+        phase: 'feeling_open',
+        feeling_opens_at: new Date(),
+        feeling_closes_at: feelingClosesAt,
+      },
     })
 
     return NextResponse.json(
