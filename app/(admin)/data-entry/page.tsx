@@ -20,6 +20,8 @@ const stress = [
   },
 ];
 
+import { orgTerms } from "@/app/lib/orgTerms";
+
 type EvaluationType = "appraisal" | "performance" | "stress";
 
 export default function DataEntryPage() {
@@ -142,6 +144,14 @@ export default function DataEntryPage() {
             title={"Stress entries — approve your department"}
           />
         </>
+      )}
+
+      {/* FACULTY / DIVISION HEAD */}
+      {user?.role === "unit-head" && (
+        <EntrySection
+          to={"/data-entry/stress/faculty-approvals"}
+          title={`Stress entries — approve your ${orgTerms(user?.productCategory ?? user?.category).unit.toLowerCase()}`}
+        />
       )}
     </div>
   );

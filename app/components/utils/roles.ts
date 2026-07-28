@@ -12,6 +12,7 @@
 export const PRESET_ROLES = [
   'admin',
   'hod',
+  'unit-head',
   'lecturer',
   'industrial-engineer',
   'employee-w',
@@ -24,6 +25,7 @@ export type PresetRole = (typeof PRESET_ROLES)[number];
 export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   admin: 'Admin',
   hod: 'Department Lead (HOD)',
+  'unit-head': 'Faculty / Division Head (Dean)',
   lecturer: 'Employee — Academic',
   'industrial-engineer': 'Employee — Non-Academic',
   'employee-w': 'Employee (baseline)',
@@ -148,6 +150,14 @@ export const PRESET_PERMISSION_DEFAULTS: Record<PresetRole, PermissionKey[]> = {
     'can_access_reporting_hierarchy',
     'can_manage_performance_reviews',
     'manage_reviews_subordinates',
+  ],
+  // Faculty/Division head — oversees several departments in their unit.
+  'unit-head': [
+    'can_access_employee_data',
+    'access_employee_all',
+    'can_access_reporting_hierarchy',
+    'can_manage_performance_reviews',
+    'manage_reviews_all',
   ],
   'industrial-engineer': ['can_define_performance_metrics', 'define_performance_all'],
   auditor: ['can_access_employee_data', 'access_employee_all', 'can_manage_performance_reviews', 'manage_reviews_all'],
