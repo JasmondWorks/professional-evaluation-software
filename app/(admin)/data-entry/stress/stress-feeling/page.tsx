@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Form6 from "./_compoonents/form6";
 import Form7 from "./_compoonents/form7";
+import { useActiveCycle } from "@/app/components/useActiveCycle";
 
 function StatusScreen({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel?: string; ctaHref?: string }) {
   return (
@@ -24,17 +25,8 @@ export default function MultiStepStressForm() {
   const [form7Data, setForm7Data] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [cycle, setCycle] = useState<any>(null);
-  const [loadingCycle, setLoadingCycle] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    fetch("/api/stress/active-cycle", { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((d) => setCycle(d))
-      .catch(() => setCycle({ active: false }))
-      .finally(() => setLoadingCycle(false));
-  }, []);
+  // Live cycle status — the form opens/closes without a page refresh.
+  const { data: cycle, loading: loadingCycle } = useActiveCycle();
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 2));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));

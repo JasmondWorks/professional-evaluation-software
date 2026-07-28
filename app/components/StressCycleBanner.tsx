@@ -4,23 +4,14 @@
 // to fill, show a friendly banner with a call-to-action straight to that form.
 // Driven by /api/stress/active-cycle, which returns the single most relevant CTA.
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Notification } from "iconsax-react";
+import { useActiveCycle } from "./useActiveCycle";
 
 export default function StressCycleBanner() {
-  const [cta, setCta] = useState<{ message: string; href: string } | null>(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token || token === "undefined") return;
-    fetch("/api/stress/active-cycle", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((d) => setCta(d?.cta ?? null))
-      .catch(() => {});
-  }, []);
+  // Polls + refetches on focus, so the banner appears/updates without a refresh.
+  const { data } = useActiveCycle();
+  const cta = data?.cta ?? null;
 
   if (!cta) return null;
 
