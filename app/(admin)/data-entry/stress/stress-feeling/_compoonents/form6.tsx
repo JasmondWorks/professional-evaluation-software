@@ -39,6 +39,12 @@ const categoryMap: Record<string, string> = {
   Miscellaneous: "misc",
 };
 
+// Staff choose a simple 1–10 rating per cell. The system maps that choice onto
+// the category's real range (0…max) — where `max` is the per-category limit
+// computed from Form 5 — via (choice / 10) × max. The max is NOT shown to the
+// staff member; they only ever deal with the 1–10 scale.
+const SCALE = 10;
+
 export default function Form6({ onSave }: { onSave: (data: any) => void }) {
   const [values, setValues] = useState<Record<string, Record<string, number>>>({});
   const [maxScores, setMaxScores] = useState<Record<string, number>>({});
@@ -70,46 +76,49 @@ export default function Form6({ onSave }: { onSave: (data: any) => void }) {
     }));
   };
 
-  const getRowTotal = (cat: string) =>
-    themes.reduce((sum, t) => sum + (values[cat]?.[t] || 0), 0);
+  // Map a raw 1–10 choice onto the category's real range using its Form 5 limit.
+  const mapCell = (cat: string, raw: number) => {
+    const max = maxScores[categoryMap[cat]] ?? 0;
+    return Math.round(((raw || 0) / SCALE) * max);
+  };
 
-  const getColTotal = (theme: string) =>
-    categories.reduce((sum, c) => sum + (values[c]?.[theme] || 0), 0);
-
-  const getGrandTotal = () =>
-    categories.reduce((sum, c) => sum + getRowTotal(c), 0);
-
-  const grandTotal = getGrandTotal();
-
-  const getColPercent = (theme: string) =>
-    grandTotal > 0 ? ((getColTotal(theme) / grandTotal) * 100).toFixed(2) : "0.00";
-
-  // Report the FULL matrix up to the page whenever it changes, so the whole
-  // category×theme grid is saved (not just a single total). `values` is keyed by
-  // category LABEL; also expose totals keyed by category KEY for aggregation.
+  // Report the FULL matrix up to the page whenever it changes. We send the raw
+  // 1–10 selections (for the record) AND the mapped values / totals in the
+  // category's real units, which are what downstream aggregation reports on.
   useEffect(() => {
+    const mappedValues: Record<string, Record<string, number>> = {};
     const categoryTotals: Record<string, number> = {};
     categories.forEach((c) => {
-      categoryTotals[categoryMap[c]] = getRowTotal(c);
+      mappedValues[c] = {};
+      let rowSum = 0;
+      themes.forEach((t) => {
+        const m = mapCell(c, values[c]?.[t] || 0);
+        mappedValues[c][t] = m;
+        rowSum += m;
+      });
+      categoryTotals[categoryMap[c]] = rowSum;
     });
-    onSave({
-      values,
-      categoryTotals,
-      themeTotals: themes.map((t) => ({
-        theme: t,
-        total: getColTotal(t),
-        percent: getColPercent(t),
-      })),
-      grandTotal,
-    });
+    const themeTotalsRaw = themes.map((t) => ({
+      theme: t,
+      total: categories.reduce((sum, c) => sum + mapCell(c, values[c]?.[t] || 0), 0),
+    }));
+    const grandTotal = themeTotalsRaw.reduce((s, x) => s + x.total, 0);
+    const themeTotals = themeTotalsRaw.map((x) => ({
+      ...x,
+      percent: grandTotal > 0 ? ((x.total / grandTotal) * 100).toFixed(2) : "0.00",
+    }));
+    onSave({ values, mappedValues, categoryTotals, themeTotals, grandTotal });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values]);
+  }, [values, maxScores]);
 
-  if (loading) return <p className="p-12">Loading stress scores...</p>;
+  if (loading) return <p className="p-12">Loading stress form...</p>;
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-bold mb-4">Form 6: Stress Themes</h2>
+      <h2 className="text-2xl font-bold mb-1">Form 6: Stress Themes</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        For each stress category, rate how strongly each theme applies to you on a scale of 1 (lowest) to 10 (highest).
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full border border-gray-300 text-sm">
           <thead>
@@ -118,48 +127,30 @@ export default function Form6({ onSave }: { onSave: (data: any) => void }) {
               {themes.map((t) => (
                 <th key={t} className="border p-2">{t}</th>
               ))}
-              <th className="border p-2">Row Total</th>
             </tr>
           </thead>
           <tbody>
-            {categories.map((cat) => {
-              const max = maxScores[categoryMap[cat]] ?? 0;
-              return (
-                <tr key={cat}>
-                  <td className="border p-2 font-medium">
-                    {cat} ({max})
+            {categories.map((cat) => (
+              <tr key={cat}>
+                <td className="border p-2 font-medium">{cat}</td>
+                {themes.map((theme) => (
+                  <td key={theme} className="border p-2">
+                    <select
+                      className="w-20 border rounded p-1 text-center"
+                      value={values[cat]?.[theme] ?? ""}
+                      onChange={(e) =>
+                        handleChange(cat, theme, parseInt(e.target.value) || 0)
+                      }
+                    >
+                      <option value="">--</option>
+                      {Array.from({ length: SCALE }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>{i + 1}</option>
+                      ))}
+                    </select>
                   </td>
-                  {themes.map((theme) => (
-                    <td key={theme} className="border p-2">
-                      <select
-                        className="w-20 border rounded p-1 text-center"
-                        value={values[cat]?.[theme] ?? ""}
-                        onChange={(e) =>
-                          handleChange(cat, theme, parseInt(e.target.value) || 0)
-                        }
-                      >
-                        <option value="">--</option>
-                        {Array.from({ length: max + 1 }, (_, i) => (
-                          <option key={i} value={i}>{i}</option>
-                        ))}
-                      </select>
-                    </td>
-                  ))}
-                  <td className="border p-2 text-center font-semibold bg-gray-100">
-                    {getRowTotal(cat)}
-                  </td>
-                </tr>
-              );
-            })}
-            {/* <tr className="bg-purple-100 font-bold">
-              <td className="border p-2">Column Totals (∑)</td>
-              {themes.map((theme) => (
-                <td key={theme} className="border p-2 text-center">
-                  {getColTotal(theme)}
-                </td>
-              ))}
-              <td className="border p-2 text-center">{grandTotal}</td>
-            </tr> */}
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

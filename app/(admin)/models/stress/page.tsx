@@ -101,6 +101,8 @@ export default function StressAnalysisTool() {
   const [runningSetting, setRunningSetting] = useState(false);
   const [settingLimits, setSettingLimits] = useState<Record<string, number> | null>(null);
   const [settingMsg, setSettingMsg] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewLocked, setPreviewLocked] = useState(false);
   const [feelingClosesAt, setFeelingClosesAt] = useState("");
   const [cycleWindows, setCycleWindows] = useState({
     settingsOpensAt: "",
@@ -312,6 +314,37 @@ export default function StressAnalysisTool() {
       setSettingMsg(e instanceof Error ? e.message : "Failed to run setting");
     } finally {
       setRunningSetting(false);
+    }
+  };
+
+  // "View Form 5 results" — read-only, available at ANY phase. Shows the current
+  // per-category limits (the stored ones once the setting is run, otherwise a
+  // live mean of whatever Form 5 data exists) without changing the cycle.
+  const handlePreviewSetting = async () => {
+    setPreviewing(true);
+    setSettingMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/setting-preview", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load Form 5 results");
+      if (!data.active) {
+        setSettingMsg("No active cycle to show Form 5 results for.");
+        return;
+      }
+      setSettingLimits(data.limits || {});
+      setPreviewLocked(!!data.locked);
+      setSettingMsg(
+        data.staffCount > 0
+          ? `Form 5 results from ${data.staffCount} staff submission(s)${data.locked ? " (locked in by Run Setting)" : " (live preview — not yet locked in)"}.`
+          : "No Form 5 submissions yet for this cycle.",
+      );
+    } catch (e) {
+      setSettingMsg(e instanceof Error ? e.message : "Failed to load Form 5 results");
+    } finally {
+      setPreviewing(false);
     }
   };
 
@@ -584,7 +617,7 @@ export default function StressAnalysisTool() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Step 1 — Run Setting</h2>
               <p className="text-sm text-gray-500 max-w-xl">
-                After Form 5 (stress category) closes, compute the per-category limits (the mean across all staff). These limits become the maximums used by Form 6 (themes &amp; feeling).
+                <strong>View Form 5 results</strong> at any time to see the per-category means so far. When Form 5 closes, <strong>Run Setting</strong> locks those means in as the maximums Form 6 (themes &amp; feeling) maps against and opens Form 6.
               </p>
             </div>
             <div className="flex flex-col items-start sm:items-end gap-2">
@@ -598,21 +631,38 @@ export default function StressAnalysisTool() {
                   className="mt-1 px-3 py-2 border border-gray-300 rounded-lg font-normal disabled:opacity-50"
                 />
               </label>
-              <button
-                onClick={handleRunSetting}
-                disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
-                title={cycleStatus?.phase !== "settings_closed" ? "Close Form 5 first" : undefined}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePreviewSetting}
+                  disabled={previewing || !cycleStatus?.active}
+                  className="px-5 py-3 border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {previewing ? "Loading…" : "View Form 5 results"}
+                </button>
+                <button
+                  onClick={handleRunSetting}
+                  disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
+                  title={cycleStatus?.phase !== "settings_closed" ? "Close Form 5 first to lock in the setting" : undefined}
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
+                </button>
+              </div>
               {cycleStatus?.active && cycleStatus.phase !== "settings_closed" && (
-                <span className="text-xs text-gray-400">Available once Form 5 is closed</span>
+                <span className="text-xs text-gray-400">
+                  “Run Setting” locks in the limits &amp; opens Form 6 — available once Form 5 is closed. You can view results any time.
+                </span>
               )}
             </div>
           </div>
           {settingMsg && <p className="text-sm text-gray-600 mb-3">{settingMsg}</p>}
           {settingLimits && (
+            <>
+            {!previewLocked && (
+              <p className="text-xs font-medium text-amber-600 mb-2">
+                Live preview — these limits are not locked in until you Run Setting.
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
               {Object.entries(settingLimits).map(([k, v]) => (
                 <div key={k} className="bg-gray-50 rounded-md p-3 text-center">
@@ -621,6 +671,7 @@ export default function StressAnalysisTool() {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       )}
