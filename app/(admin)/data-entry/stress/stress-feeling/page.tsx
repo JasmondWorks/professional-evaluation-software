@@ -1,7 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import Form6 from "./_compoonents/form6";
 import Form7 from "./_compoonents/form7";
+
+function StatusScreen({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel?: string; ctaHref?: string }) {
+  return (
+    <div className="w-full p-12 flex justify-center">
+      <div className="max-w-lg w-full bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm mt-10">
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
+        <p className="text-gray-600 mb-6">{body}</p>
+        {ctaLabel && ctaHref && (
+          <Link href={ctaHref} className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-900 transition-colors">{ctaLabel}</Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function MultiStepStressForm() {
   const [step, setStep] = useState(1);
@@ -9,6 +24,17 @@ export default function MultiStepStressForm() {
   const [form7Data, setForm7Data] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [cycle, setCycle] = useState<any>(null);
+  const [loadingCycle, setLoadingCycle] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    fetch("/api/stress/active-cycle", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setCycle(d))
+      .catch(() => setCycle({ active: false }))
+      .finally(() => setLoadingCycle(false));
+  }, []);
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 2));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -42,6 +68,33 @@ export default function MultiStepStressForm() {
       setLoading(false);
     }
   };
+
+  // ---- Cycle gating: Form 6/7 only open in the feeling phase ----
+  if (loadingCycle) {
+    return (
+      <div className="w-full p-12 flex justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+      </div>
+    );
+  }
+  if (!cycle?.active) {
+    return (
+      <StatusScreen
+        title="No stress exercise is open right now"
+        body="Your organization hasn't opened a stress exercise at the moment. You'll be notified on your dashboard when a form is available."
+      />
+    );
+  }
+  if (!cycle?.form6?.open) {
+    return (
+      <StatusScreen
+        title="The theme & feeling form isn't open yet"
+        body="Form 6 opens once the stress category form (Form 5) has closed and your organization has computed the setting. Please check back, or complete Form 5 first if it's still open."
+        ctaLabel="Go to the Stress Category form"
+        ctaHref="/data-entry/stress/stress-category"
+      />
+    );
+  }
 
   return (
     <div className="w-full p-8">
