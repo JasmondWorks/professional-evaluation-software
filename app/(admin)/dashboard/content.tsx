@@ -9,6 +9,7 @@ import Goalchunk from "@/app/components/goals/goalChunk";
 import Performance from "@/app/components/performance/performanceChunk";
 import ProfileChunk from "@/app/components/Profilechunk";
 import Quickstats from "./Quickstats";
+import StressCycleBanner from "@/app/components/StressCycleBanner";
 import Datachunk from "@/app/components/data/Datachunk";
 import { getAccessToken } from "@/app/utils/auth";
 
@@ -66,6 +67,7 @@ export default function Dashboard() {
 
   return (
     <main className="w-full flex flex-col bg-gray-50">
+      <StressCycleBanner />
       {user?.role == "admin" ? (
         <Quickstats openEvaluations={openEvaluationsCount} />
       ) : (

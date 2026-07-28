@@ -97,6 +97,14 @@ export default function StressAnalysisTool() {
   const [runningSetting, setRunningSetting] = useState(false);
   const [settingLimits, setSettingLimits] = useState<Record<string, number> | null>(null);
   const [settingMsg, setSettingMsg] = useState<string | null>(null);
+  const [cycleWindows, setCycleWindows] = useState({
+    settingsOpensAt: "",
+    settingsClosesAt: "",
+    feelingOpensAt: "",
+    feelingClosesAt: "",
+  });
+  const [startingCycle, setStartingCycle] = useState(false);
+  const [cycleMsg, setCycleMsg] = useState<string | null>(null);
   const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
 
   useEffect(() => {
@@ -216,6 +224,26 @@ export default function StressAnalysisTool() {
     setActiveTab("results");
   };
 
+  const handleStartCycle = async () => {
+    setStartingCycle(true);
+    setCycleMsg(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/start-cycle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(cycleWindows),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start cycle");
+      setCycleMsg(data.message || "Cycle started.");
+    } catch (e) {
+      setCycleMsg(e instanceof Error ? e.message : "Failed to start cycle");
+    } finally {
+      setStartingCycle(false);
+    }
+  };
+
   // "Run/Evaluate Setting": average Form 5 across staff into the per-category
   // limits that Form 6 will use, and store them on the org's stress cycle.
   const handleRunSetting = async () => {
@@ -331,6 +359,42 @@ export default function StressAnalysisTool() {
           Evaluation Results
         </button>
       </div>
+
+      {/* START CYCLE (admin) */}
+      {activeTab === "analysis" && isAdmin && (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Start a Stress Cycle</h2>
+          <p className="text-sm text-gray-500 max-w-2xl mt-1 mb-4">
+            Open a new stress exercise for your organization. Staff fill Form 5 during its window; once it closes you run the setting and Form 6 opens. Only one cycle can run at a time; if a setting already exists and hasn&apos;t been flagged for reset, the system starts straight at Form 6.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+            {[
+              { k: "settingsOpensAt", label: "Form 5 opens" },
+              { k: "settingsClosesAt", label: "Form 5 closes" },
+              { k: "feelingOpensAt", label: "Form 6 opens" },
+              { k: "feelingClosesAt", label: "Form 6 closes" },
+            ].map((f) => (
+              <label key={f.k} className="flex flex-col text-sm font-medium text-gray-700">
+                {f.label}
+                <input
+                  type="datetime-local"
+                  value={(cycleWindows as any)[f.k]}
+                  onChange={(e) => setCycleWindows((w) => ({ ...w, [f.k]: e.target.value }))}
+                  className="mt-1 px-3 py-2 border border-gray-300 rounded-lg font-normal"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={handleStartCycle}
+            disabled={startingCycle}
+            className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm disabled:opacity-60"
+          >
+            {startingCycle ? "Starting…" : "Start Cycle"}
+          </button>
+          {cycleMsg && <p className="text-sm text-gray-600 mt-3">{cycleMsg}</p>}
+        </div>
+      )}
 
       {/* RUN SETTING (intermediate step) */}
       {activeTab === "analysis" && isAdmin && (
