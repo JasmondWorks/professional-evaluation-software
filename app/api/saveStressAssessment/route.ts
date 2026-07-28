@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { effectivePhase } from "../_lib/stressCycle";
 
 // Saves a staff member's Form 6/7 (theme & feeling) submission. One submission
 // per staff per cycle, only while the feeling phase is open.
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       where: { org: org ?? undefined },
       orderBy: { created_at: "desc" },
     });
-    if (!cycle || cycle.phase !== "feeling_open") {
+    if (!cycle || effectivePhase(cycle) !== "feeling_open") {
       return NextResponse.json(
         { success: false, message: "The theme & feeling form is not currently open for submissions." },
         { status: 409 },
