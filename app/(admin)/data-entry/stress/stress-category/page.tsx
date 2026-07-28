@@ -109,14 +109,21 @@ export default function StressForm5() {
     );
   }
 
-  // Just submitted (this session) or already submitted for the cycle → thank-you + nudge to Form 6.
+  // Just submitted (this session) or already submitted for the cycle → thank-you.
+  // Only offer the Form 6 link if it's actually open now; otherwise avoid the
+  // dead-end (Form 6 opens later, once the org runs the setting).
   if (submitted || cycle?.form5?.submitted) {
+    const form6Open = cycle?.form6?.open;
     return (
       <StatusScreen
         title="You're all set for the stress category form ✅"
-        body="Thanks — your response has been recorded for this cycle. You only fill this form once. When the theme & feeling form (Form 6) opens, you'll complete that next."
-        ctaLabel="Go to the Theme & Feeling form"
-        ctaHref={FORM6_URL}
+        body={
+          form6Open
+            ? "Thanks — your response has been recorded for this cycle. You only fill this form once. The theme & feeling form is open — complete that next."
+            : "Thanks — your response has been recorded for this cycle. You only fill this form once. When the theme & feeling form opens, you'll be nudged from your dashboard."
+        }
+        ctaLabel={form6Open ? "Go to the Theme & Feeling form" : undefined}
+        ctaHref={form6Open ? FORM6_URL : undefined}
       />
     );
   }
@@ -149,12 +156,17 @@ export default function StressForm5() {
   // Cycle running but Form 5 window has closed. The staff member didn't fill it —
   // they may still proceed to Form 6.
   if (cycle.form5?.status === "closed" || !cycle.form5?.open) {
+    const form6Open = cycle?.form6?.open;
     return (
       <StatusScreen
         title="The stress category form has closed"
-        body="Submissions for this form are now closed. You didn't submit it during the window, but you can still continue to the theme & feeling form."
-        ctaLabel="Continue to the Theme & Feeling form"
-        ctaHref={FORM6_URL}
+        body={
+          form6Open
+            ? "Submissions for this form are now closed. You didn't submit it during the window, but you can still continue to the theme & feeling form."
+            : "Submissions for this form are now closed. You didn't submit it during the window. When the theme & feeling form opens, you'll be nudged from your dashboard."
+        }
+        ctaLabel={form6Open ? "Continue to the Theme & Feeling form" : undefined}
+        ctaHref={form6Open ? FORM6_URL : undefined}
       />
     );
   }
