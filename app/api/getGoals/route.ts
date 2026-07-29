@@ -2,9 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
-async function getData( user: string | null ) {
-  if (!user) return []
-  return prisma.goals.findMany({ where: { user_id: user } })
+// Goals are set by the organization's admin and apply to the WHOLE org, so every
+// user in that org must see them — not just the admin who created them. Goals are
+// stored against the creator's user_id (no org column), so we resolve the org's
+// member ids and return goals created by any of them. Falls back to the caller's
+// own goals only when the org can't be determined.
+async function getData(org: string | null, fallbackUserId: string | null) {
+  if (org) {
+    const orgUsers = await prisma.pesuser.findMany({
+      where: { org },
+      select: { id: true },
+    })
+    const ids = orgUsers.map((u) => String(u.id))
+    if (ids.length) {
+      return prisma.goals.findMany({ where: { user_id: { in: ids } } })
+    }
+  }
+  if (fallbackUserId) {
+    return prisma.goals.findMany({ where: { user_id: fallbackUserId } })
+  }
+  return []
 }
 
 export async function POST(request: NextRequest) {
@@ -50,11 +67,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!userIdentifier) {
-      console.warn("Could not find user identifier in token:", body);
+    // The org the caller belongs to — goals are shared across the whole org.
+    let org: string | null = null;
+    if (payload && typeof payload === 'object') {
+      if ('org' in payload && payload.org) org = String(payload.org);
+      else if ('sub' in payload && payload.sub && typeof payload.sub === 'object' && 'org' in (payload.sub as any)) {
+        org = String((payload.sub as any).org);
+      }
     }
 
-    const goals = await getData(userIdentifier);
+    if (!org && !userIdentifier) {
+      console.warn("Could not find org or user identifier in token:", body);
+    }
+
+    const goals = await getData(org, userIdentifier);
     return NextResponse.json(goals);
   } catch(err) {
     console.error(err);
