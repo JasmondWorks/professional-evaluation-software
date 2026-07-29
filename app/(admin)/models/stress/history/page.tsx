@@ -19,18 +19,19 @@ interface StressEvaluationRun {
 export default function StressEvaluationHistory() {
   const [history, setHistory] = useState<StressEvaluationRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
-
   const fetchHistory = async () => {
+    setRefreshing(true);
+    setError(null);
     try {
+      // no-store so a manual refresh always hits the server, never a cached copy.
       const res = await fetch("/api/getStressEvaluation", {
+        cache: "no-store",
         headers: {
-          Authorization: `Bearer ${getAccessToken()}`
-        }
+          Authorization: `Bearer ${getAccessToken()}`,
+        },
       });
       if (!res.ok) throw new Error("Failed to fetch history");
       const data = await res.json();
@@ -40,8 +41,17 @@ export default function StressEvaluationHistory() {
       setError("Error loading history.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    fetchHistory();
+    // Keep it current without a manual refresh: refetch when the tab regains focus.
+    const onFocus = () => fetchHistory();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   return (
     <div className="p-8 w-full max-w-7xl mx-auto">
@@ -60,9 +70,13 @@ export default function StressEvaluationHistory() {
         </div>
         <button
           onClick={fetchHistory}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          disabled={refreshing}
+          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
         >
-          Refresh Data
+          {refreshing && (
+            <span className="animate-spin h-4 w-4 border-b-2 border-gray-500 rounded-full" />
+          )}
+          {refreshing ? "Refreshing…" : "Refresh Data"}
         </button>
       </div>
 
@@ -92,7 +106,7 @@ export default function StressEvaluationHistory() {
             dataKey="stress_factor" 
             name="Overall Stress" 
             color="#ef4444" 
-            formatter={(val) => `${(val * 100).toFixed(1)}%`} 
+            formatter={(val) => `${Number(val).toFixed(1)}%`}
           />
           <div className="grid gap-6">
           {history.map((run) => {
@@ -117,15 +131,15 @@ export default function StressEvaluationHistory() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
                       <span className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">Stress</span>
-                      <span className="text-2xl font-bold text-red-900">{(Number(run.stress_factor) * 100).toFixed(1)}%</span>
+                      <span className="text-2xl font-bold text-red-900">{Number(run.stress_factor).toFixed(1)}%</span>
                     </div>
                     <div className="bg-orange-50 border border-orange-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
                       <span className="text-xs font-semibold text-orange-700 uppercase tracking-wider mb-2">Pressure</span>
-                      <span className="text-2xl font-bold text-orange-900">{(Number(run.pressure_factor) * 100).toFixed(1)}%</span>
+                      <span className="text-2xl font-bold text-orange-900">{Number(run.pressure_factor).toFixed(1)}%</span>
                     </div>
                     <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
                       <span className="text-xs font-semibold text-yellow-700 uppercase tracking-wider mb-2">Conflict</span>
-                      <span className="text-2xl font-bold text-yellow-900">{(Number(run.conflict_factor) * 100).toFixed(1)}%</span>
+                      <span className="text-2xl font-bold text-yellow-900">{Number(run.conflict_factor).toFixed(1)}%</span>
                     </div>
                   </div>
 
