@@ -25,7 +25,7 @@ export type PresetRole = (typeof PRESET_ROLES)[number];
 export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   admin: 'Admin',
   hod: 'Department Lead (HOD)',
-  'unit-head': 'Faculty / Division Head (Dean)',
+  'unit-head': 'Faculty / Division Head',
   lecturer: 'Employee — Academic',
   'industrial-engineer': 'Employee — Non-Academic',
   'employee-w': 'Employee (baseline)',

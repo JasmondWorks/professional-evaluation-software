@@ -3,7 +3,7 @@
 // heads it — is named differently by sector, so the UI must adapt:
 //
 //   academic     → a "Faculty",  headed by a "Dean"
-//   otherwise    → a "Division", headed by a "Division Head"
+//   otherwise    → a "Division", headed by a "Manager"
 //
 // The internal role is generic ("unit-head") and the stored grouping field is
 // pesuser.faculty_college; only the labels change.
@@ -19,5 +19,5 @@ export function orgTerms(category?: string | null): OrgTerms {
   if (c === "academic") {
     return { unit: "Faculty", unitPlural: "Faculties", head: "Dean" };
   }
-  return { unit: "Division", unitPlural: "Divisions", head: "Division Head" };
+  return { unit: "Division", unitPlural: "Divisions", head: "Manager" };
 }
