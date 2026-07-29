@@ -396,7 +396,11 @@ export default function FormOne({
                 value: 'industrial-engineer',
                 label: 'Employee Non-Academic (industrial/production engineer)',
               },
-              { value: 'hod', label: 'Department Lead' },
+              { value: 'hod', label: 'Department Lead (HOD)' },
+              {
+                value: 'unit-head',
+                label: isAcademic ? 'Faculty Head (Dean)' : 'Division Head (Manager)',
+              },
             ]}
             customRoles={customRoles}
             onSelect={(v) => {

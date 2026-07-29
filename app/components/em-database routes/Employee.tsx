@@ -9,14 +9,21 @@ import { notify } from "@/lib/toast";
 import Table, { TableColumn } from "@/app/components/ui/Table";
 import RoleSelect from "@/app/components/ui/RoleSelect";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
+import { orgTerms } from "@/app/lib/orgTerms";
+import { jwtDecode } from "jwt-decode";
 
 // Every system preset role, built from the canonical list so this dropdown can
 // never diverge from the roles that actually exist (Roles table, seeding, etc.).
 // Custom roles are appended below at runtime.
-const ASSIGN_PRESET_OPTIONS = PRESET_ROLES.map((r) => ({
-  value: r,
-  label: PRESET_ROLE_LABELS[r],
-}));
+// The unit-head label adapts to the org sector (academic → Dean, else → Manager),
+// so build options from the org's category rather than a fixed label map.
+const buildAssignOptions = (category?: string | null) => {
+  const head = orgTerms(category).head; // "Dean" | "Manager"
+  return PRESET_ROLES.map((r) => ({
+    value: r,
+    label: r === "unit-head" ? `Faculty / Division Head (${head})` : PRESET_ROLE_LABELS[r],
+  }));
+};
 // A staff member counts as "assigned" once they hold one of these management roles.
 const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
 
@@ -50,6 +57,9 @@ export default function Employee() {
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("hod");
   const [customRoles, setCustomRoles] = useState<{ name: string }[]>([]);
+  // Org sector, to label the faculty/division head option (Dean vs Manager).
+  const [orgCategory, setOrgCategory] = useState<string | null>(null);
+  const assignPresetOptions = buildAssignOptions(orgCategory);
   // Current heads in the org, so we can warn before assigning a duplicate.
   const [heads, setHeads] = useState<{
     hodByDept: Record<string, { id: number; name: string | null }>;
@@ -64,6 +74,12 @@ export default function Employee() {
   useEffect(() => {
     const token = getAccessToken();
     if (!token) return;
+    try {
+      const d: any = jwtDecode(token);
+      setOrgCategory(d?.productCategory ?? d?.category ?? null);
+    } catch {
+      /* keep default labels */
+    }
     fetch("/api/getRoles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -338,7 +354,7 @@ export default function Employee() {
               <label className="text-sm font-medium text-gray-700">Role</label>
               <RoleSelect
                 value={selectedRole}
-                presetRoles={ASSIGN_PRESET_OPTIONS}
+                presetRoles={assignPresetOptions}
                 customRoles={customRoles}
                 onSelect={setSelectedRole}
               />
