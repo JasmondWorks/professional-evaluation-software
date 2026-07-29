@@ -84,7 +84,7 @@ export default function Home() {
 
   return (
     <Formik
-      initialValues={{ email: "", password: "" }}
+      initialValues={{ email: "", password: "", remember: false }}
       validationSchema={schema}
       onSubmit={(values) => login("/api/login", values)}
     >

@@ -176,6 +176,36 @@ export default function StressAnalysisTool() {
         });
         const data = await res.json();
         setStressData(data);
+
+        // Hydrate the last SAVED evaluation so the "Evaluation Results" tab stays
+        // available after navigating away and back (e.g. from History), instead
+        // of disabling until ANOVA is re-run. Factors are stored as 0–100.
+        try {
+          const evalRes = await fetch("/api/getStressEvaluation", {
+            cache: "no-store",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (evalRes.ok) {
+            const runs = await evalRes.json();
+            const latest = Array.isArray(runs) ? runs[0] : null;
+            if (latest) {
+              setSummary({
+                stress: Number(latest.stress_factor),
+                pressure: Number(latest.pressure_factor),
+                conflict: Number(latest.conflict_factor),
+              });
+              if (latest.anova_result) {
+                try {
+                  setAnovaResult(JSON.parse(latest.anova_result));
+                } catch {
+                  /* ignore malformed stored anova */
+                }
+              }
+            }
+          }
+        } catch {
+          /* non-fatal — Results tab simply stays gated until ANOVA is run */
+        }
       } catch (e) {
         console.error("Failed to load stress data");
       } finally {
@@ -809,7 +839,7 @@ export default function StressAnalysisTool() {
 
             {/* Right Column - Chart */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm overflow-hidden h-full">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm h-full">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Stress Distribution (Normal Curve)</h3>
                 <p className="text-xs text-gray-500 mb-6">
                   Y-axis: stress score (0–100) · Bell curve centred at mean 50 · Reference lines show normal range (32–68)
@@ -835,8 +865,8 @@ export default function StressAnalysisTool() {
                         labelFormatter={(label) => `Stress score: ${label}`}
                       />
                       <Line type="monotone" dataKey="density" stroke="#4f46e5" strokeWidth={2} dot={false} name="Normal curve" />
-                      <ReferenceLine y={32} stroke="blue" label={{ value: "Minimum stress 32%", position: "left", fill: "blue", fontSize: 12 }} />
-                      <ReferenceLine y={68} stroke="red" label={{ value: "Maximum stress limit 68%", position: "left", fill: "red", fontSize: 12 }} />
+                      <ReferenceLine y={32} stroke="blue" label={{ value: "Minimum stress 32%", position: "insideLeft", fill: "blue", fontSize: 12 }} />
+                      <ReferenceLine y={68} stroke="red" label={{ value: "Maximum stress limit 68%", position: "insideLeft", fill: "red", fontSize: 12 }} />
                       {/* Warning line 5% below the max limit (68% − 5% = 63%). */}
                       <ReferenceLine y={63} stroke="#eab308" strokeDasharray="6 4" strokeWidth={2} label={{ value: "Warning 63%", position: "right", fill: "#a16207", fontSize: 12, fontWeight: 600 }} />
                       <ReferenceLine y={50} stroke="black" strokeDasharray="5 5" label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }} />

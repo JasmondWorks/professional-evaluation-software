@@ -198,6 +198,11 @@ export default function FormOne({
   const [isAcademic, setIsAcademic] = useState(true);
   // Custom roles created on the Role & Permission page (from the roles table).
   const [customRoles, setCustomRoles] = useState<{ name: string }[]>([]);
+  // Current department/faculty heads, for the duplicate-head guard.
+  const [heads, setHeads] = useState<{
+    hodByDept: Record<string, { id: number; name: string | null }>;
+    unitHeadByFaculty: Record<string, { id: number; name: string | null }>;
+  }>({ hodByDept: {}, unitHeadByFaculty: {} });
   useEffect(() => {
     try {
       const token = localStorage.getItem('access_token');
@@ -224,10 +229,38 @@ export default function FormOne({
             );
         })
         .catch(() => {});
+
+      // Current heads, so we can warn before creating a duplicate one.
+      fetch('/api/role-heads', { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d?.hodByDept) setHeads({ hodByDept: d.hodByDept, unitHeadByFaculty: d.unitHeadByFaculty || {} });
+        })
+        .catch(() => {});
     } catch {
       /* keep defaults */
     }
   }, []);
+
+  // A new employee can't take a head role that's already filled for their
+  // department/faculty. (Only 'hod' and 'unit-head' are head roles; the form
+  // currently offers 'hod'. The server enforces this regardless.)
+  const headConflict = (() => {
+    const role = formdata.role;
+    if (role === 'hod') {
+      const dept = (formdata.dept || '').trim();
+      if (!dept) return null; // dept required-check handles the empty case
+      const cur = heads.hodByDept[dept];
+      if (cur) return `${cur.name || 'Another employee'} is already the Department Lead for “${dept}”. Change their role first, or pick a different department.`;
+    }
+    if (role === 'unit-head') {
+      const fac = (formdata.faculty_college || '').trim();
+      if (!fac) return null;
+      const cur = heads.unitHeadByFaculty[fac];
+      if (cur) return `${cur.name || 'Another employee'} is already the head for “${fac}”. Change their role first, or pick a different faculty / division.`;
+    }
+    return null;
+  })();
 
   function validateField(name: string, value: string) {
     let error = '';
@@ -309,8 +342,9 @@ export default function FormOne({
   useEffect(() => {
     const allFilled = requiredFields.every((f) => formdata[f]?.trim());
     const noErrors = Object.values(errors).every((err) => err === '');
-    setStepValid(allFilled && noErrors);
-  }, [formdata, errors]);
+    // A duplicate head also blocks progression (server enforces it regardless).
+    setStepValid(allFilled && noErrors && !headConflict);
+  }, [formdata, errors, headConflict]);
 
   // Shared props passed down to each Input
   const inputProps = { formdata, errors, updateFields, validateField };
@@ -374,6 +408,11 @@ export default function FormOne({
             hasError={!!errors.role}
           />
           {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
+          {headConflict && (
+            <p className="text-red-600 text-xs mt-2 bg-red-50 border border-red-100 rounded-md px-2.5 py-1.5">
+              {headConflict}
+            </p>
+          )}
         </div>
         <Input {...inputProps} name="dopp" label="Date appointed to present post:" type="date" tabIndex={12} />
         <Input {...inputProps} name="level" label="Current level:" placeholder="Current level" tabIndex={13} />
