@@ -1,7 +1,26 @@
 import { NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { effectivePhase } from '../_lib/stressCycle'
+
+// Creates the row, and if the id auto-increment sequence has drifted (common
+// after a DB restore → intermittent "unique constraint on id" 500s that showed
+// the user a false "something went wrong" even though a retry saved), resync the
+// sequence to MAX(id) and retry once.
+async function createStressScore(data: Prisma.stress_scoresUncheckedCreateInput) {
+  try {
+    return await prisma.stress_scores.create({ data })
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      await prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('stress_scores','id'), GREATEST((SELECT MAX(id) FROM stress_scores), 1))`,
+      )
+      return await prisma.stress_scores.create({ data })
+    }
+    throw e
+  }
+}
 
 // Saves a staff member's Stress Category (Form 5) totals into stress_scores.
 // (Previously this endpoint was a mis-copied performance saver: it read
@@ -68,23 +87,21 @@ export async function POST(req: Request) {
     })
     const dept = profile?.dept ?? null
 
-    await prisma.stress_scores.create({
-      data: {
-        organizational: scores.organizational ?? 0,
-        student: scores.student ?? 0,
-        administrative: scores.administrative ?? 0,
-        teacher: scores.teacher ?? 0,
-        parents: scores.parents ?? 0,
-        occupational: scores.occupational ?? 0,
-        personal: scores.personal ?? 0,
-        academic_program: scores.academic_program ?? 0,
-        negative_public_attitude: scores.negative_public_attitude ?? 0,
-        misc: scores.misc ?? 0,
-        org,
-        dept,
-        user_name,
-        cycle_id: cycle.id,
-      },
+    await createStressScore({
+      organizational: scores.organizational ?? 0,
+      student: scores.student ?? 0,
+      administrative: scores.administrative ?? 0,
+      teacher: scores.teacher ?? 0,
+      parents: scores.parents ?? 0,
+      occupational: scores.occupational ?? 0,
+      personal: scores.personal ?? 0,
+      academic_program: scores.academic_program ?? 0,
+      negative_public_attitude: scores.negative_public_attitude ?? 0,
+      misc: scores.misc ?? 0,
+      org,
+      dept,
+      user_name,
+      cycle_id: cycle.id,
     })
 
     return NextResponse.json({ message: 'Stress scores saved' }, { status: 200 })

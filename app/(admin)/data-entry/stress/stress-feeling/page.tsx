@@ -23,8 +23,17 @@ export default function MultiStepStressForm() {
   const [step, setStep] = useState(1);
   const [form6Data, setForm6Data] = useState<any>(null);
   const [form7Data, setForm7Data] = useState<any>(null);
+  // Raw 1–10 selections live HERE (not inside the form components) so they
+  // survive navigating Back from Form 7 to Form 6 (#7).
+  const [form6Values, setForm6Values] = useState<Record<string, Record<string, number>>>({});
+  const [form7Values, setForm7Values] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const onChange6 = (cat: string, theme: string, val: number) =>
+    setForm6Values((prev) => ({ ...prev, [cat]: { ...prev[cat], [theme]: val } }));
+  const onChange7 = (cat: string, feel: string, val: number) =>
+    setForm7Values((prev) => ({ ...prev, [cat]: { ...prev[cat], [feel]: val } }));
   // Live cycle status — the form opens/closes without a page refresh.
   const { data: cycle, loading: loadingCycle } = useActiveCycle();
 
@@ -136,34 +145,45 @@ export default function MultiStepStressForm() {
         </p>
       )}
 
-      {step === 1 && <Form6 onSave={setForm6Data} />}
-      {step === 2 && <Form7 onSave={setForm7Data} />}
+      {step === 1 && <Form6 values={form6Values} onChange={onChange6} onSave={setForm6Data} />}
+      {step === 2 && <Form7 values={form7Values} onChange={onChange7} onSave={setForm7Data} />}
 
-      <div className="mt-8 flex justify-between">
-        {step > 1 && (
-          <button
-            onClick={prevStep}
-            className="px-6 py-2 rounded bg-gray-300 hover:bg-gray-400"
-          >
-            Back
-          </button>
+      <div className="mt-8 flex flex-col items-end gap-1">
+        <div className="w-full flex justify-between">
+          {step > 1 ? (
+            <button
+              onClick={prevStep}
+              className="px-6 py-2 rounded bg-gray-300 hover:bg-gray-400"
+            >
+              Back
+            </button>
+          ) : <span />}
+          {step < 2 && (
+            <button
+              onClick={nextStep}
+              disabled={!form6Data?.complete}
+              title={!form6Data?.complete ? "Fill every cell in Form 6 to continue" : undefined}
+              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          )}
+          {step === 2 && (
+            <button
+              disabled={loading || !form7Data?.complete}
+              onClick={handleFinalSubmit}
+              title={!form7Data?.complete ? "Fill every cell in Form 7 before submitting" : undefined}
+              className="px-6 py-2 rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Submitting..." : "Submit All"}
+            </button>
+          )}
+        </div>
+        {step === 1 && !form6Data?.complete && (
+          <span className="text-xs text-gray-500">Every cell must be rated before you can continue.</span>
         )}
-        {step < 2 && (
-          <button
-            onClick={nextStep}
-            className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-purple-700"
-          >
-            Next
-          </button>
-        )}
-        {step === 2 && (
-          <button
-            disabled={loading}
-            onClick={handleFinalSubmit}
-            className="px-6 py-2 rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-          >
-            {loading ? "Submitting..." : "Submit All"}
-          </button>
+        {step === 2 && !form7Data?.complete && (
+          <span className="text-xs text-gray-500">Every cell must be rated before you can submit.</span>
         )}
       </div>
     </div>
