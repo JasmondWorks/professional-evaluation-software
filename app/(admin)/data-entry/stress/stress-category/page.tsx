@@ -52,10 +52,15 @@ export default function StressForm5() {
   // and the "already submitted" state update without a page refresh.
   const { data: cycle, loading: loadingCycle } = useActiveCycle();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (key: string, val: number) => {
     setValues((prev) => ({ ...prev, [key]: val }));
   };
+
+  // #9: every item in a category must be answered before you can advance / submit.
+  const isCategoryComplete = (cat: (typeof STRESS_INSTRUMENT)[number]) =>
+    cat.items.every((item) => (values[`${cat.key}-${item.label}`] ?? 0) > 0);
 
   // Each category's total = sum of its item scores (choice/10 × item max),
   // computed from the instrument so the weights live in exactly one place. Keyed
@@ -69,6 +74,8 @@ export default function StressForm5() {
   }
 
   const handleSubmit = async () => {
+    if (submitting) return; // guard against double-submit
+    setSubmitting(true);
     try {
       const token = localStorage.getItem("access_token");
       const user: JWTPayload = jwtDecode(token || "");
@@ -85,20 +92,32 @@ export default function StressForm5() {
         }),
       });
 
-      const data = await res.json();
+      // Read the body defensively — a gateway/cold-start error can return
+      // non-JSON, which used to throw and show a false "something went wrong"
+      // even though the row saved.
+      const data = await res.json().catch(() => ({} as any));
       if (!res.ok) {
-        notify.error(data.message || "Could not submit the form.");
+        // "Already submitted" is a success from the user's point of view.
+        if (res.status === 409 && /already submitted/i.test(data?.message || "")) {
+          setSubmitted(true);
+          return;
+        }
+        notify.error(data?.message || "Could not submit the form. Please try again.");
         return;
       }
       notify.success("Your stress category form has been submitted.");
       setSubmitted(true);
     } catch (err) {
       console.error(err);
-      notify.error("Something went wrong submitting the form.");
+      notify.error("Network problem submitting the form. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const currentCategory = STRESS_INSTRUMENT[currentStep];
+  const currentComplete = currentCategory ? isCategoryComplete(currentCategory) : false;
+  const allComplete = STRESS_INSTRUMENT.every(isCategoryComplete);
 
   // ---- Cycle gating: decide whether the form is fillable ----
   if (loadingCycle) {
@@ -243,19 +262,33 @@ export default function StressForm5() {
         )}
 
         {currentStep < STRESS_INSTRUMENT.length - 1 ? (
-          <button
-            onClick={() => setCurrentStep((prev) => prev + 1)}
-            className="ml-auto bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Next
-          </button>
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <button
+              onClick={() => setCurrentStep((prev) => prev + 1)}
+              disabled={!currentComplete}
+              title={!currentComplete ? "Answer every item in this category to continue" : undefined}
+              className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+            {!currentComplete && (
+              <span className="text-xs text-gray-500">Answer every item to continue.</span>
+            )}
+          </div>
         ) : (
-          <button
-            onClick={handleSubmit}
-            className="ml-auto bg-pes text-white px-4 py-2 rounded"
-          >
-            Submit Totals
-          </button>
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <button
+              onClick={handleSubmit}
+              disabled={!allComplete || submitting}
+              title={!allComplete ? "Answer every item in all categories before submitting" : undefined}
+              className="bg-pes text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Submitting…" : "Submit Totals"}
+            </button>
+            {!allComplete && (
+              <span className="text-xs text-gray-500">Every item in all categories must be answered.</span>
+            )}
+          </div>
         )}
       </div>
     </div>

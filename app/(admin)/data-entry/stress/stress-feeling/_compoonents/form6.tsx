@@ -45,8 +45,15 @@ const categoryMap: Record<string, string> = {
 // staff member; they only ever deal with the 1–10 scale.
 const SCALE = 10;
 
-export default function Form6({ onSave }: { onSave: (data: any) => void }) {
-  const [values, setValues] = useState<Record<string, Record<string, number>>>({});
+export default function Form6({
+  values,
+  onChange,
+  onSave,
+}: {
+  values: Record<string, Record<string, number>>;
+  onChange: (cat: string, theme: string, val: number) => void;
+  onSave: (data: any) => void;
+}) {
   const [maxScores, setMaxScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -68,13 +75,6 @@ export default function Form6({ onSave }: { onSave: (data: any) => void }) {
       .catch((err) => console.error("Error fetching cycle limits:", err))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleChange = (cat: string, theme: string, val: number) => {
-    setValues((prev) => ({
-      ...prev,
-      [cat]: { ...prev[cat], [theme]: val },
-    }));
-  };
 
   // Map a raw 1–10 choice onto the category's real range using its Form 5 limit.
   const mapCell = (cat: string, raw: number) => {
@@ -107,7 +107,11 @@ export default function Form6({ onSave }: { onSave: (data: any) => void }) {
       ...x,
       percent: grandTotal > 0 ? ((x.total / grandTotal) * 100).toFixed(2) : "0.00",
     }));
-    onSave({ values, mappedValues, categoryTotals, themeTotals, grandTotal });
+    // #9: complete only when every category × theme cell has a rating.
+    const complete = categories.every((c) =>
+      themes.every((t) => (values[c]?.[t] ?? 0) > 0),
+    );
+    onSave({ values, mappedValues, categoryTotals, themeTotals, grandTotal, complete });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, maxScores]);
 
@@ -133,22 +137,25 @@ export default function Form6({ onSave }: { onSave: (data: any) => void }) {
             {categories.map((cat) => (
               <tr key={cat}>
                 <td className="border p-2 font-medium">{cat}</td>
-                {themes.map((theme) => (
-                  <td key={theme} className="border p-2">
-                    <select
-                      className="w-20 border rounded p-1 text-center"
-                      value={values[cat]?.[theme] ?? ""}
-                      onChange={(e) =>
-                        handleChange(cat, theme, parseInt(e.target.value) || 0)
-                      }
-                    >
-                      <option value="">--</option>
-                      {Array.from({ length: SCALE }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}</option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
+                {themes.map((theme) => {
+                  const answered = (values[cat]?.[theme] ?? 0) > 0;
+                  return (
+                    <td key={theme} className={`border p-2 ${answered ? "bg-green-50" : ""}`}>
+                      <select
+                        className={`w-20 border rounded p-1 text-center ${answered ? "border-green-400 bg-green-50" : ""}`}
+                        value={values[cat]?.[theme] ?? ""}
+                        onChange={(e) =>
+                          onChange(cat, theme, parseInt(e.target.value) || 0)
+                        }
+                      >
+                        <option value="">--</option>
+                        {Array.from({ length: SCALE }, (_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1}</option>
+                        ))}
+                      </select>
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

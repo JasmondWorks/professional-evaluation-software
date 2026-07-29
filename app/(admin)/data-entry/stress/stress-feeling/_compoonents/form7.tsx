@@ -27,8 +27,15 @@ const categories = [
 // never shown to the staff member.
 const SCALE = 10;
 
-export default function Form7({ onSave }: { onSave: (data: any) => void }) {
-  const [values, setValues] = useState<Record<string, Record<string, number>>>({});
+export default function Form7({
+  values,
+  onChange,
+  onSave,
+}: {
+  values: Record<string, Record<string, number>>;
+  onChange: (cat: string, feel: string, val: number) => void;
+  onSave: (data: any) => void;
+}) {
   const [maxScores, setMaxScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -49,13 +56,6 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
       .catch((err) => console.error("Error fetching cycle limits:", err))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleChange = (cat: string, feel: string, val: number) => {
-    setValues((prev) => ({
-      ...prev,
-      [cat]: { ...prev[cat], [feel]: val },
-    }));
-  };
 
   // Map a raw 1–10 choice onto the category's real range using its Form 5 limit.
   const mapCell = (catKey: string, raw: number) => {
@@ -86,10 +86,15 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
     const grandTotal = rowTotals.reduce((s, r) => s + r.total, 0);
     const totalElements = categories.length * feelings.length;
     const ratio = totalElements > 0 ? grandTotal / totalElements : 0;
+    // #9: complete only when every category × feeling cell has a rating.
+    const complete = categories.every((c) =>
+      feelings.every((f) => (values[c.key]?.[f] ?? 0) > 0),
+    );
     onSave({
       values: mappedValues,
       rawValues: values,
       totals: { rowTotals, colTotals, grandTotal, ratio: ratio.toFixed(4) },
+      complete,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values, maxScores]);
@@ -117,22 +122,25 @@ export default function Form7({ onSave }: { onSave: (data: any) => void }) {
           {categories.map((cat, idx) => (
             <tr key={cat.key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
               <td className="border p-2 font-medium">{cat.label}</td>
-              {feelings.map((feel) => (
-                <td key={feel} className="border px-3 py-2 text-center">
-                  <select
-                    value={values[cat.key]?.[feel] ?? ""}
-                    onChange={(e) =>
-                      handleChange(cat.key, feel, parseInt(e.target.value) || 0)
-                    }
-                    className="w-16 border rounded text-center"
-                  >
-                    <option value="">--</option>
-                    {Array.from({ length: SCALE }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>{i + 1}</option>
-                    ))}
-                  </select>
-                </td>
-              ))}
+              {feelings.map((feel) => {
+                const answered = (values[cat.key]?.[feel] ?? 0) > 0;
+                return (
+                  <td key={feel} className={`border px-3 py-2 text-center ${answered ? "bg-green-50" : ""}`}>
+                    <select
+                      value={values[cat.key]?.[feel] ?? ""}
+                      onChange={(e) =>
+                        onChange(cat.key, feel, parseInt(e.target.value) || 0)
+                      }
+                      className={`w-16 border rounded text-center ${answered ? "border-green-400 bg-green-50" : ""}`}
+                    >
+                      <option value="">--</option>
+                      {Array.from({ length: SCALE }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>{i + 1}</option>
+                      ))}
+                    </select>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
