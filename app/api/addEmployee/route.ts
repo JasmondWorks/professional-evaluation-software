@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer'
 import bcrypt from 'bcryptjs'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { PRESET_ROLES, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
+import { checkSingleHead } from '../_lib/singleHead'
 
 const randombytes = require('randombytes');
 
@@ -188,6 +189,18 @@ async function addUser(info: ReqInfo, randPassword: string) {
       functionalRole = resolveBaseRole(roleRow?.base_role)
     }
 
+    // One head per scope: refuse a second HOD for the department, or a second
+    // faculty/division head for the faculty, within this org.
+    const headCheck = await checkSingleHead(prisma, {
+      org,
+      role: functionalRole,
+      dept,
+      faculty_college,
+    })
+    if (!headCheck.ok) {
+      return `head_conflict:${headCheck.message}`
+    }
+
     console.log("Creating user:", email, "| selected role:", role, "→ functional:", functionalRole)
 
     const user = await prisma.pesuser.create({
@@ -279,6 +292,15 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         message: `${reqInfo.name} is already registered in the ${reqInfo.dept} department.`,
+        status: 409
+      })
+
+    }
+
+    if (typeof result === 'string' && result.startsWith('head_conflict:')) {
+
+      return NextResponse.json({
+        message: result.slice('head_conflict:'.length),
         status: 409
       })
 

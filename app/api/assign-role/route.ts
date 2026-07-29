@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { PRESET_ROLES, PERMISSION_KEYS, resolveBaseRole } from '@/app/components/utils/roles'
+import { checkSingleHead } from '../_lib/singleHead'
 
 // Assign ANY role (preset or custom) to an existing employee — the unified
 // replacement for the old per-role assign-hod / assign-admin / assign-prod
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
   try {
     const user = await prisma.pesuser.findFirst({
       where: { email, org },
-      select: { id: true, display_role: true },
+      select: { id: true, display_role: true, dept: true, faculty_college: true },
     })
     if (!user) {
       return NextResponse.json({ error: 'Employee not found in your organization' }, { status: 404 })
@@ -43,6 +44,20 @@ export async function POST(req: Request) {
         select: { base_role: true },
       })
       functionalRole = resolveBaseRole(roleRow?.base_role)
+    }
+
+    // One head per scope: block if this would create a second HOD for the
+    // department or a second faculty/division head for the faculty (excluding
+    // the employee themselves, so re-assigning the same person is fine).
+    const headCheck = await checkSingleHead(prisma, {
+      org,
+      role: functionalRole,
+      dept: user.dept,
+      faculty_college: user.faculty_college,
+      excludeUserId: user.id,
+    })
+    if (!headCheck.ok) {
+      return NextResponse.json({ error: headCheck.message, code: headCheck.code }, { status: 409 })
     }
 
     const tpl = await prisma.permission.findFirst({
