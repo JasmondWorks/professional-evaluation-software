@@ -50,6 +50,11 @@ export default function Employee() {
   const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("hod");
   const [customRoles, setCustomRoles] = useState<{ name: string }[]>([]);
+  // Current heads in the org, so we can warn before assigning a duplicate.
+  const [heads, setHeads] = useState<{
+    hodByDept: Record<string, { id: number; name: string | null }>;
+    unitHeadByFaculty: Record<string, { id: number; name: string | null }>;
+  }>({ hodByDept: {}, unitHeadByFaculty: {} });
 
   const [resendingId, setResendingId] = useState<number | null>(null);
   const router = useRouter();
@@ -75,6 +80,41 @@ export default function Employee() {
       })
       .catch(() => {});
   }, []);
+
+  // Load current department/faculty heads for the duplicate-head guard.
+  const refreshHeads = () => {
+    const token = getAccessToken();
+    if (!token) return;
+    fetch("/api/role-heads", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.hodByDept) setHeads({ hodByDept: d.hodByDept, unitHeadByFaculty: d.unitHeadByFaculty || {} });
+      })
+      .catch(() => {});
+  };
+  useEffect(refreshHeads, []);
+
+  // For the currently-selected employee + role, is this a duplicate head? Only
+  // the explicit preset head roles are checked client-side; custom roles that
+  // map to a head role are still caught by the server.
+  const headConflict = (() => {
+    if (!selectedEmployee) return null;
+    if (selectedRole === "hod") {
+      const dept = selectedEmployee.dept?.trim();
+      if (!dept) return { message: "This employee has no department set — set one before making them a Department Lead." };
+      const cur = heads.hodByDept[dept];
+      if (cur && cur.id !== selectedEmployee.id)
+        return { message: `${cur.name || "Another employee"} is already the Department Lead for “${dept}”. Change their role first.` };
+    }
+    if (selectedRole === "unit-head") {
+      const fac = selectedEmployee.faculty_college?.trim();
+      if (!fac) return { message: "This employee has no faculty / division set — set one before making them its head." };
+      const cur = heads.unitHeadByFaculty[fac];
+      if (cur && cur.id !== selectedEmployee.id)
+        return { message: `${cur.name || "Another employee"} is already the head for “${fac}”. Change their role first.` };
+    }
+    return null;
+  })();
 
   async function handleResend(email: string, id: number) {
     setResendingId(id);
@@ -160,6 +200,8 @@ export default function Employee() {
       setEmployees(employees.map(emp =>
         emp.id === selectedEmployee.id ? { ...emp, display_role: selectedRole } : emp
       ));
+      // Keep the heads map current so the guard reflects the new assignment.
+      refreshHeads();
 
     } catch (err) {
       console.error(err);
@@ -300,6 +342,11 @@ export default function Employee() {
                 customRoles={customRoles}
                 onSelect={setSelectedRole}
               />
+              {headConflict && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                  {headConflict.message}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -312,8 +359,9 @@ export default function Employee() {
               </button>
               <button
                 onClick={handleModalAssign}
-                disabled={assigning}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 flex items-center justify-center min-w-[120px]"
+                disabled={assigning || !!headConflict}
+                title={headConflict ? headConflict.message : undefined}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
               >
                 {assigning ? (
                   <span className="flex items-center gap-2">

@@ -3,7 +3,7 @@
 // import { Lato } from 'next/font/google'
 //import { AuthProvider } from './components/useAuth'
 
-// const lato = Lato( 
+// const lato = Lato(
 //  {
 //    weight: ['100', '300', '400', '700', '900'],
 //    subsets: ['latin'],
@@ -20,18 +20,21 @@
 //    <html lang="en">
 //      <body className={ lato.className + ' bg-gray-10 flex flex-row relative //justify-center max-w-screen h-screen' }>
 //        <AuthProvider>
-//          {children}          
+//          {children}
 //        </AuthProvider>
-//      </body>        
-//    </html>      
+//      </body>
+//    </html>
 //  )
 //}
 
-import './globals.css'
-import type { Metadata } from 'next'
+import "./globals.css";
+import type { Metadata } from "next";
 // import { Lato } from 'next/font/google'  // Commented out
-import { AuthProvider } from './components/useAuth'
-import { Toaster } from 'sonner'
+import { AuthProvider } from "./components/useAuth";
+import { Toaster } from "sonner";
+import { getAccessToken } from "./utils/auth";
+import jwt from "jsonwebtoken";
+import Logger from "./components/Logger";
 
 // const lato = Lato(   // Commented out
 //   {
@@ -41,27 +44,36 @@ import { Toaster } from 'sonner'
 //   )
 
 export const metadata: Metadata = {
-  title: 'PES',
-  description: 'Performance Appraisal Software',
-}
+  title: "PES",
+  description: "Performance Appraisal Software",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       {/* Remove lato.className from here */}
-      <body className={'bg-gray-10 flex flex-row relative justify-center max-w-screen min-h-screen'}>
+      <body
+        className={
+          "bg-gray-10 flex flex-row relative justify-center max-w-screen min-h-screen"
+        }
+      >
         <AuthProvider>
+          <Logger />
           {children}
           <Toaster
             position="top-right"
             richColors
             closeButton
             toastOptions={{
-              style: { fontFamily: 'inherit' },
+              style: { fontFamily: "inherit" },
             }}
           />
         </AuthProvider>
-      </body>        
-    </html>      
-  )
+      </body>
+    </html>
+  );
 }
