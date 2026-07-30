@@ -6,6 +6,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { notify } from "@/lib/toast";
+import StressSubmissionModal from "@/app/components/StressSubmissionModal";
 
 type Row = { name: string | null; submitted: boolean; approved: boolean };
 type Status = {
@@ -26,6 +27,7 @@ export default function StressApprovals() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const token = localStorage.getItem("access_token");
@@ -146,14 +148,24 @@ export default function StressApprovals() {
                   )}
                 </td>
                 <td className="px-6 py-3 text-right">
-                  {r.submitted && !r.approved && (
-                    <button
-                      onClick={() => approve(r.name!)}
-                      disabled={working}
-                      className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
-                    >
-                      Approve
-                    </button>
+                  {r.submitted && (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setViewing(r.name!)}
+                        className="text-gray-700 text-xs font-medium border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50"
+                      >
+                        View
+                      </button>
+                      {!r.approved && (
+                        <button
+                          onClick={() => approve(r.name!)}
+                          disabled={working}
+                          className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -161,6 +173,8 @@ export default function StressApprovals() {
           </tbody>
         </table>
       </div>
+
+      {viewing && <StressSubmissionModal name={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }
