@@ -31,30 +31,46 @@ export async function POST(req: Request) {
       );
     }
 
-    // One submission per staff per cycle.
-    const already = await prisma.stress.count({
-      where: { pesuser_name, org: org ?? undefined, cycle_id: cycle.id },
+    const assessment_data = {
+      stressThemes: form6 ?? null,
+      stressFeelings: form7 ?? null,
+      frequency: form6?.frequency ?? form7?.frequency ?? null,
+    };
+
+    // If a previous submission was REJECTED (sent back), let the staff member
+    // re-submit by overwriting that same row (clearing the rejection). Only an
+    // active (non-rejected) submission blocks re-submission.
+    const rejectedRow = await prisma.stress.findFirst({
+      where: { pesuser_name, org: org ?? undefined, cycle_id: cycle.id, rejected: true },
+      select: { id: true },
     });
-    if (already > 0) {
+    const activeCount = await prisma.stress.count({
+      where: { pesuser_name, org: org ?? undefined, cycle_id: cycle.id, rejected: false },
+    });
+    if (activeCount > 0) {
       return NextResponse.json(
         { success: false, message: "You have already submitted this form for the current cycle." },
         { status: 409 },
       );
     }
 
-    await prisma.stress.create({
-      data: {
-        pesuser_name,
-        org: org ?? undefined,
-        dept,
-        cycle_id: cycle.id,
-        assessment_data: {
-          stressThemes: form6 ?? null,
-          stressFeelings: form7 ?? null,
-          frequency: form6?.frequency ?? form7?.frequency ?? null,
+    if (rejectedRow) {
+      await prisma.stress.update({
+        where: { id: rejectedRow.id },
+        data: {
+          dept,
+          assessment_data,
+          rejected: false,
+          rejection_reason: null,
+          rejected_by: null,
+          rejected_at: null,
         },
-      },
-    });
+      });
+    } else {
+      await prisma.stress.create({
+        data: { pesuser_name, org: org ?? undefined, dept, cycle_id: cycle.id, assessment_data },
+      });
+    }
 
     // Nudge the department's HOD that a submission awaits approval.
     if (org && dept) {

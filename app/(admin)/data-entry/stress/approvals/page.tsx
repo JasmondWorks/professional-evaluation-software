@@ -28,6 +28,8 @@ export default function StressApprovals() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
 
   const load = useCallback(async () => {
     const token = localStorage.getItem("access_token");
@@ -65,6 +67,32 @@ export default function StressApprovals() {
     } catch (e) {
       notify.dismiss(toastId);
       notify.error(e instanceof Error ? e.message : "Failed to approve");
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const submitReject = async () => {
+    if (!rejecting || !reason.trim()) return;
+    setWorking(true);
+    const toastId = notify.loading("Sending back…");
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userName: rejecting, reason: reason.trim() }),
+      });
+      const data = await res.json();
+      notify.dismiss(toastId);
+      if (!res.ok) throw new Error(data.error || "Failed to send back");
+      notify.success(data.message || "Sent back for re-entry");
+      setRejecting(null);
+      setReason("");
+      await load();
+    } catch (e) {
+      notify.dismiss(toastId);
+      notify.error(e instanceof Error ? e.message : "Failed to send back");
     } finally {
       setWorking(false);
     }
@@ -157,13 +185,22 @@ export default function StressApprovals() {
                         View
                       </button>
                       {!r.approved && (
-                        <button
-                          onClick={() => approve(r.name!)}
-                          disabled={working}
-                          className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
-                        >
-                          Approve
-                        </button>
+                        <>
+                          <button
+                            onClick={() => { setRejecting(r.name!); setReason(""); }}
+                            disabled={working}
+                            className="text-red-600 text-xs font-medium border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            Send back
+                          </button>
+                          <button
+                            onClick={() => approve(r.name!)}
+                            disabled={working}
+                            className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                        </>
                       )}
                     </div>
                   )}
@@ -175,6 +212,40 @@ export default function StressApprovals() {
       </div>
 
       {viewing && <StressSubmissionModal name={viewing} onClose={() => setViewing(null)} />}
+
+      {rejecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => !working && setRejecting(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Send back for re-entry</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              <span className="font-medium text-gray-700">{rejecting}</span> will be able to re-fill and re-submit their form. Tell them why.
+            </p>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="e.g. Several categories look incomplete — please review and resubmit."
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-pes"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setRejecting(null)}
+                disabled={working}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitReject}
+                disabled={working || !reason.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {working ? "Sending…" : "Send back"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

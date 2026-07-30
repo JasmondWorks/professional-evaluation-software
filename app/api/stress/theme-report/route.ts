@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     })
     if (!cycle) return NextResponse.json({ active: false })
 
-    const rows = await prisma.stress.findMany({ where: { org, cycle_id: cycle.id } })
+    const rows = await prisma.stress.findMany({ where: { org, cycle_id: cycle.id, rejected: false } })
 
     // --- Form 6: theme frequencies across all staff ---
     const themeTotals: Record<string, number> = {}

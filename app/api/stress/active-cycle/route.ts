@@ -63,9 +63,17 @@ export async function GET(req: Request) {
       : false
     const form6Submitted = userName
       ? (await prisma.stress.count({
-          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id },
+          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: false },
         })) > 0
       : false
+    // If this staff member's submission was sent back, surface the reason so they
+    // see it right where they re-enter.
+    const returned = userName
+      ? await prisma.stress.findFirst({
+          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: true },
+          select: { rejection_reason: true },
+        })
+      : null
 
     // The single most relevant call-to-action for the banner.
     let cta: { message: string; href: string } | null = null
@@ -109,6 +117,7 @@ export async function GET(req: Request) {
         submitted: form6Submitted,
         opensAt: cycle.feeling_opens_at,
         closesAt: cycle.feeling_closes_at,
+        returnedReason: returned?.rejection_reason ?? null,
       },
       cta,
     })

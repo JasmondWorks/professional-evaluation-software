@@ -16,6 +16,7 @@ export type FormState = {
   submitted: boolean;
   opensAt?: string | null;
   closesAt?: string | null;
+  returnedReason?: string | null;
 };
 export type ActiveCycle = {
   active: boolean;

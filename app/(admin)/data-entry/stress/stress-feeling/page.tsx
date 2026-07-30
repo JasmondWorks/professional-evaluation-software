@@ -130,6 +130,12 @@ export default function MultiStepStressForm() {
 
   return (
     <div className="w-full p-8">
+      {cycle?.form6?.returnedReason && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900">Your previous submission was sent back</p>
+          <p className="text-sm text-amber-800">Reason: {cycle.form6.returnedReason} — please review and resubmit.</p>
+        </div>
+      )}
       <div className="flex justify-end mb-4 print:hidden">
         <button
           onClick={() => window.print()}
