@@ -23,24 +23,36 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ pesuser_nameCount: 0, organizationCount: 0 });
         }
 
-        // Pull names/depts from each table for this org, then dedupe in JS
-        // (equivalent to COUNT(DISTINCT ...) across a UNION of the three tables).
-        const select = { pesuser_name: true, dept: true } as const;
-        const [appraisals, performances, stresses] = await Promise.all([
-            prisma.appraisal.findMany({ where: { org: userOrg }, select }),
-            prisma.userperformance.findMany({ where: { org: userOrg }, select }),
-            prisma.stress.findMany({ where: { org: userOrg }, select }),
-        ]);
-
-        const all = [...appraisals, ...performances, ...stresses];
-        const pesuser_nameCount = new Set(all.map((r) => r.pesuser_name)).size;
-        const organizationCount = new Set(
-            all.map((r) => r.dept).filter((d): d is string => Boolean(d)),
+        // Single source of truth = the enrolled roster (pesuser), org-scoped —
+        // the SAME basis as the dashboard's employee count, so staff counts are
+        // consistent across the whole app (#12). "submitted" is how many of those
+        // staff have entered any evaluation.
+        const roster = await prisma.pesuser.findMany({
+            where: { org: userOrg },
+            select: { name: true, dept: true },
+        });
+        const staffCount = roster.length;
+        const deptCount = new Set(
+            roster.map((r) => (r.dept && r.dept.trim()) || "Unspecified"),
         ).size;
 
+        const submitterRows: { pesuser_name: string | null }[] = await prisma.$queryRaw`
+            SELECT DISTINCT pesuser_name FROM appraisal WHERE org = ${userOrg}
+            UNION SELECT DISTINCT pesuser_name FROM stress WHERE org = ${userOrg}
+            UNION SELECT DISTINCT pesuser_name FROM userperformance WHERE org = ${userOrg}
+        `;
+        const submitterSet = new Set(
+            submitterRows.map((r) => r.pesuser_name).filter((n): n is string => !!n),
+        );
+        const submittedCount = roster.filter((u) => u.name && submitterSet.has(u.name)).length;
+
         return NextResponse.json({
-            pesuser_nameCount,
-            organizationCount,
+            staffCount,
+            deptCount,
+            submittedCount,
+            // Backward-compat aliases (now roster-based).
+            pesuser_nameCount: staffCount,
+            organizationCount: deptCount,
         })
     } catch (error) {
         console.error(error);

@@ -7,6 +7,8 @@ type DeptProps = {
   data: {
     dept: string;
     total_unique_users: number;
+    total?: number;
+    submitted?: number;
   };
 };
 
@@ -104,11 +106,8 @@ export default function Dept({ data }: DeptProps) {
               ? data.dept
               : `${data.dept} department`}
           </p>
-          <p className="text-gray-300 text-sm">
-            {data.total_unique_users}{" "}
-            {data.total_unique_users === 1
-              ? "data entry recorded"
-              : "data entries recorded"}
+          <p className="text-gray-400 text-sm">
+            {(data.submitted ?? data.total_unique_users)} of {(data.total ?? data.total_unique_users)} staff submitted
           </p>
         </div>
 

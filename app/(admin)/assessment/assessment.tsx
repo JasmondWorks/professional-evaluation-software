@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 type Stats = {
+  staffCount?: number;
+  deptCount?: number;
+  submittedCount?: number;
   pesuser_nameCount?: number;
   organizationCount?: number;
   [key: string]: any;
@@ -94,13 +97,12 @@ export default function Assesment() {
                 <Warning2 />
                 <p className="text-gray-500 w-11/12 ms-3">
                   {`
-                              We have received data entries from ${stats?.pesuser_nameCount || 0} employees across ${
+                              Data received from ${stats?.submittedCount ?? 0} of ${stats?.staffCount ?? 0} staff across ${
                                 assessmentData?.length === 1
                                   ? `the ${assessmentData[0].dept.toLowerCase().endsWith("department") ? assessmentData[0].dept : `${assessmentData[0].dept} department`}`
                                   : `${assessmentData?.length || 0} departments`
-                              }, 
-                              and they are now ready for assessment. 
-                              You can proceed to assess their performance departmentally or assess all employees at once.                           
+                              }.
+                              You can assess a department once its data integrity check passes, or assess all employees at once.
                            `}
                 </p>
               </div>
