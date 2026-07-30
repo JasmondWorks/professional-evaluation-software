@@ -3,6 +3,7 @@ import prisma from '../../prisma.dev'
 import { authorize, tokenFromRequest } from '../../_lib/authGuard'
 import { meanLimits, CategoryValues } from '@/app/lib/stress/scoring'
 import { CATEGORY_KEYS } from '@/app/lib/stress/instrument'
+import { notifyOrgStaff } from '../../_lib/notify'
 
 // "Run/Evaluate Setting" — the intermediate super-admin step between Form 5 and
 // Form 6. It averages every staff member's Form 5 category values into the
@@ -57,6 +58,14 @@ export async function POST(req: Request) {
         feeling_closes_at: feelingClosesAt,
       },
     })
+
+    // Form 6/7 just opened — nudge staff.
+    await notifyOrgStaff(
+      prisma,
+      org,
+      'Theme & feeling form is open',
+      'The theme & feeling form (Form 6/7) is now open. Please complete it from your dashboard.',
+    )
 
     return NextResponse.json(
       { message: 'Setting computed.', staffCount: rows.length, limits, cycleId: cycle.id },

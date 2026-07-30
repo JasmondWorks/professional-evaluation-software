@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import { authorize, tokenFromRequest } from '../../_lib/authGuard'
+import { notifyFacultyHead } from '../../_lib/notify'
 
 // HOD/Dean approves Form 6/7 submissions for their department in the current
 // cycle. Pass { userName } to approve one staff member, or omit it to approve
@@ -38,6 +39,28 @@ export async function POST(req: Request) {
       },
       data: { hod_approved: true, hod_approved_by: approver, hod_approved_at: new Date() },
     })
+
+    // If the department is now fully HOD-approved, nudge the faculty/division
+    // head that it's ready for their sign-off (no-op for non-academic orgs, which
+    // have no faculty head).
+    const stillAwaitingHod = await prisma.stress.count({
+      where: { org, dept, cycle_id: cycle.id, hod_approved: false },
+    })
+    if (stillAwaitingHod === 0) {
+      const anyStaff = await prisma.pesuser.findFirst({
+        where: { org, dept },
+        select: { faculty_college: true },
+      })
+      if (anyStaff?.faculty_college) {
+        await notifyFacultyHead(
+          prisma,
+          org,
+          anyStaff.faculty_college,
+          'Department ready for your approval',
+          `The ${dept} department has been fully approved by its HOD and is ready for your sign-off.`,
+        )
+      }
+    }
 
     return NextResponse.json({ message: `Approved ${result.count} submission(s).`, approved: result.count })
   } catch (err) {

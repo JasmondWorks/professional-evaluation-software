@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import { authorize, tokenFromRequest } from '../../_lib/authGuard'
+import { notifyOrgStaff } from '../../_lib/notify'
 
 // Start a new stress cycle for the org (admin only). An org may only have one
 // active cycle at a time. The system chooses the cycle shape:
@@ -49,6 +50,16 @@ export async function POST(req: Request) {
         created_by: String(auth.user.userID ?? ''),
       },
     })
+
+    // Nudge every staff member that a stress exercise has started.
+    await notifyOrgStaff(
+      prisma,
+      org,
+      full ? 'Stress form is open' : 'Theme & feeling form is open',
+      full
+        ? 'A stress exercise has started. Please complete Form 5 (stress categories) — check your dashboard.'
+        : 'The theme & feeling form (Form 6/7) is now open. Please complete it from your dashboard.',
+    )
 
     return NextResponse.json(
       { message: full ? 'Cycle started — Form 5 (settings) is open.' : 'Cycle started — Form 6 (feeling) is open.', cycle, type: full ? 'full' : 'feeling_only' },
