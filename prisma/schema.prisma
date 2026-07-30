@@ -526,8 +526,14 @@ model stress {
   dept                          String? @db.VarChar(255)
   // Which cycle this Form 6/7 submission belongs to (one submission per cycle).
   cycle_id                      Int?
-  // HOD/Dean approval: staff entries are "submitted" until the department head
-  // (HOD) or Dean verifies and approves them for stress determination.
+  // Two-tier approval. Tier 1: the department head (HOD) verifies & approves
+  // their department's submissions (hod_approved). Tier 2: the faculty/division
+  // head (Dean/Manager) then signs off the faculty — but only submissions that
+  // are already hod_approved. `approved` is the final (faculty) approval; the
+  // admin can only evaluate once every submission is `approved`.
+  hod_approved                  Boolean @default(false)
+  hod_approved_by               String? @db.VarChar(255)
+  hod_approved_at               DateTime?
   approved                      Boolean @default(false)
   approved_by                   String? @db.VarChar(255)
   approved_at                   DateTime?

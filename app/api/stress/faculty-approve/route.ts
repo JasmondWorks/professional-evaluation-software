@@ -34,8 +34,32 @@ export async function POST(req: Request) {
     })
     const names = staff.map((s) => s.name).filter((n): n is string => !!n)
 
+    // Tier 2 gate: a department can only be faculty-approved once ALL its
+    // submitted responses are HOD-approved. Block if any submission in scope is
+    // still awaiting its HOD.
+    const awaitingHod = await prisma.stress.count({
+      where: { org: org ?? undefined, cycle_id: cycle.id, pesuser_name: { in: names }, hod_approved: false },
+    })
+    if (awaitingHod > 0) {
+      return NextResponse.json(
+        {
+          error: dept
+            ? "This department still has submissions awaiting its HOD's approval."
+            : "Some departments still have submissions awaiting their HOD's approval. Every department must be HOD-approved first.",
+        },
+        { status: 409 },
+      )
+    }
+
+    // Approve (tier 2) only rows already HOD-approved.
     const result = await prisma.stress.updateMany({
-      where: { org: org ?? undefined, cycle_id: cycle.id, approved: false, pesuser_name: { in: names } },
+      where: {
+        org: org ?? undefined,
+        cycle_id: cycle.id,
+        hod_approved: true,
+        approved: false,
+        pesuser_name: { in: names },
+      },
       data: { approved: true, approved_by: approver, approved_at: new Date() },
     })
 

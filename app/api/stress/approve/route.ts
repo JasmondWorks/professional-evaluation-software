@@ -26,15 +26,17 @@ export async function POST(req: Request) {
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
+    // Tier 1: HOD approval. Sets hod_approved; the faculty/division head then
+    // signs off (tier 2) on top of this.
     const result = await prisma.stress.updateMany({
       where: {
         org,
         dept,
         cycle_id: cycle.id,
-        approved: false,
+        hod_approved: false,
         ...(userName ? { pesuser_name: userName } : {}),
       },
-      data: { approved: true, approved_by: approver, approved_at: new Date() },
+      data: { hod_approved: true, hod_approved_by: approver, hod_approved_at: new Date() },
     })
 
     return NextResponse.json({ message: `Approved ${result.count} submission(s).`, approved: result.count })
