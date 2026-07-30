@@ -113,6 +113,10 @@ export default function StressAnalysisTool() {
   });
   const [startingCycle, setStartingCycle] = useState(false);
   const [cycleMsg, setCycleMsg] = useState<string | null>(null);
+  // What shape the next cycle will take (full vs feeling-only), and the admin's
+  // option to force a full re-collection of Form 5.
+  const [nextMode, setNextMode] = useState<{ willBeFull: boolean; hasSetting: boolean; needsReset: boolean } | null>(null);
+  const [forceSettings, setForceSettings] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<any>(null);
   const [themeReport, setThemeReport] = useState<any>(null);
   const { data: cycleStatus, refetch: refetchCycle } = useActiveCycle();
@@ -153,6 +157,10 @@ export default function StressAnalysisTool() {
     fetch("/api/stress/theme-report", auth)
       .then((r) => r.json())
       .then((d) => setThemeReport(d))
+      .catch(() => {});
+    fetch("/api/stress/next-cycle-mode", auth)
+      .then((r) => r.json())
+      .then((d) => { if (d && typeof d.willBeFull === "boolean") setNextMode(d); })
       .catch(() => {});
   }, []);
   const [msg, setMsg] = useState<{type: "success" | "error", text: string} | null>(null);
@@ -373,11 +381,12 @@ export default function StressAnalysisTool() {
       const res = await fetch("/api/stress/start-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(cycleWindows),
+        body: JSON.stringify({ ...cycleWindows, forceSettings }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start cycle");
       setCycleMsg(data.message || "Cycle started.");
+      refetchCycle();
     } catch (e) {
       setCycleMsg(e instanceof Error ? e.message : "Failed to start cycle");
     } finally {
@@ -590,34 +599,79 @@ export default function StressAnalysisTool() {
       {/* START CYCLE (admin) */}
       {activeTab === "analysis" && isAdmin && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Start a Stress Cycle</h2>
-          <p className="text-sm text-gray-500 max-w-2xl mt-1 mb-4">
-            Open a new stress exercise for your organization. Set the Form 5 window here; <strong>Form 6/7 opens automatically when you run the setting</strong> (its timing depends on when Form 5 closes, so you set its close date at that point — not now). Only one cycle can run at a time; if a setting already exists and hasn&apos;t been flagged for reset, the system starts straight at Form 6.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-            {[
-              { k: "settingsOpensAt", label: "Form 5 opens" },
-              { k: "settingsClosesAt", label: "Form 5 closes" },
-            ].map((f) => (
-              <label key={f.k} className="flex flex-col text-sm font-medium text-gray-700">
-                {f.label}
-                <input
-                  type="datetime-local"
-                  value={(cycleWindows as any)[f.k]}
-                  onChange={(e) => setCycleWindows((w) => ({ ...w, [f.k]: e.target.value }))}
-                  className="mt-1 px-3 py-2 border border-gray-300 rounded-lg font-normal"
-                />
-              </label>
-            ))}
-          </div>
-          <button
-            onClick={handleStartCycle}
-            disabled={startingCycle}
-            className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm disabled:opacity-60"
-          >
-            {startingCycle ? "Starting…" : "Start Cycle"}
-          </button>
-          {cycleMsg && <p className="text-sm text-gray-600 mt-3">{cycleMsg}</p>}
+          {(() => {
+            // The effective shape of the cycle about to start. Feeling-only is the
+            // default when a prior setting exists and no reset was flagged — unless
+            // the admin ticks "re-collect Form 5".
+            const willBeFull = nextMode ? nextMode.willBeFull || forceSettings : true;
+            const canChoose = !!nextMode && nextMode.hasSetting && !nextMode.needsReset;
+            return (
+              <>
+                <h2 className="text-xl font-bold text-gray-900">Start a Stress Cycle</h2>
+                <p className="text-sm text-gray-500 max-w-2xl mt-1 mb-4">
+                  Open a new stress exercise for your organization. Only one cycle can run at a time.
+                </p>
+
+                {/* Make the mode obvious BEFORE starting, so a Form 5 window is never silently ignored. */}
+                <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${willBeFull ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                  {willBeFull ? (
+                    <>This will be a <strong>full cycle</strong>: staff fill <strong>Form 5</strong> first, then you run the setting to open Form 6/7.</>
+                  ) : (
+                    <>This will be a <strong>feeling-only cycle</strong>: it <strong>reuses the setting from your last cycle</strong> and opens <strong>Form 6/7 directly</strong> — Form 5 is skipped. {nextMode?.needsReset ? "" : "Tick “re-collect Form 5” below to run a full cycle instead."}</>
+                  )}
+                </div>
+
+                {canChoose && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-4 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={forceSettings}
+                      onChange={(e) => setForceSettings(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Re-collect Form 5 this cycle (run a full cycle instead of reusing the last setting)
+                  </label>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                  {(willBeFull
+                    ? [
+                        { k: "settingsOpensAt", label: "Form 5 opens" },
+                        { k: "settingsClosesAt", label: "Form 5 closes" },
+                      ]
+                    : [
+                        { k: "feelingOpensAt", label: "Form 6/7 opens" },
+                        { k: "feelingClosesAt", label: "Form 6/7 closes" },
+                      ]
+                  ).map((f) => (
+                    <label key={f.k} className="flex flex-col text-sm font-medium text-gray-700">
+                      {f.label}
+                      <input
+                        type="datetime-local"
+                        value={(cycleWindows as any)[f.k]}
+                        onChange={(e) => setCycleWindows((w) => ({ ...w, [f.k]: e.target.value }))}
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg font-normal"
+                      />
+                    </label>
+                  ))}
+                </div>
+                {willBeFull && (
+                  <p className="text-xs text-gray-400 mt-2 max-w-2xl">
+                    Form 6/7 opens when you run the setting (after Form 5 closes) — you set its close date then, not now.
+                  </p>
+                )}
+
+                <button
+                  onClick={handleStartCycle}
+                  disabled={startingCycle}
+                  className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm disabled:opacity-60"
+                >
+                  {startingCycle ? "Starting…" : willBeFull ? "Start full cycle" : "Start feeling-only cycle"}
+                </button>
+                {cycleMsg && <p className="text-sm text-gray-600 mt-3">{cycleMsg}</p>}
+              </>
+            );
+          })()}
         </div>
       )}
 
