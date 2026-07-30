@@ -347,14 +347,23 @@ export default function StressAnalysisTool() {
     !!cycleStatus &&
     ["feeling_open", "feeling_closed", "evaluated"].includes(cycleStatus.phase || "");
   const feelingCollected = !!themeReport?.active && (themeReport?.staffCount ?? 0) > 0;
-  const canRunAnova = settingComputed && feelingCollected && enrichedData.length > 0;
+  // All submitted theme/feeling responses must be approved (HOD → faculty) before
+  // the org can be evaluated.
+  const approvalDepts = approvalStatus?.departments ?? [];
+  const totalSubmitted = approvalDepts.reduce((s: number, d: any) => s + (d.submitted ?? 0), 0);
+  const totalPendingApproval = approvalDepts.reduce((s: number, d: any) => s + (d.pendingApproval ?? 0), 0);
+  const allApproved = totalSubmitted > 0 && totalPendingApproval === 0;
+  const canRunAnova =
+    settingComputed && feelingCollected && allApproved && enrichedData.length > 0;
   const anovaBlockedReason = !settingComputed
     ? "Run the setting first (compute Form 5 limits and open Form 6/7)."
     : !feelingCollected
       ? "No theme/feeling responses have been collected yet."
       : enrichedData.length === 0
         ? "No Form 5 data available to evaluate."
-        : null;
+        : !allApproved
+          ? `Evaluation is locked until every submitted response is approved. ${totalPendingApproval} submission(s) are still awaiting HOD / ${terms.head} approval.`
+          : null;
 
   const handleStartCycle = async () => {
     setStartingCycle(true);
@@ -798,7 +807,10 @@ export default function StressAnalysisTool() {
                   Run ANOVA & Generate Report
                 </button>
                 {anovaBlockedReason && (
-                  <p className="text-xs text-amber-600">{anovaBlockedReason}</p>
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 max-w-xl">
+                    <Warning2 size="18" className="text-amber-500 mt-0.5 shrink-0" variant="Bold" />
+                    <span>{anovaBlockedReason}</span>
+                  </div>
                 )}
               </div>
             ) : (
