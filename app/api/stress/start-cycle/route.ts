@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   try {
     const latest = await prisma.stressCycle.findFirst({
       where: { org },
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
 
     // Guardrail 1: one active cycle at a time.

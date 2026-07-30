@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const { userName } = await req.json().catch(() => ({}))
     const cycle = await prisma.stressCycle.findFirst({
       where: { org },
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
