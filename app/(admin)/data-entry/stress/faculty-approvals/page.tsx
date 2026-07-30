@@ -122,14 +122,22 @@ export default function FacultyApprovals() {
         ))}
       </div>
 
-      <div className="flex justify-end mb-3">
+      <div className="flex flex-col items-end gap-2 mb-3">
         <button
           onClick={() => approve()}
           disabled={working || c.pendingApproval === 0}
-          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50"
+          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Approve entire {terms.unit.toLowerCase()} ({c.pendingApproval})
         </button>
+        {/* Never a bare disabled button — say why it's disabled (see AGENTS.md). */}
+        {c.pendingApproval === 0 && (
+          <div className="w-full sm:max-w-md text-sm rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-600">
+            {c.submitted === 0
+              ? `Nothing to approve yet — no staff in your ${terms.unit.toLowerCase()} have submitted their theme & feeling form for this cycle.`
+              : `All submitted responses in your ${terms.unit.toLowerCase()} have already been approved (by each department's HOD). There's nothing left for you to approve.`}
+          </div>
+        )}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
