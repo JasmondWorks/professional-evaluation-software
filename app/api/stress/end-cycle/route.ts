@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   try {
     const latest = await prisma.stressCycle.findFirst({
       where: { org },
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!latest || latest.phase === 'evaluated') {
       return NextResponse.json({ error: 'There is no active stress cycle to end.' }, { status: 409 })

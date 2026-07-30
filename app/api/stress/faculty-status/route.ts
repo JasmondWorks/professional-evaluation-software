@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
     const cycle = await prisma.stressCycle.findFirst({
       where: { org: org ?? undefined },
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ active: false, faculty })
 

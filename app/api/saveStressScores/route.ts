@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // There must be an open settings phase to accept a Form 5 submission.
     const cycle = await prisma.stressCycle.findFirst({
       where: { org },
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle || effectivePhase(cycle) !== 'settings_open') {
       return NextResponse.json(

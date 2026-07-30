@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     // The feeling phase must be open.
     const cycle = await prisma.stressCycle.findFirst({
       where: { org: org ?? undefined },
-      orderBy: { created_at: "desc" },
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
     if (!cycle || effectivePhase(cycle) !== "feeling_open") {
       return NextResponse.json(

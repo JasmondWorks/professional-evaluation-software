@@ -682,13 +682,36 @@ export default function StressAnalysisTool() {
                   </p>
                 )}
 
-                <button
-                  onClick={handleStartCycle}
-                  disabled={startingCycle}
-                  className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm disabled:opacity-60"
-                >
-                  {startingCycle ? "Starting…" : willBeFull ? "Start full cycle" : "Start feeling-only cycle"}
-                </button>
+                {(() => {
+                  // Require the open + close dates for the relevant form before
+                  // the cycle can be started, and that close is after open.
+                  const opensKey = willBeFull ? "settingsOpensAt" : "feelingOpensAt";
+                  const closesKey = willBeFull ? "settingsClosesAt" : "feelingClosesAt";
+                  const opensAt = (cycleWindows as any)[opensKey];
+                  const closesAt = (cycleWindows as any)[closesKey];
+                  const label = willBeFull ? "Form 5" : "Form 6/7";
+                  const datesMissing = !opensAt || !closesAt;
+                  const badOrder = !datesMissing && new Date(closesAt) <= new Date(opensAt);
+                  const blocked = datesMissing || badOrder;
+                  return (
+                    <>
+                      <button
+                        onClick={handleStartCycle}
+                        disabled={startingCycle || blocked}
+                        title={blocked ? `Set the ${label} open and close dates first` : undefined}
+                        className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {startingCycle ? "Starting…" : willBeFull ? "Start full cycle" : "Start feeling-only cycle"}
+                      </button>
+                      {datesMissing && (
+                        <p className="text-xs text-amber-600 mt-2">Set the {label} open and close date &amp; time to start.</p>
+                      )}
+                      {badOrder && (
+                        <p className="text-xs text-amber-600 mt-2">The close date must be after the open date.</p>
+                      )}
+                    </>
+                  );
+                })()}
                 {cycleMsg && <p className="text-sm text-gray-600 mt-3">{cycleMsg}</p>}
               </>
             );

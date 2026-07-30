@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'That submission is outside your faculty/division.' }, { status: 403 })
     }
 
-    const cycle = await prisma.stressCycle.findFirst({ where: { org }, orderBy: { created_at: 'desc' } })
+    const cycle = await prisma.stressCycle.findFirst({ where: { org }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
     const row = await prisma.stress.findFirst({

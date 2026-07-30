@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const needsReset = !!(anovaResult?.conclusion || "").includes("Reject");
     const cycle = await prisma.stressCycle.findFirst({
       where: { org },
-      orderBy: { created_at: "desc" },
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
     if (cycle && cycle.phase !== "evaluated") {
       await prisma.stressCycle.update({
