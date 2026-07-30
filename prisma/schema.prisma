@@ -537,6 +537,12 @@ model stress {
   approved                      Boolean @default(false)
   approved_by                   String? @db.VarChar(255)
   approved_at                   DateTime?
+  // A head can send a submission back for re-entry with a reason. While
+  // rejected, it counts as "not submitted" until the staff member re-submits.
+  rejected                      Boolean @default(false)
+  rejection_reason              String?
+  rejected_by                   String? @db.VarChar(255)
+  rejected_at                   DateTime?
 }
 
 model stress_analysis_results {

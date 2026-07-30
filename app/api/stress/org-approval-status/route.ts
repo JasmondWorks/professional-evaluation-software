@@ -22,7 +22,7 @@ export async function GET(req: Request) {
       select: { name: true, dept: true, faculty_college: true },
     })
     const submissions = await prisma.stress.findMany({
-      where: { org, cycle_id: cycle.id },
+      where: { org, cycle_id: cycle.id, rejected: false },
       select: { pesuser_name: true, hod_approved: true, approved: true },
     })
     const subByName = new Map(submissions.map((s) => [s.pesuser_name, s]))
