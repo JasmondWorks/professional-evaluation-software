@@ -123,6 +123,7 @@ export default function StressAnalysisTool() {
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [ending, setEnding] = useState(false);
 
   const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
     setBusy(true);
@@ -145,6 +146,10 @@ export default function StressAnalysisTool() {
   const handleCloseWindow = () => postCycleAction("/api/stress/close-window", setClosing);
   const handleReopenWindow = () => postCycleAction("/api/stress/reopen-window", setReopening);
   const handleOpenWindow = () => postCycleAction("/api/stress/open-window", setOpening);
+  const handleEndCycle = () => {
+    if (!window.confirm("End this stress cycle now? This closes it off for the whole organization and lets you start a new one. If you haven't evaluated it, no results will be saved for this cycle.")) return;
+    postCycleAction("/api/stress/end-cycle", setEnding);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -229,6 +234,10 @@ export default function StressAnalysisTool() {
   }, []);
 
   const isAdmin = role === "super-admin" || role === "admin";
+  // "In session" = a cycle exists and hasn't been evaluated yet. The live panels
+  // (cycle status, submission/approval, theme report, run setting, run ANOVA) are
+  // only meaningful then; otherwise we show the Start Cycle card + a clear notice.
+  const inSession = !!cycleStatus?.active && cycleStatus.phase !== "evaluated";
 
   const enrichedData = stressData.map((s) => {
     // Category values come from Form 5 (stress_scores). The scoring module turns
@@ -551,8 +560,15 @@ export default function StressAnalysisTool() {
         </button>
       </div>
 
+      {/* NO ACTIVE CYCLE notice */}
+      {activeTab === "analysis" && isAdmin && !inSession && (
+        <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 px-6 py-4 text-sm text-gray-600">
+          There is no active stress cycle at the moment. Start one below to open the forms and see submission, approval and report status here.
+        </div>
+      )}
+
       {/* CURRENT CYCLE STATUS + window controls */}
-      {activeTab === "analysis" && isAdmin && cycleStatus?.active && (() => {
+      {activeTab === "analysis" && isAdmin && inSession && (() => {
         const f5 = cycleStatus.form5;
         const f6 = cycleStatus.form6;
         // The one form that's currently in play, with its label + status.
@@ -591,13 +607,18 @@ export default function StressAnalysisTool() {
                   {reopening ? "Reopening…" : `Reopen ${inSettings ? "Form 5" : "Form 6/7"}`}
                 </button>
               )}
+              <button onClick={handleEndCycle} disabled={ending}
+                title="Close this cycle off for the whole organization"
+                className="px-5 py-2.5 border border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50">
+                {ending ? "Ending…" : "End cycle"}
+              </button>
             </div>
           </div>
         );
       })()}
 
-      {/* START CYCLE (admin) */}
-      {activeTab === "analysis" && isAdmin && (
+      {/* START CYCLE (admin) — only when no cycle is in session */}
+      {activeTab === "analysis" && isAdmin && !inSession && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           {(() => {
             // The effective shape of the cycle about to start. Feeling-only is the
@@ -676,7 +697,7 @@ export default function StressAnalysisTool() {
       )}
 
       {/* ESTAB / PERSONNEL: departmental & faculty submission/approval status */}
-      {activeTab === "analysis" && isAdmin && approvalStatus?.active && (
+      {activeTab === "analysis" && isAdmin && inSession && approvalStatus?.active && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-1">Submission &amp; Approval Status</h2>
           <p className="text-sm text-gray-500 mb-5">
@@ -723,7 +744,7 @@ export default function StressAnalysisTool() {
       )}
 
       {/* THEME & FEELING REPORT (aggregated Form 6/7) */}
-      {activeTab === "analysis" && isAdmin && themeReport?.active && themeReport.staffCount > 0 && (
+      {activeTab === "analysis" && isAdmin && inSession && themeReport?.active && themeReport.staffCount > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-1">Theme &amp; Feeling Report</h2>
           <p className="text-sm text-gray-500 mb-5">
@@ -765,7 +786,7 @@ export default function StressAnalysisTool() {
       )}
 
       {/* RUN SETTING (intermediate step) */}
-      {activeTab === "analysis" && isAdmin && (
+      {activeTab === "analysis" && isAdmin && inSession && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm mb-6">
           <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
             <div>
@@ -830,8 +851,8 @@ export default function StressAnalysisTool() {
         </div>
       )}
 
-      {/* ANALYSIS TAB */}
-      {activeTab === "analysis" && (
+      {/* ANALYSIS TAB (Run ANOVA) — only while a cycle is in session */}
+      {activeTab === "analysis" && inSession && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
             <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
