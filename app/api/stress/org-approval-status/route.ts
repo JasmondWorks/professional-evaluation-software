@@ -32,44 +32,72 @@ export async function GET(req: Request) {
     const orgRecord = await prisma.org.findUnique({ where: { name: org }, select: { category: true } })
     const isAcademic = (orgRecord?.category || '').toLowerCase() === 'academic'
 
-    // Roll up counts by any grouping key, tracking both approval tiers.
-    const rollup = (keyOf: (u: (typeof staff)[number]) => string) => {
-      const groups: Record<string, { staff: number; submitted: number; hodApproved: number; approved: number }> = {}
-      for (const u of staff) {
-        const key = keyOf(u) || 'Unspecified'
-        const g = (groups[key] ||= { staff: 0, submitted: 0, hodApproved: 0, approved: 0 })
-        g.staff++
-        const sub = u.name ? subByName.get(u.name) : undefined
-        if (sub) {
-          g.submitted++
-          if (sub.hod_approved) g.hodApproved++
-          if (sub.approved) g.approved++
-        }
+    const finalOf = (g: { hodApproved: number; approved: number }) =>
+      isAcademic ? g.approved : g.hodApproved
+
+    // --- Departments: the base level. ---
+    type Agg = { staff: number; submitted: number; hodApproved: number; approved: number; faculty: string }
+    const deptGroups: Record<string, Agg> = {}
+    for (const u of staff) {
+      const key = u.dept || 'Unspecified'
+      const g = (deptGroups[key] ||= { staff: 0, submitted: 0, hodApproved: 0, approved: 0, faculty: u.faculty_college || 'Unspecified' })
+      g.staff++
+      const sub = u.name ? subByName.get(u.name) : undefined
+      if (sub) {
+        g.submitted++
+        if (sub.hod_approved) g.hodApproved++
+        if (sub.approved) g.approved++
       }
-      return Object.entries(groups)
-        .map(([name, g]) => {
-          // The "final" approval for this org: faculty (academic) or HOD (else).
-          const finalApproved = isAcademic ? g.approved : g.hodApproved
-          return {
-            name,
-            ...g,
-            pendingEntry: g.staff - g.submitted,
-            pendingHod: g.submitted - g.hodApproved,
-            // Awaiting the final sign-off required before evaluation.
-            pendingApproval: g.submitted - finalApproved,
-            // "Cleared" = everyone who submitted has the final approval.
-            cleared: g.submitted > 0 && finalApproved === g.submitted,
-          }
-        })
-        .sort((a, b) => a.name.localeCompare(b.name))
     }
+    const departments = Object.entries(deptGroups)
+      .map(([name, g]) => ({
+        name,
+        staff: g.staff,
+        submitted: g.submitted,
+        hodApproved: g.hodApproved,
+        approved: g.approved,
+        pendingEntry: g.staff - g.submitted,
+        pendingHod: g.submitted - g.hodApproved,
+        pendingApproval: g.submitted - finalOf(g),
+        cleared: g.submitted > 0 && finalOf(g) === g.submitted,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    // --- Faculties: a faculty is only "cleared" when EVERY department in it is
+    // cleared. Its status therefore can never contradict its departments. ---
+    type FAgg = { staff: number; submitted: number; hodApproved: number; approved: number; allDeptsCleared: boolean }
+    const facGroups: Record<string, FAgg> = {}
+    for (const [, g] of Object.entries(deptGroups)) {
+      const fac = g.faculty || 'Unspecified'
+      const f = (facGroups[fac] ||= { staff: 0, submitted: 0, hodApproved: 0, approved: 0, allDeptsCleared: true })
+      f.staff += g.staff
+      f.submitted += g.submitted
+      f.hodApproved += g.hodApproved
+      f.approved += g.approved
+      const deptCleared = g.submitted > 0 && finalOf(g) === g.submitted
+      if (!deptCleared) f.allDeptsCleared = false
+    }
+    const faculties = Object.entries(facGroups)
+      .map(([name, f]) => ({
+        name,
+        staff: f.staff,
+        submitted: f.submitted,
+        hodApproved: f.hodApproved,
+        approved: f.approved,
+        pendingEntry: f.staff - f.submitted,
+        pendingHod: f.submitted - f.hodApproved,
+        pendingApproval: f.submitted - finalOf(f),
+        // Cleared only when all its departments are cleared (and it has data).
+        cleared: f.allDeptsCleared && f.submitted > 0,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
 
     return NextResponse.json({
       active: true,
       phase: cycle.phase,
       academic: isAcademic,
-      departments: rollup((u) => u.dept || ''),
-      faculties: rollup((u) => u.faculty_college || ''),
+      departments,
+      faculties,
     })
   } catch (err) {
     console.error('org-approval-status error:', err)
