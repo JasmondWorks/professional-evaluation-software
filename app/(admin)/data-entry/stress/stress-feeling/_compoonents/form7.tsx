@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import RatingCell from "./RatingCell";
 
 const feelings = [
   "Anger Towards Others",
@@ -38,6 +39,7 @@ export default function Form7({
 }) {
   const [maxScores, setMaxScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [activeCell, setActiveCell] = useState<string | null>(null);
 
   useEffect(() => {
     // Maximums come from the CYCLE limits (mean of Form 5 across all staff), not
@@ -123,21 +125,17 @@ export default function Form7({
             <tr key={cat.key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
               <td className="border p-2 font-medium">{cat.label}</td>
               {feelings.map((feel) => {
-                const answered = (values[cat.key]?.[feel] ?? 0) > 0;
+                const key = `${cat.key}-${feel}`;
                 return (
-                  <td key={feel} className={`border px-3 py-2 text-center ${answered ? "bg-green-50" : ""}`}>
-                    <select
-                      value={values[cat.key]?.[feel] ?? ""}
-                      onChange={(e) =>
-                        onChange(cat.key, feel, parseInt(e.target.value) || 0)
-                      }
-                      className={`w-16 border rounded text-center ${answered ? "border-green-400 bg-green-50" : ""}`}
-                    >
-                      <option value="">--</option>
-                      {Array.from({ length: SCALE }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>{i + 1}</option>
-                      ))}
-                    </select>
+                  <td key={feel} className="border px-3 py-2 text-center">
+                    <RatingCell
+                      value={values[cat.key]?.[feel] || undefined}
+                      onChange={(n) => onChange(cat.key, feel, n)}
+                      max={SCALE}
+                      open={activeCell === key}
+                      onOpen={() => setActiveCell(key)}
+                      onClose={() => setActiveCell((k) => (k === key ? null : k))}
+                    />
                   </td>
                 );
               })}
