@@ -32,6 +32,17 @@ export async function GET(req: Request) {
     const orgRecord = await prisma.org.findUnique({ where: { name: org }, select: { category: true } })
     const isAcademic = (orgRecord?.category || '').toLowerCase() === 'academic'
 
+    // Which departments have an HOD, and which faculties have a head — so the
+    // admin can be warned where approvals can't happen and offered an override.
+    const heads = await prisma.pesuser.findMany({
+      where: { org, role: { in: ['hod', 'unit-head'] } },
+      select: { role: true, dept: true, faculty_college: true },
+    })
+    const deptsWithHead = new Set(heads.filter((h) => h.role === 'hod' && h.dept).map((h) => h.dept as string))
+    const facultiesWithHead = new Set(
+      heads.filter((h) => h.role === 'unit-head' && h.faculty_college).map((h) => h.faculty_college as string),
+    )
+
     const finalOf = (g: { hodApproved: number; approved: number }) =>
       isAcademic ? g.approved : g.hodApproved
 
@@ -60,6 +71,7 @@ export async function GET(req: Request) {
         pendingHod: g.submitted - g.hodApproved,
         pendingApproval: g.submitted - finalOf(g),
         cleared: g.submitted > 0 && finalOf(g) === g.submitted,
+        hasHead: deptsWithHead.has(name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name))
 
@@ -89,6 +101,7 @@ export async function GET(req: Request) {
         pendingApproval: f.submitted - finalOf(f),
         // Cleared only when all its departments are cleared (and it has data).
         cleared: f.allDeptsCleared && f.submitted > 0,
+        hasHead: facultiesWithHead.has(name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name))
 

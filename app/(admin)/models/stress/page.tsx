@@ -124,6 +124,7 @@ export default function StressAnalysisTool() {
   const [reopening, setReopening] = useState(false);
   const [opening, setOpening] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [approvingUnit, setApprovingUnit] = useState<string | null>(null);
 
   const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
     setBusy(true);
@@ -149,6 +150,35 @@ export default function StressAnalysisTool() {
   const handleEndCycle = () => {
     if (!window.confirm("End this stress cycle now? This closes it off for the whole organization and lets you start a new one. If you haven't evaluated it, no results will be saved for this cycle.")) return;
     postCycleAction("/api/stress/end-cycle", setEnding);
+  };
+
+  const refetchApproval = () => {
+    const token = localStorage.getItem("access_token");
+    fetch("/api/stress/org-approval-status", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then(setApprovalStatus)
+      .catch(() => {});
+  };
+  // Admin override: approve a department/faculty directly (e.g. when it has no
+  // head, so tiered approval can't happen and evaluation would be stuck).
+  const handleAdminApprove = async (group: "departments" | "faculties", name: string) => {
+    const key = `${group}:${name}`;
+    setApprovingUnit(key);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch("/api/stress/admin-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(group === "departments" ? { dept: name } : { faculty: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to approve");
+      refetchApproval();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to approve");
+    } finally {
+      setApprovingUnit(null);
+    }
   };
 
   useEffect(() => {
@@ -516,6 +546,15 @@ export default function StressAnalysisTool() {
           </p>
         </div>
         <div className="flex gap-3">
+          {isAdmin && inSession && (
+            <button
+              onClick={handleEndCycle}
+              disabled={ending}
+              className="bg-white border border-red-300 text-red-700 shadow-sm px-4 py-2 rounded-md hover:bg-red-50 font-medium text-sm transition-colors disabled:opacity-50"
+            >
+              {ending ? "Ending…" : "End cycle"}
+            </button>
+          )}
           <Link
             href="/models/stress/history"
             className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
@@ -738,12 +777,23 @@ export default function StressAnalysisTool() {
                       <th className="px-4 py-2 font-semibold text-right">Submitted</th>
                       <th className="px-4 py-2 font-semibold text-right">Approved</th>
                       <th className="px-4 py-2 font-semibold text-right">Status</th>
+                      <th className="px-4 py-2 font-semibold text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {(approvalStatus[group] as any[]).map((d) => (
+                    {(approvalStatus[group] as any[]).map((d) => {
+                      // The faculty/head tier only matters for academic orgs.
+                      const headRelevant = group === "departments" || approvalStatus.academic;
+                      const noHead = headRelevant && d.hasHead === false && d.staff > 0;
+                      const headLabel = group === "departments" ? "HOD" : terms.head;
+                      return (
                       <tr key={d.name}>
-                        <td className="px-4 py-2 font-medium text-gray-800">{d.name}</td>
+                        <td className="px-4 py-2 font-medium text-gray-800">
+                          {d.name}
+                          {noHead && (
+                            <span className="ml-2 text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full text-[11px] font-medium">No {headLabel} assigned</span>
+                          )}
+                        </td>
                         <td className="px-4 py-2 text-right text-gray-600">{d.staff}</td>
                         <td className="px-4 py-2 text-right text-gray-600">{d.submitted}</td>
                         <td className="px-4 py-2 text-right text-gray-600">{d.approved}</td>
@@ -756,8 +806,21 @@ export default function StressAnalysisTool() {
                             </span>
                           )}
                         </td>
+                        <td className="px-4 py-2 text-right">
+                          {d.pendingApproval > 0 && (
+                            <button
+                              onClick={() => handleAdminApprove(group, d.name)}
+                              disabled={approvingUnit === `${group}:${d.name}`}
+                              title={noHead ? `No ${headLabel} is assigned — approve on their behalf so evaluation isn't blocked` : "Approve on behalf (admin override)"}
+                              className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
+                            >
+                              {approvingUnit === `${group}:${d.name}` ? "Approving…" : "Approve"}
+                            </button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
