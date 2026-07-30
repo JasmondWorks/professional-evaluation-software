@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { effectivePhase } from "../_lib/stressCycle";
+import { notifyDeptHod } from "../_lib/notify";
 
 // Saves a staff member's Form 6/7 (theme & feeling) submission. One submission
 // per staff per cycle, only while the feeling phase is open.
@@ -54,6 +55,17 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Nudge the department's HOD that a submission awaits approval.
+    if (org && dept) {
+      await notifyDeptHod(
+        prisma,
+        org,
+        dept,
+        "Stress submission to approve",
+        `${pesuser_name} submitted their theme & feeling form. It's awaiting your approval.`,
+      );
+    }
 
     return NextResponse.json({ success: true, message: "Stress data saved." });
   } catch (err: any) {

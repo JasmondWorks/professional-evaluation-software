@@ -18,7 +18,7 @@ async function handleRequest(request: NextRequest) {
       return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
     }
     const token = authHeader.split(" ")[1];
-    const decoded = jwtDecode<{ org: string }>(token);
+    const decoded = jwtDecode<{ org: string; userID?: number | string; id?: number | string }>(token);
     const org = decoded.org;
 
     if (!org) {
@@ -28,8 +28,15 @@ async function handleRequest(request: NextRequest) {
       );
     }
 
+    // Notifications are per user — a person only sees their own (scoped to org).
+    const rawId = decoded.userID ?? decoded.id;
+    const userId = rawId != null ? Number(rawId) : NaN;
+
     const notifications = await prisma.notifications.findMany({
-      where: { org },
+      where: {
+        org,
+        ...(Number.isFinite(userId) ? { user_id: userId } : {}),
+      },
       select: {
         id: true,
         user_id: true,
