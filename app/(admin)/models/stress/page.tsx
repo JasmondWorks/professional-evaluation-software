@@ -91,6 +91,7 @@ const computeANOVA = (groups: GroupedData) => {
 export default function StressAnalysisTool() {
   const [activeTab, setActiveTab] = useState<"analysis" | "results">("analysis");
   const [stressData, setStressData] = useState<StressEntry[]>([]);
+  const [dataCycle, setDataCycle] = useState<{ id: number; created_at: string; phase?: string } | null>(null);
   const [anovaResult, setAnovaResult] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -174,8 +175,12 @@ export default function StressAnalysisTool() {
           },
           body: JSON.stringify({}),
         });
-        const data = await res.json();
-        setStressData(data);
+        const payload = await res.json();
+        // Endpoint now returns { rows, cycle } (scoped to the effective cycle).
+        // Tolerate the old array shape just in case.
+        const rows = Array.isArray(payload) ? payload : (payload?.rows ?? []);
+        setStressData(rows);
+        if (!Array.isArray(payload) && payload?.cycle) setDataCycle(payload.cycle);
 
         // Hydrate the last SAVED evaluation so the "Evaluation Results" tab stays
         // available after navigating away and back (e.g. from History), instead
@@ -267,42 +272,89 @@ export default function StressAnalysisTool() {
       }))
       .sort((a, b) => b.stress - a.stress);
   };
+  // DEPARTMENT = mean of its staff (the base level).
   const departmentResults = aggregateBy((e) => e.dept);
-  const facultyResults = aggregateBy((e) => e.faculty || "Unknown Faculty");
-  const institutionResults: LevelRow[] = enrichedData.length
+
+  // Each department belongs to exactly one faculty.
+  const facultyOfDept: Record<string, string> = {};
+  enrichedData.forEach((e) => {
+    const d = e.dept || "Unknown";
+    if (!facultyOfDept[d]) facultyOfDept[d] = e.faculty || "Unknown Faculty";
+  });
+
+  // FACULTY = mean of its DEPARTMENTS' values (NOT mean of all staff). With a
+  // single department in a faculty, the faculty value equals that department's.
+  const facultyGroups: Record<string, LevelRow[]> = {};
+  departmentResults.forEach((dr) => {
+    const fac = facultyOfDept[dr.name] || "Unknown Faculty";
+    (facultyGroups[fac] ||= []).push(dr);
+  });
+  const facultyResults: LevelRow[] = Object.entries(facultyGroups)
+    .map(([name, depts]) => ({
+      name,
+      count: depts.reduce((s, d) => s + d.count, 0),
+      stress: mean(depts.map((d) => d.stress)),
+      pressure: mean(depts.map((d) => d.pressure)),
+      conflict: mean(depts.map((d) => d.conflict)),
+    }))
+    .sort((a, b) => b.stress - a.stress);
+
+  // ORGANIZATION = mean of its FACULTIES' values.
+  const institutionResults: LevelRow[] = facultyResults.length
     ? [
         {
           name: "Whole Institution",
-          count: enrichedData.length,
-          stress: mean(enrichedData.map((r) => r.stressFactor)),
-          pressure: mean(enrichedData.map((r) => r.pressureFactor)),
-          conflict: mean(enrichedData.map((r) => r.conflictFactor)),
+          count: facultyResults.reduce((s, f) => s + f.count, 0),
+          stress: mean(facultyResults.map((f) => f.stress)),
+          pressure: mean(facultyResults.map((f) => f.pressure)),
+          conflict: mean(facultyResults.map((f) => f.conflict)),
         },
       ]
     : [];
 
   const runANOVA = () => {
     const grouped: GroupedData = {};
-    const stressValues: number[] = [];
-    const pressureValues: number[] = [];
-    const conflictValues: number[] = [];
-
     enrichedData.forEach((e) => {
       if (!grouped[e.dept]) grouped[e.dept] = [];
       grouped[e.dept].push(e.stressFactor);
-      stressValues.push(e.stressFactor);
-      pressureValues.push(e.pressureFactor);
-      conflictValues.push(e.conflictFactor);
     });
 
-    setAnovaResult(computeANOVA(grouped));
+    // ANOVA needs ≥2 groups and within-group degrees of freedom ≥1 (i.e. at
+    // least one department with ≥2 staff). Otherwise variance is undefined and
+    // the test is not applicable — we still report the stress values.
+    const k = Object.keys(grouped).length;
+    const N = enrichedData.length;
+    const applicable = k >= 2 && N - k >= 1;
+    setAnovaResult(
+      applicable
+        ? { ...computeANOVA(grouped), applicable: true }
+        : { applicable: false, groups: k, staff: N },
+    );
+
+    // Overall organization figures = mean of the faculties (hierarchical),
+    // not a flat mean over all staff.
     setSummary({
-      stress: mean(stressValues),
-      pressure: mean(pressureValues),
-      conflict: mean(conflictValues),
+      stress: institutionResults[0]?.stress ?? 0,
+      pressure: institutionResults[0]?.pressure ?? 0,
+      conflict: institutionResults[0]?.conflict ?? 0,
     });
     setActiveTab("results");
   };
+
+  // #4: "Run ANOVA & Generate Report" is only available once a setting has been
+  // computed (cycle past the settings phase) AND theme/feeling data collected.
+  const settingComputed =
+    !!cycleStatus &&
+    ["feeling_open", "feeling_closed", "evaluated"].includes(cycleStatus.phase || "");
+  const feelingCollected = !!themeReport?.active && (themeReport?.staffCount ?? 0) > 0;
+  const canRunAnova = settingComputed && feelingCollected && enrichedData.length > 0;
+  const anovaBlockedReason = !settingComputed
+    ? "Run the setting first (compute Form 5 limits and open Form 6/7)."
+    : !feelingCollected
+      ? "No theme/feeling responses have been collected yet."
+      : enrichedData.length === 0
+        ? "No Form 5 data available to evaluate."
+        : null;
 
   const handleStartCycle = async () => {
     setStartingCycle(true);
@@ -446,6 +498,15 @@ export default function StressAnalysisTool() {
           </Link>
         </div>
       </div>
+
+      {/* Which cycle's Form 5 data these results are based on — so carried-over
+          values from an earlier cycle are never confused with the current one. */}
+      {dataCycle && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-xs font-medium text-indigo-700">
+          Results based on stress cycle #{dataCycle.id}
+          {dataCycle.created_at ? ` · started ${new Date(dataCycle.created_at).toLocaleDateString()}` : ""}
+        </div>
+      )}
 
       {/* TABS */}
       <div className="flex gap-2 mb-6 border-b border-gray-200 print:hidden">
@@ -726,13 +787,20 @@ export default function StressAnalysisTool() {
             </p>
             
             {isAdmin ? (
-              <button
-                onClick={runANOVA}
-                className="w-full sm:w-auto px-8 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
-              >
-                <Chart2 size="18" />
-                Run ANOVA & Generate Report
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={runANOVA}
+                  disabled={!canRunAnova}
+                  title={anovaBlockedReason ?? undefined}
+                  className="w-full sm:w-auto px-8 py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Chart2 size="18" />
+                  Run ANOVA & Generate Report
+                </button>
+                {anovaBlockedReason && (
+                  <p className="text-xs text-amber-600">{anovaBlockedReason}</p>
+                )}
+              </div>
             ) : (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
                 <Warning2 className="text-red-600 mt-0.5" size="20" />
@@ -772,7 +840,19 @@ export default function StressAnalysisTool() {
               
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 border-b border-gray-100 pb-2">ANOVA Results</h3>
-                {anovaResult && (
+                {anovaResult && anovaResult.applicable === false && (
+                  <div className="p-4 rounded-md border border-amber-300 bg-amber-50">
+                    <p className="text-sm font-bold text-amber-900 mb-1">ANOVA not applicable</p>
+                    <p className="text-sm text-amber-800">
+                      An ANOVA needs at least two departments with at least two staff between them to measure variance.
+                      {typeof anovaResult.groups === "number" && typeof anovaResult.staff === "number"
+                        ? ` This analysis has ${anovaResult.staff} staff across ${anovaResult.groups} department${anovaResult.groups === 1 ? "" : "s"}.`
+                        : ""}{" "}
+                      The stress values are still reported below and by department — only the significance test is skipped.
+                    </p>
+                  </div>
+                )}
+                {anovaResult && anovaResult.applicable !== false && (
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">F-Statistic:</span>
@@ -783,7 +863,7 @@ export default function StressAnalysisTool() {
                       <span className="font-semibold">{anovaResult.criticalValue || "2.89"}</span>
                     </div>
                     <div className={`mt-4 p-3 rounded-md text-sm font-semibold border ${
-                      anovaResult.conclusion.includes("Reject")
+                      (anovaResult.conclusion || "").includes("Reject")
                         ? "bg-red-50 text-red-800 border-red-200"
                         : "bg-green-50 text-green-800 border-green-200"
                     }`}>
@@ -792,11 +872,11 @@ export default function StressAnalysisTool() {
                     {/* Reset rule: a rejected H₀ means the stress feeling shifted
                         significantly, so the setting (Form 5) must be re-run. */}
                     <div className={`mt-2 p-3 rounded-md text-sm border ${
-                      anovaResult.conclusion.includes("Reject")
+                      (anovaResult.conclusion || "").includes("Reject")
                         ? "bg-amber-50 text-amber-800 border-amber-200"
                         : "bg-gray-50 text-gray-600 border-gray-200"
                     }`}>
-                      {anovaResult.conclusion.includes("Reject")
+                      {(anovaResult.conclusion || "").includes("Reject")
                         ? "The feeling is changed and there is need for reset of the setting."
                         : "Not violated, still within range."}
                     </div>
