@@ -30,10 +30,10 @@ export async function GET(req: Request) {
       select: { name: true },
     })
 
-    // Their Form 6/7 submissions for this cycle.
+    // Their Form 6/7 submissions for this cycle. The HOD tier is `hod_approved`.
     const submissions = await prisma.stress.findMany({
       where: { org, dept, cycle_id: cycle.id },
-      select: { pesuser_name: true, approved: true },
+      select: { pesuser_name: true, hod_approved: true },
     })
     const byName = new Map(submissions.map((s) => [s.pesuser_name, s]))
 
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       return {
         name: s.name,
         submitted: !!sub,
-        approved: !!sub?.approved,
+        approved: !!sub?.hod_approved,
       }
     })
 

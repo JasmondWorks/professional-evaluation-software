@@ -13,14 +13,25 @@ type DeptRow = {
   dept: string;
   staff: number;
   submitted: number;
+  hodApproved: number;
   approved: number;
+  pendingHod: number;
   pendingApproval: number;
+  readyForFaculty: boolean;
   cleared: boolean;
 };
 type Status = {
   active: boolean;
   faculty?: string;
-  counts?: { staff: number; submitted: number; approved: number; pendingApproval: number };
+  counts?: {
+    staff: number;
+    submitted: number;
+    hodApproved: number;
+    approved: number;
+    pendingHod: number;
+    pendingApproval: number;
+    allHodApproved: boolean;
+  };
   departments?: DeptRow[];
 };
 
@@ -108,12 +119,13 @@ export default function FacultyApprovals() {
         As {terms.head}, verify and approve the departments in your {terms.unit.toLowerCase()} for the current cycle.
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
           { label: "Staff", value: c.staff },
           { label: "Submitted", value: c.submitted },
+          { label: "Awaiting HOD", value: c.pendingHod },
+          { label: `Awaiting ${terms.head}`, value: c.pendingApproval },
           { label: "Approved", value: c.approved },
-          { label: "Awaiting approval", value: c.pendingApproval },
         ].map((s) => (
           <div key={s.label} className="bg-gray-50 rounded-lg p-4 text-center">
             <p className="text-xs uppercase tracking-wide text-gray-400">{s.label}</p>
@@ -125,17 +137,19 @@ export default function FacultyApprovals() {
       <div className="flex flex-col items-end gap-2 mb-3">
         <button
           onClick={() => approve()}
-          disabled={working || c.pendingApproval === 0}
+          disabled={working || c.pendingApproval === 0 || !c.allHodApproved}
           className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Approve entire {terms.unit.toLowerCase()} ({c.pendingApproval})
         </button>
         {/* Never a bare disabled button — say why it's disabled (see AGENTS.md). */}
-        {c.pendingApproval === 0 && (
+        {(c.pendingApproval === 0 || !c.allHodApproved) && (
           <div className="w-full sm:max-w-md text-sm rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-600">
             {c.submitted === 0
               ? `Nothing to approve yet — no staff in your ${terms.unit.toLowerCase()} have submitted their theme & feeling form for this cycle.`
-              : `All submitted responses in your ${terms.unit.toLowerCase()} have already been approved (by each department's HOD). There's nothing left for you to approve.`}
+              : !c.allHodApproved
+                ? `You can approve the whole ${terms.unit.toLowerCase()} once every department has been approved by its HOD first. ${c.pendingHod} submission(s) are still awaiting their HOD.`
+                : `All submitted responses in your ${terms.unit.toLowerCase()} have already been approved. There's nothing left for you to approve.`}
           </div>
         )}
       </div>
@@ -164,7 +178,16 @@ export default function FacultyApprovals() {
                 <td className="px-6 py-3 text-right text-gray-600">{d.submitted}</td>
                 <td className="px-6 py-3 text-right text-gray-600">{d.approved}</td>
                 <td className="px-6 py-3 text-right">
-                  {d.pendingApproval > 0 && (
+                  {d.submitted === 0 ? (
+                    <span className="text-xs text-gray-400">No submissions</span>
+                  ) : !d.readyForFaculty ? (
+                    <span
+                      className="text-xs text-amber-600"
+                      title="The department's HOD must approve all its submissions before you can sign it off."
+                    >
+                      Awaiting HOD ({d.pendingHod})
+                    </span>
+                  ) : d.pendingApproval > 0 ? (
                     <button
                       onClick={() => approve(d.dept)}
                       disabled={working}
@@ -172,6 +195,8 @@ export default function FacultyApprovals() {
                     >
                       Approve ({d.pendingApproval})
                     </button>
+                  ) : (
+                    <span className="text-xs text-green-600">Approved</span>
                   )}
                 </td>
               </tr>

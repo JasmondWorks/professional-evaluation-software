@@ -35,19 +35,21 @@ export async function GET(req: Request) {
     })
     const submissions = await prisma.stress.findMany({
       where: { org: org ?? undefined, cycle_id: cycle.id },
-      select: { pesuser_name: true, approved: true },
+      select: { pesuser_name: true, hod_approved: true, approved: true },
     })
     const subByName = new Map(submissions.map((s) => [s.pesuser_name, s]))
 
-    // Roll up by department within the faculty.
-    const byDept: Record<string, { staff: number; submitted: number; approved: number }> = {}
+    // Roll up by department within the faculty, tracking BOTH approval tiers:
+    // hodApproved (tier 1) and approved (tier 2 = faculty).
+    const byDept: Record<string, { staff: number; submitted: number; hodApproved: number; approved: number }> = {}
     for (const s of staff) {
       const d = s.dept || 'Unspecified'
-      const g = (byDept[d] ||= { staff: 0, submitted: 0, approved: 0 })
+      const g = (byDept[d] ||= { staff: 0, submitted: 0, hodApproved: 0, approved: 0 })
       g.staff++
       const sub = s.name ? subByName.get(s.name) : undefined
       if (sub) {
         g.submitted++
+        if (sub.hod_approved) g.hodApproved++
         if (sub.approved) g.approved++
       }
     }
@@ -55,7 +57,13 @@ export async function GET(req: Request) {
       .map(([dept, g]) => ({
         dept,
         ...g,
-        pendingApproval: g.submitted - g.approved,
+        // Awaiting HOD (tier 1) and awaiting faculty (tier 2, only counts rows
+        // already HOD-approved).
+        pendingHod: g.submitted - g.hodApproved,
+        pendingApproval: g.hodApproved - g.approved,
+        // A department is ready for the faculty head once all its submissions are
+        // HOD-approved; cleared once all are faculty-approved.
+        readyForFaculty: g.submitted > 0 && g.hodApproved === g.submitted,
         cleared: g.submitted > 0 && g.approved === g.submitted,
       }))
       .sort((a, b) => a.dept.localeCompare(b.dept))
@@ -64,12 +72,28 @@ export async function GET(req: Request) {
       (t, d) => ({
         staff: t.staff + d.staff,
         submitted: t.submitted + d.submitted,
+        hodApproved: t.hodApproved + d.hodApproved,
         approved: t.approved + d.approved,
       }),
-      { staff: 0, submitted: 0, approved: 0 },
+      { staff: 0, submitted: 0, hodApproved: 0, approved: 0 },
     )
 
-    return NextResponse.json({ active: true, faculty, departments, counts: { ...totals, pendingApproval: totals.submitted - totals.approved } })
+    // The whole faculty can be signed off only when every submission is
+    // HOD-approved first.
+    const allHodApproved = totals.submitted > 0 && totals.hodApproved === totals.submitted
+
+    return NextResponse.json({
+      active: true,
+      faculty,
+      departments,
+      counts: {
+        ...totals,
+        pendingHod: totals.submitted - totals.hodApproved,
+        // Awaiting the faculty head = HOD-approved but not yet faculty-approved.
+        pendingApproval: totals.hodApproved - totals.approved,
+        allHodApproved,
+      },
+    })
   } catch (err) {
     console.error('faculty-status error:', err)
     return NextResponse.json({ error: 'Failed to load faculty status' }, { status: 500 })
