@@ -362,7 +362,7 @@ export default function StressAnalysisTool() {
       : enrichedData.length === 0
         ? "No Form 5 data available to evaluate."
         : !allApproved
-          ? `Evaluation is locked until every submitted response is approved. ${totalPendingApproval} submission(s) are still awaiting HOD / ${terms.head} approval.`
+          ? `Evaluation is locked until every submitted response is approved. ${totalPendingApproval} submission(s) are still awaiting ${approvalStatus?.academic ? `HOD / ${terms.head}` : "HOD"} approval.`
           : null;
 
   const handleStartCycle = async () => {
