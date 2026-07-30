@@ -21,10 +21,31 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("Fetching stress scores for:", { org });
+    // The evaluation must never mix cycles (#11). Scope Form 5 data to the
+    // "effective settings cycle" = the LATEST cycle that actually collected
+    // Form 5 for this org. This also implements carry-over: a feeling-only cycle
+    // (no new Form 5, no reset) reuses the previous settings cycle's values
+    // rather than showing empty or blended data. Data is always org-isolated.
+    const cyclesWithScores = await prisma.stress_scores.findMany({
+      where: { org, cycle_id: { not: null } },
+      select: { cycle_id: true },
+      distinct: ["cycle_id"],
+      orderBy: { cycle_id: "desc" },
+    });
+    const effectiveCycleId = cyclesWithScores.length ? cyclesWithScores[0].cycle_id : null;
+
+    const effectiveCycle = effectiveCycleId
+      ? await prisma.stressCycle.findUnique({
+          where: { id: effectiveCycleId },
+          select: { id: true, created_at: true, phase: true },
+        })
+      : null;
 
     const data = await prisma.stress_scores.findMany({
-      where: { org },
+      where: {
+        org,
+        ...(effectiveCycleId != null ? { cycle_id: effectiveCycleId } : {}),
+      },
       select: {
         user_name: true,
         dept: true,
@@ -41,13 +62,6 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!data) {
-      return NextResponse.json(
-        { error: "No stress scores found" },
-        { status: 404 }
-      );
-    }
-
     // Enrich each entry with the staff member's faculty so results can be
     // aggregated at faculty level (stress_scores itself only stores dept).
     // Matched by name within the org; unmatched fall into "Unknown Faculty".
@@ -63,7 +77,17 @@ export async function POST(req: Request) {
       faculty: facultyByName.get(d.user_name ?? "") || "Unknown Faculty",
     }));
 
-    return NextResponse.json(enriched, { status: 200 });
+    // Return the data plus the cycle it belongs to, so the UI can label results
+    // with their source cycle (old vs current never confused, #11).
+    return NextResponse.json(
+      {
+        rows: enriched,
+        cycle: effectiveCycle
+          ? { id: effectiveCycle.id, created_at: effectiveCycle.created_at, phase: effectiveCycle.phase }
+          : null,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Error fetching stress scores:", error);
     return NextResponse.json(
