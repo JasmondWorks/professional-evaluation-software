@@ -5,8 +5,15 @@ import bcrypt from 'bcryptjs'
 
 const randombytes = require('randombytes')
 
+// Server-side de-dup: ignore a repeat resend for the same email within a short
+// window, so a double request (double-click, retry) can't reset the password
+// twice and send two emails (one of which then bounces).
+const recentResends = new Map<string, number>()
+const RESEND_WINDOW_MS = 15000
+
 function generateUniquePassword(length = 8) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()'
+  // Excluded ambiguous characters: l, 1, I, O, 0
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*()'
   const randomBytes = randombytes(length)
   let password = ''
   for (let i = 0; i < length; i++) {
@@ -29,16 +36,18 @@ async function sendLoginEmail(to: string, name: string, password: string) {
 
     await transporter.verify()
 
+    const cleanTo = to.trim().replace(/[\r\n,;]/g, '');
     await transporter.sendMail({
       from: `"Admin" <${process.env.EMAIL_USER}>`,
-      to,
+      to: cleanTo,
       subject: 'Your Login Credentials',
       html: `
-        <div style="font-family: Arial; line-height: 1.6">
-          <h2>Hello ${name},</h2>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #1e3a8a;">Hello ${name},</h2>
           <p>Your login credentials have been reset.</p>
           <p><strong>Email:</strong> ${to}</p>
-          <p><strong>Password:</strong> ${password}</p>
+          <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${password}</code></p>
+          <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
           <p>Please log in and change your password immediately.</p>
         </div>
       `,
@@ -58,6 +67,14 @@ export async function POST(req: Request) {
     if (!email) {
       return NextResponse.json({ message: 'Email is required' }, { status: 400 })
     }
+
+    // Drop a duplicate resend that arrives within the window — prevents a second
+    // password reset + second email (and the resulting bounce).
+    const last = recentResends.get(email)
+    if (last && Date.now() - last < RESEND_WINDOW_MS) {
+      return NextResponse.json({ message: 'Credentials already being resent', status: 200 })
+    }
+    recentResends.set(email, Date.now())
 
     // Check user exists
     const user = await prisma.pesuser.findUnique({
