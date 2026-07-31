@@ -241,6 +241,7 @@ export default function StressAnalysisTool() {
                 stress: Number(latest.stress_factor),
                 pressure: Number(latest.pressure_factor),
                 conflict: Number(latest.conflict_factor),
+                generatedAt: latest.created_at ?? null,
               });
               if (latest.anova_result) {
                 try {
@@ -384,6 +385,7 @@ export default function StressAnalysisTool() {
       stress: institutionResults[0]?.stress ?? 0,
       pressure: institutionResults[0]?.pressure ?? 0,
       conflict: institutionResults[0]?.conflict ?? 0,
+      generatedAt: new Date().toISOString(),
     });
     setActiveTab("results");
   };
@@ -990,6 +992,11 @@ export default function StressAnalysisTool() {
       {/* RESULTS TAB */}
       {activeTab === "results" && summary && (
         <div className="space-y-6">
+          {summary.generatedAt && (
+            <p className="text-sm text-gray-500">
+              Generated on {new Date(summary.generatedAt).toLocaleString()}
+            </p>
+          )}
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
@@ -1005,6 +1012,46 @@ export default function StressAnalysisTool() {
               <span className="text-4xl font-bold text-yellow-500">{(summary.conflict).toFixed(1)}%</span>
             </div>
           </div>
+
+          {/* Form 6/7 outputs: overall theme frequency + the major feeling. */}
+          {(() => {
+            const themes = (themeReport?.themes ?? []) as { theme: string; total: number; percent: number }[];
+            const feelingTotals: Record<string, number> = {};
+            (themeReport?.categories ?? []).forEach((c: any) => {
+              Object.entries(c?.feelings ?? {}).forEach(([f, n]) => {
+                feelingTotals[f] = (feelingTotals[f] ?? 0) + Number(n || 0);
+              });
+            });
+            const majorFeeling = Object.entries(feelingTotals).sort((a, b) => b[1] - a[1])[0];
+            if (themes.length === 0 && !majorFeeling) return null;
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">Theme frequency (Form 6)</h3>
+                  <div className="space-y-2">
+                    {[...themes].sort((a, b) => b.total - a.total).slice(0, 5).map((t) => (
+                      <div key={t.theme} className="flex justify-between text-sm">
+                        <span className="text-gray-600">{t.theme}</span>
+                        <span className="font-semibold">{t.total} ({Number(t.percent).toFixed(1)}%)</span>
+                      </div>
+                    ))}
+                    {themes.length === 0 && <p className="text-sm text-gray-400">No theme data.</p>}
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Major feeling (Form 7)</h3>
+                  {majorFeeling ? (
+                    <>
+                      <span className="text-3xl font-bold text-purple-600">{majorFeeling[0]}</span>
+                      <span className="text-sm text-gray-500 mt-1">Most reported feeling across all stress categories ({majorFeeling[1]}).</span>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400">No feeling data.</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             

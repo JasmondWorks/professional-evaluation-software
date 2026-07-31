@@ -33,19 +33,23 @@ export async function POST(req: Request) {
     })
     const names = staff.map((s) => s.name).filter((n): n is string => !!n)
 
-    // Approve fully (both tiers) so it clears the evaluation gate.
     const now = new Date()
-    const result = await prisma.stress.updateMany({
-      where: { org, cycle_id: cycle.id, rejected: false, approved: false, pesuser_name: { in: names } },
-      data: {
-        hod_approved: true,
-        hod_approved_by: approver,
-        hod_approved_at: now,
-        approved: true,
-        approved_by: approver,
-        approved_at: now,
-      },
-    })
+    let result
+    if (dept) {
+      // HOD tier only — stand in for the department's HOD. Does NOT touch the
+      // faculty tier, which stays independently pending.
+      result = await prisma.stress.updateMany({
+        where: { org, cycle_id: cycle.id, rejected: false, hod_approved: false, pesuser_name: { in: names } },
+        data: { hod_approved: true, hod_approved_by: approver, hod_approved_at: now },
+      })
+    } else {
+      // Faculty tier only — stand in for the Dean/Manager. Only rows already
+      // HOD-approved can be faculty-approved.
+      result = await prisma.stress.updateMany({
+        where: { org, cycle_id: cycle.id, rejected: false, hod_approved: true, approved: false, pesuser_name: { in: names } },
+        data: { approved: true, approved_by: approver, approved_at: now },
+      })
+    }
 
     return NextResponse.json({ message: `Approved ${result.count} submission(s).`, approved: result.count })
   } catch (err) {
