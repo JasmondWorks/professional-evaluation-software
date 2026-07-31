@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { Prisma } from '@prisma/client'
-import nodemailer from 'nodemailer'
 import bcrypt from 'bcryptjs'
+import { sendMail } from '@/app/lib/email'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { PRESET_ROLES, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
 import { checkSingleHead } from '../_lib/singleHead'
@@ -82,63 +82,20 @@ function sanitizeString(val?: string | null) {
 }
 
 
-// ---------------- SEND EMAIL (IN SAME FILE) -----------------
+// ---------------- SEND EMAIL (shared standard mailer) -----------------
 async function sendLoginEmail(to: string, name: string, password: string, replyTo?: string) {
-
-  console.log("Preparing email transport...")
-
-  try {
-
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
-
-    console.log("Transport created")
-
-    const verifyTransport = await transporter.verify()
-
-    console.log("SMTP verified:", verifyTransport)
-
-    const html = `
-      <div style="font-family: Arial; line-height: 1.6">
-        <h2>Hello ${name},</h2>
-        <p>Your account has been created successfully.</p>
-        <p><strong>Email:</strong> ${to}</p>
-        <p><strong>Password:</strong> ${password}</p>
-        <p>Please log in and change your password immediately.</p>
-      </div>
-    `;
-
-    console.log("Sending email to:", to)
-
-    const info = await transporter.sendMail({
-      from: `"Admin" <${process.env.EMAIL_USER}>`,
-      replyTo: replyTo || process.env.EMAIL_USER,
-      to,
-      subject: "Your Login Credentials",
-      html
-    });
-
-    console.log("Email sent successfully")
-    console.log("Message ID:", info.messageId)
-    console.log("Accepted:", info.accepted)
-    console.log("Rejected:", info.rejected)
-
-    return true
-
-  } catch (error) {
-
-    console.error("EMAIL ERROR:")
-    console.error(error)
-
-    return false
-  }
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+      <h2 style="color: #1e3a8a;">Hello ${name},</h2>
+      <p>Your account has been created successfully.</p>
+      <p><strong>Email:</strong> ${to}</p>
+      <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${password}</code></p>
+      <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
+      <p>Please log in and change your password immediately.</p>
+    </div>
+  `;
+  const { success } = await sendMail({ to, subject: "Your Login Credentials", html, replyTo });
+  return success;
 }
 
 

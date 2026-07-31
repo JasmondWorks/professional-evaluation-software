@@ -1,30 +1,77 @@
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter } from "nodemailer";
 
 /**
- * Email configuration
+ * Standard SMTP config from env. Works for Gmail on 587 (STARTTLS) or 465 (SSL).
+ *   EMAIL_HOST  (default smtp.gmail.com)
+ *   EMAIL_PORT  (default 587)
+ *   EMAIL_USER  the SMTP login
+ *   EMAIL_PASS  the app password (Gmail shows it with spaces — we strip them)
+ *   EMAIL_FROM  the From address (defaults to EMAIL_USER)
+ * (Legacy SMTP_HOST/SMTP_PORT are still honoured as fallbacks.)
  */
-const emailConfig = {
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: true, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-};
+const HOST = process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com";
+const PORT = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || "587", 10);
+const USER = process.env.EMAIL_USER;
+// Gmail app passwords are displayed in 4-char groups with spaces; strip them.
+const PASS = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+export const EMAIL_FROM = process.env.EMAIL_FROM || USER;
 
-/**
- * Create email transporter
- */
-function createTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn(
-      "⚠️  Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env",
-    );
+// One shared, reused transporter (don't create/verify one per email).
+let cachedTransporter: Transporter | null = null;
+function getTransporter(): Transporter | null {
+  if (!USER || !PASS) {
+    console.warn("⚠️  Email not configured. Set EMAIL_USER and EMAIL_PASS in .env");
     return null;
   }
+  if (!cachedTransporter) {
+    cachedTransporter = nodemailer.createTransport({
+      host: HOST,
+      port: PORT,
+      secure: PORT === 465, // 465 = implicit SSL; 587 = STARTTLS
+      requireTLS: PORT !== 465,
+      auth: { user: USER, pass: PASS },
+    });
+  }
+  return cachedTransporter;
+}
 
-  return nodemailer.createTransport(emailConfig);
+/**
+ * Generic send. The one place that talks to SMTP.
+ */
+export async function sendMail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const transporter = getTransporter();
+  if (!transporter) {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("📧 Email (not configured) →", opts.to, "|", opts.subject);
+    }
+    return { success: false, error: "Email service not configured" };
+  }
+  try {
+    const to = opts.to.trim().replace(/[\r\n,;]/g, "");
+    await transporter.sendMail({
+      from: `"PES" <${EMAIL_FROM}>`,
+      to,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+      replyTo: opts.replyTo,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Email send error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to send email" };
+  }
+}
+
+/** Back-compat shim for the template-based sender below. */
+function createTransporter() {
+  return getTransporter();
 }
 
 /**
