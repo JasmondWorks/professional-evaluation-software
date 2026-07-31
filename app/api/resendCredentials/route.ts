@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import nodemailer from 'nodemailer'
 import bcrypt from 'bcryptjs'
+import { sendMail } from '@/app/lib/email'
 
 const randombytes = require('randombytes')
 
@@ -23,41 +23,21 @@ function generateUniquePassword(length = 8) {
 }
 
 async function sendLoginEmail(to: string, name: string, password: string) {
-  try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    })
-
-    await transporter.verify()
-
-    const cleanTo = to.trim().replace(/[\r\n,;]/g, '');
-    await transporter.sendMail({
-      from: `"Admin" <${process.env.EMAIL_USER}>`,
-      to: cleanTo,
-      subject: 'Your Login Credentials',
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <h2 style="color: #1e3a8a;">Hello ${name},</h2>
-          <p>Your login credentials have been reset.</p>
-          <p><strong>Email:</strong> ${to}</p>
-          <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${password}</code></p>
-          <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
-          <p>Please log in and change your password immediately.</p>
-        </div>
-      `,
-    })
-
-    return true
-  } catch (error) {
-    console.error('EMAIL ERROR:', error)
-    return false
-  }
+  const { success } = await sendMail({
+    to,
+    subject: 'Your Login Credentials',
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #1e3a8a;">Hello ${name},</h2>
+        <p>Your login credentials have been reset.</p>
+        <p><strong>Email:</strong> ${to}</p>
+        <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${password}</code></p>
+        <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
+        <p>Please log in and change your password immediately.</p>
+      </div>
+    `,
+  })
+  return success
 }
 
 export async function POST(req: Request) {
