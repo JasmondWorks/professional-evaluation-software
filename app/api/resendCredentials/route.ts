@@ -51,7 +51,9 @@ export async function POST(req: Request) {
     // Drop a duplicate resend that arrives within the window — prevents a second
     // password reset + second email (and the resulting bounce).
     const last = recentResends.get(email)
+    console.log(`[resendCredentials] POST email=${email} at=${Date.now()} lastSeen=${last ?? 'none'}`)
     if (last && Date.now() - last < RESEND_WINDOW_MS) {
+      console.log(`[resendCredentials] DUPLICATE within window — skipping second reset/email for ${email}`)
       return NextResponse.json({ message: 'Credentials already being resent', status: 200 })
     }
     recentResends.set(email, Date.now())
