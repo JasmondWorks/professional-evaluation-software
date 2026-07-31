@@ -19,7 +19,18 @@ export default function Home() {
   // Inline error state for the specific network/server error message.
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // "Remember me" prefills the EMAIL on the next visit. The password is never
+  // stored on the device — only the email is remembered.
+  const [rememberedEmail, setRememberedEmail] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    try {
+      setRememberedEmail(localStorage.getItem("remember_email") || "");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const schema = Yup.object({
     email: Yup.string()
@@ -84,9 +95,19 @@ export default function Home() {
 
   return (
     <Formik
-      initialValues={{ email: "", password: "", remember: false }}
+      enableReinitialize
+      initialValues={{ email: rememberedEmail, password: "", remember: !!rememberedEmail }}
       validationSchema={schema}
-      onSubmit={(values) => login("/api/login", values)}
+      onSubmit={(values) => {
+        // Remember (or forget) only the email — never the password.
+        try {
+          if (values.remember) localStorage.setItem("remember_email", values.email);
+          else localStorage.removeItem("remember_email");
+        } catch {
+          /* ignore */
+        }
+        login("/api/login", values);
+      }}
     >
       {({ isValid, dirty }) => (
         <Form className="form w-full flex flex-col">
