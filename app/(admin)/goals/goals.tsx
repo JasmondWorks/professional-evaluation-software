@@ -1,11 +1,12 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { newGoal, viewGoal } from "@/app/state/goals/goalSlice";
 import { Status, CalendarRemove } from "iconsax-react";
 import jwt from "jsonwebtoken";
 import { getAccessToken } from "@/app/utils/auth";
+import { notify } from "@/lib/toast";
 
 function colorGrade(num: any): string {
   return num < 50 ? "red" : "green";
@@ -52,9 +53,17 @@ export default function Goals() {
   const [user, setUser] = useState({ name: "", role: "", org: "", id: "" });
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
   const [toggling, setToggling] = useState<EvaluationType | null>(null);
+  const [clearing, setClearing] = useState(false);
   // Toggles whenever the "new goal" modal opens/closes — used to refetch the
   // list right after a goal is created (no page reload needed).
   const newGoalFlag = useSelector((state: any) => state.goal?.new);
+
+  // Goals overdue by MORE than 2 weeks — eligible to be cleared.
+  const overdueGoals = goals.filter((g) => {
+    if (!g.due_date) return false;
+    const d = new Date(g.due_date).getTime();
+    return !isNaN(d) && d < Date.now() - 14 * 24 * 60 * 60 * 1000;
+  });
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
@@ -70,14 +79,20 @@ export default function Goals() {
     }
 
     async function fetchGoal() {
-      const data = await fetch("/api/getGoals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tokenData),
-      });
-      const goalData = await data.json();
-      setGoals(goalData);
-      setLoadingGoals(false);
+      try {
+        const data = await fetch("/api/getGoals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tokenData),
+        });
+        const goalData = await data.json().catch(() => []);
+        // Always store an array so the render never crashes on a bad shape.
+        setGoals(Array.isArray(goalData) ? goalData : []);
+      } catch {
+        setGoals([]);
+      } finally {
+        setLoadingGoals(false);
+      }
     }
 
     fetchGoal();
@@ -119,12 +134,59 @@ export default function Goals() {
     }
   }
 
+  async function handleClearOverdue() {
+    setClearing(true);
+    try {
+      const token = getAccessToken();
+      const res = await fetch("/api/clearOverdueGoals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to clear");
+      // Drop the cleared goals from view immediately.
+      setGoals((prev) =>
+        prev.filter((g) => {
+          if (!g.due_date) return true;
+          const d = new Date(g.due_date).getTime();
+          return isNaN(d) || d >= Date.now() - 14 * 24 * 60 * 60 * 1000;
+        }),
+      );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to clear overdue goals");
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  // Remind the owner (once per visit) to tidy up long-overdue goals.
+  const remindedRef = useRef(false);
+  useEffect(() => {
+    if (!remindedRef.current && overdueGoals.length > 0) {
+      remindedRef.current = true;
+      notify.info?.(
+        `You have ${overdueGoals.length} goal${overdueGoals.length === 1 ? "" : "s"} overdue by more than 2 weeks. Consider clearing them.`,
+      );
+    }
+  }, [overdueGoals.length]);
+
   return (
     <main className="m-6">
       <div className="goals flex justify-between">
         <h1 className="text-2xl font-bold my-auto">Goals</h1>
 
-        <div className="actions flex justify-between">
+        <div className="actions flex items-center">
+          {overdueGoals.length > 0 && (
+            <button
+              onClick={handleClearOverdue}
+              disabled={clearing}
+              title="Remove goals overdue by more than 2 weeks"
+              className="my-auto mr-3 rounded-md border border-red-300 text-red-700 px-4 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+            >
+              {clearing ? "Clearing…" : `Clear overdue (${overdueGoals.length})`}
+            </button>
+          )}
           <div
             className={`${grid ? "border-pes text-pes" : ""} grid rounded-md border hover:border-pes mx-3 my-auto p-1`}
             onClick={() => setGrid(true)}
