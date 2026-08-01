@@ -64,10 +64,6 @@ function ModelCard({ def }: { def: CardDef }) {
 
 export default function DataEntryPage() {
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
-  const [access, setAccess] = useState<{ allowedDepartment: boolean; allowedFaculty: boolean }>({
-    allowedDepartment: false,
-    allowedFaculty: false,
-  });
 
   const token = typeof window !== "undefined" ? getAccessToken() : null;
   const user = token ? jwtDecode<any>(token) : null;
@@ -81,12 +77,6 @@ export default function DataEntryPage() {
         if (res?.data?.evaluation) setEvaluation(res.data.evaluation);
       })
       .catch(console.error);
-
-    // Which stress results this staff member is allowed to see.
-    apiFetch("/api/stress/my-results")
-      .then((res) => res.json())
-      .then((d) => setAccess({ allowedDepartment: !!d?.allowedDepartment, allowedFaculty: !!d?.allowedFaculty }))
-      .catch(() => {});
   }, [user?.org]);
 
   const has = (key: EvaluationType) => evaluation.includes(key);
@@ -137,20 +127,6 @@ export default function DataEntryPage() {
     },
   ];
 
-  // Staff-only cards for viewing their own stress results (admin-granted).
-  const resultCards: CardDef[] = [];
-  if (access.allowedDepartment || access.allowedFaculty) {
-    resultCards.push({
-      title: "My stress results",
-      description: `See your ${access.allowedDepartment ? "department" : ""}${
-        access.allowedDepartment && access.allowedFaculty ? " and " : ""
-      }${access.allowedFaculty ? terms.unit.toLowerCase() : ""} stress results.`,
-      href: "/data-entry/stress/my-results",
-      Icon: Hierarchy,
-      color: "bg-indigo-50 text-indigo-600",
-    });
-  }
-
   // Role-specific entry surfaces.
   const roleCards: CardDef[] = [];
   if (role === "hod") {
@@ -180,7 +156,7 @@ export default function DataEntryPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...modelCards, ...resultCards, ...roleCards].map((def, i) => (
+        {[...modelCards, ...roleCards].map((def, i) => (
           <ModelCard key={`${def.title}-${i}`} def={def} />
         ))}
       </div>

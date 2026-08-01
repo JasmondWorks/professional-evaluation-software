@@ -11,6 +11,7 @@ import ProfileChunk from "@/app/components/Profilechunk";
 import Quickstats from "./Quickstats";
 import StressCycleBanner from "@/app/components/StressCycleBanner";
 import ApprovalBanner from "@/app/components/ApprovalBanner";
+import MyStressResultsCard from "@/app/components/MyStressResultsCard";
 import Datachunk from "@/app/components/data/Datachunk";
 import { getAccessToken } from "@/app/utils/auth";
 
@@ -77,6 +78,9 @@ export default function Dashboard() {
           <ProfileChunk />
         </div>
       )}
+
+      {/* Staff see their own dept/faculty stress here when the admin grants access. */}
+      {user?.role !== "admin" && <MyStressResultsCard />}
 
       <div className="(Goals and Insights)-- flex justify-between max-md:flex-col max-md:gap-2 mx-6 mb-6">
         <div className="(left_panel)-- w-4_5 max-md:w-full flex flex-col">
