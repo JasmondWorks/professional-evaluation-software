@@ -1,4 +1,5 @@
 'use client'
+import { getAccessToken } from '@/app/utils/auth';
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -6,6 +7,7 @@ import { jwtDecode } from 'jwt-decode'
 import { ArrowLeft } from 'iconsax-react'
 import LoadingButton from '@/app/components/ui/LoadingButton'
 import { notify } from '@/lib/toast'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   email: string
@@ -55,7 +57,7 @@ export default function ChangePassword() {
     const toastId = notify.loading('Changing password…')
 
     try {
-      const token = localStorage.getItem('access_token')
+      const token = getAccessToken()
       if (!token) {
         notify.dismiss(toastId)
         return fail('Please log in again')
@@ -63,7 +65,7 @@ export default function ChangePassword() {
 
       const decoded: JWTPayload = jwtDecode(token)
 
-      const response = await fetch('/api/changePassword', {
+      const response = await apiFetch('/api/changePassword', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Award, Download } from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface HallOfFameMember {
   id: string;
@@ -68,7 +69,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const res = await fetch(`/api/second-book-api/performance?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
+      const res = await apiFetch(`/api/second-book-api/performance?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch records");

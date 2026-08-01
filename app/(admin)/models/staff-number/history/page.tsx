@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface StaffEstimationRun {
   id: number;
@@ -43,7 +44,7 @@ export default function StaffEstimationHistoryPage() {
         const token = getAccessToken();
         if (!token) throw new Error("No token found");
 
-        const res = await fetch("/api/getStaffEstimation", {
+        const res = await apiFetch("/api/getStaffEstimation", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

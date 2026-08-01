@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
 import type { Prisma } from '@prisma/client'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 async function getUser(userNameOrEmail: string | null, userId: number | null) {
   if (!userNameOrEmail && userId === null) {
@@ -28,12 +28,10 @@ async function getUser(userNameOrEmail: string | null, userId: number | null) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
-    if (!token) {
-      return NextResponse.json({ data: ['no data'] })
-    }
+    const auth = authorize(tokenFromRequest(request), {});
+    if (!auth.ok) return auth.response;
 
-    const decoded = jwt.decode(token);
+    const decoded = auth.user;
     console.log('Decoded token payload:', decoded);
 
     let identifier: string | null = null;

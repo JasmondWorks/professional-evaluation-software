@@ -18,6 +18,8 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { ArrowLeft2, Calculator, Chart2, Save2, DocumentText, Warning2 } from "iconsax-react";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const generateNormalCurve = (mean = 50, stdDev = 15) => {
   const data = [];
@@ -129,7 +131,7 @@ export default function StressAnalysisTool() {
   const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
     setBusy(true);
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -153,8 +155,8 @@ export default function StressAnalysisTool() {
   };
 
   const refetchApproval = () => {
-    const token = localStorage.getItem("access_token");
-    fetch("/api/stress/org-approval-status", { headers: { Authorization: `Bearer ${token}` } })
+    const token = getAccessToken();
+    apiFetch("/api/stress/org-approval-status", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then(setApprovalStatus)
       .catch(() => {});
@@ -165,8 +167,8 @@ export default function StressAnalysisTool() {
     const key = `${group}:${name}`;
     setApprovingUnit(key);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/admin-approve", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/admin-approve", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(group === "departments" ? { dept: name } : { faculty: name }),
@@ -182,18 +184,18 @@ export default function StressAnalysisTool() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
     const auth = { headers: { Authorization: `Bearer ${token}` } };
-    fetch("/api/stress/org-approval-status", auth)
+    apiFetch("/api/stress/org-approval-status", auth)
       .then((r) => r.json())
       .then((d) => setApprovalStatus(d))
       .catch(() => {});
-    fetch("/api/stress/theme-report", auth)
+    apiFetch("/api/stress/theme-report", auth)
       .then((r) => r.json())
       .then((d) => setThemeReport(d))
       .catch(() => {});
-    fetch("/api/stress/next-cycle-mode", auth)
+    apiFetch("/api/stress/next-cycle-mode", auth)
       .then((r) => r.json())
       .then((d) => { if (d && typeof d.willBeFull === "boolean") setNextMode(d); })
       .catch(() => {});
@@ -202,7 +204,7 @@ export default function StressAnalysisTool() {
 
   useEffect(() => {
     async function fetchData() {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       if (!token) return;
 
       try {
@@ -210,7 +212,7 @@ export default function StressAnalysisTool() {
         setRole(decoded?.role || null);
         setCategory(decoded?.productCategory ?? decoded?.category ?? null);
 
-        const res = await fetch("/api/getStressDataScores", {
+        const res = await apiFetch("/api/getStressDataScores", {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
@@ -229,7 +231,7 @@ export default function StressAnalysisTool() {
         // available after navigating away and back (e.g. from History), instead
         // of disabling until ANOVA is re-run. Factors are stored as 0–100.
         try {
-          const evalRes = await fetch("/api/getStressEvaluation", {
+          const evalRes = await apiFetch("/api/getStressEvaluation", {
             cache: "no-store",
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -418,8 +420,8 @@ export default function StressAnalysisTool() {
     setStartingCycle(true);
     setCycleMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/start-cycle", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/start-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...cycleWindows, forceSettings }),
@@ -441,8 +443,8 @@ export default function StressAnalysisTool() {
     setRunningSetting(true);
     setSettingMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/run-setting", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/run-setting", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ feelingClosesAt: feelingClosesAt || null }),
@@ -465,8 +467,8 @@ export default function StressAnalysisTool() {
     setPreviewing(true);
     setSettingMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/setting-preview", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/setting-preview", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -494,8 +496,8 @@ export default function StressAnalysisTool() {
     setSaving(true);
     setMsg(null);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/saveStressEvaluation", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/saveStressEvaluation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

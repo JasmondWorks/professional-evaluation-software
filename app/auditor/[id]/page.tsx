@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const response = await fetch("/api/verify-token", {
+        const response = await apiFetch("/api/verify-token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
@@ -80,7 +81,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auditor-responses", {
+      const response = await apiFetch("/api/auditor-responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, responses, ...formData, credentialData: Object.values(credentialData) }),

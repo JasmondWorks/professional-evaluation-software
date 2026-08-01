@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev'
-
-import jwt from 'jsonwebtoken';
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 export async function POST(req: NextRequest) {
   try {
-    const { token } = await req.json();
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
 
-    const user = jwt.decode(token);
-    let userOrg: string | null = null;
-    if (typeof user === 'object' && user !== null && 'org' in user) {
-        userOrg = (user as { org?: string }).org ?? null;
-    }
+    const userOrg = auth.user.org ? String(auth.user.org) : null;
 
     if (!userOrg) {
         return NextResponse.json([], { status: 200 });

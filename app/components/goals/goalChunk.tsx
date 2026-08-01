@@ -1,6 +1,8 @@
 "use client"
 import { useEffect, useState } from "react"
 import { getAccessToken } from "@/app/utils/auth"
+import { apiFetch } from '@/app/utils/apiFetch';
+import Skeleton from '../ui/Skeleton';
 
 export default function Goals({
    onGoalsLoaded,
@@ -21,7 +23,7 @@ export default function Goals({
             return;
          }
 
-         const res = await fetch(`/api/getGoals`, {
+         const res = await apiFetch(`/api/getGoals`, {
             method: 'POST',
             headers:{
                'Content-Type': 'application/json'
@@ -78,9 +80,17 @@ export default function Goals({
    return(
       <>
          {loading ? (
-            <div className="p-4 m-2 bg-gray-50 rounded-sm flex justify-between">
-               <p>Loading info....</p>
-               <img src="loading.svg" alt="loading" className="h-6 w-6 animate-spin my-auto"/>
+            <div className='metrics flex flex-col justify-normal p-4 py-1 gap-4 mt-2'>
+               {[1, 2, 3].map(i => (
+                  <div key={i} className="flex flex-col gap-4">
+                     <div className='w-full grid grid-cols-3 gap-4'>
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-5 w-24" />
+                     </div>
+                     <hr />
+                  </div>
+               ))}
             </div>
          ) : error ? (
             <div className="p-4 m-2 bg-red-50 text-red-600 rounded-sm">

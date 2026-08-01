@@ -29,6 +29,7 @@ import {
 import { getCurrentUser, getAccessToken } from "@/app/utils/auth";
 import { useAuth } from "@/app/components/useAuth";
 import Link from "next/link";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const CONFIDENCE_ACCURACY_MAP: Record<
   number,
@@ -244,7 +245,7 @@ const WorkSamplingPageInner: React.FC = () => {
   useEffect(() => {
     if (isListView) {
       setLoading(true);
-      fetch("/api/workSampling/studies")
+      apiFetch("/api/workSampling/studies")
         .then((r) => r.json())
         .then((json) => {
           if (json.success) setStudyList(json.data);
@@ -257,7 +258,7 @@ const WorkSamplingPageInner: React.FC = () => {
   const confirmDeleteStudy = async () => {
     if (deleteConfirmId === null) return;
     try {
-      const res = await fetch(`/api/workSampling/studies/${deleteConfirmId}`, {
+      const res = await apiFetch(`/api/workSampling/studies/${deleteConfirmId}`, {
         method: "DELETE",
       });
       const json = await res.json();
@@ -287,7 +288,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
     setLoading(true);
     isLoadingFromDb.current = true;
-    fetch(`/api/workSampling/studies/${studyIdParam}`)
+    apiFetch(`/api/workSampling/studies/${studyIdParam}`)
       .then((r) => r.json())
       .then((json) => {
         if (!json.success) return;
@@ -491,7 +492,7 @@ const WorkSamplingPageInner: React.FC = () => {
     } = latestSavePayload.current;
     if (currentId) return currentId;
     setSaveStatus("saving");
-    const res = await fetch("/api/workSampling/studies", {
+    const res = await apiFetch("/api/workSampling/studies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -554,7 +555,7 @@ const WorkSamplingPageInner: React.FC = () => {
     try {
       setSaveStatus("saving");
       const sid = await ensureStudy();
-      const res = await fetch("/api/workSampling/positions", {
+      const res = await apiFetch("/api/workSampling/positions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -603,7 +604,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
     if (pos?.dbId) {
       try {
-        await fetch("/api/workSampling/positions", {
+        await apiFetch("/api/workSampling/positions", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: pos.dbId }),
@@ -648,7 +649,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
       try {
         setSaveStatus("saving");
-        const res = await fetch("/api/workSampling/observations", {
+        const res = await apiFetch("/api/workSampling/observations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -690,7 +691,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
     try {
       setSaveStatus("saving");
-      const res = await fetch("/api/workSampling/observations", {
+      const res = await apiFetch("/api/workSampling/observations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -726,7 +727,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
     if (obs?.dbId) {
       try {
-        await fetch("/api/workSampling/observations", {
+        await apiFetch("/api/workSampling/observations", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: obs.dbId }),
@@ -751,7 +752,7 @@ const WorkSamplingPageInner: React.FC = () => {
       if (!id) return; // no study record yet — saved on first addPosition
       try {
         setSaveStatus("saving");
-        const res = await fetch(`/api/workSampling/studies/${id}`, {
+        const res = await apiFetch(`/api/workSampling/studies/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -789,7 +790,7 @@ const WorkSamplingPageInner: React.FC = () => {
       const { studyParameters: sp, studyMeta: sm } = latestSavePayload.current;
       const datesToLock = [...latestScheduleDates.current];
       const timesToLock = [...latestScheduleTimes.current];
-      const res = await fetch(`/api/workSampling/studies/${sid}`, {
+      const res = await apiFetch(`/api/workSampling/studies/${sid}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -971,7 +972,7 @@ const WorkSamplingPageInner: React.FC = () => {
     // Persist the result so it shows up in Staff Number > History.
     try {
       setSaveStatus("saving");
-      const res = await fetch("/api/staffEstimation", {
+      const res = await apiFetch("/api/staffEstimation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

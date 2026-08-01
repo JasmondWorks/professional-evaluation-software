@@ -1,8 +1,9 @@
+import { apiFetch } from '@/app/utils/apiFetch';
 "use client";  
 
 export default function StripeCheckoutButton({ plan }: { plan: string }) {
   const handleCheckout = async () => {
-    // const res = await fetch("/api/subByStripe", {
+    // const res = await apiFetch("/api/subByStripe", {
     //   method: "POST",
     //   body: JSON.stringify({ plan }),
     //   headers: { "Content-Type": "application/json" },

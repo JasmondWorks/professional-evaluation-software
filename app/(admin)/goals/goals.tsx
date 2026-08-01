@@ -7,6 +7,7 @@ import { Status, CalendarRemove } from "iconsax-react";
 import jwt from "jsonwebtoken";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 function colorGrade(num: any): string {
   return num < 50 ? "red" : "green";
@@ -80,7 +81,7 @@ export default function Goals() {
 
     async function fetchGoal() {
       try {
-        const data = await fetch("/api/getGoals", {
+        const data = await apiFetch("/api/getGoals", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(tokenData),
@@ -102,7 +103,7 @@ export default function Goals() {
   useEffect(() => {
     if (!user.org || user.role !== "admin") return;
 
-    fetch(`/api/org/${encodeURIComponent(user.org)}`)
+    apiFetch(`/api/org/${encodeURIComponent(user.org)}`)
       .then((r) => r.json())
       .then((res) => {
         if (res?.data?.evaluation) setEvaluation(res.data.evaluation);
@@ -114,7 +115,7 @@ export default function Goals() {
     setToggling(type);
     try {
       const token = getAccessToken();
-      const res = await fetch("/api/toggleEvaluation", {
+      const res = await apiFetch("/api/toggleEvaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,10 +139,10 @@ export default function Goals() {
     setClearing(true);
     try {
       const token = getAccessToken();
-      const res = await fetch("/api/clearOverdueGoals", {
+      const res = await apiFetch("/api/clearOverdueGoals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, goalIds: overdueGoals.map((g: any) => g.id) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Failed to clear");

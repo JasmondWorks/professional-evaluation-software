@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 
 import React, { useEffect, useState } from 'react'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type User = {
   id: number
@@ -25,7 +26,7 @@ export default function Page({ params }: { params: { org: string } }) {
       const access_token = getAccessToken() as string
       jwtDecode(access_token) // assuming you check auth elsewhere
 
-      const res = await fetch(`/api/admin/orgs/${params.org}/users`)
+      const res = await apiFetch(`/api/admin/orgs/${params.org}/users`)
       const data = await res.json()
       setUsers(data)
     }

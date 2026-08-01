@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import RatingCell from "./RatingCell";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const categories = [
   "Organization",
@@ -64,8 +66,8 @@ export default function Form6({
     // The per-category maximums come from the CYCLE limits — the mean of Form 5
     // across all staff (computed by "Run Setting") — NOT the individual's own
     // Form 5 scores. This is the whole reason Form 5 must close before Form 6.
-    const token = localStorage.getItem("access_token");
-    fetch(`/api/stress/limits`, { headers: { Authorization: `Bearer ${token}` } })
+    const token = getAccessToken();
+    apiFetch(`/api/stress/limits`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         const limits = (d?.limits || {}) as Record<string, number>;

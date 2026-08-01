@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "iconsax-react";
 import {jwtDecode} from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 export default function MaintenancePaymentPage() {
@@ -61,7 +62,7 @@ export default function MaintenancePaymentPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/maintenance/initialize", {
+      const res = await apiFetch("/api/maintenance/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, org, amountNaira: 5000 }),
@@ -85,7 +86,7 @@ export default function MaintenancePaymentPage() {
     try {
       const token = getAccessToken();
 
-      const res = await fetch("/api/maintenance/verify", {
+      const res = await apiFetch("/api/maintenance/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

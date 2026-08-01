@@ -2,6 +2,7 @@
 
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 export default function SubscriptionButton({ plan }: { plan: string }) {
@@ -16,7 +17,7 @@ export default function SubscriptionButton({ plan }: { plan: string }) {
       console.log("the decoded", decoded)
       let { userID, name } = decoded;
 
-        const res = await fetch("/api/subByPaypal", {
+        const res = await apiFetch("/api/subByPaypal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ plan, userID, name }),

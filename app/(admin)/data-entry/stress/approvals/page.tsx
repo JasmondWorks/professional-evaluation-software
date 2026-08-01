@@ -7,6 +7,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { notify } from "@/lib/toast";
 import StressSubmissionModal from "@/app/components/StressSubmissionModal";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type Row = { name: string | null; submitted: boolean; approved: boolean };
 type Status = {
@@ -32,9 +34,9 @@ export default function StressApprovals() {
   const [reason, setReason] = useState("");
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     try {
-      const res = await fetch("/api/stress/dept-status", {
+      const res = await apiFetch("/api/stress/dept-status", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStatus(await res.json());
@@ -53,8 +55,8 @@ export default function StressApprovals() {
     setWorking(true);
     const toastId = notify.loading("Approving…");
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/approve", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(userName ? { userName } : {}),
@@ -77,8 +79,8 @@ export default function StressApprovals() {
     setWorking(true);
     const toastId = notify.loading("Sending back…");
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/reject", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/reject", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ userName: rejecting, reason: reason.trim() }),

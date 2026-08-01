@@ -100,6 +100,12 @@ export async function GET(req: Request) {
       }
     }
 
+    // Admins and super-admins shouldn't receive form-filling CTAs or notices.
+    if (auth.user.role === 'admin' || auth.user.role === 'super-admin') {
+      cta = null;
+      notice = null;
+    }
+
     return NextResponse.json({
       active: true,
       phase: cycle.phase,

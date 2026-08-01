@@ -5,6 +5,7 @@ import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
 import { getAccessToken } from "@/app/utils/auth";
 import Table, { TableColumn } from "@/app/components/ui/Table";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type HistoryRecord = {
   id: number;
@@ -28,7 +29,7 @@ export default function PersonnelUtilizationHistory() {
       if (!token) return;
 
       try {
-        const req = await fetch("/api/getPersonnelUtilization", {
+        const req = await apiFetch("/api/getPersonnelUtilization", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

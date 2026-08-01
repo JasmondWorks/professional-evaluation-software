@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface StudentTeacherRun {
   id: number;
@@ -32,7 +33,7 @@ export default function StudentTeacherHistoryPage() {
         const token = getAccessToken();
         if (!token) throw new Error("No token found");
 
-        const res = await fetch("/api/getStudentTeacherRatio", {
+        const res = await apiFetch("/api/getStudentTeacherRatio", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

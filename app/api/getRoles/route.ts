@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
 async function getRoles( user: string | null ) {
@@ -9,22 +9,15 @@ async function getRoles( user: string | null ) {
 }
 
 export async function POST(request: NextRequest) {
-  const { token } = await request.json();
-  const user = jwt.decode(token);
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
 
-  if (token) {
-    try {
-      let userOrg: string | null = null;
-      if (typeof user === 'object' && user !== null && 'org' in user) {
-        userOrg = (user as { org?: string }).org ?? null;
-      }
-      let userInfo = await getRoles(userOrg);
-      return NextResponse.json(userInfo);
-
-    } catch(err) {
-      console.error(err)
-      return NextResponse.json([]);
-    }    
-  }
-  NextResponse.redirect(new URL('/not-found', request.url))
+  try {
+    const userOrg = auth.user.org ? String(auth.user.org) : null;
+    let userInfo = await getRoles(userOrg);
+    return NextResponse.json(userInfo);
+  } catch(err) {
+    console.error(err)
+    return NextResponse.json([]);
+  }    
 }

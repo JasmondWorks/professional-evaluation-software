@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
 async function getUser( user: string | null ) {
@@ -9,22 +9,17 @@ async function getUser( user: string | null ) {
 }
 
 export async function POST(request: NextRequest) {
-  const { token } = await request.json();
-  const decoded = jwt.decode(token);
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
 
-  if (token) {
-    try {
-      let userName: string | null = null;
-      if (typeof decoded === 'object' && decoded !== null && 'name' in decoded) {
-        userName = (decoded as { name?: string }).name ?? null;
-      }
-      let userInfo = await getUser(userName)
-      return NextResponse.json(userInfo)
-
-    } catch(err) {
-      console.error(err)
-      return NextResponse.json([])
-    }    
-  }
-  NextResponse.redirect(new URL('/not-found', request.url))
+  try {
+    // The previous code passed decoded.name into getUsers, which filtered by { org: user }
+    // It should clearly be the org.
+    const userOrg = auth.user.org ? String(auth.user.org) : null;
+    let userInfo = await getUser(userOrg)
+    return NextResponse.json(userInfo)
+  } catch(err) {
+    console.error(err)
+    return NextResponse.json([])
+  }    
 }

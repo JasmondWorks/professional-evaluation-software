@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useEffect, useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AdminAuditorsPage() {
   const [auditors, setAuditors] = useState<any[]>([]);
@@ -21,7 +22,7 @@ export default function AdminAuditorsPage() {
   ];
 
   const fetchAuditors = async () => {
-    const res = await fetch("/api/admin/auditors");
+    const res = await apiFetch("/api/admin/auditors");
     const data = await res.json();
     setAuditors(data);
   };
@@ -37,7 +38,7 @@ export default function AdminAuditorsPage() {
   }, []);
 
   const handleAction = async (id: number, action: "approve" | "reject") => {
-    const res = await fetch("/api/admin/auditors", {
+    const res = await apiFetch("/api/admin/auditors", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
