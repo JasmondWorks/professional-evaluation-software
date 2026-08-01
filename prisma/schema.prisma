@@ -390,6 +390,10 @@ model pesuser {
   email            String          @unique @db.VarChar(255)
   password         String          @db.VarChar(255)
   gsm              String?         @db.VarChar(50)
+  // Email deliverability, updated by the Resend webhook: delivered | bounced |
+  // complained. "bounced" flags the address as undeliverable in the UI.
+  email_status     String?         @db.VarChar(30)
+  email_status_at  DateTime?
   // Functional role — always a system PRESET so role-based UI stays predictable.
   role             String?         @db.VarChar(50)
   // Human-facing role label to SHOW (e.g. the custom role name "Paginator").
