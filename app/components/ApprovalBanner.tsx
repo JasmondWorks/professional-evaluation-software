@@ -10,13 +10,15 @@ import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import { Notification } from "iconsax-react";
 import { orgTerms } from "@/app/lib/orgTerms";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function ApprovalBanner() {
   const [pending, setPending] = useState(0);
   const [cfg, setCfg] = useState<{ href: string; unit: string } | null>(null);
 
   const refetch = useCallback(async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const token = typeof window !== "undefined" ? getAccessToken() : null;
     if (!token || token === "undefined" || token === "null") return;
     let decoded: any = {};
     try {
@@ -39,7 +41,7 @@ export default function ApprovalBanner() {
     if (!endpoint) return;
     setCfg({ href: endpoint.href, unit: endpoint.unit });
     try {
-      const res = await fetch(endpoint.url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiFetch(endpoint.url);
       const d = await res.json();
       if (d?.active === false) {
         setPending(0);
