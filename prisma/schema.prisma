@@ -225,9 +225,9 @@ model hall_of_fame {
 }
 
 model index {
-  id           Int      @id @default(autoincrement())
-  redundancy   Decimal? @db.Decimal
-  productivity Decimal? @db.Decimal
+  id           Int       @id @default(autoincrement())
+  redundancy   Decimal?  @db.Decimal
+  productivity Decimal?  @db.Decimal
   utility      Decimal?  @db.Decimal
   dept         String?   @db.VarChar(255)
   org          String?
@@ -358,30 +358,19 @@ model personnel_redundancy {
 }
 
 model personnel_utilization {
-  id             Int       @id @default(autoincrement())
-  org            String
-  b              Decimal?  @db.Decimal(10, 2)
-  w              Decimal?  @db.Decimal(10, 2)
-  p0             Decimal?  @db.Decimal(6, 3)
-  t1             Decimal?  @db.Decimal(6, 3)
-  t2             Decimal?  @db.Decimal(6, 3)
-  t3             Decimal?  @db.Decimal(6, 3)
-  t4             Decimal?  @db.Decimal(6, 3)
-  s0             Decimal?  @db.Decimal(6, 3)
-  g              Decimal?  @db.Decimal(10, 2)
-  d              Decimal?  @db.Decimal(10, 2)
-  y              Decimal?  @db.Decimal(6, 3)
-  alpha          Decimal?  @db.Decimal(6, 3)
-  lambda         Decimal?  @db.Decimal(6, 3)
-  mu             Decimal?  @db.Decimal(6, 3)
-  j              Decimal?  @db.Decimal(10, 2)
-  kmin           Int?
-  kmax           Int?
-  kstar          Int?
-  hstar          Decimal?  @db.Decimal(12, 6)
-  constraints_ok Boolean?  @default(true)
-  violations     String[]
-  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  id         Int       @id @default(autoincrement())
+  org        String
+  a_ij       Decimal?  @db.Decimal(10, 4)
+  lambda     Decimal?  @db.Decimal(10, 6)
+  mu         Decimal?  @db.Decimal(10, 6)
+  rho        Decimal?  @db.Decimal(10, 6)
+  p0         Decimal?  @db.Decimal(10, 6)
+  lbar       Decimal?  @db.Decimal(10, 6)
+  kmin       Int?
+  kmax       Int?
+  kstar      Int?
+  hstar      Decimal?  @db.Decimal(12, 6)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model pesuser {
@@ -518,16 +507,16 @@ model staff_survey_responses {
 }
 
 model stress {
-  id                            Int     @id @default(autoincrement())
-  pesuser_name                  String  @db.VarChar(255)
-  org                           String? @db.VarChar(255)
+  id                            Int       @id @default(autoincrement())
+  pesuser_name                  String    @db.VarChar(255)
+  org                           String?   @db.VarChar(255)
   stress_theme                  Int?
   stress_feeling_frequency      Int?
   stress_category               Int?
   stress_theme_form             Int?
   stress_feeling_frequency_form Int?
   assessment_data               Json?
-  dept                          String? @db.VarChar(255)
+  dept                          String?   @db.VarChar(255)
   // Which cycle this Form 6/7 submission belongs to (one submission per cycle).
   cycle_id                      Int?
   // Two-tier approval. Tier 1: the department head (HOD) verifies & approves
@@ -535,17 +524,17 @@ model stress {
   // head (Dean/Manager) then signs off the faculty — but only submissions that
   // are already hod_approved. `approved` is the final (faculty) approval; the
   // admin can only evaluate once every submission is `approved`.
-  hod_approved                  Boolean @default(false)
-  hod_approved_by               String? @db.VarChar(255)
+  hod_approved                  Boolean   @default(false)
+  hod_approved_by               String?   @db.VarChar(255)
   hod_approved_at               DateTime?
-  approved                      Boolean @default(false)
-  approved_by                   String? @db.VarChar(255)
+  approved                      Boolean   @default(false)
+  approved_by                   String?   @db.VarChar(255)
   approved_at                   DateTime?
   // A head can send a submission back for re-entry with a reason. While
   // rejected, it counts as "not submitted" until the staff member re-submits.
-  rejected                      Boolean @default(false)
+  rejected                      Boolean   @default(false)
   rejection_reason              String?
-  rejected_by                   String? @db.VarChar(255)
+  rejected_by                   String?   @db.VarChar(255)
   rejected_at                   DateTime?
 }
 
@@ -664,21 +653,22 @@ model userperformance {
 }
 
 model student_teacher_ratio {
-  id                    Int       @id @default(autoincrement())
-  org                   String?   @db.VarChar(255)
-  dept                  String?   @db.VarChar(255)
-  optimalK              Int?
-  totalStaffNeeded      Int?
-  supervisoryStaff      Int?
-  managementLevel1      Int?
-  managementLevel2      Int?
-  topManagement         Int?
-  lecturers             Int?
-  seniorLecturers       Int?
-  professors            Int?
-  efficiencyValue       Decimal?  @db.Decimal(10, 4)
-  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  id               Int       @id @default(autoincrement())
+  org              String?   @db.VarChar(255)
+  dept             String?   @db.VarChar(255)
+  optimalK         Int?
+  totalStaffNeeded Int?
+  supervisoryStaff Int?
+  managementLevel1 Int?
+  managementLevel2 Int?
+  topManagement    Int?
+  lecturers        Int?
+  seniorLecturers  Int?
+  professors       Int?
+  efficiencyValue  Decimal?  @db.Decimal(10, 4)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
 }
+
 model stress_evaluation_history {
   id              Int       @id @default(autoincrement())
   org             String?   @db.VarChar(255)
@@ -713,39 +703,39 @@ model hod_assignments {
 // These tables were previously created via ad-hoc raw DDL and are absent from
 // fresh databases; modelled here so `db push` provisions them everywhere.
 model WorkSamplingStudy {
-  id                         Int                       @id @default(autoincrement())
-  org                        String?
-  department                 String?
-  analyst                    String?
-  authorizedBy               String?
-  confidenceLevel            Float?
-  desiredAccuracy            Float?
-  preliminaryP               Float?
-  totalObservationsRequired  Int?
-  studyMonth                 String?
-  studyMonths                Json?
-  observationsPerDay         Int?
-  workingHoursPerDay         Float?
-  workStartTime              String?
-  minCycleDuration           Float?
-  maxDuration                Float?
-  estimatedStudyDays         Float?
-  availableAnnualHours       Float?
+  id                          Int                    @id @default(autoincrement())
+  org                         String?
+  department                  String?
+  analyst                     String?
+  authorizedBy                String?
+  confidenceLevel             Float?
+  desiredAccuracy             Float?
+  preliminaryP                Float?
+  totalObservationsRequired   Int?
+  studyMonth                  String?
+  studyMonths                 Json?
+  observationsPerDay          Int?
+  workingHoursPerDay          Float?
+  workStartTime               String?
+  minCycleDuration            Float?
+  maxDuration                 Float?
+  estimatedStudyDays          Float?
+  availableAnnualHours        Float?
   defaultPerformanceAllowance Float?
-  lockedDates                Json?
-  lockedTimes                Json?
-  createdAt                  DateTime?                 @default(now()) @db.Timestamp(6)
-  positions                  WorkSamplingPosition[]
+  lockedDates                 Json?
+  lockedTimes                 Json?
+  createdAt                   DateTime?              @default(now()) @db.Timestamp(6)
+  positions                   WorkSamplingPosition[]
 }
 
 model WorkSamplingPosition {
-  id                  Int                       @id @default(autoincrement())
-  studyId             Int
-  name                String
-  department          String?
+  id                   Int                       @id @default(autoincrement())
+  studyId              Int
+  name                 String
+  department           String?
   performanceAllowance Float?
-  study               WorkSamplingStudy         @relation(fields: [studyId], references: [id], onDelete: Cascade)
-  observations        WorkSamplingObservation[]
+  study                WorkSamplingStudy         @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  observations         WorkSamplingObservation[]
 }
 
 model WorkSamplingObservation {
