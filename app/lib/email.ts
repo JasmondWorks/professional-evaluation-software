@@ -55,7 +55,7 @@ export async function sendMail(opts: {
         console.error("[email:resend] error:", error);
         return { success: false, error: error.message };
       }
-      console.log(`[email:resend] sent to=${to} id=${data?.id}`);
+      void data;
       return { success: true };
     } catch (e) {
       console.error("[email:resend] threw:", e);
@@ -66,16 +66,13 @@ export async function sendMail(opts: {
   // 2) SMTP fallback
   if (smtpTransporter) {
     try {
-      const info = await smtpTransporter.sendMail({
+      await smtpTransporter.sendMail({
         from: FROM,
         to,
         subject: opts.subject,
         html: opts.html,
         replyTo: opts.replyTo,
       });
-      console.log(
-        `[email:smtp] sent to=${to} id=${info.messageId} accepted=${JSON.stringify(info.accepted)} rejected=${JSON.stringify(info.rejected)}`,
-      );
       return { success: true };
     } catch (e) {
       console.error("[email:smtp] failed:", e);
