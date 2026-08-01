@@ -1,160 +1,189 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EntrySection } from "../../components/EntrySection";
 import { jwtDecode } from "jwt-decode";
 import Link from "next/link";
+import {
+  Award,
+  Activity,
+  Heart,
+  People,
+  Book1,
+  Verify,
+  Hierarchy,
+  ArrowRight2,
+} from "iconsax-react";
+import { orgTerms } from "@/app/lib/orgTerms";
+import { getAccessToken } from "@/app/utils/auth";
+import { apiFetch } from "@/app/utils/apiFetch";
 
 export const dynamic = "force-dynamic";
 
-const stress = [
-  {
-    label: "Staff Stress Category form",
-    templateUrl: "/templates/stress_category.xlsx",
-    formId: "/stress/stress-category",
-  },
-  {
-    label: "Stress Theme/Feeling/Frequency form",
-    templateUrl: "/templates/stress_theme.xlsx",
-    formId: "/stress/stress-feeling",
-  },
-];
-
-import { orgTerms } from "@/app/lib/orgTerms";
-import { getAccessToken } from '@/app/utils/auth';
-import { apiFetch } from '@/app/utils/apiFetch';
-
 type EvaluationType = "appraisal" | "performance" | "stress";
 
+type CardDef = {
+  title: string;
+  description: string;
+  href: string;
+  Icon: any;
+  color: string; // tailwind bg/text for the icon tile
+  enabled?: boolean;
+  disabledNote?: string;
+};
+
+function ModelCard({ def }: { def: CardDef }) {
+  const enabled = def.enabled !== false;
+  const inner = (
+    <div
+      className={`group relative bg-white border border-gray-200 rounded-2xl p-6 transition-all duration-300 overflow-hidden flex flex-col h-full ${
+        enabled ? "hover:shadow-xl hover:border-pes/30 hover:-translate-y-1 cursor-pointer" : "opacity-60"
+      }`}
+    >
+      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-pes/5 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
+      <div className="flex items-start justify-between relative z-10">
+        <div className={`p-3 rounded-xl ${def.color}`}>
+          <def.Icon size={26} variant="Bulk" />
+        </div>
+        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-pes group-hover:text-white transition-colors duration-300">
+          <ArrowRight2 size={16} className="text-gray-400 group-hover:text-white transition-colors duration-300" />
+        </div>
+      </div>
+      <div className="mt-6 relative z-10 flex-grow">
+        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-pes transition-colors duration-200">
+          {def.title}
+        </h3>
+        <p className="mt-2 text-sm text-gray-500 leading-relaxed">{def.description}</p>
+        {!enabled && def.disabledNote && (
+          <p className="mt-3 text-xs text-amber-600">{def.disabledNote}</p>
+        )}
+      </div>
+    </div>
+  );
+  return enabled ? <Link href={def.href}>{inner}</Link> : <div>{inner}</div>;
+}
+
 export default function DataEntryPage() {
-  const [open, setOpen] = useState(false);
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
+  const [access, setAccess] = useState<{ allowedDepartment: boolean; allowedFaculty: boolean }>({
+    allowedDepartment: false,
+    allowedFaculty: false,
+  });
 
-  const token =
-    typeof window !== "undefined" ? getAccessToken() : null;
-
+  const token = typeof window !== "undefined" ? getAccessToken() : null;
   const user = token ? jwtDecode<any>(token) : null;
+  const terms = orgTerms(user?.productCategory ?? user?.category);
 
   useEffect(() => {
     if (!user?.org) return;
-
     apiFetch(`/api/org/${encodeURIComponent(user.org)}`)
       .then((res) => res.json())
       .then((res) => {
-        if (res?.data?.evaluation) {
-          setEvaluation(res.data.evaluation);
-        }
+        if (res?.data?.evaluation) setEvaluation(res.data.evaluation);
       })
       .catch(console.error);
+
+    // Which stress results this staff member is allowed to see.
+    apiFetch("/api/stress/my-results")
+      .then((res) => res.json())
+      .then((d) => setAccess({ allowedDepartment: !!d?.allowedDepartment, allowedFaculty: !!d?.allowedFaculty }))
+      .catch(() => {});
   }, [user?.org]);
 
-  const go = (formId: string) => {
-    window.location.href = `/data-entry/${formId}`;
-  };
-
   const has = (key: EvaluationType) => evaluation.includes(key);
+  const role = user?.role;
+
+  // Auditors get their own single entry surface.
+  if (role === "auditor") {
+    return (
+      <div className="p-8 max-w-7xl mx-auto w-full">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Data Entry</h1>
+          <p className="mt-2 text-gray-500 max-w-2xl text-sm">Record and review the entries assigned to you.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ModelCard def={{ title: "Auditor entries", description: "Enter and review staff audit responses.", href: "/data-entry/auditor", Icon: Verify, color: "bg-purple-50 text-purple-600" }} />
+        </div>
+      </div>
+    );
+  }
+
+  const modelCards: CardDef[] = [
+    {
+      title: "Appraisal",
+      description: "Complete your appraisal self-assessment forms.",
+      href: "/data-entry/appraisal",
+      Icon: Award,
+      color: "bg-blue-50 text-blue-600",
+      enabled: has("appraisal"),
+      disabledNote: "Not enabled by your organization yet.",
+    },
+    {
+      title: "Performance",
+      description: "Enter your performance evaluation data.",
+      href: "/data-entry/performance",
+      Icon: Activity,
+      color: "bg-emerald-50 text-emerald-600",
+      enabled: has("performance"),
+      disabledNote: "Not enabled by your organization yet.",
+    },
+    {
+      title: "Stress",
+      description: "Fill your stress category, theme & feeling forms.",
+      href: "/data-entry/stress/stress-category",
+      Icon: Heart,
+      color: "bg-rose-50 text-rose-600",
+      enabled: has("stress"),
+      disabledNote: "Not enabled by your organization yet.",
+    },
+  ];
+
+  // Staff-only cards for viewing their own stress results (admin-granted).
+  const resultCards: CardDef[] = [];
+  if (access.allowedDepartment || access.allowedFaculty) {
+    resultCards.push({
+      title: "My stress results",
+      description: `See your ${access.allowedDepartment ? "department" : ""}${
+        access.allowedDepartment && access.allowedFaculty ? " and " : ""
+      }${access.allowedFaculty ? terms.unit.toLowerCase() : ""} stress results.`,
+      href: "/data-entry/stress/my-results",
+      Icon: Hierarchy,
+      color: "bg-indigo-50 text-indigo-600",
+    });
+  }
+
+  // Role-specific entry surfaces.
+  const roleCards: CardDef[] = [];
+  if (role === "hod") {
+    roleCards.push(
+      { title: "Staff data entries", description: "Enter data on behalf of your department's staff.", href: "/data-entry/employee", Icon: People, color: "bg-blue-50 text-blue-600" },
+      { title: "Student data entries", description: "Record student data for your department.", href: "/data-entry/students", Icon: Book1, color: "bg-amber-50 text-amber-600" },
+      { title: "Approve department stress", description: "Verify and approve your department's stress submissions.", href: "/data-entry/stress/approvals", Icon: Verify, color: "bg-rose-50 text-rose-600" },
+    );
+  }
+  if (role === "unit-head") {
+    roleCards.push({
+      title: `Approve ${terms.unit.toLowerCase()} stress`,
+      description: `Sign off the departments in your ${terms.unit.toLowerCase()} for the current cycle.`,
+      href: "/data-entry/stress/faculty-approvals",
+      Icon: Verify,
+      color: "bg-teal-50 text-teal-600",
+    });
+  }
 
   return (
-    <div className="w-full p-12">
-      {/* AUDITOR */}
-      {user?.role === "auditor" ? (
-        <EntrySection
-          to={"/data-entry/auditor"}
-          title={"Staff data entries (Auditor)"}
-        />
-      ) : (
-        <>
-          {/* APPRAISAL */}
-          <EntrySection
-            to={"/data-entry/appraisal"}
-            title={"Appraisal"}
-            disabled={!has("appraisal")}
-          />
+    <div className="p-8 max-w-7xl mx-auto w-full min-h-screen">
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Data Entry</h1>
+        <p className="mt-2 text-gray-500 max-w-2xl text-sm">
+          Choose a form to complete. Cards that are dimmed haven&apos;t been enabled by your organization yet.
+        </p>
+      </div>
 
-          {/* PERFORMANCE */}
-          <EntrySection
-            to={"/data-entry/performance"}
-            title={"Performance"}
-            disabled={!has("performance")}
-          />
-
-          {/* STRESS */}
-          <div className="bg-white rounded-md shadow mb-4">
-            <button
-              onClick={() => setOpen(!open)}
-              className="w-full flex justify-between items-center p-4"
-            >
-              <span className="text-lg font-semibold">Stress</span>
-              <span className="text-sm">{open ? "v" : ">"}</span>
-            </button>
-
-            {open && (
-              <div className="px-4 pb-3">
-                {stress.map((it, i) => {
-                  const active = has("stress");
-                  return (
-                    <div
-                      key={`${it.formId}-${i}`}
-                      className={`flex justify-between items-center py-2 border-t ${
-                        !active ? "opacity-50 pointer-events-none" : ""
-                      }`}
-                    >
-                      <span className="text-sm">{it.label}</span>
-                      <div className="flex gap-4">
-                        <Link
-                          href={it.templateUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`underline text-blue-600 ${
-                            !active ? "pointer-events-none text-gray-400" : ""
-                          }`}
-                        >
-                          Download Template
-                        </Link>
-                        <button
-                          className={`px-4 py-1 rounded text-white ${
-                            active ? "bg-pes" : "bg-gray-400 cursor-not-allowed"
-                          }`}
-                          onClick={() => active && go(it.formId)}
-                          disabled={!active}
-                        >
-                          Start Data Entry
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* HOD */}
-      {user?.role === "hod" && (
-        <>
-          <EntrySection
-            to={"/data-entry/employee"}
-            title={"Staff data entries"}
-          />
-          <EntrySection
-            to={"/data-entry/students"}
-            title={"Student data entries"}
-          />
-          <EntrySection
-            to={"/data-entry/stress/approvals"}
-            title={"Stress entries — approve your department"}
-          />
-        </>
-      )}
-
-      {/* FACULTY / DIVISION HEAD */}
-      {user?.role === "unit-head" && (
-        <EntrySection
-          to={"/data-entry/stress/faculty-approvals"}
-          title={`Stress entries — approve your ${orgTerms(user?.productCategory ?? user?.category).unit.toLowerCase()}`}
-        />
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...modelCards, ...resultCards, ...roleCards].map((def, i) => (
+          <ModelCard key={`${def.title}-${i}`} def={def} />
+        ))}
+      </div>
     </div>
   );
 }
