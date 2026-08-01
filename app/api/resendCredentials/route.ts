@@ -17,7 +17,7 @@ function generateUniquePassword(length = 8) {
 }
 
 async function sendLoginEmail(to: string, name: string, password: string) {
-  const { success } = await sendMail({
+  return sendMail({
     to,
     subject: 'Your Login Credentials',
     html: `
@@ -31,7 +31,6 @@ async function sendLoginEmail(to: string, name: string, password: string) {
       </div>
     `,
   })
-  return success
 }
 
 export async function POST(req: Request) {
@@ -61,17 +60,22 @@ export async function POST(req: Request) {
       data: { password: hashedPassword },
     })
 
-    const emailSent = await sendLoginEmail(email, user.name, newPassword)
+    const emailResult = await sendLoginEmail(email, user.name, newPassword)
 
-    if (!emailSent) {
-      console.warn(`⚠️ EMAIL FAILED. Dev Mode: The new password for ${email} is: ${newPassword}`);
+    if (!emailResult.success) {
+      console.warn(`⚠️ EMAIL FAILED for ${email}: ${emailResult.error}. New password (dev): ${newPassword}`);
+      // The password WAS reset, but the email didn't go out — surface it as a
+      // failure (not a silent success) so the sender isn't misled.
       return NextResponse.json(
-        { message: 'Password reset successful, but email failed. Check server console for new password.', status: 200 },
-        { status: 200 }
+        {
+          success: false,
+          message: `The password was reset, but the email could not be sent: ${emailResult.error || 'unknown error'}.`,
+        },
+        { status: 502 },
       )
     }
 
-    return NextResponse.json({ message: 'Credentials resent successfully', status: 200 })
+    return NextResponse.json({ success: true, message: 'Credentials resent successfully' }, { status: 200 })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ message: 'Server error' }, { status: 500 })
