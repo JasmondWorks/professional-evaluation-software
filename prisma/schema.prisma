@@ -383,6 +383,10 @@ model pesuser {
   // complained. "bounced" flags the address as undeliverable in the UI.
   email_status     String?         @db.VarChar(30)
   email_status_at  DateTime?
+  // Read access the org admin grants a staff member to see their own
+  // department's / faculty's stress results (toggled by the admin).
+  view_department_stress Boolean    @default(false)
+  view_faculty_stress    Boolean    @default(false)
   // Functional role — always a system PRESET so role-based UI stays predictable.
   role             String?         @db.VarChar(50)
   // Human-facing role label to SHOW (e.g. the custom role name "Paginator").

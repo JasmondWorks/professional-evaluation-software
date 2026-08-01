@@ -25,6 +25,8 @@ type user = {
     level: string
     image : string
     org : string
+    view_department_stress?: boolean
+    view_faculty_stress?: boolean
 }
 const init = {
     id: 0,
@@ -108,6 +110,24 @@ export default function Page({ params }: { params: { user: string } }){
         }
     }
 
+    // Grant/revoke this staff member's access to their own dept/faculty stress results.
+    async function toggleStressAccess(field: 'view_department_stress' | 'view_faculty_stress', value: boolean) {
+        // Optimistic update.
+        setUser((u: any) => ({ ...u, [field]: value }))
+        try {
+            const res = await apiFetch('/api/staff-stress-access', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: user.id, email: user.email, [field]: value }),
+            })
+            if (!res.ok) throw new Error()
+        } catch {
+            // Revert on failure.
+            setUser((u: any) => ({ ...u, [field]: !value }))
+            alert('Could not update stress-results access. Please try again.')
+        }
+    }
+
 
     return(
         <main className="w-full flex flex-col border bg-gray-50">
@@ -125,10 +145,34 @@ export default function Page({ params }: { params: { user: string } }){
 
             {
                 databaseView == 'profile' ?
-                    <div className='flex flex-col m-8 p-8 bg-white'>                
+                    <div className='flex flex-col m-8 p-8 bg-white'>
                         <div className="bg-gray-50 h-[3rem] flex justify-between">
                             <h1 className="my-auto mx-6 font-semibold">Employee details</h1>
-                        </div>  
+                        </div>
+
+                        {/* Stress results read-access the admin grants this staff member */}
+                        <div className="my-4 border border-gray-200 rounded-lg p-5">
+                            <h2 className="font-semibold text-gray-800 mb-1">Stress results access</h2>
+                            <p className="text-sm text-gray-500 mb-4">Allow this staff member to view their own department / faculty stress results.</p>
+                            <div className="flex flex-col gap-3">
+                                {([
+                                    { field: 'view_department_stress', label: 'View their department stress results' },
+                                    { field: 'view_faculty_stress', label: 'View their faculty / division stress results' },
+                                ] as const).map((row) => (
+                                    <label key={row.field} className="flex items-center justify-between gap-4 cursor-pointer">
+                                        <span className="text-sm text-gray-700">{row.label}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleStressAccess(row.field, !user[row.field])}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${user[row.field] ? 'bg-pes' : 'bg-gray-300'}`}
+                                            aria-pressed={!!user[row.field]}
+                                        >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${user[row.field] ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                         
                         <div className="details my-2">
                             <div className='(initial) flex justify-between'>

@@ -23,6 +23,14 @@ missing prerequisite, a permission, an empty queue). Examples in this repo:
 Rule of thumb: **if a user could reasonably ask "why can't I click this?", the
 answer must already be on the screen.**
 
+### Every page has a title (and an optional subtitle)
+Every page MUST show a clear **title** at the top so the user always knows where
+they are, and an **optional subtitle** only when a short line of context helps
+(what the page is for / what to do). Match the established pattern (see
+`app/(admin)/models/page.tsx`): a bold `h1` title, and a muted subtitle beneath
+it when useful. Don't add a subtitle just to fill space — omit it if the title
+already says everything.
+
 ## Data / correctness constraints
 
 - **Organization isolation:** every query is scoped by `org`. No data may leak
