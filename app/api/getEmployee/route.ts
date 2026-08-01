@@ -27,6 +27,7 @@ async function getUser(user: string | null) {
       level: true,
       image: true,
       org: true,
+      email_status: true,
     },
   })
 }
