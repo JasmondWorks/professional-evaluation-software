@@ -14,12 +14,13 @@
 import { ReactNode, useEffect, useState } from 'react';
 import jwt from 'jsonwebtoken';
 import { PermissionKey } from './utils/roles';
+import { getAccessToken } from '@/app/utils/auth';
 
 type Perms = Partial<Record<PermissionKey, true>>;
 
 function readPermsFromToken(): Perms {
   if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('access_token');
+  const token = getAccessToken();
   if (!token || token === 'undefined' || token === 'null') return {};
   try {
     const decoded: any = jwt.decode(token);

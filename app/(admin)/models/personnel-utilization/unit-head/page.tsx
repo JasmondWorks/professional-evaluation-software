@@ -6,6 +6,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { ArrowLeft2 } from "iconsax-react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   org?: string;
@@ -31,7 +32,7 @@ export default function UnitHeadOverloadingPage() {
   useEffect(() => {
     const fetchUtilization = async () => {
       try {
-        const res = await fetch("/api/personnelUtilization");
+        const res = await apiFetch("/api/personnelUtilization");
         if (!res.ok) throw new Error("Failed to fetch utilization data");
         const data = await res.json();
         if (data?.Kstar) setOptimalK(data.Kstar);
@@ -77,7 +78,7 @@ export default function UnitHeadOverloadingPage() {
         return;
       }
 
-      const res = await fetch("/api/unitHead", {
+      const res = await apiFetch("/api/unitHead", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

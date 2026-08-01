@@ -6,6 +6,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
 import HistoryChart from "@/app/components/ui/HistoryChart";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface AppraisalRun {
   id: number;
@@ -40,7 +41,7 @@ export default function StaffAppraisalHistory() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("/api/getStaffAppraisal", {
+      const res = await apiFetch("/api/getStaffAppraisal", {
         headers: {
           Authorization: `Bearer ${getAccessToken()}`
         }

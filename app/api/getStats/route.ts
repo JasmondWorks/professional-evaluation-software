@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 /**
  * API route to get statistics for the dashboard.
  * Returns the count of unique pesuser_name and org across all tables.
 */
 
-import jwt from 'jsonwebtoken'
-
 export async function POST(req: NextRequest) {
     try {
-        const token = req.headers.get("authorization")?.split(" ")[1];
-        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const auth = authorize(tokenFromRequest(req), {});
+        if (!auth.ok) return auth.response;
 
-        const user = jwt.decode(token);
-        let userOrg: string | null = null;
-        if (typeof user === 'object' && user !== null && 'org' in user) {
-            userOrg = (user as { org?: string }).org ?? null;
-        }
+        const userOrg = auth.user.org ? String(auth.user.org) : null;
 
         if (!userOrg) {
             return NextResponse.json({ pesuser_nameCount: 0, organizationCount: 0 });

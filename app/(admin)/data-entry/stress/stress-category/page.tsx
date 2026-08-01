@@ -6,6 +6,8 @@ import { STRESS_INSTRUMENT, CategoryKey } from "@/app/lib/stress/instrument";
 import { scoreItem } from "@/app/lib/stress/scoring";
 import { notify } from "@/lib/toast";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   name?: string;
@@ -77,10 +79,10 @@ export default function StressForm5() {
     if (submitting) return; // guard against double-submit
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       const user: JWTPayload = jwtDecode(token || "");
 
-      const res = await fetch("/api/saveStressScores", {
+      const res = await apiFetch("/api/saveStressScores", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -11,6 +11,7 @@ import RoleSelect from "@/app/components/ui/RoleSelect";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 import { orgTerms } from "@/app/lib/orgTerms";
 import { jwtDecode } from "jwt-decode";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 // Every system preset role, built from the canonical list so this dropdown can
 // never diverge from the roles that actually exist (Roles table, seeding, etc.).
@@ -35,6 +36,7 @@ type User = {
   gsm: string;
   role: string;
   display_role?: string;
+  email_status?: string | null;
   address: string;
   faculty_college: string;
   dob: string;
@@ -67,6 +69,7 @@ export default function Employee() {
   }>({ hodByDept: {}, unitHeadByFaculty: {} });
 
   const [resendingId, setResendingId] = useState<number | null>(null);
+  const resendingRef = useRef(false);
   const router = useRouter();
 
   // Load the org's custom roles for the Assign-Role dropdown (preset roles come
@@ -80,7 +83,7 @@ export default function Employee() {
     } catch {
       /* keep default labels */
     }
-    fetch("/api/getRoles", {
+    apiFetch("/api/getRoles", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -101,7 +104,7 @@ export default function Employee() {
   const refreshHeads = () => {
     const token = getAccessToken();
     if (!token) return;
-    fetch("/api/role-heads", { headers: { Authorization: `Bearer ${token}` } })
+    apiFetch("/api/role-heads", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         if (d?.hodByDept) setHeads({ hodByDept: d.hodByDept, unitHeadByFaculty: d.unitHeadByFaculty || {} });
@@ -133,9 +136,13 @@ export default function Employee() {
   })();
 
   async function handleResend(email: string, id: number) {
+    // Ref guard: a fast double-click would otherwise fire two resets (two emails,
+    // and the DB ends on the 2nd password while you may read the 1st).
+    if (resendingRef.current) return;
+    resendingRef.current = true;
     setResendingId(id);
     try {
-      const res = await fetch("/api/resendCredentials", {
+      const res = await apiFetch("/api/resendCredentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -150,6 +157,7 @@ export default function Employee() {
       notify.error("Error resending credentials");
     } finally {
       setResendingId(null);
+      resendingRef.current = false;
     }
   }
 
@@ -167,7 +175,7 @@ export default function Employee() {
       setLoading(true);
       try {
         const token = getAccessToken();
-        const req = await fetch("/api/getEmployee", {
+        const req = await apiFetch("/api/getEmployee", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
@@ -193,7 +201,7 @@ export default function Employee() {
     
     try {
       const token = getAccessToken();
-      const res = await fetch(`/api/assign-role`, {
+      const res = await apiFetch(`/api/assign-role`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -273,7 +281,24 @@ export default function Employee() {
                 render: (_, index) => index + 1,
               },
               { key: "name", label: "Name", width: "20%" },
-              { key: "email", label: "Email", width: "25%" },
+              {
+                key: "email",
+                label: "Email",
+                width: "25%",
+                render: (i: User) => (
+                  <div className="flex items-center gap-2">
+                    <span className="truncate">{i.email}</span>
+                    {i.email_status === "bounced" && (
+                      <span
+                        title="Emails to this address bounced — it may be mistyped or not exist."
+                        className="shrink-0 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5"
+                      >
+                        Undeliverable
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
               {
                 key: "role",
                 label: "Role",

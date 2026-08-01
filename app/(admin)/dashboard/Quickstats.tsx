@@ -4,6 +4,9 @@ import { People, Award, Timer } from "iconsax-react";
 import React, { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
+import Skeleton from '@/app/components/ui/Skeleton';
 
 export default function Quickstats({
   openEvaluations,
@@ -19,12 +22,12 @@ export default function Quickstats({
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
-    const access_token = localStorage.getItem("access_token") as string;
+    const access_token = getAccessToken() as string;
     const temp_user = jwt.decode(access_token);
 
     async function getStatData() {
       try {
-        const req = await fetch("/api/getStatData", {
+        const req = await apiFetch("/api/getStatData", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -53,7 +56,7 @@ export default function Quickstats({
             {!isLoadingStats ? (
               <>{quickStats[0]?.toString()}</>
             ) : (
-              <span>Loading...</span>
+              <Skeleton className="h-10 w-16 bg-white/30" />
             )}
           </p>
           <Link href="/em-database" className="m-1 text-xs underline cursor-pointer">
@@ -70,7 +73,7 @@ export default function Quickstats({
             {!isLoadingStats ? (
               <>{quickStats[1]?.toString()}</>
             ) : (
-              <span>Loading...</span>
+              <Skeleton className="h-10 w-16" />
             )}
           </p>
           <Link
@@ -90,7 +93,7 @@ export default function Quickstats({
             {!isLoadingStats ? (
               <>{quickStats[2]?.toString()}</>
             ) : (
-              <span>Loading...</span>
+              <Skeleton className="h-10 w-16" />
             )}
           </p>
           <Link

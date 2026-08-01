@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken'
 import { notify } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
 import LoadingButton from '../ui/LoadingButton';
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type goal = {
     name: string
@@ -50,7 +52,7 @@ export default function Editgoal(){
         setError('');
 
         try {
-            const token = localStorage.getItem('access_token')
+            const token = getAccessToken()
             if (!token) {
                 setError('No access token found. Please log in again.');
                 setIsSubmitting(false);
@@ -71,7 +73,7 @@ export default function Editgoal(){
                 return;
             }
 
-            const response = await fetch('/api/updateGoals', {
+            const response = await apiFetch('/api/updateGoals', {
                 method: 'PUT', 
                 headers: {
                     'Content-Type': 'application/json', 

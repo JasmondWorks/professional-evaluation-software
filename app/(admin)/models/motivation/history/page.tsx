@@ -6,6 +6,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
 import HistoryChart from "@/app/components/ui/HistoryChart";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface MotivationRun {
   id: number;
@@ -26,7 +27,7 @@ export default function MotivationHistory() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("/api/getMotivation", {
+      const res = await apiFetch("/api/getMotivation", {
         headers: {
           Authorization: `Bearer ${getAccessToken()}`
         }

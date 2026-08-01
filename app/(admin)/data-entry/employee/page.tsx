@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 interface JWTPayload {
@@ -44,7 +45,7 @@ export default function EmployeeScoresPage() {
       return;
     }
 
-    fetch(`/api/getAllDataScores`, {
+    apiFetch(`/api/getAllDataScores`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

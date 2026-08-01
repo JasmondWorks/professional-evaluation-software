@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft2, Calculator, Save2, Star, DocumentText } from "iconsax-react";
 import { useEffect, useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AchievementCriteriaPage() {
   const [loading, setLoading] = useState(true);
@@ -28,10 +30,10 @@ export default function AchievementCriteriaPage() {
   // Fetch user performance data from backend
   useEffect(() => {
     async function fetchPerformance() {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
 
       try {
-        const res = await fetch("/api/getPerformance", {
+        const res = await apiFetch("/api/getPerformance", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -107,8 +109,8 @@ export default function AchievementCriteriaPage() {
     // Save to backend
     setSaving(true);
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/savePerformanceResult", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/savePerformanceResult", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

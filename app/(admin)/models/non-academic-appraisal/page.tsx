@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowLeft2, Calculator, Save2, Star } from "iconsax-react";
 import { useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function NonAcademicAppraisalPage() {
   const [metrics, setMetrics] = useState({
@@ -78,8 +80,8 @@ export default function NonAcademicAppraisalPage() {
     setResult({ score: total, rating, color });
 
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/nonAcademicAppraisal", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/nonAcademicAppraisal", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -11,6 +11,7 @@ import {
 } from "../utils/sharedLogic";
 import ParametersForm from "../_components/ParametersForm";
 import ResultsCard from "../_components/ResultsCard";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function OrdinaryOptimization() {
   const [params, setParams] = useState({
@@ -39,7 +40,7 @@ export default function OrdinaryOptimization() {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (token) {
       const decoded: any = jwt.decode(token);
       setRole(decoded?.role || null);
@@ -80,7 +81,7 @@ export default function OrdinaryOptimization() {
 
     // 🔹 Save result to backend
     try {
-      const res = await fetch("/api/results", {
+      const res = await apiFetch("/api/results", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

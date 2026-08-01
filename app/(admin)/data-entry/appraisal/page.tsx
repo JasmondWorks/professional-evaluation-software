@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 type JWTPayload = {
@@ -28,7 +29,7 @@ export default function AppraisalStep() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/staff", {
+        const res = await apiFetch("/api/staff", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ org: user?.org }),
@@ -47,12 +48,12 @@ export default function AppraisalStep() {
   const fetchScores = async (staffName: string) => {
     try {
       setLoading(true);
-      const appRes = await fetch(`/api/appraisal`, {
+      const appRes = await apiFetch(`/api/appraisal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pesuser_name: staffName }),
       });
-      const counterRes = await fetch(`/api/counter_appraisal`, {
+      const counterRes = await apiFetch(`/api/counter_appraisal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pesuser_name: staffName }),
@@ -73,7 +74,7 @@ export default function AppraisalStep() {
 
   const handleDecision = async (section: string, decision: string) => {
     try {
-      const res = await fetch("/api/acceptReject", {
+      const res = await apiFetch("/api/acceptReject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type DeptProps = {
   data: {
@@ -30,10 +31,10 @@ export default function Dept({ data }: DeptProps) {
       // getDataEntryByDept endpoint required auth and returned only names, so it
       // always produced "not enough data".)
       const [appraisals, performances] = await Promise.all([
-        fetch(`/api/getAppraisalByDept?dept=${dept}`)
+        apiFetch(`/api/getAppraisalByDept?dept=${dept}`)
           .then((r) => r.json())
           .catch(() => []),
-        fetch(`/api/getPerformanceByDept?dept=${dept}`)
+        apiFetch(`/api/getPerformanceByDept?dept=${dept}`)
           .then((r) => r.json())
           .catch(() => []),
       ]);

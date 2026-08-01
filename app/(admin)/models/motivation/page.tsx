@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft2, Add, Trash, Setting2, TrendUp } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface SubItem {
   label: string;
@@ -146,7 +147,7 @@ export default function StaffMotivationPage() {
     
     try {
       const token = getAccessToken();
-      const res = await fetch("/api/motivation", {
+      const res = await apiFetch("/api/motivation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

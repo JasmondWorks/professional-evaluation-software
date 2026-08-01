@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AddAuditorPage() {
   const [email, setEmail] = useState("");
@@ -16,7 +17,7 @@ export default function AddAuditorPage() {
     setStatus("");
 
     try {
-      const response = await fetch("/api/send-email", {
+      const response = await apiFetch("/api/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

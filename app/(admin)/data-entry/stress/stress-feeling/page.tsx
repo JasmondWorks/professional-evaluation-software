@@ -4,6 +4,8 @@ import Link from "next/link";
 import Form6 from "./_compoonents/form6";
 import Form7 from "./_compoonents/form7";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 function StatusScreen({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel?: string; ctaHref?: string }) {
   return (
@@ -43,14 +45,14 @@ export default function MultiStepStressForm() {
   const handleFinalSubmit = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       const payload = {
         type: "stress_assessment",
         form6: form6Data,
         form7: form7Data,
       };
 
-      const res = await fetch("/api/saveStressAssessment", {
+      const res = await apiFetch("/api/saveStressAssessment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

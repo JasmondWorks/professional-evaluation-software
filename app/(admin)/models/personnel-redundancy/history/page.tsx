@@ -6,6 +6,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   org?: string;
@@ -37,7 +38,7 @@ export default function RedundancyHistoryPage() {
         const org = decoded.org;
         if (!org) throw new Error("No organization found in token");
 
-        const res = await fetch("/api/getPersonnelRedundancy", {
+        const res = await apiFetch("/api/getPersonnelRedundancy", {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",

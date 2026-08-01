@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { notify } from "@/lib/toast";
 import { orgTerms } from "@/app/lib/orgTerms";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type DeptRow = {
   dept: string;
@@ -42,7 +44,7 @@ export default function FacultyApprovals() {
 
   const terms = useMemo(() => {
     if (typeof window === "undefined") return orgTerms();
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     try {
       const d: any = token ? jwtDecode(token) : {};
       return orgTerms(d?.productCategory ?? d?.category);
@@ -52,9 +54,9 @@ export default function FacultyApprovals() {
   }, []);
 
   const load = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     try {
-      const res = await fetch("/api/stress/faculty-status", {
+      const res = await apiFetch("/api/stress/faculty-status", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStatus(await res.json());
@@ -73,8 +75,8 @@ export default function FacultyApprovals() {
     setWorking(true);
     const toastId = notify.loading("Approving…");
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await fetch("/api/stress/faculty-approve", {
+      const token = getAccessToken();
+      const res = await apiFetch("/api/stress/faculty-approve", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(dept ? { dept } : {}),

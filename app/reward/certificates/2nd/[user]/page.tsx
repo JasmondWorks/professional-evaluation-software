@@ -1,6 +1,7 @@
 'use client'
 import { useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
 
 export default function Home({ params }: { params: { user: string } }){
     const {user} = params
@@ -8,7 +9,7 @@ export default function Home({ params }: { params: { user: string } }){
     let org = '';
     let access_token = '';
     if (typeof window !== 'undefined') {
-        access_token = localStorage.getItem('access_token') || '';
+        access_token = getAccessToken() || '';
         if (access_token) {
             try {
                 const decoded: any = (jwtDecode as any)(access_token);

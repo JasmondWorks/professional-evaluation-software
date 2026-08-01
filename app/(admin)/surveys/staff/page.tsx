@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function StaffSurveyPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -103,7 +104,7 @@ export default function StaffSurveyPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/survey", {
+      const res = await apiFetch("/api/survey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(responses),

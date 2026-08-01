@@ -8,6 +8,8 @@
 // their dashboard or a stress form sees it appear/disappear on their own.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export type FormStatus = "not_yet" | "open" | "closed";
 export type FormState = {
@@ -34,13 +36,13 @@ export function useActiveCycle(pollMs = 30000) {
 
   const refetch = useCallback(async () => {
     const token =
-      typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+      typeof window !== "undefined" ? getAccessToken() : null;
     if (!token || token === "undefined" || token === "null") {
       setLoading(false);
       return;
     }
     try {
-      const res = await fetch("/api/stress/active-cycle", {
+      const res = await apiFetch("/api/stress/active-cycle", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await res.json();

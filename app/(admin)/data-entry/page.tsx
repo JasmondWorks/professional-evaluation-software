@@ -21,6 +21,8 @@ const stress = [
 ];
 
 import { orgTerms } from "@/app/lib/orgTerms";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type EvaluationType = "appraisal" | "performance" | "stress";
 
@@ -29,14 +31,14 @@ export default function DataEntryPage() {
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
 
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    typeof window !== "undefined" ? getAccessToken() : null;
 
   const user = token ? jwtDecode<any>(token) : null;
 
   useEffect(() => {
     if (!user?.org) return;
 
-    fetch(`/api/org/${encodeURIComponent(user.org)}`)
+    apiFetch(`/api/org/${encodeURIComponent(user.org)}`)
       .then((res) => res.json())
       .then((res) => {
         if (res?.data?.evaluation) {

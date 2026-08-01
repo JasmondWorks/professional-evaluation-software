@@ -9,6 +9,8 @@ import { notify } from "@/lib/toast";
 import Formone from "./multistep-form/form_one";
 import Formtwo from "./multistep-form/form_two";
 import Formthree from "./multistep-form/form_three";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function MainForm() {
   const [formdata, setFormdata] = useState({ org: "" });
@@ -25,7 +27,7 @@ export default function MainForm() {
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -85,11 +87,11 @@ export default function MainForm() {
     setAdding(true);
 
     try {
-      const res = await fetch("/api/addEmployee", {
+      const res = await apiFetch("/api/addEmployee", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${getAccessToken()}`,
         },
         body: JSON.stringify({
           ...formdata,
@@ -127,7 +129,7 @@ export default function MainForm() {
   async function handleResendCredentials() {
     setResending(true);
     try {
-      const res = await fetch('/api/resendCredentials', {
+      const res = await apiFetch('/api/resendCredentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: failedEmail }),

@@ -6,15 +6,20 @@ import { RootState } from '@/app/state/store'
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from 'react-redux';
 import { actionView } from "@/app/state/action/actionSlice";
+import { removeAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function Action(){
   const isVisible = useSelector((state: RootState)=> state.action.visible )
   const router = useRouter()
   const dispatch = useDispatch()
 
-  function handleLogout(){
+  async function handleLogout(){
     dispatch( actionView() )
-    localStorage.removeItem('access_token')
+    removeAccessToken()
+    try {
+      await apiFetch('/api/logout', { method: 'POST' })
+    } catch(e) { console.error(e) }
     router.push('/')
   }
 

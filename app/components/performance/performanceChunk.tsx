@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { ArrowUp, ArrowDown } from 'iconsax-react';
 import { getAccessToken } from "@/app/utils/auth"
+import { apiFetch } from '@/app/utils/apiFetch';
+import Skeleton from '../ui/Skeleton';
 
 type userData = {
    id: number
@@ -26,7 +28,7 @@ export default function Performance({ view = "employee" }: { view?: string }) {
             return;
          }
 
-         const res = await fetch(`/api/getUserData`, {
+         const res = await apiFetch(`/api/getUserData`, {
             method: 'POST',
             headers:{
                'Content-Type': 'application/json'
@@ -56,9 +58,17 @@ export default function Performance({ view = "employee" }: { view?: string }) {
    }, [view])
 
    const LoadingState = () => (
-      <div className="p-4 m-2 bg-gray-50 rounded-sm flex justify-between">
-         <p>Loading info....</p>
-         <img src="loading.svg" alt="loading" className="h-6 w-6 animate-spin my-auto"/>
+      <div className="flex flex-col p-4 gap-4">
+         {[1, 2, 3].map(i => (
+            <div key={i} className="flex flex-col gap-4">
+               <div className='w-full flex justify-between'>
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-5 w-12" />
+               </div>
+               <hr />
+            </div>
+         ))}
       </div>
    );
 

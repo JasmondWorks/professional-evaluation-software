@@ -6,6 +6,7 @@ import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
 import Button from "@/app/components/ui/Button";
 import { notify } from "@/lib/toast";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function ForgotPassword() {
     const toastId = notify.loading("Sending reset link…");
 
     try {
-      const response = await fetch("/api/resetPassword", {
+      const response = await apiFetch("/api/resetPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

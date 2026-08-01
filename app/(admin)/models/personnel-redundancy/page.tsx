@@ -6,6 +6,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { ArrowLeft2 } from "iconsax-react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   org?: string;
@@ -75,7 +76,7 @@ export default function PersonnelRedundancyPage() {
         return;
       }
 
-      const response = await fetch("/api/personnelRedundancy", {
+      const response = await apiFetch("/api/personnelRedundancy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

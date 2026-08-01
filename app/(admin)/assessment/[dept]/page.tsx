@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type AppraisalEntry = {
   pesuser_name: string;
@@ -33,8 +34,8 @@ export default function Page({ params }: { params: { dept: string } }) {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/getAppraisalByDept?dept=${encodeURIComponent(dept)}`).then(res => res.json()),
-      fetch(`/api/getPerformanceByDept?dept=${encodeURIComponent(dept)}`).then(res => res.json()),
+      apiFetch(`/api/getAppraisalByDept?dept=${encodeURIComponent(dept)}`).then(res => res.json()),
+      apiFetch(`/api/getPerformanceByDept?dept=${encodeURIComponent(dept)}`).then(res => res.json()),
     ])
       .then(([appraisals, performances]) => {
         const appraisalList: AppraisalEntry[] = Array.isArray(appraisals) ? appraisals : [];

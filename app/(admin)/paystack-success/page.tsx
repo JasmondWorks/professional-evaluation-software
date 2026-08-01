@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function SubscriptionSuccess() {
   const searchParams = useSearchParams();
@@ -12,7 +13,7 @@ export default function SubscriptionSuccess() {
     if (!reference) return;
 
     async function verifySubscription() {
-      const res = await fetch(`/api/paystack/verify?ref=${reference}`);
+      const res = await apiFetch(`/api/paystack/verify?ref=${reference}`);
       const data = await res.json();
       console.log("Verification:", data);
 

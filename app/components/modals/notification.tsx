@@ -7,6 +7,7 @@ import { RootState } from "@/app/state/store"
 import { useEffect, useState } from "react"
 import jwt from "jsonwebtoken"
 import { getAccessToken } from '@/app/utils/auth'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type NotificationType = {
   id: number
@@ -32,7 +33,7 @@ export default function Notification() {
         const org = decoded?.org
         console.log("what is the org?:", org, decoded)
 
-        const res = await fetch(`/api/notifications`, {
+        const res = await apiFetch(`/api/notifications`, {
           headers: {
             "Authorization": `Bearer ${token}`
           }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 interface JWTPayload {
@@ -46,7 +47,7 @@ export default function AuditorScoresPage() {
       return;
     }
 
-    fetch(`/api/getFlaggedScores?org=${org}`)
+    apiFetch(`/api/getFlaggedScores?org=${org}`)
       .then((res) => res.json())
       .then((data) => {
         setScores(data);

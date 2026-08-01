@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Award, Download } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface HallOfFameMember {
   id: string;
@@ -26,7 +27,7 @@ export default function BookPerformance() {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/first-book-api/performance?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
+        const res = await apiFetch(`/api/first-book-api/performance?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch records");
 

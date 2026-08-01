@@ -9,6 +9,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function CreateRole() {
   // base_role defaults to the baseline preset so the role is always mappable.
@@ -41,7 +42,7 @@ export default function CreateRole() {
         : "";
 
     try {
-      const req = fetch("/api/addRoles", {
+      const req = apiFetch("/api/addRoles", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

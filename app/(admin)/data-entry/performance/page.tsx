@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode'
 import CriteriaForm from './criteria/form'
 import LoadingButton from '../../../components/ui/LoadingButton'
 import { getAccessToken } from '@/app/utils/auth'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   name?: string
@@ -82,14 +83,14 @@ export default function PerformanceStep() {
         const user: JWTPayload = jwtDecode(token)
 
         const [staffRes, hodRes] = await Promise.all([
-          fetch(`/api/userPerformance`, {
+          apiFetch(`/api/userPerformance`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ name: user.name ?? '' }),
           }),
-          fetch(`/api/counterUserPerformance`, {
+          apiFetch(`/api/counterUserPerformance`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ export default function PerformanceStep() {
       if (!token) return alert('No token found ❌')
       const user: JWTPayload = jwtDecode(token)
 
-      const res = await fetch('/api/acceptRejectPerformance', {
+      const res = await apiFetch('/api/acceptRejectPerformance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -166,7 +167,7 @@ export default function PerformanceStep() {
     }
 
     try {
-      const res = await fetch('/api/savePerformance', {
+      const res = await apiFetch('/api/savePerformance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, token }),
