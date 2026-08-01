@@ -120,11 +120,14 @@ export default function Page({ params }: { params: { user: string } }){
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: user.id, email: user.email, [field]: value }),
             })
-            if (!res.ok) throw new Error()
-        } catch {
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}))
+                throw new Error(d.error || `Request failed (${res.status})`)
+            }
+        } catch (e) {
             // Revert on failure.
             setUser((u: any) => ({ ...u, [field]: !value }))
-            alert('Could not update stress-results access. Please try again.')
+            alert(`Could not update stress-results access: ${e instanceof Error ? e.message : 'unknown error'}`)
         }
     }
 

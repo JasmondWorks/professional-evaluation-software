@@ -12,7 +12,6 @@ import Quickstats from "./Quickstats";
 import StressCycleBanner from "@/app/components/StressCycleBanner";
 import ApprovalBanner from "@/app/components/ApprovalBanner";
 import MyStressResultsCard from "@/app/components/MyStressResultsCard";
-import Datachunk from "@/app/components/data/Datachunk";
 import { getAccessToken } from "@/app/utils/auth";
 
 export default function Dashboard() {
@@ -166,17 +165,7 @@ export default function Dashboard() {
               <Performance view={performanceView} />
             </div>
           </div>
-        ) : (
-          <div className="(right_panel-alt)-- w-1/2 max-md:w-full">
-            <div className="w-full shadow-md shadow-gray-100 p-4 bg-white">
-              <div className="flex justify-start w-full">
-                <p className="text-3xl text-black my-auto p-4">Data entry</p>
-              </div>
-
-              <Datachunk />
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
     </main>
   );
