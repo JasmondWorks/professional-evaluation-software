@@ -5,6 +5,7 @@
 // Renders the raw 1–10 answers for themes and feelings, plus a short summary.
 
 import { useEffect, useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const CATEGORIES = [
   { key: "organizational", label: "Organization" },
@@ -42,10 +43,8 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    fetch(`/api/stress/submission?name=${encodeURIComponent(name)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // apiFetch appends the access token internally.
+    apiFetch(`/api/stress/submission?name=${encodeURIComponent(name)}`)
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Failed to load submission");
