@@ -13,6 +13,7 @@ import {
   PERMISSION_TREE,
   PermissionKey,
 } from "@/app/components/utils/roles";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type Role = {
   id: string | number;
@@ -58,7 +59,7 @@ export default function Roles() {
   async function loadRoles() {
     const token = getAccessToken();
     try {
-      const req = await fetch("/api/getRoles", {
+      const req = await apiFetch("/api/getRoles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
@@ -78,7 +79,7 @@ export default function Roles() {
 
   async function fetchPermsFor(roleName: string): Promise<Record<string, boolean>> {
     const token = getAccessToken();
-    const res = await fetch("/api/getRolePermissions", {
+    const res = await apiFetch("/api/getRolePermissions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, role: roleName }),
@@ -116,7 +117,7 @@ export default function Roles() {
     const toastId = notify.loading("Saving role…");
     try {
       const token = getAccessToken();
-      const res = await fetch("/api/updateRole", {
+      const res = await apiFetch("/api/updateRole", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -145,7 +146,7 @@ export default function Roles() {
     const toastId = notify.loading("Deleting role…");
     try {
       const token = getAccessToken();
-      const res = await fetch("/api/deleteRole", {
+      const res = await apiFetch("/api/deleteRole", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -194,7 +195,7 @@ export default function Roles() {
     try {
       const token = getAccessToken() || "";
       const decoded: any = token ? jwtDecode(token) : {};
-      const res = await fetch("/api/addRoles", {
+      const res = await apiFetch("/api/addRoles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

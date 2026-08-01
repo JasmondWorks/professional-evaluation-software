@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type Appraisal = {
   id: number;
@@ -46,7 +47,7 @@ export default function CompletedAppraisalsPage() {
       setLoading(false);
       return;
     }
-    fetch("/api/getCompletedAppraisals", {
+    apiFetch("/api/getCompletedAppraisals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

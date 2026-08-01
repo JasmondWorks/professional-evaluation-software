@@ -6,6 +6,7 @@ import { RootState } from '@/app/state/store'
 import { CloseCircle } from 'iconsax-react'
 import { useEffect, useRef } from 'react';
 import LoadingButton from '../ui/LoadingButton';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type goal = {
     name: string
@@ -30,7 +31,7 @@ export default function Viewgoal(){
 
     async function handleDelete(){
         dispatch( deleteGoal())
-        // const req = await fetch('/api/removeGoal')
+        // const req = await apiFetch('/api/removeGoal')
         console.log('goal removed');
     }
     useEffect(() => {

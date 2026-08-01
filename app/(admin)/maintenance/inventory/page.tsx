@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import jwt from "jsonwebtoken";
 import { ArrowLeft } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type InventoryItem = {
   identification_symbol: string;
@@ -24,7 +25,7 @@ export default function MaintenanceInventory() {
     const tokenData = jwt.decode(access_token);
 
     async function fetchInventory() {
-      const data = await fetch("/api/getInventory", {
+      const data = await apiFetch("/api/getInventory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(tokenData),

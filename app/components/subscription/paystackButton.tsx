@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface PaystackButtonProps {
   email: string;
@@ -14,7 +15,7 @@ export default function PaystackButton({ email, planCode, label }: PaystackButto
     try {
       setLoading(true);
 
-      const response = await fetch("/api/paystack/subscribe", {
+      const response = await apiFetch("/api/paystack/subscribe", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Award, Download } from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface HallOfFameMember {
   id: string;
@@ -32,7 +33,7 @@ export default function HallOfFame() {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await fetch('/api/hall-of-fame');
+        const res = await apiFetch('/api/hall-of-fame');
         const data = await res.json();
         setMembers(data);
       } catch (error) {

@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { ArrowLeft2, Save2, Calculator, Money4, DocumentText, Warning2 } from "iconsax-react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type SharedConstants = {
   Cwh: number | "";
@@ -91,7 +92,7 @@ export default function StaffAppraisalAllPage() {
     };
 
     try {
-      const res = await fetch("/api/staffAppraisal", {
+      const res = await apiFetch("/api/staffAppraisal", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

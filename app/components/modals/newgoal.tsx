@@ -6,6 +6,8 @@ import { CloseCircle } from 'iconsax-react';
 import { useState } from 'react';
 import jwt from 'jsonwebtoken';
 import { useRouter } from 'next/navigation';
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function Newgoal() {
   const isVisible = useSelector((state: RootState) => state.goal.new);
@@ -63,7 +65,7 @@ export default function Newgoal() {
     setError('');
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAccessToken();
       if (!token) {
         setError('No access token found. Please log in again.');
         setIsSubmitting(false);
@@ -84,7 +86,7 @@ export default function Newgoal() {
         return;
       }
 
-      const response = await fetch('/api/addGoals', {
+      const response = await apiFetch('/api/addGoals', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

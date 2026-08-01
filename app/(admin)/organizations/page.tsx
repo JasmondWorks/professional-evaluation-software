@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface Org {
   id: number;
@@ -12,7 +13,7 @@ export default function OrgsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/orgs")
+    apiFetch("/api/orgs")
       .then((res) => res.json())
       .then((data) => setOrgs(data))
       .finally(() => setLoading(false));

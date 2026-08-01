@@ -7,7 +7,8 @@ import PaystackButton from "@/app/components/subscription/paystackButton";
 import PayPalProviderWrapper from "../../components/subscription/paypalWrapper";
 import { packages } from "../../lib/utils/packages";
 import { jwtDecode } from "jwt-decode";
-import { getAccessToken } from "@/app/utils/auth";
+import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function Home() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export default function Home() {
 
     const fetchSubscription = async () => {
       try {
-        const res = await fetch(`/api/subscriptions/active`, {
+        const res = await apiFetch(`/api/subscriptions/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -45,7 +46,7 @@ export default function Home() {
 
   const handleUpgrade = async (oldPlan: string, newPlan: string) => {
     try {
-      await fetch("/api/subscriptions/upgrade", {
+      await apiFetch("/api/subscriptions/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, oldPlan, newPlan }),
@@ -66,7 +67,7 @@ export default function Home() {
       return;
 
     try {
-      const res = await fetch("/api/subscriptions/cancel", {
+      const res = await apiFetch("/api/subscriptions/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -76,7 +77,10 @@ export default function Home() {
 
       if (res.ok) {
         alert("All plans canceled and account deleted.");
-        localStorage.removeItem("access_token");
+        removeAccessToken();
+        try {
+          await apiFetch('/api/logout', { method: 'POST' });
+        } catch(e) { console.error(e) }
         window.location.href = "/"; // Redirect to home or signup page
       } else {
         alert(data.error || "Failed to cancel plans.");

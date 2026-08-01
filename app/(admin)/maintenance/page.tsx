@@ -5,6 +5,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import { SearchNormal1, Add, DocumentText, Setting2, CloseCircle, Buildings2, ClipboardText, ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function MaintenancePage() {
   const [toolView, setToolView] = useState(false);
@@ -39,7 +40,7 @@ export default function MaintenancePage() {
     const decoded: any = jwt.decode(access_token as string);
 
     try {
-      const req = await fetch("/api/addFacility", {
+      const req = await apiFetch("/api/addFacility", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +80,7 @@ export default function MaintenancePage() {
     const tokenData = jwt.decode(access_token) as JwtPayload;
 
     try {
-      const req = await fetch("/api/getFacility", {
+      const req = await apiFetch("/api/getFacility", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

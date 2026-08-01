@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notify } from "@/lib/toast";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const slides = [
   {
@@ -149,7 +150,7 @@ export default function Home() {
     const toastId = notify.loading("Signing up, please wait…");
 
     try {
-      const req = await fetch("/api/signup", {
+      const req = await apiFetch("/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

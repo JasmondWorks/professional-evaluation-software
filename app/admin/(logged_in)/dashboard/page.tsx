@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { ArrowRight, LucideDatabase } from 'lucide-react';
 import { useEffect, useState } from "react";
 import LoadingButton from '../../../components/ui/LoadingButton';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AdminPage() {
   const [orgs, setOrgs] = useState<any[]>([]);
@@ -54,7 +55,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    fetch("/api/admin/users-by-org")
+    apiFetch("/api/admin/users-by-org")
       .then((res) => res.json())
       .then(setOrgs);
   }, []);

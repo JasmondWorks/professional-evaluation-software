@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useEffect } from 'react';
+import { getAccessToken } from '@/app/utils/auth';
 
 
 export default function Home() {
@@ -10,7 +11,7 @@ export default function Home() {
   useEffect(() => {
     // SSR safety check
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
+      const token = getAccessToken();
       if (token && token !== 'undefined' && token !== 'null') {
         router.push('/dashboard');
       } else {

@@ -4,6 +4,7 @@ import { getAccessToken } from '@/app/utils/auth';
 import Link from "next/link";
 import { ArrowLeft2 } from "iconsax-react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function RedundancyIndex() {
   const [wasted, setWasted] = useState<number | "">("");
@@ -40,7 +41,7 @@ export default function RedundancyIndex() {
     setErrorMsg(null);
 
     try {
-      const res = await fetch("/api/addPersonnelIndex", {
+      const res = await apiFetch("/api/addPersonnelIndex", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
