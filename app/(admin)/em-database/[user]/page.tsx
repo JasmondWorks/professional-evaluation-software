@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from '@/app/utils/auth';
 
 import React, { useEffect, useState } from 'react'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type user = {
     id:number
@@ -58,7 +59,7 @@ export default function Page({ params }: { params: { user: string } }){
             const access_token = getAccessToken() as string
             
            
-            const data = await fetch('/api/getUserProfile', 
+            const data = await apiFetch('/api/getUserProfile', 
               {
                  method: "POST",
                  headers: {
@@ -82,11 +83,11 @@ export default function Page({ params }: { params: { user: string } }){
 
         try {
             const access_token = getAccessToken() as string;
-            const res = await fetch("/api/users/delete", {
+            const res = await apiFetch("/api/users/delete", {
             method: "POST",
             headers: { "Content-Type": "application/json",
                     "Authorization": `Bearer ${access_token}` },
-            body: JSON.stringify({ email:user.email }),
+            body: JSON.stringify({ id: user.id || Number(params.user), email: user.email }),
             });
 
             const data = await res.json();

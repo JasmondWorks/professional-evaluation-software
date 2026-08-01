@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 
 function grader(num: number) {
@@ -31,7 +32,7 @@ export default function Home() {
         const decoded: any = jwt.decode(token as string);
 
         // Fetch performance + appraisal
-        const perfRes = await fetch("/api/performance-single", {
+        const perfRes = await apiFetch("/api/performance-single", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pesuser_name: decoded.name, org: decoded.org }),
@@ -40,7 +41,7 @@ export default function Home() {
         const perfResult = await perfRes.json();
 
         // Fetch achievements from all sources
-        const achieveRes = await fetch("/api/achievements", {
+        const achieveRes = await apiFetch("/api/achievements", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: decoded.name }),

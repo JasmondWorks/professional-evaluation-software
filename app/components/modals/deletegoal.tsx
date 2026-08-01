@@ -4,6 +4,7 @@ import { RootState } from '@/app/state/store'
 import { CloseCircle } from 'iconsax-react'
 import LoadingButton from '../ui/LoadingButton';
 import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type goal = {
     name: string;
@@ -20,7 +21,7 @@ export default function Deletegoal(){
     async function handleDelete() {
         try {
             const token = getAccessToken()
-            const res = await fetch('/api/removeGoal', {
+            const res = await apiFetch('/api/removeGoal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, goalId: goalData.id })

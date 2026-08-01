@@ -1,8 +1,9 @@
 import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 export const saveResult = async (payload: any) => {
   const token = getAccessToken();
 
-  const res = await fetch("/api/staffEstimation", {
+  const res = await apiFetch("/api/staffEstimation", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

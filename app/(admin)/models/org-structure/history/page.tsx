@@ -6,6 +6,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
 import HistoryChart from "@/app/components/ui/HistoryChart";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface OrgStructureRun {
   id: number;
@@ -32,7 +33,7 @@ export default function OrgStructureHistory() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/getOrgStructure", {
+      const res = await apiFetch("/api/getOrgStructure", {
         // avoid any cached response so Refresh always fetches fresh rows
         cache: "no-store",
         headers: {

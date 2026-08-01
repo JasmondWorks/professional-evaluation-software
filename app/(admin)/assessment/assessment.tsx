@@ -6,6 +6,8 @@ import { Warning2, ArrowRight, SearchNormal1 } from "iconsax-react";
 import Dept from "@/app/components/assessment/Dept";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type Stats = {
   staffCount?: number;
@@ -28,10 +30,10 @@ export default function Assesment() {
   const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
-    fetch("/api/getStats", {
+    apiFetch("/api/getStats", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,10 +51,10 @@ export default function Assesment() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
-    fetch("/api/getDataEntry", {
+    apiFetch("/api/getDataEntry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),

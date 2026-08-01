@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface OptimizationResultRun {
   id: number;
@@ -32,7 +33,7 @@ export default function RobustHistoryPage() {
         const token = getAccessToken();
         if (!token) throw new Error("No token found");
 
-        const res = await fetch("/api/results?mode=robust", {
+        const res = await apiFetch("/api/results?mode=robust", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

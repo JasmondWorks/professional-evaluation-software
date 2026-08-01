@@ -4,13 +4,15 @@ import Link from "next/link";
 import { ArrowLeft2, Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from "iconsax-react";
 import { useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function OrgStructurePage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [msgType, setMsgType] = useState<"success" | "error" | "">("");
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const token = typeof window !== "undefined" ? getAccessToken() : null;
 
   async function saveResult(
     section: number,
@@ -27,7 +29,7 @@ export default function OrgStructurePage() {
 
     try {
       setLoading(true);
-      const res = await fetch("/api/orgStructure", {
+      const res = await apiFetch("/api/orgStructure", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -8,10 +8,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/app/components/useAuth";
 import { notify } from "@/lib/toast";
 import { Eye, EyeOff } from "lucide-react";
+import { getAccessToken, setAccessToken } from '@/app/utils/auth';
 
 type formdata = {
   email: string;
   password: string;
+  remember?: boolean;
 };
 
 export default function Home() {
@@ -19,18 +21,7 @@ export default function Home() {
   // Inline error state for the specific network/server error message.
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  // "Remember me" prefills the EMAIL on the next visit. The password is never
-  // stored on the device — only the email is remembered.
-  const [rememberedEmail, setRememberedEmail] = useState("");
   const router = useRouter();
-
-  useEffect(() => {
-    try {
-      setRememberedEmail(localStorage.getItem("remember_email") || "");
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   const schema = Yup.object({
     email: Yup.string()
@@ -58,15 +49,26 @@ export default function Home() {
 
       if (res.status == 200) {
         console.log("logged in");
-        localStorage.setItem("access_token", res.token);
+        setAccessToken(res.token);
 
         setRole(res.role);
 
-        document.cookie = `role=${res.role}; path=/; max-age=86400`;
+        if (data.remember) {
+          // 30 days max-age
+          document.cookie = `role=${res.role}; path=/; max-age=2592000`;
+        } else {
+          // Session cookie (cleared on browser close)
+          document.cookie = `role=${res.role}; path=/`;
+        }
 
         notify.dismiss(toastId);
         notify.success("Signed in successfully");
-        router.push("/dashboard");
+        
+        // Delay the redirect slightly to ensure the browser's native password 
+        // manager has time to catch the successful form submission and prompt the user.
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 100);
       } else {
         const errorText =
           res.status >= 500
@@ -88,24 +90,16 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (localStorage.getItem("access_token")) {
+    if (getAccessToken()) {
       router.push("/dashboard");
     }
   }, [router]);
 
   return (
     <Formik
-      enableReinitialize
-      initialValues={{ email: rememberedEmail, password: "", remember: !!rememberedEmail }}
+      initialValues={{ email: "", password: "", remember: false }}
       validationSchema={schema}
       onSubmit={(values) => {
-        // Remember (or forget) only the email — never the password.
-        try {
-          if (values.remember) localStorage.setItem("remember_email", values.email);
-          else localStorage.removeItem("remember_email");
-        } catch {
-          /* ignore */
-        }
         login("/api/login", values);
       }}
     >
@@ -131,6 +125,7 @@ export default function Home() {
                 type="email"
                 name="email"
                 id="email"
+                autoComplete="username"
                 required
                 tabIndex={1}
               />
@@ -146,6 +141,7 @@ export default function Home() {
                   type={showPassword ? "text" : "password"}
                   name="password"
                   id="password"
+                  autoComplete="current-password"
                   required
                   tabIndex={2}
                 />

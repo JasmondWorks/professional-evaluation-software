@@ -6,6 +6,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
 import HistoryChart from "@/app/components/ui/HistoryChart";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface StressEvaluationRun {
   id: number;
@@ -27,7 +28,7 @@ export default function StressEvaluationHistory() {
     setError(null);
     try {
       // no-store so a manual refresh always hits the server, never a cached copy.
-      const res = await fetch("/api/getStressEvaluation", {
+      const res = await apiFetch("/api/getStressEvaluation", {
         cache: "no-store",
         headers: {
           Authorization: `Bearer ${getAccessToken()}`,

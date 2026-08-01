@@ -3,6 +3,7 @@
 import { ArrowRight2 } from 'iconsax-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type Auditor = {
   id: number
@@ -18,7 +19,7 @@ export default function Page() {
 
   useEffect(() => {
     async function fetchAuditors() {
-      const res = await fetch(`/api/admin/all-auditors`)
+      const res = await apiFetch(`/api/admin/all-auditors`)
       const data = await res.json()
       setAuditors(data)
       setLoading(false)

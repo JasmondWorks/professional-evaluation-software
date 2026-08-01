@@ -25,6 +25,7 @@ import { LucideDatabase } from 'lucide-react';
 import LoadingButton from './ui/LoadingButton';
 import { resolveEffectiveRole, PermissionKey } from './utils/roles';
 import { usePermissions } from './usePermissions';
+import { getAccessToken } from '@/app/utils/auth';
 
 
 export default function Sidebar({is_sidebar_active, handleSideBar}: 
@@ -39,7 +40,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    useEffect(() => {
       // SSR safety check
       if (typeof window !== 'undefined') {
-         const access_token = localStorage.getItem('access_token');
+         const access_token = getAccessToken();
          
          if (access_token && access_token !== 'undefined' && access_token !== 'null') {
             try {

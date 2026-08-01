@@ -21,6 +21,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function PersonnelUtilizationPage() {
   const [params, setParams] = useState<HParamsWithConstraints>({
@@ -143,7 +144,7 @@ export default function PersonnelUtilizationPage() {
         return;
       }
 
-      const res = await fetch("/api/personnelUtilization", {
+      const res = await apiFetch("/api/personnelUtilization", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

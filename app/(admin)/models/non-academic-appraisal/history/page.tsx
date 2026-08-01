@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface AppraisalRun {
   id: number;
@@ -29,7 +30,7 @@ export default function NonAcademicAppraisalHistory() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("/api/getNonAcademicAppraisal", {
+      const res = await apiFetch("/api/getNonAcademicAppraisal", {
         headers: {
           Authorization: `Bearer ${getAccessToken()}`
         }

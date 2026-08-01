@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 
 import React, { useEffect, useState } from 'react'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type user = {
   id: number
@@ -34,7 +35,7 @@ export default function Page({ params }: { params: { user: string } }) {
       const access_token = getAccessToken() as string
       jwtDecode(access_token)
 
-      const res = await fetch(`/api/admin/users/${params.user}`)
+      const res = await apiFetch(`/api/admin/users/${params.user}`)
       const data = await res.json()
       setUser(data)
     }
@@ -56,7 +57,7 @@ export default function Page({ params }: { params: { user: string } }) {
 
     setDeleting(true)
 
-    await fetch(`/api/admin/users/${user.id}`, {
+    await apiFetch(`/api/admin/users/${user.id}`, {
       method: "DELETE"
     })
 

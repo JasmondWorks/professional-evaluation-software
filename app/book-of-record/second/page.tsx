@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface RecordType {
   id: string;
@@ -27,8 +28,7 @@ export default function SecondBookViewer() {
       try {
         setLoading(true);
 
-        const res = await fetch(
-          `/api/second-book-api/appraisal?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
+        const res = await apiFetch(`/api/second-book-api/appraisal?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
         );
         const data = await res.json();
 

@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import LoadingButton from "../../../../components/ui/LoadingButton";
 import Link from "next/link";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type factored_type = {
   observed_time: number;
@@ -30,7 +31,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/downloads/relax`);
+      const response = await apiFetch(`/api/downloads/relax`);
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

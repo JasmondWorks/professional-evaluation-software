@@ -4,6 +4,9 @@ import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction } from 'reac
 import { jwtDecode } from 'jwt-decode';
 import RoleSelect from '@/app/components/ui/RoleSelect';
 import { PRESET_ROLES } from '@/app/components/utils/roles';
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
+import { suggestEmail } from '@/app/utils/emailSuggest';
 
 type FormProps = {
   formdata: Record<string, any>;
@@ -205,14 +208,14 @@ export default function FormOne({
   }>({ hodByDept: {}, unitHeadByFaculty: {} });
   useEffect(() => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAccessToken();
       if (!token) return;
       const decoded: any = jwtDecode(token);
       const category = String(decoded?.productCategory ?? decoded?.category ?? '').toLowerCase();
       if (category) setIsAcademic(category === 'academic');
 
       // Pull org-specific custom roles so they're selectable here too.
-      fetch('/api/getRoles', {
+      apiFetch('/api/getRoles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
@@ -231,7 +234,7 @@ export default function FormOne({
         .catch(() => {});
 
       // Current heads, so we can warn before creating a duplicate one.
-      fetch('/api/role-heads', { headers: { Authorization: `Bearer ${token}` } })
+      apiFetch('/api/role-heads', { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((d) => {
           if (d?.hodByDept) setHeads({ hodByDept: d.hodByDept, unitHeadByFaculty: d.unitHeadByFaculty || {} });
@@ -296,9 +299,9 @@ export default function FormOne({
   // Presets have no template, so their permissions are cleared for manual entry.
   async function applyRolePermissions(role: string) {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = getAccessToken();
       if (!token) return;
-      const res = await fetch('/api/getRolePermissions', {
+      const res = await apiFetch('/api/getRolePermissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, role }),
@@ -361,6 +364,26 @@ export default function FormOne({
         </div>
         <div>
           <Input {...inputProps} name="email" label="Employee's Email Address:" placeholder="Enter email" tabIndex={2} />
+          {(() => {
+            const suggestion = formdata.email ? suggestEmail(formdata.email) : null;
+            if (!suggestion) return null;
+            return (
+              <p className="text-xs text-amber-600 mt-1">
+                Did you mean{" "}
+                <button
+                  type="button"
+                  className="underline font-medium"
+                  onClick={() => {
+                    updateFields({ email: suggestion });
+                    validateField("email", suggestion);
+                  }}
+                >
+                  {suggestion}
+                </button>
+                ?
+              </p>
+            );
+          })()}
           <PhoneInput
             name="gsm"
             label="Phone Number:"

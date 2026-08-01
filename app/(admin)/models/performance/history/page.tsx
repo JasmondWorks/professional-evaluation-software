@@ -6,6 +6,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
 import HistoryChart from "@/app/components/ui/HistoryChart";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface PerformanceRun {
   id: number;
@@ -27,7 +28,7 @@ export default function PerformanceHistory() {
 
   const fetchHistory = async () => {
     try {
-      const res = await fetch("/api/getPerformanceResult", {
+      const res = await apiFetch("/api/getPerformanceResult", {
         headers: {
           Authorization: `Bearer ${getAccessToken()}`
         }

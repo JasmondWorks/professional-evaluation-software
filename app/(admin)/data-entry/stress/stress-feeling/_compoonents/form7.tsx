@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import RatingCell from "./RatingCell";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 const feelings = [
   "Anger Towards Others",
@@ -44,8 +46,8 @@ export default function Form7({
   useEffect(() => {
     // Maximums come from the CYCLE limits (mean of Form 5 across all staff), not
     // the individual's own Form 5 scores.
-    const token = localStorage.getItem("access_token");
-    fetch(`/api/stress/limits`, { headers: { Authorization: `Bearer ${token}` } })
+    const token = getAccessToken();
+    apiFetch(`/api/stress/limits`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => {
         const limits = (d?.limits || {}) as Record<string, number>;

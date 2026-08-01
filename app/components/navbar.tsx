@@ -8,6 +8,8 @@ import jwt from 'jsonwebtoken'
 import { RootState } from '@/app/state/store'
 import { useEffect, useState } from 'react';
 import LoadingButton from './ui/LoadingButton';
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function Navbar({ is_sidebar_active, handleSideBar }: 
    { is_sidebar_active: any, handleSideBar: any }): JSX.Element {
@@ -18,7 +20,7 @@ export default function Navbar({ is_sidebar_active, handleSideBar }:
    useEffect(() => {
       // SSR safety check
       if (typeof window !== 'undefined') {
-         const access_token = localStorage.getItem('access_token');
+         const access_token = getAccessToken();
          
          if (access_token && access_token !== 'undefined' && access_token !== 'null') {
             try {
@@ -27,7 +29,7 @@ export default function Navbar({ is_sidebar_active, handleSideBar }:
 
                // Fetch unread notifications count
                if (decoded && typeof decoded === 'object' && 'org' in decoded) {
-                  fetch(`/api/notifications`, {
+                  apiFetch(`/api/notifications`, {
                      method: 'GET',
                      headers: {
                         'Authorization': `Bearer ${access_token}`,

@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { ArrowLeft2 } from "iconsax-react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface IndexRun {
   id: number;
@@ -23,7 +24,7 @@ export default function ProductivityHistoryPage() {
         const token = getAccessToken();
         if (!token) throw new Error("No token found");
 
-        const res = await fetch("/api/getPersonnelIndex?type=productivity", {
+        const res = await apiFetch("/api/getPersonnelIndex?type=productivity", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
