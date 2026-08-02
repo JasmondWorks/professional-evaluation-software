@@ -13,8 +13,8 @@ const models = [
     title: "Robust Optimization",
     href: "/models/student-teacher/robust",
     desc: "Maximizes the robust efficiency function Hʳ, which accounts for out-of-hours workload (research, community service and assessment) in addition to formal consultation. Recommended when staff carry significant non-teaching responsibilities.",
-    accent: "border-blue-200 hover:border-blue-400",
-    badge: "bg-blue-50 text-blue-700",
+    accent: "border-blue-200 hover:border-pes-300",
+    badge: "bg-pes-50 text-pes-700",
   },
   {
     n: 2,
@@ -32,7 +32,7 @@ export default function StudentTeacherIndex() {
     <div className="p-8 max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Student–Teacher Ratio</h1>
-        <p className="text-gray-600 max-w-2xl">
+        <p className="text-body max-w-2xl">
           This model estimates the optimal student–teacher ratio and the
           academic and management staff required, using queuing-theory workload
           analysis. Choose one of the two optimization models below to begin.
@@ -52,9 +52,9 @@ export default function StudentTeacherIndex() {
               >
                 {m.n}
               </span>
-              <h2 className="text-lg font-bold text-gray-900">{m.title}</h2>
+              <h2 className="text-lg font-bold text-strong">{m.title}</h2>
             </div>
-            <p className="text-sm text-gray-600 flex-1">{m.desc}</p>
+            <p className="text-sm text-body flex-1">{m.desc}</p>
             <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-pes group-hover:gap-2 transition-all">
               Open model <ArrowRight2 size="16" />
             </span>

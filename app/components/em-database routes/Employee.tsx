@@ -240,13 +240,13 @@ export default function Employee() {
     <div className="flex justify-center w-full h-full">
       <div className="m-4 bg-white w-full h-full">
         {/* Header Section */}
-        <div className="flex flex-col gap-6 px-6 py-6 border-b border-gray-100">
+        <div className="flex flex-col gap-6 px-6 py-6 border-b border-line">
           
           {/* Top Row: Title, Count, and Add Actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Employee Database</h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <h1 className="text-2xl font-bold text-strong">Employee Database</h1>
+              <p className="text-sm text-muted mt-1">
                 Total Enrolled Employees: <span className="font-semibold text-pes">{employees.length}</span>
               </p>
             </div>
@@ -332,7 +332,7 @@ export default function Employee() {
                           className={`text-xs border rounded px-3 py-1 font-medium transition-colors ${
                             assigned
                               ? "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
-                              : "border-blue-200 bg-blue-50 text-pes hover:bg-blue-100"
+                              : "border-blue-200 bg-pes-50 text-pes hover:bg-pes-100"
                           }`}
                         >
                           {assigned ? "Role Assigned" : "Assign Role"}
@@ -346,7 +346,7 @@ export default function Employee() {
                         handleResend(i.email, i.id);
                       }}
                       disabled={resendingId === i.id}
-                      className="text-xs border border-gray-300 rounded px-3 py-1 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                      className="text-xs border border-line rounded px-3 py-1 hover:bg-line/50 disabled:opacity-50 transition-colors"
                     >
                       {resendingId === i.id ? "Sending..." : "Resend creds"}
                     </button>
@@ -365,18 +365,18 @@ export default function Employee() {
       {/* Role Assignment Modal */}
       {isModalOpen && selectedEmployee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 m-4 animate-in fade-in zoom-in-95 duration-200 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Assign Role</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Select a new role for <span className="font-semibold text-gray-800">{selectedEmployee.name}</span>.
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 m-4 animate-in fade-in zoom-in-95 duration-200 border border-line">
+            <h2 className="text-xl font-bold text-strong mb-1">Assign Role</h2>
+            <p className="text-sm text-muted mb-6">
+              Select a new role for <span className="font-semibold text-strong">{selectedEmployee.name}</span>.
               <br />
               <span className="inline-block mt-2">
-                Current Role: <span className="font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 ml-1 text-xs">{selectedEmployee.display_role || selectedEmployee.role}</span>
+                Current Role: <span className="font-medium px-2.5 py-0.5 rounded-full bg-canvas text-body ml-1 text-xs">{selectedEmployee.display_role || selectedEmployee.role}</span>
               </span>
             </p>
 
             <div className="flex flex-col gap-2 mb-8">
-              <label className="text-sm font-medium text-gray-700">Role</label>
+              <label className="text-sm font-medium text-body">Role</label>
               <RoleSelect
                 value={selectedRole}
                 presetRoles={assignPresetOptions}
@@ -390,11 +390,11 @@ export default function Employee() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-3 pt-4 border-t border-line">
               <button
                 onClick={() => setIsModalOpen(false)}
                 disabled={assigning}
-                className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -402,7 +402,7 @@ export default function Employee() {
                 onClick={handleModalAssign}
                 disabled={assigning || !!headConflict}
                 title={headConflict ? headConflict.message : undefined}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-700 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
               >
                 {assigning ? (
                   <span className="flex items-center gap-2">

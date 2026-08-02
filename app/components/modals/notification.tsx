@@ -31,7 +31,6 @@ export default function Notification() {
         if (!token) return
         const decoded = jwt.decode(token) as { name?: string; id?: number; org?: string }
         const org = decoded?.org
-        console.log("what is the org?:", org, decoded)
 
         const res = await apiFetch(`/api/notifications`, {
           headers: {
@@ -71,24 +70,24 @@ export default function Notification() {
 
       {/* Loading state */}
       {loading ? (
-        <p className="text-center text-gray-400 p-4 animate-pulse">Loading notifications...</p>
+        <p className="text-center text-muted p-4 animate-pulse">Loading notifications...</p>
       ) : notifications.length > 0 ? (
         notifications.map((n) => (
           <div
             key={n.id}
             className={`content rounded-md p-3 mx-4 mb-3 flex flex-col text-sm ${
-              n.is_read ? "bg-gray-100" : "bg-slate-50 border-l-4 border-blue-500"
+              n.is_read ? "bg-canvas" : "bg-pes-50"
             }`}
           >
             <h1 className="mb-1 font-bold">{n.title}</h1>
             <p>{n.message}</p>
-            <span className="text-xs text-gray-400 mt-2">
+            <span className="text-xs text-muted mt-2">
               {new Date(n.created_at).toLocaleString()}
             </span>
           </div>
         ))
       ) : (
-        <p className="text-center text-gray-400 p-4">No notifications yet</p>
+        <p className="text-center text-muted p-4">No notifications yet</p>
       )}
     </div>
   )

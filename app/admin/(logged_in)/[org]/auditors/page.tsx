@@ -28,7 +28,7 @@ export default function Page({ params }: { params: { org: string } }) {
   }, [params.org])
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-canvas">
 
       {/* Header */}
       <div className="flex justify-between items-center p-6 bg-white shadow-sm">
@@ -41,7 +41,7 @@ export default function Page({ params }: { params: { org: string } }) {
       <div className="p-6 space-y-3">
 
         {auditors.length === 0 && (
-          <div className="text-gray-500">
+          <div className="text-muted">
             No auditors found in this organisation.
           </div>
         )}
@@ -50,11 +50,11 @@ export default function Page({ params }: { params: { org: string } }) {
           <Link
             href={`/admin/${user.org}/${user.id}`}
             key={user.id}
-            className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm hover:bg-gray-100 transition"
+            className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm hover:bg-line/50 transition"
           >
             <div>
               <div className="font-medium">{user.name}</div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted">
                 {user.email}
               </div>
             </div>

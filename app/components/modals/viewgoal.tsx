@@ -32,7 +32,6 @@ export default function Viewgoal(){
     async function handleDelete(){
         dispatch( deleteGoal())
         // const req = await apiFetch('/api/removeGoal')
-        console.log('goal removed');
     }
     useEffect(() => {
         goalData.current = data
@@ -44,17 +43,17 @@ export default function Viewgoal(){
             <div>
                 <div className="formgroup flex flex-col w-full">
                     <label htmlFor=""className='font-bold my-2 text-sm'>Goal:</label>
-                    <p className='font-light text-sm text-gray-500 py-4 px-4' >{ data?.name }</p>
+                    <p className='font-light text-sm text-muted py-4 px-4' >{ data?.name }</p>
                 </div>
 
                 <div className="formgroup flex flex-col w-full">
                     <label htmlFor=""className='font-bold my-2 text-sm'>Description:</label>
-                    <p className='font-light text-sm text-gray-500 py-4 px-4' >{ data?.description } </p>
+                    <p className='font-light text-sm text-muted py-4 px-4' >{ data?.description } </p>
                 </div>
 
                 <div className="formgroup flex flex-col w-1/2">
                     <label htmlFor=""className='font-bold my-2 text-sm'>Due Date:</label>
-                    <p className='font-light text-sm text-gray-500 py-4 px-4' >{ (data?.due_date).toString().split('T')[0] }</p>
+                    <p className='font-light text-sm text-muted py-4 px-4' >{ (data?.due_date).toString().split('T')[0] }</p>
                 </div>
 
                 <div className="actions flex">

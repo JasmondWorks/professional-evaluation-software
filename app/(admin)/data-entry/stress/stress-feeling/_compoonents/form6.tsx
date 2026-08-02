@@ -125,11 +125,11 @@ export default function Form6({
   return (
     <div className="w-full">
       <h2 className="text-2xl font-bold mb-1">Form 6: Stress Themes</h2>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-muted mb-4">
         For each stress category, rate how strongly each theme applies to you on a scale of 1 (lowest) to 10 (highest).
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full border border-gray-300 text-sm">
+        <table className="w-full border border-line text-sm">
           <thead>
             <tr className="bg-purple-200">
               <th className="border p-2">Stress Category</th>

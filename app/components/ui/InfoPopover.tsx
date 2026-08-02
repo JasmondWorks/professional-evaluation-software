@@ -30,7 +30,7 @@ export default function InfoPopover({ text }: { text: string }) {
           e.preventDefault();
           setIsOpen(!isOpen);
         }}
-        className="text-gray-400 hover:text-pes transition-colors rounded-full focus:outline-none focus:text-pes"
+        className="text-muted hover:text-pes transition-colors rounded-full focus:outline-none focus:text-pes"
         aria-label="More information"
       >
         <InfoCircle size={16} variant="Bulk" />

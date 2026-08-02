@@ -113,17 +113,17 @@ export default function RobustOptimization() {
         <div className="flex items-center space-x-4">
           <Link
             href="/models/student-teacher"
-            className="inline-flex items-center gap-1.5 bg-white border border-gray-300 shadow-sm text-gray-700 px-3 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors"
+            className="inline-flex items-center gap-1.5 bg-white border border-line shadow-sm text-body px-3 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors"
           >
-            <ArrowLeft2 size="16" className="text-gray-500" /> Back
+            <ArrowLeft2 size="16" className="text-muted" /> Back
           </Link>
           <h1 className="text-2xl font-bold">Robust Optimization</h1>
         </div>
         <Link
           href="/models/student-teacher/robust/history"
-          className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2 print:hidden"
+          className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2 print:hidden"
         >
-          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           View History
         </Link>
       </div>
@@ -137,7 +137,7 @@ export default function RobustOptimization() {
           <button
             onClick={handleCalculate}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-4"
+            className="px-4 py-2 bg-pes text-white rounded hover:bg-pes-800 mt-4"
           >
             {loading ? "Calculating..." : "Calculate"}
           </button>
@@ -162,7 +162,7 @@ export default function RobustOptimization() {
           {isAdmin && (
             <button 
               onClick={() => window.print()}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 print:hidden"
+              className="mt-4 px-4 py-2 bg-pes text-white rounded hover:bg-pes-800 print:hidden"
             >
               Print Results
             </button>

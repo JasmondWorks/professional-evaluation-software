@@ -103,14 +103,14 @@ export default function StressApprovals() {
   if (loading) {
     return (
       <div className="w-full p-12 flex justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent mt-16" />
       </div>
     );
   }
 
   if (!status?.active) {
     return (
-      <div className="w-full p-12 text-center text-gray-500 mt-10">
+      <div className="w-full p-12 text-center text-muted mt-10">
         No stress exercise is currently open for your department.
       </div>
     );
@@ -120,8 +120,8 @@ export default function StressApprovals() {
 
   return (
     <div className="w-full p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900">Stress Entries — {status.dept}</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="text-2xl font-bold text-strong">Stress Entries — {status.dept}</h1>
+      <p className="text-sm text-muted mb-6">
         Verify and approve your department&apos;s theme &amp; feeling (Form 6/7) entries for the current cycle.
       </p>
 
@@ -132,9 +132,9 @@ export default function StressApprovals() {
           { label: "Approved", value: c.approved },
           { label: "Awaiting approval", value: c.pendingApproval },
         ].map((s) => (
-          <div key={s.label} className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs uppercase tracking-wide text-gray-400">{s.label}</p>
-            <p className="text-2xl font-bold text-gray-800">{s.value}</p>
+          <div key={s.label} className="bg-canvas rounded-lg p-4 text-center">
+            <p className="text-xs uppercase tracking-wide text-muted">{s.label}</p>
+            <p className="text-2xl font-bold text-strong">{s.value}</p>
           </div>
         ))}
       </div>
@@ -143,15 +143,15 @@ export default function StressApprovals() {
         <button
           onClick={() => approve()}
           disabled={working || c.pendingApproval === 0}
-          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50"
+          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-pes-800 transition-colors disabled:opacity-50"
         >
           Approve all pending ({c.pendingApproval})
         </button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-line rounded-xl overflow-hidden">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b text-gray-700">
+          <thead className="bg-canvas border-b text-body">
             <tr>
               <th className="px-6 py-3 font-semibold">Staff</th>
               <th className="px-6 py-3 font-semibold">Entry</th>
@@ -159,10 +159,10 @@ export default function StressApprovals() {
               <th className="px-6 py-3 font-semibold text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-line">
             {status.roster!.map((r) => (
-              <tr key={r.name} className="hover:bg-gray-50/50">
-                <td className="px-6 py-3 font-medium text-gray-900">{r.name}</td>
+              <tr key={r.name} className="hover:bg-canvas/50">
+                <td className="px-6 py-3 font-medium text-strong">{r.name}</td>
                 <td className="px-6 py-3">
                   {r.submitted ? (
                     <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">Submitted</span>
@@ -174,7 +174,7 @@ export default function StressApprovals() {
                   {r.approved ? (
                     <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">Approved</span>
                   ) : (
-                    <span className="text-gray-400 text-xs">—</span>
+                    <span className="text-muted text-xs">—</span>
                   )}
                 </td>
                 <td className="px-6 py-3 text-right">
@@ -182,7 +182,7 @@ export default function StressApprovals() {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setViewing(r.name!)}
-                        className="text-gray-700 text-xs font-medium border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50"
+                        className="text-body text-xs font-medium border border-line rounded-md px-3 py-1.5 hover:bg-canvas"
                       >
                         View
                       </button>
@@ -218,22 +218,22 @@ export default function StressApprovals() {
       {rejecting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => !working && setRejecting(null)}>
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Send back for re-entry</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              <span className="font-medium text-gray-700">{rejecting}</span> will be able to re-fill and re-submit their form. Tell them why.
+            <h2 className="text-lg font-bold text-strong mb-1">Send back for re-entry</h2>
+            <p className="text-sm text-muted mb-4">
+              <span className="font-medium text-body">{rejecting}</span> will be able to re-fill and re-submit their form. Tell them why.
             </p>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               placeholder="e.g. Several categories look incomplete — please review and resubmit."
-              className="w-full border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-pes"
+              className="w-full border border-line rounded-lg p-3 text-sm outline-none focus:border-pes"
             />
             <div className="flex justify-end gap-3 mt-4">
               <button
                 onClick={() => setRejecting(null)}
                 disabled={working}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50"
               >
                 Cancel
               </button>

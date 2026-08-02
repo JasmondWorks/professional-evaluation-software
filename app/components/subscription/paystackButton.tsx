@@ -1,4 +1,5 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
 
@@ -32,10 +33,10 @@ export default function PaystackButton({ email, planCode, label }: PaystackButto
         return;
       }
 
-      alert(data.error || "Subscription initialization failed");
+      notify.error(data.error ||"Subscription initialization failed");
     } catch (err) {
       console.error(err);
-      alert("Payment start failed");
+      notify.error("Payment start failed");
     } finally {
       setLoading(false);
     }

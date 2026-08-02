@@ -90,7 +90,7 @@ function Input({
             advanceFocus(e.currentTarget);
           }
         }}
-        className="font-medium text-lg text-gray-800 placeholder-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
+        className="font-medium text-lg text-strong placeholder-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
       />
       {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
     </div>
@@ -148,7 +148,7 @@ function PhoneInput({
   return (
     <div className="my-4 w-full">
       {label && (
-        <label className="text-gray-800 placeholder-gray-500 font-bold text-lg placeholder-lg block mb-1">
+        <label className="text-strong placeholder-gray-500 font-bold text-lg placeholder-lg block mb-1">
           {label}
         </label>
       )}
@@ -171,7 +171,7 @@ function PhoneInput({
           }
         }}
         tabIndex={tabIndex}
-        className="border font-bold border-gray-300 rounded p-2 w-full outline-none focus:border-black"
+        className="border font-bold border-line rounded p-2 w-full outline-none focus:border-black"
         maxLength={16}
       />
     </div>
@@ -338,7 +338,6 @@ export default function FormOne({
       const uploaded = await cloudRes.json();
       setCredentialData((prev: any) => ({ ...prev, [labelName]: uploaded.secure_url }));
     } catch (err) {
-      console.log(err);
     }
   }
 
@@ -452,7 +451,7 @@ export default function FormOne({
           <span className="text-gray-300"> (certificates must be attached)</span>
         </p>
 
-        <div className="flex flex-col bg-gray-50 rounded-xs p-4">
+        <div className="flex flex-col bg-canvas rounded-xs p-4">
           <div className="flex flex-col justify-between m-2 w-[30%]">
             <input
               id="title"
@@ -461,7 +460,7 @@ export default function FormOne({
               name="qualification"
               value={formdata.qualification || ''}
               onChange={handleChange}
-              className="font-medium text-sm text-gray-500 py-3 px-6 border rounded-sm"
+              className="font-medium text-sm text-muted py-3 px-6 border rounded-sm"
             />
             <Input {...inputProps} name="year" label="Year Obtained" type="date" classNameProp="w-[20%] ms-auto" />
           </div>
@@ -472,7 +471,7 @@ export default function FormOne({
                 <p className="m-auto text-sm text-gray-300">
                   {selectedFile !== '' ? selectedFile : 'No image selected'}
                 </p>
-                <div className="bg-gray-100 rounded-sm px-5 py-3 text-sm text-gray-500">Browse Files</div>
+                <div className="bg-canvas rounded-sm px-5 py-3 text-sm text-muted">Browse Files</div>
               </div>
               <input id="file" type="file" name="credential" className="hidden" onChange={handleFileUpload} />
             </label>

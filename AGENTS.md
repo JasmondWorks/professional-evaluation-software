@@ -5,6 +5,13 @@ Evaluation Software) codebase. Keep this file short and additive.
 
 ## UI / UX constraints
 
+> **Design system:** this project follows a single design language — see
+> [DESIGN.md](DESIGN.md) for the tokens, shared components (`app/components/ui/`),
+> and patterns to use for any new or changed UI. The running record of the design
+> overhaul (what changed and why) lives in [UI_OVERHAUL.md](UI_OVERHAUL.md); when you
+> make further UI changes, append a dated entry there, and update DESIGN.md if you
+> add or change a token, component, or pattern.
+
 ### Disabled controls must always explain themselves
 A button (or any control) that is disabled MUST tell the user **why**, right next
 to it — never leave a bare greyed-out control with no context. Use one of:

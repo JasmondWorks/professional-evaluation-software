@@ -1,4 +1,5 @@
 'use client'
+import { notify } from "@/lib/toast";
 import { ArrowLeft } from 'iconsax-react'
 import Link from 'next/link'
 import { jwtDecode } from "jwt-decode";
@@ -95,18 +96,17 @@ export default function Page({ params }: { params: { user: string } }){
             const data = await res.json();
 
             if (res.ok && data.success) {
-            alert(`User ${user.email} deleted successfully!`);
-            console.log("Deleted user:", data.deleted);
+            notify.success(`User ${user.email} deleted successfully!`);
             window.location.href = '/em-database'
             // Optional: update UI or refresh page
             // window.location.reload();
             } else {
-            alert(`Failed to delete user: ${data.message}`);
+            notify.error(`Failed to delete user: ${data.message}`);
             console.error("Delete error:", data);
             }
         } catch (err) {
             console.error("Request failed:", err);
-            alert("An unexpected error occurred while deleting the user.");
+            notify.error("An unexpected error occurred while deleting the user.");
         }
     }
 
@@ -127,43 +127,54 @@ export default function Page({ params }: { params: { user: string } }){
         } catch (e) {
             // Revert on failure.
             setUser((u: any) => ({ ...u, [field]: !value }))
-            alert(`Could not update stress-results access: ${e instanceof Error ? e.message : 'unknown error'}`)
+            notify.error(`Could not update stress-results access: ${e instanceof Error ? e.message :'unknown error'}`)
         }
     }
 
 
     return(
-        <main className="w-full flex flex-col border bg-gray-50">
-            <div className='nav flex justify-between bg-white h-[4rem] w-full text-gray-300 text-md border border-slate-50'>
-                <ul className='flex mx-16 my-auto w-[30%] justify-between'>
-                    <Link href={ `/em-database` }><ArrowLeft className='hover:text-pes'/></Link>
-                    <li className={`border-2 cursor-pointer rounded-sm border-transparent ${ (databaseView == 'profile') ? 'text-blue-800 border-b-blue-800' : '' }`} onClick={ () => { setDatabaseView('profile') } }>Employee Profile</li>
-                    <li className={`border-2 cursor-pointer rounded-sm border-transparent ${ (databaseView == 'performance') ? 'text-blue-800 border-b-blue-800' : '' }`} onClick={ () => { setDatabaseView('performance') } }>Performance Analysis</li>
-                </ul>
-
-                <div onClick={deleteUser} className='bg-red-100 cursor-pointer hover:bg-red-200 text-red-700 font-semibold px-12 py-2 h-fit w-fit mx-4 my-auto rounded-sm'>
-                    Delete
+        <main className="w-full flex flex-col bg-canvas min-h-screen">
+            <div className='nav flex items-center justify-between bg-surface h-16 w-full border-b border-line px-4 sm:px-6'>
+                <div className='flex items-center gap-1'>
+                    <Link href={ `/em-database` } className='p-2 rounded-lg text-muted hover:text-pes hover:bg-line/60 transition-colors'><ArrowLeft size={20}/></Link>
+                    {([
+                        { key: 'profile', label: 'Employee profile' },
+                        { key: 'performance', label: 'Performance analysis' },
+                    ] as const).map((t) => (
+                        <button
+                            key={t.key}
+                            onClick={() => setDatabaseView(t.key)}
+                            aria-current={databaseView === t.key ? 'page' : undefined}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${databaseView === t.key ? 'bg-pes-50 text-pes-700' : 'text-body hover:bg-line/60 hover:text-strong'}`}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
+
+                <button onClick={deleteUser} className='bg-danger-50 cursor-pointer hover:bg-danger-100 text-danger-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
+                    Delete
+                </button>
             </div>
 
             {
                 databaseView == 'profile' ?
                     <div className='flex flex-col m-8 p-8 bg-white'>
-                        <div className="bg-gray-50 h-[3rem] flex justify-between">
+                        <div className="bg-canvas h-[3rem] flex justify-between">
                             <h1 className="my-auto mx-6 font-semibold">Employee details</h1>
                         </div>
 
                         {/* Stress results read-access the admin grants this staff member */}
-                        <div className="my-4 border border-gray-200 rounded-lg p-5">
-                            <h2 className="font-semibold text-gray-800 mb-1">Stress results access</h2>
-                            <p className="text-sm text-gray-500 mb-4">Allow this staff member to view their own department / faculty stress results.</p>
+                        <div className="my-4 border border-line rounded-lg p-5">
+                            <h2 className="font-semibold text-strong mb-1">Stress results access</h2>
+                            <p className="text-sm text-muted mb-4">Allow this staff member to view their own department / faculty stress results.</p>
                             <div className="flex flex-col gap-3">
                                 {([
                                     { field: 'view_department_stress', label: 'View their department stress results' },
                                     { field: 'view_faculty_stress', label: 'View their faculty / division stress results' },
                                 ] as const).map((row) => (
                                     <label key={row.field} className="flex items-center justify-between gap-4 cursor-pointer">
-                                        <span className="text-sm text-gray-700">{row.label}</span>
+                                        <span className="text-sm text-body">{row.label}</span>
                                         <button
                                             type="button"
                                             onClick={() => toggleStressAccess(row.field, !user[row.field])}
@@ -194,7 +205,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         {
                                             user?
                                             <>
-                                                <p className='text-gray-400'>Name:</p>
+                                                <p className='text-muted'>Name:</p>
                                                 <p className='font-semibold text-lg'>{user.name}</p>                         
                                             </>
                     
@@ -207,7 +218,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         {
                                             user?
                                             <>
-                                            <p className='text-gray-400'>Functional GSM:</p>
+                                            <p className='text-muted'>Functional GSM:</p>
                                             <p className='font-semibold text-lg'>{user.gsm}</p>                      
                                             </>
                                             
@@ -220,7 +231,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         {
                                             user?
                                             <>
-                                                <p className='text-gray-400'>Current home address:</p>
+                                                <p className='text-muted'>Current home address:</p>
                                                 <p className='font-semibold text-lg'>{user.address}</p>                            
                                             </>
                                             :
@@ -235,7 +246,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Email:</p>
+                                            <p className='text-muted'>Email:</p>
                                             <p className='font-semibold text-lg'>{user.email}</p>                             
                                             </>
                                         :
@@ -247,7 +258,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Present role:</p>
+                                            <p className='text-muted'>Present role:</p>
                                             <p className='font-semibold text-lg'>{user.role}</p>                           
                                             </>
                                         :
@@ -259,7 +270,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Faculty/college:</p>
+                                            <p className='text-muted'>Faculty/college:</p>
                                             <p className='font-semibold text-lg'>{user.faculty_college}</p>                             
                                             </>
                                         :
@@ -269,7 +280,7 @@ export default function Page({ params }: { params: { user: string } }){
                                 </div>
 
                                 {/* <div className='my-2 flex flex-col'>
-                                    <p className='text-gray-400'>Faculty/college:</p>
+                                    <p className='text-muted'>Faculty/college:</p>
                                     <p className='font-semibold text-lg'>{}</p>
                                 </div> */}
                                 </div>
@@ -281,7 +292,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Date of Birth:</p>
+                                            <p className='text-muted'>Date of Birth:</p>
                                             <p className='font-semibold text-lg'>{user.dob?.toString().split('T')[0]}</p>                           
                                             </>
                                         :
@@ -293,7 +304,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>date of first Appointment:</p>
+                                            <p className='text-muted'>date of first Appointment:</p>
                                             <p className='font-semibold text-lg'>{user.doa?.toString().split('T')[0]}</p>                           
                                             </>
                                         :
@@ -305,7 +316,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Post/grade of first appointment:</p>
+                                            <p className='text-muted'>Post/grade of first appointment:</p>
                                             <p className='font-semibold text-lg'>{user.poa}</p>                           
                                             </>
                                         :
@@ -318,7 +329,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Date of confirmation:</p>
+                                            <p className='text-muted'>Date of confirmation:</p>
                                             <p className='font-semibold text-lg'>{user.doc?.toString().split('T')[0]}</p>                        
                                             </>
                                         :
@@ -332,7 +343,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Present Post:</p>
+                                            <p className='text-muted'>Present Post:</p>
                                             <p className='font-semibold text-lg'>{user.post}</p>                        
                                             </>
                                         :
@@ -344,7 +355,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Date appointed to present post:</p>
+                                            <p className='text-muted'>Date appointed to present post:</p>
                                             <p className='font-semibold text-lg'>{user.dopp?.toString().split('T')[0]}</p>                        
                                             </>
                                         :
@@ -356,7 +367,7 @@ export default function Page({ params }: { params: { user: string } }){
                                     {
                                         user?
                                             <>
-                                            <p className='text-gray-400'>Current Level/Step:</p>
+                                            <p className='text-muted'>Current Level/Step:</p>
                                             <p className='font-semibold text-lg'>{user.level}</p>                        
                                             </>
                                         :
@@ -367,7 +378,7 @@ export default function Page({ params }: { params: { user: string } }){
                                 
                                 <div className='flex justify-between w-9/12'>
                                 <div className='my-2 flex flex-col'>
-                                    <p className='text-gray-400'>Academic certification:</p>
+                                    <p className='text-muted'>Academic certification:</p>
                                     <div>
                                         {
                                             // TODO - render certification here
@@ -379,14 +390,14 @@ export default function Page({ params }: { params: { user: string } }){
                             </div>
 
                             <div className='flex justify-end'>
-                                <p style={{ display: `${ expanded? 'none' : '' }` }} className={` text-blue-900 cursor-pointer hover:text-blue-950 underline text-md font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See more</p>
-                                <p style={{ display: `${ expanded? '' : 'none' }` }} className={`${ expanded? '' : 'none' } text-blue-900 cursor-pointer hover:text-blue-950 underline text-md font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See less</p>
+                                <p style={{ display: `${ expanded? 'none' : '' }` }} className={`text-pes-700 cursor-pointer hover:text-pes-800 underline text-sm font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See more</p>
+                                <p style={{ display: `${ expanded? '' : 'none' }` }} className={`text-pes-700 cursor-pointer hover:text-pes-800 underline text-sm font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See less</p>
                             </div>
                         </div>
 
                         <div className="flex border">
                             <div className="border-r w-1/2">
-                            <div className="bg-gray-50 border-b h-[3rem] flex">
+                            <div className="bg-canvas border-b h-[3rem] flex">
                                 <h1 className="my-auto mx-4 font-semibold">Reporting Hierachy</h1>
                             </div>
                             
@@ -401,7 +412,7 @@ export default function Page({ params }: { params: { user: string } }){
                             </div>
 
                             <div className="w-1/2">
-                            <div className="bg-gray-50 border-b h-[3rem] flex">
+                            <div className="bg-canvas border-b h-[3rem] flex">
                                 <h1 className="my-auto mx-4 font-semibold">Permission Settings</h1>
                             </div>
 
@@ -428,7 +439,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         <p>View and edit the details of employees.</p>
                                         </span>
                                     </label>
-                                    <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                                    <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                                         <label className="flex me-4">
                                         <input disabled type="checkbox" onChange={()=>{}} className="me-1" />
                                         <span>All Employees</span>
@@ -452,7 +463,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         <p>View and edit the performance metrics of employees.</p>
                                         </span>
                                     </label>
-                                    <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                                    <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                                         <label className="flex me-4">
                                         <input type="checkbox" onChange={()=>{}} className="me-1" />
                                         <span>All Employees</span>
@@ -486,7 +497,7 @@ export default function Page({ params }: { params: { user: string } }){
                                         <p>Schedule, modify, or cancel performance review meetings for any employee.</p>
                                         </span>
                                     </label>
-                                    <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                                    <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                                         <label className="flex me-4">
                                         <input type="checkbox" onChange={()=>{}} className="me-1" />
                                         <span>All Employees</span>
@@ -508,7 +519,7 @@ export default function Page({ params }: { params: { user: string } }){
                     </div>            
                 :
                     <div className='flex flex-col mx-8 bg-white'>
-                        <div className="bg-gray-50 h-[3rem] flex justify-between">
+                        <div className="bg-canvas h-[3rem] flex justify-between">
                             <h1 className="my-auto mx-6 font-semibold">Last Assessment Result</h1>
                         </div>  
 
@@ -573,7 +584,7 @@ export default function Page({ params }: { params: { user: string } }){
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 h-[3rem] flex justify-between">
+                        <div className="bg-canvas h-[3rem] flex justify-between">
                             <h1 className="my-auto mx-6 font-semibold">Acheivements</h1>
                         </div>  
 

@@ -2,21 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   PES design foundation — refined institutional dashboard.
+   Light, systematized indigo, Linear-grade craft floor.
+   Semantic tokens live here; Tailwind maps them in the config.
+   ============================================================ */
 
 :root {
-  --foreground-rgb: gray;
-  --background-start-rgb: 214, 219, 220;
+  /* Neutral canvas + surfaces (cool-tinted to harmonize with indigo) */
+  --canvas: 247 247 250;      /* app background            #f7f7fa */
+  --surface: 255 255 255;     /* cards, sidebar, navbar     #ffffff */
+  --line: 229 229 238;        /* hairline borders           #e5e5ee */
+
+  /* Text ramp — all AA-compliant on --surface / --canvas */
+  --text-strong: 24 24 43;    /* headings                   #18182b */
+  --text: 60 60 82;           /* body                       #3c3c52 */
+  --text-muted: 108 108 130;  /* secondary / captions       #6c6c82 */
+
+  /* Brand shorthand for raw CSS consumers */
+  --brand: 50 43 128;         /* #322b80 */
+
+  /* Legacy vars kept so nothing that referenced them breaks */
+  --foreground-rgb: 60, 60, 82;
+  --background-start-rgb: 247, 247, 250;
   --background-end-rgb: 255, 255, 255;
 }
 
-body {
-  color: rgb(94, 93, 93);
-  font-size: 15.5px;
-  background: white;
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: rgb(var(--line));
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: rgb(var(--canvas));
+    color: rgb(var(--text));
+    font-size: 15px;
+    line-height: 1.55;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    color: rgb(var(--text-strong));
+    letter-spacing: -0.014em;
+    text-wrap: balance;
+  }
+
+  /* One consistent, visible keyboard focus — no mouse-click halos. */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(var(--brand) / 0.20);
+    border-radius: 4px;
+  }
+
+  /* Calm, thin scrollbars that match the neutral system. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line)) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(var(--line));
+    border: 3px solid rgb(var(--surface));
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: rgb(200 200 214); }
+
+  ::selection { background: rgb(var(--brand) / 0.14); }
 }
-*{
-  /* border: 1px solid red; */
-  padding: 0px;
-  margin: 0px;
-  box-sizing: border-box;
+
+@layer utilities {
+  .text-strong { color: rgb(var(--text-strong)); }
+  .text-body   { color: rgb(var(--text)); }
+  .text-muted  { color: rgb(var(--text-muted)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

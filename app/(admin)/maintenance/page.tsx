@@ -119,22 +119,22 @@ export default function MaintenancePage() {
       <div className="mb-4">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Dashboard
         </Link>
       </div>
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Maintenance Management</h1>
-        <p className="text-gray-500 max-w-2xl text-sm">
+        <h1 className="text-3xl font-bold text-strong mb-2">Maintenance Management</h1>
+        <p className="text-muted max-w-2xl text-sm">
           Track and manage your organization's tools and facilities. Add new assets to the inventory, set priority ratings, and monitor maintenance schedules.
         </p>
       </div>
 
       {/* CONTROL BAR */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-4 rounded-xl border border-line shadow-sm">
         <div className="relative flex-grow w-full md:max-w-md">
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted">
             <SearchNormal1 size="18" />
           </div>
           <input
@@ -142,21 +142,21 @@ export default function MaintenancePage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search any tool or facility..."
-            className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+            className="pl-10 pr-4 py-2.5 bg-canvas border border-line rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
           />
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setToolView(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-pes text-pes font-medium text-sm rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-pes text-pes font-medium text-sm rounded-lg hover:bg-pes-50 transition-colors shadow-sm"
           >
             <Add size="18" />
             Add Facility
           </button>
           <Link
             href="/maintenance/inventory"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-pes text-white font-medium text-sm rounded-lg hover:bg-blue-900 transition-colors shadow-sm"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-pes text-white font-medium text-sm rounded-lg hover:bg-pes-800 transition-colors shadow-sm"
           >
             <DocumentText size="18" />
             View Inventory
@@ -166,21 +166,21 @@ export default function MaintenancePage() {
 
       {/* INVENTORY LIST */}
       <div className="mb-6">
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
-          <Buildings2 size="20" className="text-gray-500" />
+        <h2 className="text-lg font-bold text-strong flex items-center gap-2 mb-4">
+          <Buildings2 size="20" className="text-muted" />
           Registered Facilities & Tools
-          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold ml-2">
+          <span className="bg-canvas text-body px-2 py-0.5 rounded-full text-xs font-semibold ml-2">
             {filteredTools.length}
           </span>
         </h2>
         
         {filteredTools.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+          <div className="bg-white rounded-xl border border-line p-12 text-center shadow-sm">
+            <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4 text-muted">
               <ClipboardText size="32" variant="Bulk" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No items found</h3>
-            <p className="text-gray-500 text-sm">We couldn't find any tools or facilities matching your search.</p>
+            <h3 className="text-lg font-medium text-strong mb-1">No items found</h3>
+            <p className="text-muted text-sm">We couldn't find any tools or facilities matching your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -188,17 +188,17 @@ export default function MaintenancePage() {
               <Link
                 key={key}
                 href={`/maintenance/${toolName}`}
-                className="group bg-white border border-gray-200 rounded-xl p-5 hover:border-pes hover:shadow-md transition-all flex flex-col items-start gap-4"
+                className="group bg-white border border-line rounded-xl p-5 hover:border-pes hover:shadow-md transition-all flex flex-col items-start gap-4"
               >
-                <div className="w-10 h-10 rounded-lg bg-blue-50 text-pes flex items-center justify-center group-hover:bg-pes group-hover:text-white transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-pes-50 text-pes flex items-center justify-center group-hover:bg-pes group-hover:text-white transition-colors">
                   <Setting2 size="20" variant="Bulk" />
                 </div>
                 <div className="w-full">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-pes transition-colors line-clamp-1" title={toolName}>
+                  <h3 className="font-semibold text-strong group-hover:text-pes transition-colors line-clamp-1" title={toolName}>
                     {toolName}
                   </h3>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">View details</span>
+                    <span className="text-xs text-muted">View details</span>
                     <span className="text-pes opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                   </div>
                 </div>
@@ -212,14 +212,14 @@ export default function MaintenancePage() {
       {toolView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div className="px-6 py-4 border-b border-line flex justify-between items-center bg-canvas/50">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Add Tool or Facility</h2>
-                <p className="text-xs text-gray-500 mt-1">Register a new asset to the maintenance inventory.</p>
+                <h2 className="text-lg font-bold text-strong">Add Tool or Facility</h2>
+                <p className="text-xs text-muted mt-1">Register a new asset to the maintenance inventory.</p>
               </div>
               <button
                 onClick={() => setToolView(false)}
-                className="text-gray-400 hover:text-gray-700 transition-colors p-2"
+                className="text-muted hover:text-body transition-colors p-2"
               >
                 <CloseCircle size="24" />
               </button>
@@ -229,74 +229,74 @@ export default function MaintenancePage() {
               <form id="add-facility-form" className="space-y-5" onSubmit={addFacility}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Description</label>
+                    <label className="text-sm font-semibold text-body">Description</label>
                     <input
                       onChange={handleChange}
                       name="description"
                       type="text"
                       required
                       placeholder="e.g. Backup Generator 500kVA"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Identification Symbol</label>
+                    <label className="text-sm font-semibold text-body">Identification Symbol</label>
                     <input
                       onChange={handleChange}
                       name="symbol"
                       type="text"
                       required
                       placeholder="e.g. GEN-01"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Location</label>
+                    <label className="text-sm font-semibold text-body">Location</label>
                     <input
                       onChange={handleChange}
                       name="location"
                       type="text"
                       required
                       placeholder="e.g. Server Room B"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Facility Register ID</label>
+                    <label className="text-sm font-semibold text-body">Facility Register ID</label>
                     <input
                       onChange={handleChange}
                       name="id"
                       type="text"
                       required
                       placeholder="e.g. RE-2023-892"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Type</label>
+                    <label className="text-sm font-semibold text-body">Type</label>
                     <input
                       onChange={handleChange}
                       name="type"
                       type="text"
                       required
                       placeholder="e.g. Electrical"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 flex justify-between">
+                    <label className="text-sm font-semibold text-body flex justify-between">
                       Priority Rating
                     </label>
                     <select
                       onChange={handleChange}
                       name="rating"
                       required
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     >
                       <option value="">Select priority rating</option>
                       {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => (
@@ -306,24 +306,24 @@ export default function MaintenancePage() {
                   </div>
                   
                   <div className="md:col-span-2 space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Remarks</label>
+                    <label className="text-sm font-semibold text-body">Remarks</label>
                     <input
                       onChange={handleChange}
                       name="remark"
                       type="text"
                       placeholder="Any additional notes..."
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
                     />
                   </div>
                 </div>
               </form>
             </div>
             
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-line bg-canvas flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setToolView(false)}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                className="px-5 py-2.5 text-sm font-medium text-body bg-white border border-line rounded-lg hover:bg-canvas transition-colors shadow-sm"
               >
                 Cancel
               </button>
@@ -331,7 +331,7 @@ export default function MaintenancePage() {
                 type="submit"
                 form="add-facility-form"
                 disabled={loading}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes rounded-lg hover:bg-blue-900 transition-colors shadow-sm flex items-center gap-2"
+                className="px-5 py-2.5 text-sm font-medium text-white bg-pes rounded-lg hover:bg-pes-800 transition-colors shadow-sm flex items-center gap-2"
               >
                 {loading ? (
                   <>

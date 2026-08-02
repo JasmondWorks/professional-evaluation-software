@@ -149,15 +149,15 @@ export default function MainForm() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col p-4 bg-gray-50/50">
-      <Link href="/em-database" className="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-4 ml-4 group">
+    <div className="w-full h-full flex flex-col p-4 bg-canvas/50">
+      <Link href="/em-database" className="inline-flex items-center w-fit text-sm font-medium text-muted hover:text-pes transition-colors mb-4 ml-4 group">
         <svg className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
         Back to Database
       </Link>
       
-      <form onSubmit={handleSubmit} className="flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex-1 m-2 p-4">
+      <form onSubmit={handleSubmit} className="flex flex-col bg-white border border-line rounded-xl shadow-sm overflow-hidden flex-1 m-2 p-4">
         {isSuccessful && (
         <div className="bg-white border rounded-lg border-pes flex justify-center align-center shadow-md flex-col p-6 absolute left-1/2 w-fit m-auto">
           <p className="font-bold text-xl text-pes mb-3">
@@ -186,7 +186,7 @@ export default function MainForm() {
             <button
               type="button"
               onClick={() => { window.location.href = '/em-database'; }}
-              className="border border-gray-400 text-gray-600 px-6 py-2 rounded hover:bg-gray-50"
+              className="border border-gray-400 text-body px-6 py-2 rounded hover:bg-canvas"
             >
               Skip & Go to Employee List
             </button>
@@ -200,7 +200,7 @@ export default function MainForm() {
         </h1>
       </div>
 
-      <div className="bg-gray-50 h-[3rem] flex justify-between">
+      <div className="bg-canvas h-[3rem] flex justify-between">
         <h1 className="my-auto mx-6 font-semibold">
           Step {currentStepIndex + 1}
         </h1>
@@ -230,7 +230,7 @@ export default function MainForm() {
             ${
               isDisabled
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-pes hover:bg-blue-800"
+                : "bg-pes hover:bg-pes-800"
             }`}
         >
           {adding ? (

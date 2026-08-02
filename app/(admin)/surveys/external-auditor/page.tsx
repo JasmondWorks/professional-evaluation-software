@@ -1,4 +1,5 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useState } from "react";
 
 export default function AuditorSurveyPage() {
@@ -16,8 +17,7 @@ export default function AuditorSurveyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Survey submitted:", formData);
-    alert("Thank you for completing the survey!");
+    notify.success("Thank you for completing the survey!");
   };
 
   const renderRating = (section: string, question: string) => (
@@ -53,7 +53,7 @@ export default function AuditorSurveyPage() {
   );
 
   return (
-    <main className="w-full bg-gray-50 min-h-screen py-10 px-8">
+    <main className="w-full bg-canvas min-h-screen py-10 px-8">
       <h1 className="text-3xl font-bold mb-8 text-center">Auditor Survey</h1>
 
       <form
@@ -62,7 +62,7 @@ export default function AuditorSurveyPage() {
       >
         {/* --- APP USE --- */}
         <section>
-          <h2 className="text-xl font-semibold mb-4 text-blue-600">App Use</h2>
+          <h2 className="text-xl font-semibold mb-4 text-pes-600">App Use</h2>
           <div className="space-y-6">
             <div>
               <p>1. Rate how you feel is staff experience on ease of use of the App</p>
@@ -144,7 +144,7 @@ export default function AuditorSurveyPage() {
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+          className="w-full bg-pes text-white py-3 rounded-lg hover:bg-pes-800"
         >
           Submit Survey
         </button>

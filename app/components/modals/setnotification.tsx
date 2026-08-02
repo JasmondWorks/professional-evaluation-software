@@ -25,12 +25,12 @@ export default function SetNotification(){
             <div className='flex flex-col'>
                 <label htmlFor="date" className='formgroup flex flex-col w-full font-bold my-2 text-sm'>
                     Date:
-                    <input type="date" name="date" id="date" className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'/>
+                    <input type="date" name="date" id="date" className='font-light text-sm text-muted placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'/>
                 </label>
 
                 <label htmlFor="time" className='formgroup flex flex-col w-full font-bold my-2 text-sm'>
                     Time:
-                    <input type="time" name="time" id="time" className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'/>
+                    <input type="time" name="time" id="time" className='font-light text-sm text-muted placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'/>
                 </label>
 
                <LoadingButton className='flex bg-pes rounded-md text-white w-fit px-8 py-3 mx-auto mt-4' onClick={ () => sendNotification() } >Save Changes</LoadingButton>

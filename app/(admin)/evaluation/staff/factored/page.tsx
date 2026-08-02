@@ -134,7 +134,7 @@ export default function FactoredEstimatingPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center py-1">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          <h1 className="text-4xl font-bold text-strong mb-4">
             Factored Estimating Calculator
           </h1>
         </div>
@@ -143,8 +143,8 @@ export default function FactoredEstimatingPage() {
           {/* Historical Tasks */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Historical Task Data</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-xl font-bold text-strong">Historical Task Data</h2>
+              <p className="text-sm text-body">
                 Enter observed and estimated times to calculate correction factors
               </p>
             </div>
@@ -159,7 +159,7 @@ export default function FactoredEstimatingPage() {
                     placeholder="Task name"
                     value={newTaskName}
                     onChange={(e) => setNewTaskName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -168,7 +168,7 @@ export default function FactoredEstimatingPage() {
                       placeholder="Observed (hrs)"
                       value={newTaskObserved}
                       onChange={(e) => setNewTaskObserved(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                     />
                     <input
                       type="number"
@@ -176,7 +176,7 @@ export default function FactoredEstimatingPage() {
                       placeholder="Estimated (hrs)"
                       value={newTaskEstimated}
                       onChange={(e) => setNewTaskEstimated(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                     />
                   </div>
                   {taskError && (
@@ -199,7 +199,7 @@ export default function FactoredEstimatingPage() {
                         type="text"
                         value={task.name}
                         onChange={(e) => updateTask(task.id, 'name', e.target.value)}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="flex-1 px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
                       />
                       <button
                         onClick={() => removeTask(task.id)}
@@ -212,28 +212,28 @@ export default function FactoredEstimatingPage() {
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Observed</label>
+                        <label className="block text-xs font-medium text-body mb-1">Observed</label>
                         <input
                           type="number"
                           step="0.01"
                           value={task.observedTime}
                           onChange={(e) => updateTask(task.id, 'observedTime', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Estimated</label>
+                        <label className="block text-xs font-medium text-body mb-1">Estimated</label>
                         <input
                           type="number"
                           step="0.01"
                           value={task.estimatedTime}
                           onChange={(e) => updateTask(task.id, 'estimatedTime', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">CF</label>
-                        <div className="p-2 bg-gray-50 rounded text-center font-mono text-sm">
+                        <label className="block text-xs font-medium text-body mb-1">CF</label>
+                        <div className="p-2 bg-canvas rounded text-center font-mono text-sm">
                           {(task.correctionFactor * 100).toFixed(1)}%
                         </div>
                       </div>
@@ -245,12 +245,12 @@ export default function FactoredEstimatingPage() {
               </div>
 
               {/* Average Correction Factor */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-pes-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Average Correction Factor</h4>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-pes-600">
                   {(averageCorrectionFactor * 100).toFixed(2)}%
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-body mt-1">
                   {averageCorrectionFactor < 0 ? 'Tendency to overestimate' : 'Tendency to underestimate'}
                 </p>
               </div>
@@ -260,8 +260,8 @@ export default function FactoredEstimatingPage() {
           {/* Estimation Calculator */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-800">New Task Estimation</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-xl font-bold text-strong">New Task Estimation</h2>
+              <p className="text-sm text-body">
                 Apply correction factors to estimate a new task
               </p>
             </div>
@@ -270,7 +270,7 @@ export default function FactoredEstimatingPage() {
               {/* Input Parameters */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Original Estimate (hours)</label>
+                  <label className="block text-sm font-medium text-body mb-1">Original Estimate (hours)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -279,12 +279,12 @@ export default function FactoredEstimatingPage() {
                       ...prev,
                       originalEstimate: parseFloat(e.target.value) || 0
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Performance Rating (%)</label>
+                  <label className="block text-sm font-medium text-body mb-1">Performance Rating (%)</label>
                   <input
                     type="number"
                     value={estimation.performanceRating}
@@ -292,15 +292,15 @@ export default function FactoredEstimatingPage() {
                       ...prev,
                       performanceRating: parseFloat(e.target.value) || 100
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted mt-1">
                     100% = standard performance, &gt;100% = above standard
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Allowance (%)</label>
+                  <label className="block text-sm font-medium text-body mb-1">Allowance (%)</label>
                   <input
                     type="number"
                     value={estimation.allowancePercentage}
@@ -308,9 +308,9 @@ export default function FactoredEstimatingPage() {
                       ...prev,
                       allowancePercentage: parseFloat(e.target.value) || 0
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted mt-1">
                     For breaks, fatigue, delays, etc.
                   </p>
                 </div>
@@ -321,17 +321,17 @@ export default function FactoredEstimatingPage() {
                 <h4 className="font-semibold">Calculation Steps</h4>
                 
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div className="flex justify-between items-center p-2 bg-canvas rounded">
                     <span>1. Original Estimate:</span>
                     <span className="font-mono">{estimation.originalEstimate.toFixed(3)} hrs</span>
                   </div>
                   
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div className="flex justify-between items-center p-2 bg-canvas rounded">
                     <span>2. Corrected Estimate:</span>
                     <span className="font-mono">{estimation.correctedEstimate.toFixed(3)} hrs</span>
                   </div>
                   
-                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div className="flex justify-between items-center p-2 bg-canvas rounded">
                     <span>3. Basic Time:</span>
                     <span className="font-mono">{estimation.basicTime.toFixed(3)} hrs</span>
                   </div>
@@ -345,7 +345,7 @@ export default function FactoredEstimatingPage() {
                 </div>
 
                 {/* Formula Details */}
-                <div className="bg-blue-50 p-3 rounded text-xs font-mono space-y-1">
+                <div className="bg-pes-50 p-3 rounded text-xs font-mono space-y-1">
                   <div>Corrected = {estimation.originalEstimate} × (1 + {(averageCorrectionFactor).toFixed(3)})</div>
                   <div>Basic = {estimation.correctedEstimate.toFixed(3)} × ({estimation.performanceRating}/100)</div>
                   <div>Standard = {estimation.basicTime.toFixed(3)} + ({estimation.allowancePercentage}% × {estimation.basicTime.toFixed(3)})</div>
@@ -354,27 +354,27 @@ export default function FactoredEstimatingPage() {
 
                 {/* Staff Determination Section */}
                 <div className="border-t pt-4 space-y-4">
-                  <h4 className="font-semibold text-gray-800 text-sm">Staff Determination</h4>
+                  <h4 className="font-semibold text-strong text-sm">Staff Determination</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Available Hours</label>
+                      <label className="block text-xs font-medium text-body mb-1">Available Hours</label>
                       <input
                         type="number"
                         placeholder="e.g. 2080"
                         value={availableHours}
                         onChange={(e) => setAvailableHours(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Use Factor</label>
+                      <label className="block text-xs font-medium text-body mb-1">Use Factor</label>
                       <input
                         type="number"
                         step="0.01"
                         placeholder="e.g. 0.85"
                         value={useFactor}
                         onChange={(e) => setUseFactor(e.target.value === '' ? '' : Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes text-sm"
                       />
                     </div>
                   </div>
@@ -411,16 +411,16 @@ export default function FactoredEstimatingPage() {
 
         {/* Benefits Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Key Benefits of Factored Estimating</h2>
+          <h2 className="text-xl font-bold text-strong mb-4">Key Benefits of Factored Estimating</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-pes-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-6 h-6 text-pes-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
               <h3 className="font-semibold mb-2">Improved Accuracy</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-body">
                 Identifies and corrects systematic estimation biases using historical data
               </p>
             </div>
@@ -431,7 +431,7 @@ export default function FactoredEstimatingPage() {
                 </svg>
               </div>
               <h3 className="font-semibold mb-2">Performance Adjustment</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-body">
                 Accounts for individual performance variations and skill levels
               </p>
             </div>
@@ -442,7 +442,7 @@ export default function FactoredEstimatingPage() {
                 </svg>
               </div>
               <h3 className="font-semibold mb-2">Realistic Standards</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-body">
                 Includes necessary allowances for breaks, fatigue, and delays
               </p>
             </div>

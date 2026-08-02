@@ -1,8 +1,7 @@
 "use client";
 
-import { People, Award, Timer } from "iconsax-react";
+import { People, Award, Timer, TaskSquare } from "iconsax-react";
 import React, { useState, useEffect } from "react";
-import jwt from "jsonwebtoken";
 import Link from "next/link";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -14,7 +13,7 @@ export default function Quickstats({
   // Goals still open for data entry (computed on the dashboard from the goals list).
   openEvaluations?: number;
 } = {}) {
-  const [quickStats, setQuickStats] = useState<number[] | null[]>([
+  const [quickStats, setQuickStats] = useState<(number | null)[]>([
     null,
     null,
     null,
@@ -23,7 +22,6 @@ export default function Quickstats({
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
-    const temp_user = jwt.decode(access_token);
 
     async function getStatData() {
       try {
@@ -47,80 +45,45 @@ export default function Quickstats({
     getStatData();
   }, []);
 
+  const cards = [
+    { label: "Employees", value: quickStats[0], href: "/em-database", icon: People, accent: true },
+    { label: "Completed appraisals", value: quickStats[1], href: "/completed-appraisals", icon: Award, accent: false },
+    { label: "Pending appraisals", value: quickStats[2], href: "/assessment", icon: Timer, accent: false },
+    { label: "Pending assessments", value: openEvaluations ?? 0, href: "/goals", icon: TaskSquare, accent: false, ready: true },
+  ];
+
   return (
-    <div className="(Stats)-- flex flex-wrap gap-2 justify-between m-6">
-      <div className="stat_1 shadow-custom shadow-gray-100 flex justify-between text-white rounded-md h-40 p-8 w-3_4 min-w-[220px] max-sm:w-full bg-pes">
-        <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Number of Employees:</p>
-          <p className="m-1 text-4xl font-bold">
-            {!isLoadingStats ? (
-              <>{quickStats[0]?.toString()}</>
-            ) : (
-              <Skeleton className="h-10 w-16 bg-white/30" />
-            )}
-          </p>
-          <Link href="/em-database" className="m-1 text-xs underline cursor-pointer">
-            View All
-          </Link>
-        </div>
-        <People size={64} className="text-gray-400 font-bold mb-auto" />
-      </div>
-
-      <div className="stat_2 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] max-sm:w-full bg-white">
-        <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Completed Appraisals:</p>
-          <p className="m-1 text-4xl font-bold text-black">
-            {!isLoadingStats ? (
-              <>{quickStats[1]?.toString()}</>
-            ) : (
-              <Skeleton className="h-10 w-16" />
-            )}
-          </p>
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map(({ label, value, href, icon: Icon, accent, ready }) => {
+        const showValue = ready || !isLoadingStats;
+        return (
           <Link
-            href="/completed-appraisals"
-            className="m-1 text-xs underline text-pes cursor-pointer"
+            key={label}
+            href={href}
+            className={`group rounded-xl border p-5 shadow-card transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md flex items-start justify-between gap-3
+              ${accent ? "bg-pes text-white border-pes-800 hover:border-pes-700" : "bg-surface border-line hover:border-pes-200"}`}
           >
-            View All
+            <div className="min-w-0">
+              <p className={`text-sm ${accent ? "text-white/80" : "text-muted"}`}>
+                {label}
+              </p>
+              <div className={`mt-2 text-3xl font-semibold tabular-nums ${accent ? "text-white" : "text-strong"}`}>
+                {showValue ? (
+                  (value ?? 0).toString()
+                ) : (
+                  <Skeleton className={`h-9 w-14 ${accent ? "bg-white/25" : ""}`} />
+                )}
+              </div>
+              <span className={`mt-2 inline-block text-xs font-medium ${accent ? "text-white/80 group-hover:text-white" : "text-pes-600 group-hover:text-pes-700"}`}>
+                View all →
+              </span>
+            </div>
+            <span className={`shrink-0 rounded-lg p-2 ${accent ? "bg-white/15" : "bg-pes-50"}`}>
+              <Icon size={24} variant="Bulk" className={accent ? "text-white" : "text-pes-700"} />
+            </span>
           </Link>
-        </div>
-        <Award size={64} className="text-gray-100 font-bold mb-auto" />
-      </div>
-
-      <div className="stat_3 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] bg-white  max-sm:w-full">
-        <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Pending Appraisals:</p>
-          <p className="m-1 text-4xl font-bold text-black">
-            {!isLoadingStats ? (
-              <>{quickStats[2]?.toString()}</>
-            ) : (
-              <Skeleton className="h-10 w-16" />
-            )}
-          </p>
-          <Link
-            href="/assessment"
-            className="m-1 text-xs underline text-pes cursor-pointer"
-          >
-            View All
-          </Link>
-        </div>
-        <Timer size={64} className="text-gray-100 font-bold mb-auto" />
-      </div>
-
-      <div className="stat_4 shadow-custom shadow-gray-100 flex justify-between rounded-md h-40 p-8 w-3_4 min-w-[220px] bg-white max-sm:w-full">
-        <div className="flex flex-col justify-center">
-          <p className="m-1 text-sm">Pending Assessments:</p>
-          <p className="m-1 text-4xl font-bold text-black">
-            {openEvaluations ?? 0}
-          </p>
-          <Link
-            href="/goals"
-            className="m-1 text-xs underline text-pes cursor-pointer"
-          >
-            View All
-          </Link>
-        </div>
-        <Timer size={64} className="text-gray-100 font-bold mb-auto" />
-      </div>
+        );
+      })}
     </div>
   );
 }

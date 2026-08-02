@@ -42,7 +42,6 @@ export default function ProfileChunk(){
 
    useEffect( () => {
       const access_token = getAccessToken() as string
-      console.log('access toknei s TokenExpiredError', access_token)
 
       async function fetchUser(){
          try {
@@ -78,7 +77,7 @@ export default function ProfileChunk(){
                      user?.image ?
                         <img src={ user.image } alt="profile-img" className='w-full h-full object-cover rounded-md'/>
                      :
-                        <div className='w-full h-full rounded-md bg-gray-300 flex items-center justify-center text-gray-600 font-bold text-4xl'>
+                        <div className='w-full h-full rounded-md bg-gray-300 flex items-center justify-center text-body font-bold text-4xl'>
                            {user?.name ? getInitials(user.name) : '?'}
                         </div>
                   }
@@ -97,7 +96,7 @@ export default function ProfileChunk(){
                {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Faculty/college" value={titleCase(user?.faculty_college || '')} />}
 
                {/* <div className='my-2 flex flex-col'>
-                  <p className='text-gray-400'>Faculty/college:</p>
+                  <p className='text-muted'>Faculty/college:</p>
                   <p className='font-semibold text-lg'>{}</p>
                </div> */}
             </div>
@@ -119,7 +118,7 @@ export default function ProfileChunk(){
             
             <div className='flex justify-between w-9/12'>
                <div className='my-2 flex flex-col'>
-                  <p className='text-gray-400'>Academic certification:</p>
+                  <p className='text-muted'>Academic certification:</p>
                   <div>
                      {
                         // TODO - render certification here

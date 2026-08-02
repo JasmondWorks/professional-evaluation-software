@@ -133,7 +133,7 @@ export default function Editgoal(){
                         type='text' 
                         name='name' 
                         id='edit-name'
-                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        className='font-light text-sm text-muted py-4 px-4 border rounded-md placeholder:text-body' 
                         value={ data?.name || '' } 
                         onChange={ handleChange }
                         disabled={isSubmitting}
@@ -153,7 +153,7 @@ export default function Editgoal(){
                         type='text' 
                         name='description' 
                         id='edit-description'
-                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        className='font-light text-sm text-muted py-4 px-4 border rounded-md placeholder:text-body' 
                         value={ data?.description || '' } 
                         onChange={ handleChange }
                         disabled={isSubmitting}
@@ -173,7 +173,7 @@ export default function Editgoal(){
                         type='date' 
                         name='due_date' 
                         id='edit-due_date'
-                        className='font-light text-sm text-gray-500 py-4 px-4 border rounded-md placeholder:text-gray-700' 
+                        className='font-light text-sm text-muted py-4 px-4 border rounded-md placeholder:text-body' 
                         value={data?.due_date ? new Date(data.due_date).toISOString().split('T')[0] : ''}
                         onChange={ handleChange }
                         min={new Date().toISOString().split('T')[0]}

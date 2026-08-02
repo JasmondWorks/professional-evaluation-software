@@ -33,7 +33,6 @@ export default function CreateRole() {
     event.preventDefault();
     const access_token = getAccessToken() as string;
     const user = jwt.decode(access_token);
-    console.log("data is: ", formData);
 
     // Safely extract 'org' from user if possible
     const orgName =
@@ -65,12 +64,12 @@ export default function CreateRole() {
   return (
     <div className="bg-white m-4">
       <div className="(crt-nav) w-full h-[4rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold text-xl text-gray-600">
+        <h1 className="my-auto mx-6 font-semibold text-xl text-body">
           Create a role
         </h1>
         <Link
           href="/em-database"
-          className="my-auto mx-6 text-blue-800 text-sm flex"
+          className="my-auto mx-6 text-pes-700 text-sm flex"
         >
           <ArrowLeft size={20} className="my-auto mx-1" />
           Back to Roles & Permissions
@@ -80,7 +79,7 @@ export default function CreateRole() {
       <form onSubmit={handleSubmit}>
         <div className="flex border">
           <div className="border-r w-1/2">
-            <div className="bg-gray-50 border-b h-[3rem] flex">
+            <div className="bg-canvas border-b h-[3rem] flex">
               <h1 className="my-auto mx-4 font-semibold">Role Details</h1>
             </div>
             <div className=" placeholder-slate-200 m-4">
@@ -90,7 +89,7 @@ export default function CreateRole() {
                   onChange={handleChange}
                   name="role_name"
                   type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-gray-800 placeholder:font-thin placeholder:text-gray-400 px-4 py-2 pb-4"
+                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-strong placeholder:font-thin placeholder:text-muted px-4 py-2 pb-4"
                   id="name"
                   placeholder="Enter a name that represents the role's responsibilities and purpose."
                 />
@@ -101,7 +100,7 @@ export default function CreateRole() {
                   onChange={handleChange}
                   name="description"
                   type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-gray-800 placeholder:font-thin placeholder:text-gray-400 px-4 py-2 pb-16"
+                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-strong placeholder:font-thin placeholder:text-muted px-4 py-2 pb-16"
                   id="description"
                   placeholder="Provide a brief description outlining the role's key responsibilities and purpose."
                 />
@@ -109,7 +108,7 @@ export default function CreateRole() {
             </div>
           </div>
           <div className="w-1/2">
-            <div className="bg-gray-50 border-b h-[3rem] flex">
+            <div className="bg-canvas border-b h-[3rem] flex">
               <h1 className="my-auto mx-4 font-semibold">Permissions</h1>
             </div>
             <div className=" placeholder-slate-300">
@@ -133,7 +132,7 @@ export default function CreateRole() {
 
         <div className="flex flex-col">
           <div className="border-r w-1/2 me-auto">
-            <div className="bg-gray-50 border-b h-[3rem] flex">
+            <div className="bg-canvas border-b h-[3rem] flex">
               <h1 className="my-auto mx-4 font-semibold">Behaves Like</h1>
             </div>
             <div className="m-4">

@@ -24,10 +24,10 @@ export default function Table<T extends Record<string, any>>({
   onRowClick,
 }: TableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-md border border-gray-100 bg-white">
+    <div className="w-full overflow-x-auto rounded-md border border-line bg-white">
       <table className="w-full text-left border-collapse min-w-[800px]">
         <thead>
-          <tr className="bg-gray-100 text-gray-400 border-b border-gray-100">
+          <tr className="bg-canvas text-muted border-b border-line">
             {columns.map((col) => (
               <th 
                 key={col.key} 
@@ -39,12 +39,12 @@ export default function Table<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="text-gray-800">
+        <tbody className="text-strong">
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <tr key={`loading-${i}`} className="border-b border-gray-50">
                 <td colSpan={columns.length} className="p-0 border-none">
-                  <div className="h-12 w-full bg-gray-100 animate-pulse my-0.5 rounded-sm"></div>
+                  <div className="h-12 w-full bg-canvas animate-pulse my-0.5 rounded-sm"></div>
                 </td>
               </tr>
             ))
@@ -67,7 +67,7 @@ export default function Table<T extends Record<string, any>>({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-8 text-center text-gray-400 text-sm">
+              <td colSpan={columns.length} className="py-8 text-center text-muted text-sm">
                 {emptyMessage}
               </td>
             </tr>

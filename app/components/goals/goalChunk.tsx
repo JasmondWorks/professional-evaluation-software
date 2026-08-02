@@ -97,7 +97,7 @@ export default function Goals({
                {error}
             </div>
          ) : goals.length === 0 ? (
-            <div className="p-4 m-2 bg-gray-50 rounded-sm">
+            <div className="p-4 m-2 bg-canvas rounded-sm">
                No goals found
             </div>
          ) : (

@@ -63,18 +63,18 @@ export default function StaffAppraisalHistory() {
         <div>
           <Link
             href="/models/appraisal"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors mb-2"
+            className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-2"
           >
             <ArrowLeft2 size="16" className="mr-1" /> Back to Staff Appraisal Model
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Staff Appraisal History</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-strong">Staff Appraisal History</h1>
+          <p className="text-muted text-sm mt-1">
             Review past calculations for appraisal, overloading, and underloading costs.
           </p>
         </div>
         <button
           onClick={fetchHistory}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          className="px-4 py-2 bg-white border border-line rounded-md text-sm font-medium hover:bg-canvas transition-colors shadow-sm"
         >
           Refresh Data
         </button>
@@ -87,17 +87,17 @@ export default function StaffAppraisalHistory() {
       )}
 
       {loading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pes mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading history data...</p>
+        <div className="bg-white rounded-xl shadow-sm border border-line p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-pes border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-muted">Loading history data...</p>
         </div>
       ) : history.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div className="bg-white rounded-xl shadow-sm border border-line p-12 text-center">
+          <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No history found</h3>
-          <p className="text-gray-500">Run the Staff Appraisal model and save results to see them here.</p>
+          <h3 className="text-lg font-medium text-strong mb-1">No history found</h3>
+          <p className="text-muted">Run the Staff Appraisal model and save results to see them here.</p>
         </div>
       ) : (
         <>
@@ -110,13 +110,13 @@ export default function StaffAppraisalHistory() {
           />
           <div className="grid gap-6">
           {history.map((run) => (
-            <div key={run.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <div key={run.id} className="bg-white rounded-xl shadow-sm border border-line overflow-hidden">
+              <div className="px-6 py-4 border-b border-line bg-canvas flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  <div className="bg-pes-100 text-pes-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                     ID: {run.id}
                   </div>
-                  <span className="text-sm font-medium text-gray-600">
+                  <span className="text-sm font-medium text-body">
                     {dayjs(run.created_at).format("MMM D, YYYY • h:mm A")}
                   </span>
                 </div>

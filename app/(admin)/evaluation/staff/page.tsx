@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import number_of_staff from "@/app/api/modules/numberOfstaff/numberOfStaff";
 import grand_total_man_hours from "@/app/api/modules/numberOfstaff/method1/main";
-import LoadingButton from "../../../components/ui/LoadingButton";
 import { useAuth } from "@/app/components/useAuth";
-import Link from "next/link";
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
+import { inputBase } from "@/app/components/ui/Input";
+import { Trash } from "iconsax-react";
 
 type DataEntry = {
   observed_time: number[];
@@ -21,8 +23,18 @@ type numberDataEntry = {
   use_factor: number;
 };
 
+const TASK_FIELDS: { key: keyof DataEntry; label: string }[] = [
+  { key: "observed_time", label: "Observed time" },
+  { key: "rating", label: "Observed rating (0 – 200)" },
+  { key: "relaxation_time", label: "Relaxation time" },
+  { key: "contingency_time", label: "Contingency allowance" },
+  { key: "number_of_workers", label: "Number of workers" },
+  { key: "annual_frequency", label: "Annual frequency" },
+];
+
 export default function Home() {
   const { role } = useAuth();
+  const canEvaluate = role === "super-admin" || role === "admin";
 
   const [arrayDataEntry, setArrayDataEntry] = useState<DataEntry>({
     observed_time: [0],
@@ -46,11 +58,13 @@ export default function Home() {
     data: K,
   ) {
     event.preventDefault();
+    const parsed = parseInt(event.target.value);
+    const value = Number.isNaN(parsed) ? 0 : parsed;
     setArrayDataEntry((prev) => ({
       ...prev,
       [data]: [
         ...prev[data].slice(0, index),
-        parseInt(event.target.value),
+        value,
         ...prev[data].slice(index + 1),
       ],
     }));
@@ -99,7 +113,7 @@ export default function Home() {
       numberDataEntry.available_hours <= 0 ||
       numberDataEntry.use_factor <= 0
     ) {
-      setError("⚠️ Available hours and Use factor must be greater than zero.");
+      setError("Available hours and Use factor must be greater than zero.");
       return;
     }
 
@@ -111,219 +125,139 @@ export default function Home() {
       arrayDataEntry.number_of_workers,
       arrayDataEntry.annual_frequency,
     );
-    console.log(grand_total);
     let evaluated = number_of_staff(
       grand_total,
       numberDataEntry.available_hours,
       numberDataEntry.use_factor,
     );
-    console.log(`the evaluated number of staff is ${evaluated}`);
     setEvaluation(evaluated);
   }
 
   return (
-    <form className="flex flex-col m-4" onSubmit={() => {}}>
-      <div className="p-2">
-        <h1 className="font-bold text-3xl my-6">Plain estimating data entry</h1>
+    <form
+      className="max-w-5xl mx-auto px-4 sm:px-6 py-6"
+      onSubmit={(e) => e.preventDefault()}
+    >
+      <PageHeader
+        title="Plain estimating data entry"
+        subtitle="Enter observed task data to estimate the number of staff required."
+      />
 
-        <div>
-          {arrayDataEntry.observed_time.map((_, index) => (
-            <div
-              key={index}
-              className="flex flex-col border-b border-gray-100 pb-8 mb-8 last:border-0 last:pb-0"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h1 className="font-bold text-lg text-gray-700">{`Task ${index + 1}`}</h1>
-                {index > 0 && (
-                  <button
-                    onClick={(e) => handleTaskRemove(e, index)}
-                    className="text-red-500 hover:text-red-700 flex items-center gap-1.5 text-sm font-semibold transition-all hover:bg-red-50 px-3 py-1.5 rounded-lg"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    Remove
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-y-4">
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Observed time
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.observed_time[index] || ""}
-                    onChange={(e) => handleDataEntry(e, index, "observed_time")}
-                  />
-                </label>
-
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Observed rating (0 - 200)
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.rating[index] || ""}
-                    onChange={(e) => handleDataEntry(e, index, "rating")}
-                  />
-                </label>
-
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Relaxation time
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.relaxation_time[index] || ""}
-                    onChange={(e) =>
-                      handleDataEntry(e, index, "relaxation_time")
-                    }
-                  />
-                </label>
-
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Contingency allowance
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.contingency_time[index] || ""}
-                    onChange={(e) =>
-                      handleDataEntry(e, index, "contingency_time")
-                    }
-                  />
-                </label>
-
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Number of workers
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.number_of_workers[index] || ""}
-                    onChange={(e) =>
-                      handleDataEntry(e, index, "number_of_workers")
-                    }
-                  />
-                </label>
-
-                <label className="flex flex-col w-72">
-                  <span className="text-sm font-medium text-gray-600 mb-1">
-                    Annual frequency
-                  </span>
-                  <input
-                    required
-                    className="border border-gray-300 me-6 px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    type="number"
-                    value={arrayDataEntry.annual_frequency[index] || ""}
-                    onChange={(e) =>
-                      handleDataEntry(e, index, "annual_frequency")
-                    }
-                  />
-                </label>
-              </div>
+      {/* Tasks */}
+      <div className="flex flex-col gap-4">
+        {arrayDataEntry.observed_time.map((_, index) => (
+          <div
+            key={index}
+            className="bg-surface border border-line rounded-xl shadow-card p-5"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-semibold text-strong">{`Task ${index + 1}`}</h2>
+              {index > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => handleTaskRemove(e, index)}
+                  className="text-muted hover:text-danger-600 flex items-center gap-1.5 text-sm font-medium hover:bg-danger-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <Trash size={16} />
+                  Remove
+                </button>
+              )}
             </div>
-          ))}
-        </div>
 
-        <hr className="border-dashed border-2 my-6" />
-
-        <label htmlFor="" className="flex flex-col w-72">
-          Available hours
-          <input
-            name="available_hours"
-            required
-            className="border me-6 my-2 px-16 py-2 rounded"
-            type="number"
-            onChange={handleNumberDataEntry}
-          />
-        </label>
-
-        <label htmlFor="" className="flex flex-col w-72">
-          Use factor
-          <input
-            name="use_factor"
-            required
-            className="border me-6 my-2 px-16 py-2 rounded"
-            type="number"
-            onChange={handleNumberDataEntry}
-          />
-        </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {TASK_FIELDS.map(({ key, label }) => (
+                <label key={key} className="flex flex-col">
+                  <span className="text-sm font-medium text-body mb-1.5">
+                    {label}
+                  </span>
+                  <input
+                    required
+                    className={inputBase}
+                    type="number"
+                    value={(arrayDataEntry[key][index] as number) || ""}
+                    onChange={(e) => handleDataEntry(e, index, key)}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex flex-wrap my-4 items-center">
-        {role === "super-admin" || role === "admin" ? (
-          <LoadingButton
-            className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3"
-            type="submit"
-            onClick={handleEvaluate}
-          >
+      <div className="flex justify-end mt-4">
+        <Button variant="secondary" size="sm" onClick={handleTaskAdd}>
+          Add new task +
+        </Button>
+      </div>
+
+      {/* Global parameters */}
+      <div className="bg-surface border border-line rounded-xl shadow-card p-5 mt-6">
+        <h2 className="font-semibold text-strong mb-4">Calculation parameters</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+          <label className="flex flex-col">
+            <span className="text-sm font-medium text-body mb-1.5">
+              Available hours
+            </span>
+            <input
+              name="available_hours"
+              required
+              className={inputBase}
+              type="number"
+              onChange={handleNumberDataEntry}
+            />
+          </label>
+          <label className="flex flex-col">
+            <span className="text-sm font-medium text-body mb-1.5">
+              Use factor
+            </span>
+            <input
+              name="use_factor"
+              required
+              className={inputBase}
+              type="number"
+              onChange={handleNumberDataEntry}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2 items-center mt-6">
+        {canEvaluate ? (
+          <Button type="submit" onClick={handleEvaluate}>
             Evaluate number of staff
-          </LoadingButton>
+          </Button>
         ) : (
-          <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200 my-3 me-2">
+          <p className="text-sm text-warning-700 bg-warning-50 px-3 py-2.5 rounded-lg border border-warning-100">
             Only administrators are authorized to calculate the final number of
             staff.
           </p>
         )}
-        <Link
-          href="/downloadables/relax.pdf"
-          className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3"
-        >
+        <Button href="/downloadables/relax.pdf" variant="secondary">
           Relaxation time guide
-        </Link>
-        <Link
-          href="/downloadables/plain-estimate.pdf"
-          className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3"
-        >
+        </Button>
+        <Button href="/downloadables/plain-estimate.pdf" variant="secondary">
           Print task form
-        </Link>
-        <LoadingButton
-          className="bg-pes w-fit my-3 me-2 rounded text-white px-16 py-3"
-          onClick={handleTaskAdd}
-        >
-          Add new task +
-        </LoadingButton>
-        {error && (
-          <p className="text-red-500 text-sm font-medium animate-pulse ms-2">
-            {error}
-          </p>
-        )}
+        </Button>
       </div>
-      <>
-        {(role === "super-admin" || role === "admin") && evaluation ? (
-          <p className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 font-semibold text-lg max-w-xl shadow-sm">
-            The number of staff required for the following information is{" "}
-            <span className="text-xl font-bold text-pes underline">
-              {evaluation.toFixed(2)}
-            </span>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-4 text-sm text-danger-700 bg-danger-50 border border-danger-100 px-3 py-2.5 rounded-lg max-w-xl"
+        >
+          {error}
+        </p>
+      )}
+
+      {canEvaluate && evaluation ? (
+        <div className="mt-4 p-4 bg-success-50 border border-success-100 rounded-xl text-success-700 max-w-xl">
+          <p className="text-sm">Number of staff required for this data</p>
+          <p className="text-3xl font-semibold text-success-700 tabular-nums mt-1">
+            {evaluation.toFixed(2)}
           </p>
-        ) : (
-          <></>
-        )}
-      </>
+        </div>
+      ) : null}
     </form>
   );
 }
