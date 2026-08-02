@@ -149,7 +149,7 @@ export default function Newgoal() {
                 nextInput?.focus();
               }
             }}
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
+            className='font-light text-sm text-muted placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
             required
             disabled={isSubmitting}
             tabIndex={isVisible ? 1 : -1}
@@ -168,7 +168,7 @@ export default function Newgoal() {
             name='description'
             id='new-description'
             type="text"
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
+            className='font-light text-sm text-muted placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
             placeholder='Add goal description'
             required
             disabled={isSubmitting}
@@ -190,7 +190,7 @@ export default function Newgoal() {
             name='due_date'
             id='new-due_date'
             type="date"
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
+            className='font-light text-sm text-muted placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
             required
             disabled={isSubmitting}
             tabIndex={isVisible ? 3 : -1}

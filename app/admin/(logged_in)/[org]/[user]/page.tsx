@@ -66,7 +66,7 @@ export default function Page({ params }: { params: { user: string } }) {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-gray-50">
+    <div className="flex flex-col w-full min-h-screen bg-canvas">
 
       {/* Header */}
       <div className='flex justify-between items-center p-6 bg-white shadow-sm'>
@@ -75,7 +75,7 @@ export default function Page({ params }: { params: { user: string } }) {
         <div className="flex gap-4">
           <button
             onClick={logout}
-            className="text-gray-500 hover:text-pes"
+            className="text-muted hover:text-pes"
           >
             Logout
           </button>
@@ -92,27 +92,27 @@ export default function Page({ params }: { params: { user: string } }) {
         <div className="space-y-2 text-sm">
 
           <div className="flex justify-between">
-            <span className="font-medium text-gray-500">Name</span>
+            <span className="font-medium text-muted">Name</span>
             <span className='font-bold'>{user.name}</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="font-medium text-gray-500">Email</span>
+            <span className="font-medium text-muted">Email</span>
             <span className='font-bold'>{user.email}</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="font-medium text-gray-500">Role</span>
+            <span className="font-medium text-muted">Role</span>
             <span className="capitalize font-bold">{user.role}</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="font-medium text-gray-500">Phone</span>
+            <span className="font-medium text-muted">Phone</span>
             <span className='font-bold'>{user.gsm}</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="font-medium text-gray-500">Organisation</span>
+            <span className="font-medium text-muted">Organisation</span>
             <span className='font-bold'>{user.org}</span>
           </div>
 

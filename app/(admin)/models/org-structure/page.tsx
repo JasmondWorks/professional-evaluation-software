@@ -142,7 +142,7 @@ export default function OrgStructurePage() {
     desc?: string
   ) => (
     <div className="block">
-      <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
         <span className="truncate">{label}</span>
         {desc && <InfoPopover text={desc} />}
       </div>
@@ -150,7 +150,7 @@ export default function OrgStructurePage() {
         type="number"
         value={value}
         onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
-        className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
+        className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
       />
     </div>
   );
@@ -161,11 +161,11 @@ export default function OrgStructurePage() {
     setList: (v: number[]) => void,
   ) => (
     <div className="mb-4">
-      <div className="text-sm font-semibold text-gray-700 mb-1.5">{label}</div>
-      <div className="space-y-2 border border-gray-100 bg-gray-50 p-3 rounded-lg">
+      <div className="text-sm font-semibold text-body mb-1.5">{label}</div>
+      <div className="space-y-2 border border-line bg-canvas p-3 rounded-lg">
         {list.map((val, idx) => (
           <div key={idx} className="flex gap-2 items-center">
-            <span className="text-xs font-bold text-gray-400 w-4">{idx + 1}.</span>
+            <span className="text-xs font-bold text-muted w-4">{idx + 1}.</span>
             <input
               type="number"
               value={val}
@@ -174,7 +174,7 @@ export default function OrgStructurePage() {
                 newList[idx] = Number(e.target.value);
                 setList(newList);
               }}
-              className="block w-full rounded border-gray-300 px-3 py-1.5 text-sm shadow-sm outline-none focus:border-pes"
+              className="block w-full rounded border-line px-3 py-1.5 text-sm shadow-sm outline-none focus:border-pes"
             />
             {list.length > 1 && (
               <button
@@ -194,7 +194,7 @@ export default function OrgStructurePage() {
         <button
           onClick={() => setList([...list, 0])}
           type="button"
-          className="flex items-center gap-1 text-xs font-medium text-pes hover:text-blue-800 transition-colors mt-2 ml-6"
+          className="flex items-center gap-1 text-xs font-medium text-pes hover:text-pes-800 transition-colors mt-2 ml-6"
         >
           <BoxAdd size="16" /> Add Row
         </button>
@@ -203,15 +203,15 @@ export default function OrgStructurePage() {
   );
 
   const modelCard = (title: string, desc: string, icon: React.ReactNode, children: React.ReactNode, onCalc?: () => void, result?: number | null, resultLabel?: string, resultUnit: string = "") => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm flex flex-col h-full">
+    <div className="bg-white rounded-xl border border-line overflow-hidden shadow-sm flex flex-col h-full">
       <div className="p-6 flex-1">
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+          <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
             {icon}
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-            <p className="text-xs text-gray-500">{desc}</p>
+            <h2 className="text-lg font-bold text-strong">{title}</h2>
+            <p className="text-xs text-muted">{desc}</p>
           </div>
         </div>
         <div className="space-y-4">
@@ -219,11 +219,11 @@ export default function OrgStructurePage() {
         </div>
       </div>
       {onCalc && (
-        <div className="p-6 bg-gray-50 border-t border-gray-100">
+        <div className="p-6 bg-canvas border-t border-line">
           <button
             onClick={onCalc}
             disabled={loading}
-            className="w-full py-2.5 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+            className="w-full py-2.5 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
           >
             {loading ? "Saving..." : (
               <>
@@ -234,8 +234,8 @@ export default function OrgStructurePage() {
           </button>
 
           {result !== null && result !== undefined && (
-            <div className="mt-4 p-4 rounded-lg border text-center bg-blue-50 border-blue-100 text-blue-900">
-              <p className="text-xs font-medium mb-1 text-blue-700">{resultLabel || "Result"}</p>
+            <div className="mt-4 p-4 rounded-lg border text-center bg-pes-50 border-blue-100 text-blue-900">
+              <p className="text-xs font-medium mb-1 text-pes-700">{resultLabel || "Result"}</p>
               <p className="text-2xl font-bold">{result.toFixed(2)}{resultUnit}</p>
             </div>
           )}
@@ -249,7 +249,7 @@ export default function OrgStructurePage() {
       <div className="mb-4">
         <Link
           href="/models"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Models
         </Link>
@@ -258,14 +258,14 @@ export default function OrgStructurePage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">Organization Structure (Models 17–22)</h1>
-          <p className="text-gray-600 max-w-2xl text-sm">
+          <p className="text-body max-w-2xl text-sm">
             Determine personnel utilization, structural sizing, shape, design min/max boundaries, redundancy percentage, and projected personnel requirements.
           </p>
         </div>
         <div className="flex gap-3">
           <Link
             href="/models/org-structure/history"
-            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
           >
             <DocumentText size="16" />
             View History
@@ -284,25 +284,25 @@ export default function OrgStructurePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         
         {/* Model 17 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm xl:col-span-1 flex flex-col">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm xl:col-span-1 flex flex-col">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
             <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Chart2 size="16" variant="Bold" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">17. Supervisory Size</h2>
-              <p className="text-xs text-gray-500">Personnel Utilization Table</p>
+              <h2 className="text-lg font-bold text-strong">17. Supervisory Size</h2>
+              <p className="text-xs text-muted">Personnel Utilization Table</p>
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-body mb-6">
               In a fair organization, optimal value at the supervisory level can be referenced directly from the standard Personnel Utilization Table.
             </p>
             <Link
               href="/downloadables/personnel-utilization.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm gap-2"
+              className="inline-flex items-center justify-center w-full px-4 py-3 bg-canvas text-body rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm gap-2"
             >
               <DocumentText size="18" />
               View Reference Table

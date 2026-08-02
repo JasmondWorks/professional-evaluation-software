@@ -85,23 +85,23 @@ export default function PersonnelUtilizationHistory() {
   ];
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div className="bg-canvas min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
           <Link href="/models/personnel-utilization">
-            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors mr-4 shadow-sm cursor-pointer">
-              <ArrowLeft size={20} className="text-gray-600" />
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-line hover:bg-canvas transition-colors mr-4 shadow-sm cursor-pointer">
+              <ArrowLeft size={20} className="text-body" />
             </div>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Personnel Utilization History</h1>
-            <p className="text-sm text-gray-500 mt-1">Review past calculations and mathematical model results</p>
+            <h1 className="text-2xl font-bold text-strong">Personnel Utilization History</h1>
+            <p className="text-sm text-muted mt-1">Review past calculations and mathematical model results</p>
           </div>
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-line p-6">
           <Table 
             columns={columns} 
             data={data} 

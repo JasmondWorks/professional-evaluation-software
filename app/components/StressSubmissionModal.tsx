@@ -31,7 +31,7 @@ const FEELINGS = [
 
 function Cell({ v }: { v?: number }) {
   return (
-    <td className={`border px-2 py-1 text-center ${v ? "bg-green-50 font-semibold text-green-800" : "text-gray-300"}`}>
+    <td className={`border px-2 py-1 text-center ${v ? "bg-success-50 font-semibold text-success-700" : "text-muted"}`}>
       {v || "–"}
     </td>
   );
@@ -69,20 +69,20 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
       >
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{name}</h2>
-            <p className="text-sm text-gray-500">Theme &amp; feeling submission for the current cycle</p>
+            <h2 className="text-xl font-bold text-strong">{name}</h2>
+            <p className="text-sm text-muted">Theme &amp; feeling submission for the current cycle</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+          <button onClick={onClose} className="text-muted hover:text-body text-2xl leading-none">&times;</button>
         </div>
 
-        {loading && <p className="text-gray-500 py-8 text-center">Loading submission…</p>}
+        {loading && <p className="text-muted py-8 text-center">Loading submission…</p>}
         {error && <p className="text-red-600 bg-red-50 border border-red-100 rounded-md p-3 text-sm">{error}</p>}
 
         {data && !loading && (
           <div className="space-y-6">
             {topThemes.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                <span className="text-xs text-gray-500 self-center">Most-reported themes:</span>
+                <span className="text-xs text-muted self-center">Most-reported themes:</span>
                 {topThemes.map((t) => (
                   <span key={t.theme} className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-3 py-1 font-medium">
                     {t.theme} ({t.total})
@@ -92,11 +92,11 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
             )}
 
             <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Form 6 — Themes (rated 1–10)</h3>
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <h3 className="font-semibold text-strong mb-2">Form 6 — Themes (rated 1–10)</h3>
+              <div className="overflow-x-auto border border-line rounded-lg">
                 <table className="text-xs border-collapse min-w-[720px]">
                   <thead>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-canvas">
                       <th className="border px-2 py-1 text-left">Category</th>
                       {THEMES.map((t) => <th key={t} className="border px-2 py-1 font-medium">{t}</th>)}
                     </tr>
@@ -114,11 +114,11 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Form 7 — Feelings (rated 1–10)</h3>
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <h3 className="font-semibold text-strong mb-2">Form 7 — Feelings (rated 1–10)</h3>
+              <div className="overflow-x-auto border border-line rounded-lg">
                 <table className="text-xs border-collapse min-w-[520px]">
                   <thead>
-                    <tr className="bg-gray-50">
+                    <tr className="bg-canvas">
                       <th className="border px-2 py-1 text-left">Category</th>
                       {FEELINGS.map((f) => <th key={f} className="border px-2 py-1 font-medium">{f}</th>)}
                     </tr>

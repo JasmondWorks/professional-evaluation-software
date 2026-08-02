@@ -26,7 +26,7 @@ export default function PermissionSelector({
       {PERMISSION_TREE.map((parent) => {
         const parentOn = on(parent.key);
         return (
-          <div key={parent.key} className="border-b border-gray-100 p-4 flex flex-col">
+          <div key={parent.key} className="border-b border-line p-4 flex flex-col">
             <label className="flex cursor-pointer">
               <input
                 type="checkbox"
@@ -45,14 +45,14 @@ export default function PermissionSelector({
               />
               <span className="w-10/12">
                 <span className="text-lg block">{parent.label}</span>
-                <span className="text-gray-600 text-sm">{parent.description}</span>
+                <span className="text-body text-sm">{parent.description}</span>
               </span>
             </label>
 
             {parent.children.length > 0 && (
               <div
                 className={`flex flex-wrap gap-x-6 gap-y-1 ms-9 my-2 text-sm ${
-                  parentOn ? 'text-gray-500' : 'text-gray-300'
+                  parentOn ? 'text-muted' : 'text-gray-300'
                 }`}
               >
                 {parent.children.map((child) => (

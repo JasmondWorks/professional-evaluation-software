@@ -27,7 +27,7 @@ export default function StressCycleBanner() {
         </div>
         <Link
           href={cta.href}
-          className="shrink-0 bg-pes text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-900 transition-colors"
+          className="shrink-0 bg-pes text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-pes-800 transition-colors"
         >
           Open the form
         </Link>
@@ -38,9 +38,9 @@ export default function StressCycleBanner() {
   // Heads-up: a form is scheduled/coming → quieter informational banner.
   if (notice) {
     return (
-      <div className="mx-6 mt-4 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-5 py-3">
-        <Notification size={20} className="text-gray-400 shrink-0" />
-        <p className="text-sm text-gray-600">{notice.message}</p>
+      <div className="mx-6 mt-4 flex items-center gap-3 rounded-lg border border-line bg-canvas px-5 py-3">
+        <Notification size={20} className="text-muted shrink-0" />
+        <p className="text-sm text-body">{notice.message}</p>
       </div>
     );
   }

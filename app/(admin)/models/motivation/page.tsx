@@ -182,7 +182,7 @@ export default function StaffMotivationPage() {
       <div className="mb-4">
         <Link
           href="/models"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Models
         </Link>
@@ -191,16 +191,16 @@ export default function StaffMotivationPage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">Staff Motivation</h1>
-          <p className="text-gray-600 mb-6 max-w-2xl">
+          <p className="text-body mb-6 max-w-2xl">
             Evaluate staff motivation across various parameters by weighting scores for job satisfaction, environment, and opportunities.
           </p>
         </div>
         <div className="flex gap-3">
           <Link
             href="/models/motivation/history"
-            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             View History
           </Link>
         </div>
@@ -210,29 +210,29 @@ export default function StaffMotivationPage() {
         {/* Left Column - Categories */}
         <div className="xl:col-span-2 space-y-4">
           {categories.map((cat, cIndex) => (
-            <div key={cIndex} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <div key={cIndex} className="bg-white rounded-xl border border-line overflow-hidden shadow-sm">
               <div 
-                className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b border-gray-100 cursor-pointer"
+                className="flex justify-between items-center px-6 py-4 bg-canvas border-b border-line cursor-pointer"
                 onClick={() => toggleCategory(cIndex)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                  <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
                     <span className="font-bold text-sm">{cIndex + 1}</span>
                   </div>
-                  <h3 className="font-semibold text-gray-800">{cat.name}</h3>
+                  <h3 className="font-semibold text-strong">{cat.name}</h3>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-sm font-medium text-gray-600">Weight:</span>
+                    <span className="text-sm font-medium text-body">Weight:</span>
                     <input
                       type="number"
                       step="0.05"
                       value={cat.weight}
                       onChange={(e) => updateCategory(cIndex, "weight", Number(e.target.value))}
-                      className="w-20 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-pes"
+                      className="w-20 rounded border border-line px-2 py-1 text-sm outline-none focus:border-pes"
                     />
                   </div>
-                  <svg className={`w-5 h-5 text-gray-400 transition-transform ${cat.open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  <svg className={`w-5 h-5 text-muted transition-transform ${cat.open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
               </div>
               
@@ -242,22 +242,22 @@ export default function StaffMotivationPage() {
                     {cat.subItems.map((sub, sIndex) => (
                       <div key={sIndex} className="flex gap-4 items-start">
                         <div className="flex-1">
-                          <label className="text-xs font-semibold text-gray-500 mb-1 block">Parameter Label</label>
+                          <label className="text-xs font-semibold text-muted mb-1 block">Parameter Label</label>
                           <input
                             type="text"
                             value={sub.label}
                             onChange={(e) => updateSubItem(cIndex, sIndex, "label", e.target.value)}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
+                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
                             placeholder="Enter parameter name..."
                           />
                         </div>
                         <div className="w-32">
-                          <label className="text-xs font-semibold text-gray-500 mb-1 block">Score (0-100)</label>
+                          <label className="text-xs font-semibold text-muted mb-1 block">Score (0-100)</label>
                           <input
                             type="number"
                             value={sub.score}
                             onChange={(e) => updateSubItem(cIndex, sIndex, "score", Number(e.target.value))}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
+                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
                           />
                         </div>
                         <div className="pt-6">
@@ -274,7 +274,7 @@ export default function StaffMotivationPage() {
                   </div>
                   <button
                     onClick={() => addSubItem(cIndex)}
-                    className="flex items-center gap-1 text-sm font-medium text-pes hover:text-blue-800 transition-colors"
+                    className="flex items-center gap-1 text-sm font-medium text-pes hover:text-pes-800 transition-colors"
                   >
                     <Add size="16" /> Add Parameter
                   </button>
@@ -286,20 +286,20 @@ export default function StaffMotivationPage() {
 
         {/* Right Column - Thresholds & Save */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
               <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
                 <Setting2 size="16" variant="Bold" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Thresholds</h2>
-                <p className="text-xs text-gray-500">Define rating limits</p>
+                <h2 className="text-lg font-bold text-strong">Thresholds</h2>
+                <p className="text-xs text-muted">Define rating limits</p>
               </div>
             </div>
             
             <div className="space-y-4">
               <div className="block">
-                <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
                   <span className="truncate">High Motivation (≥)</span>
                   <InfoPopover text="Scores at or above this will be rated High Motivation." />
                 </div>
@@ -307,11 +307,11 @@ export default function StaffMotivationPage() {
                   type="number"
                   value={thresholds.high}
                   onChange={(e) => setThresholds({ ...thresholds, high: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
                 />
               </div>
               <div className="block">
-                <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
                   <span className="truncate">Moderate Motivation (≥)</span>
                   <InfoPopover text="Scores at or above this will be rated Moderate Motivation." />
                 </div>
@@ -319,14 +319,14 @@ export default function StaffMotivationPage() {
                   type="number"
                   value={thresholds.moderate}
                   onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Calculate & Save</h2>
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
             
             {errorMsg && <p className="text-red-600 font-medium text-sm mb-4">{errorMsg}</p>}
             {message && <p className="text-green-600 font-medium text-sm mb-4">{message}</p>}
@@ -334,7 +334,7 @@ export default function StaffMotivationPage() {
             <button
               onClick={calculateScore}
               disabled={saving}
-              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
             >
               {saving ? (
                 "Saving..."

@@ -60,7 +60,11 @@ export default function Home() {
     fetchData();
   }, []);
 
-  if (loading) return <p className="p-8 text-gray-600">Loading...</p>;
+  if (loading) return (
+    <div className="w-full h-[60vh] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
   if (!data?.performance && !data?.appraisal)
     return <p className="p-8 text-red-600">No data found.</p>;
 
@@ -73,7 +77,7 @@ export default function Home() {
         <h1 className="text-2xl m-3 font-bold">Performance Review</h1>
       </div>
 
-      <div className="bg-gray-50 h-[3rem] flex justify-between">
+      <div className="bg-canvas h-[3rem] flex justify-between">
         <h1 className="my-auto mx-6 font-semibold">Last Assessment Result</h1>
       </div>
 
@@ -125,22 +129,22 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="bg-gray-50 h-[3rem] flex justify-between">
+      <div className="bg-canvas h-[3rem] flex justify-between">
         <h1 className="my-auto mx-6 font-semibold">Achievements</h1>
       </div>
 
       <div className="bg-white p-4 min-h-[10rem]">
         {achievements.length === 0 ? (
-          <p className="text-gray-500">No achievements found.</p>
+          <p className="text-muted">No achievements found.</p>
         ) : (
           <ul className="space-y-3">
             {achievements.map((item, idx) => (
               <Link href={``} key={idx} className="border p-3 rounded-lg shadow-sm">
                 <div className="flex justify-between">
-                  <p className="font-semibold text-gray-800">{item.achievement || item.title}</p>
-                  <p className="text-sm text-gray-400">{item.year || item.date_achieved}</p>
+                  <p className="font-semibold text-strong">{item.achievement || item.title}</p>
+                  <p className="text-sm text-muted">{item.year || item.date_achieved}</p>
                 </div>
-                <p className="text-gray-600">{item.description}</p>
+                <p className="text-body">{item.description}</p>
               </Link>
             ))}
           </ul>

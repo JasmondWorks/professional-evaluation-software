@@ -86,7 +86,7 @@ export default function Performance({ view = "employee" }: { view?: string }) {
          ) : error ? (
             <ErrorState />
          ) : !performance.goodPerformance || performance.goodPerformance.length === 0 ? (
-            <div className="p-4 m-2 bg-gray-50 rounded-sm">No data available</div>
+            <div className="p-4 m-2 bg-canvas rounded-sm">No data available</div>
          ) : (
             <div className='flex flex-col p-4'>
                {performance.goodPerformance.map((i, key) => (
@@ -112,7 +112,7 @@ export default function Performance({ view = "employee" }: { view?: string }) {
          ) : error ? (
             <ErrorState />
          ) : !performance.badPerformance || performance.badPerformance.length === 0 ? (
-            <div className="p-4 m-2 bg-gray-50 rounded-sm">No data available</div>
+            <div className="p-4 m-2 bg-canvas rounded-sm">No data available</div>
          ) : (
             <div className="flex flex-col p-4">
                {performance.badPerformance.map((i, key) => (

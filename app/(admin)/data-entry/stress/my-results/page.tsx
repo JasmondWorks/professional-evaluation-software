@@ -25,33 +25,33 @@ export default function MyStressResults() {
   }, []);
 
   const Card = ({ label, level }: { label: string; level: Level }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm text-center">
-      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">{label}</p>
-      {level?.name && <p className="text-xs text-gray-400 mb-1">{level.name}</p>}
+    <div className="bg-white rounded-xl border border-line p-6 shadow-sm text-center">
+      <p className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">{label}</p>
+      {level?.name && <p className="text-xs text-muted mb-1">{level.name}</p>}
       {level && level.stress !== null ? (
         <p className="text-4xl font-bold text-rose-600">{level.stress.toFixed(1)}%</p>
       ) : (
-        <p className="text-sm text-gray-400 mt-2">No results available for the current cycle yet.</p>
+        <p className="text-sm text-muted mt-2">No results available for the current cycle yet.</p>
       )}
     </div>
   );
 
   return (
     <div className="p-8 max-w-4xl mx-auto w-full">
-      <Link href="/data-entry" className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors mb-3">
+      <Link href="/data-entry" className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-3">
         <ArrowLeft2 size="16" className="mr-1" /> Back to Data Entry
       </Link>
-      <h1 className="text-2xl font-bold text-gray-900">My Stress Results</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="text-2xl font-bold text-strong">My Stress Results</h1>
+      <p className="text-sm text-muted mb-6">
         The stress results your organization has granted you access to. Results are shown by group, never individually.
       </p>
 
       {loading ? (
         <div className="w-full p-12 flex justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes" />
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent" />
         </div>
       ) : !data || (!data.allowedDepartment && !data.allowedFaculty) ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-600">
+        <div className="rounded-xl border border-line bg-canvas p-8 text-center text-body">
           You don&apos;t currently have access to any stress results. Your organization admin can grant access to your
           department or faculty results.
         </div>

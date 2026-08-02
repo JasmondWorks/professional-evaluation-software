@@ -126,10 +126,10 @@ export default function Goals() {
       });
       const data = await res.json();
       if (res.ok) setEvaluation(data.evaluation);
-      else alert(data.error || "Failed to update");
+      else notify.error(data.error ||"Failed to update");
     } catch (err) {
       console.error(err);
-      alert("Error updating evaluation");
+      notify.error("Error updating evaluation");
     } finally {
       setToggling(null);
     }
@@ -155,7 +155,7 @@ export default function Goals() {
         }),
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to clear overdue goals");
+      notify.error(e instanceof Error ? e.message :"Failed to clear overdue goals");
     } finally {
       setClearing(false);
     }
@@ -218,7 +218,7 @@ export default function Goals() {
           <h2 className="font-semibold text-lg mb-1">
             Data Entry Access Controls
           </h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted mb-4">
             Enable or disable each form type for staff. Changes take effect
             immediately.
           </p>
@@ -268,13 +268,13 @@ export default function Goals() {
                     </button>
                   </div>
                   <span
-                    className={`text-xs font-semibold ${isEnabled ? "text-green-600" : "text-gray-400"}`}
+                    className={`text-xs font-semibold ${isEnabled ? "text-green-600" : "text-muted"}`}
                   >
                     {isEnabled ? "Enabled" : "Disabled"}
                   </span>
                   {dueDate && (
                     <span
-                      className={`text-xs ${isPastDue ? "text-red-500" : "text-gray-400"}`}
+                      className={`text-xs ${isPastDue ? "text-red-500" : "text-muted"}`}
                     >
                       Due: {dueDate}
                       {isPastDue ? " (past due)" : ""}
@@ -290,13 +290,13 @@ export default function Goals() {
       <div className="flex flex-col justify-center">
         {loadingGoals ? (
           <div className="flex flex-col my-8">
-            <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
-            <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
-            <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
-            <div className="h-12 w-full rounded-md animate-pulse bg-gray-100 m-1"></div>
+            <div className="h-12 w-full rounded-md animate-pulse bg-canvas m-1"></div>
+            <div className="h-12 w-full rounded-md animate-pulse bg-canvas m-1"></div>
+            <div className="h-12 w-full rounded-md animate-pulse bg-canvas m-1"></div>
+            <div className="h-12 w-full rounded-md animate-pulse bg-canvas m-1"></div>
           </div>
         ) : goals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center my-16 text-gray-400">
+          <div className="flex flex-col items-center justify-center my-16 text-muted">
             <p className="text-lg">No goals set yet.</p>
             {user.role === "admin" && (
               <p className="text-sm mt-1">
@@ -312,7 +312,7 @@ export default function Goals() {
               return (
                 <div
                   key={key}
-                  className={`${grid ? "w-72 py-6" : "grid grid-cols-3 gap-4 items-center w-full py-1 text-left"} bg-white rounded-md border border-gray-100 px-12 cursor-pointer`}
+                  className={`${grid ? "w-72 py-6" : "grid grid-cols-3 gap-4 items-center w-full py-1 text-left"} bg-white rounded-md border border-line px-12 cursor-pointer`}
                   onClick={async () => {
                     dispatch(viewGoal({ payload: i, type: "view" }));
                   }}

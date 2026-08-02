@@ -50,7 +50,7 @@ export default function Home({ params }: { params: { user: string } }){
     };
     
     return (
-        <div className="min-h-screen w-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="min-h-screen w-screen flex items-center justify-center bg-canvas p-4">
             {/* Fixed aspect ratio container - adjust based on your certificate dimensions */}
             <div ref={certificateRef} className="relative w-full max-w-[1200px] aspect-[1.414/1]">
                 <img 
@@ -88,16 +88,13 @@ export default function Home({ params }: { params: { user: string } }){
                     </p>
                     
                     {/* Signature */}
-                    <p 
+                    <div
                         className="absolute text-center"
-                        style={{
-                            bottom: '18%',
-                            left: '20%',
-                            fontSize: 'clamp(1rem, 2.5vw, 2rem)'
-                        }}
+                        style={{ bottom: '18%', left: '20%' }}
                     >
-                        signature
-                    </p>
+                        <span className="block w-40 border-t border-gray-500 mb-1" />
+                        <span className="text-xs tracking-wide text-gray-600">Authorized signature</span>
+                    </div>
                     
                     {/* Date */}
                     <p 
@@ -115,7 +112,7 @@ export default function Home({ params }: { params: { user: string } }){
 
             <button
                 onClick={handleDownload}
-                className="absolute right-20 bottom-20 bg-pes hover:bg-blue-900 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200"
+                className="absolute right-20 bottom-20 bg-pes hover:bg-pes-800 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-colors duration-200"
             >
                 Download Certificate
             </button>

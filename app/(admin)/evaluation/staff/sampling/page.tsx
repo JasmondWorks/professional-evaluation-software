@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import React, {
   useState,
   useEffect,
@@ -266,11 +267,11 @@ const WorkSamplingPageInner: React.FC = () => {
         setStudyList((prev) => prev.filter((s) => s.id !== deleteConfirmId));
         setDeleteConfirmId(null);
       } else {
-        alert(json.error || "Failed to delete study");
+        notify.error(json.error ||"Failed to delete study");
       }
     } catch (err) {
       console.error("Delete failed", err);
-      alert("Delete failed");
+      notify.error("Delete failed");
     }
   };
 
@@ -1022,7 +1023,7 @@ const WorkSamplingPageInner: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div
-          className="animate-spin rounded-full h-10 w-10 border-b-2"
+          className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
           style={{ borderColor: "#322b80" }}
         />
       </div>
@@ -1041,7 +1042,7 @@ const WorkSamplingPageInner: React.FC = () => {
                 <h1 className="text-3xl font-bold" style={{ color: "#322b80" }}>
                   Work Sampling Studies
                 </h1>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-muted text-sm mt-1">
                   Manage all work sampling analyses
                 </p>
               </div>
@@ -1064,7 +1065,7 @@ const WorkSamplingPageInner: React.FC = () => {
               {studyList.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">
+                  <p className="text-muted">
                     No work sampling studies found.
                   </p>
                   <button
@@ -1082,8 +1083,8 @@ const WorkSamplingPageInner: React.FC = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-600">
-                    <thead className="bg-gray-50 text-gray-700 font-medium">
+                  <table className="w-full text-left text-sm text-body">
+                    <thead className="bg-canvas text-body font-medium">
                       <tr>
                         <th className="px-4 py-3 rounded-tl-lg">ID</th>
                         <th className="px-4 py-3">Organization</th>
@@ -1098,9 +1099,9 @@ const WorkSamplingPageInner: React.FC = () => {
                       {studyList.map((study) => (
                         <tr
                           key={study.id}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="hover:bg-canvas transition-colors"
                         >
-                          <td className="px-4 py-3 font-semibold text-gray-800">
+                          <td className="px-4 py-3 font-semibold text-strong">
                             #{study.id}
                           </td>
                           <td className="px-4 py-3">{study.org || "—"}</td>
@@ -1152,7 +1153,7 @@ const WorkSamplingPageInner: React.FC = () => {
                 <h1 className="text-3xl font-bold" style={{ color: "#322b80" }}>
                   Work Sampling Analysis
                 </h1>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-muted text-sm mt-1">
                   {studyDbId
                     ? `Study #${studyDbId}`
                     : "New study — will be saved when you add a position"}
@@ -1222,7 +1223,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
                     activeTab === key
                       ? "text-white shadow"
-                      : "text-gray-600 hover:bg-gray-50"
+                      : "text-body hover:bg-canvas"
                   }`}
                   style={{
                     backgroundColor:
@@ -1259,13 +1260,13 @@ const WorkSamplingPageInner: React.FC = () => {
                   >
                     <Users size={24} /> Position Management
                   </h2>
-                  <p className="text-sm text-gray-500 mb-6">
+                  <p className="text-sm text-muted mb-6">
                     Click a position to select it — the Parameters, Observations
                     and Analysis tabs will focus on it.
                   </p>
 
-                  <div className="grid md:grid-cols-4 gap-4 mb-8 p-6 bg-gray-50 rounded-lg items-end">
-                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                  <div className="grid md:grid-cols-4 gap-4 mb-8 p-6 bg-canvas rounded-lg items-end">
+                    <label className="flex flex-col text-sm font-medium text-body">
                       Position Name
                       <input
                         type="text"
@@ -1274,10 +1275,10 @@ const WorkSamplingPageInner: React.FC = () => {
                         onChange={(e) =>
                           setNewPosition((p) => ({ ...p, name: e.target.value }))
                         }
-                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                        className="mt-1 px-4 py-3 border border-line rounded-lg focus:ring-2 focus:border-transparent font-normal"
                       />
                     </label>
-                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                    <label className="flex flex-col text-sm font-medium text-body">
                       Department
                       <input
                         type="text"
@@ -1289,10 +1290,10 @@ const WorkSamplingPageInner: React.FC = () => {
                             department: e.target.value,
                           }))
                         }
-                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                        className="mt-1 px-4 py-3 border border-line rounded-lg focus:ring-2 focus:border-transparent font-normal"
                       />
                     </label>
-                    <label className="flex flex-col text-sm font-medium text-gray-700">
+                    <label className="flex flex-col text-sm font-medium text-body">
                       Performance Allowance (%)
                       <input
                         type="number"
@@ -1306,7 +1307,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             performanceAllowance: Number(e.target.value),
                           }))
                         }
-                        className="mt-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent font-normal"
+                        className="mt-1 px-4 py-3 border border-line rounded-lg focus:ring-2 focus:border-transparent font-normal"
                         title="Performance Allowance % (from Table 5.2)"
                       />
                     </label>
@@ -1326,7 +1327,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
                   <div className="grid gap-3">
                     {positions.length === 0 ? (
-                      <p className="text-gray-400 text-center py-10">
+                      <p className="text-muted text-center py-10">
                         No positions yet. Add your first position above.
                       </p>
                     ) : (
@@ -1343,7 +1344,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
                               isSelected
                                 ? "border-indigo-600 bg-indigo-50 shadow-md"
-                                : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                                : "border-line hover:border-indigo-300 hover:bg-canvas"
                             }`}
                           >
                             <div className="flex items-center gap-4 flex-1">
@@ -1352,10 +1353,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                 className={`w-3 h-3 rounded-full flex-shrink-0 ${isSelected ? "bg-indigo-600" : "bg-gray-300"}`}
                               />
                               <div className="flex-1">
-                                <p className="font-semibold text-gray-900">
+                                <p className="font-semibold text-strong">
                                   {pos.name}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-muted">
                                   {pos.department}
                                 </p>
                               </div>
@@ -1369,7 +1370,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 >
                                   PA: {pos.performanceAllowance}%
                                 </span>
-                                <span className="text-gray-400">
+                                <span className="text-muted">
                                   {posObs.length} obs · {busyCount} busy
                                 </span>
                                 {!pos.dbId && (
@@ -1401,7 +1402,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
                   {/* Next step navigation */}
                   <div className="mt-8 flex items-center justify-between border-t pt-6">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted">
                       {positions.length === 0 ? (
                         <span className="flex items-center gap-1.5 text-amber-600">
                           <AlertCircle size={14} /> Add at least one position to
@@ -1443,13 +1444,13 @@ const WorkSamplingPageInner: React.FC = () => {
                     >
                       <Calculator size={24} /> Study Parameters
                       {!studyDbId && (
-                        <span className="text-sm font-normal text-gray-400 ml-2">
+                        <span className="text-sm font-normal text-muted ml-2">
                           (saved when you add a position)
                         </span>
                       )}
                     </h2>
                     {selectedPosition ? (
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted mt-1">
                         These parameters apply to the whole study. Currently
                         viewing in context of{" "}
                         <span className="font-semibold text-indigo-700">
@@ -1477,21 +1478,21 @@ const WorkSamplingPageInner: React.FC = () => {
                         </div>
                         <div className="p-5 space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Organisation
                             </label>
                             <input
                               type="text"
                               readOnly
                               value={studyMeta.org || currentUser?.org || ""}
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg bg-canvas text-muted cursor-not-allowed"
                             />
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <p className="text-xs text-muted mt-0.5">
                               Auto-filled from your account
                             </p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Department
                               {selectedPosition && (
                                 <span className="ml-2 text-xs text-indigo-600">
@@ -1516,13 +1517,13 @@ const WorkSamplingPageInner: React.FC = () => {
                               placeholder="Select a position to auto-fill"
                               className={`mt-1 w-full px-4 py-2.5 border rounded-lg ${
                                 selectedPosition
-                                  ? "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
-                                  : "border-gray-300"
+                                  ? "border-line bg-canvas text-muted cursor-not-allowed"
+                                  : "border-line"
                               }`}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Analyst
                             </label>
                             <input
@@ -1531,9 +1532,9 @@ const WorkSamplingPageInner: React.FC = () => {
                               value={
                                 studyMeta.analyst || currentUser?.name || ""
                               }
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg bg-canvas text-muted cursor-not-allowed"
                             />
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <p className="text-xs text-muted mt-0.5">
                               Auto-filled from your account
                             </p>
                           </div>
@@ -1549,7 +1550,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           A. Sampling Accuracy
                         </div>
                         <div className="p-5 space-y-4">
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-body">
                             Confidence Level (%)
                             <select
                               value={studyParameters.confidenceLevel}
@@ -1559,28 +1560,28 @@ const WorkSamplingPageInner: React.FC = () => {
                                   confidenceLevel: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                             >
                               <option value={90}>90%</option>
                               <option value={95}>95%</option>
                               <option value={99}>99%</option>
                             </select>
                           </label>
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-body">
                             Desired Accuracy (%) — auto
                             <div className="relative mt-1">
                               <input
                                 readOnly
                                 value={studyParameters.desiredAccuracy}
-                                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                                className="w-full px-4 py-2.5 border border-line rounded-lg bg-canvas text-muted cursor-not-allowed"
                               />
                               <Info
                                 size={14}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted"
                               />
                             </div>
                           </label>
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-body">
                             Preliminary P (Proportion Busy)
                             <input
                               type="number"
@@ -1594,7 +1595,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   preliminaryP: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                             />
                           </label>
                         </div>
@@ -1609,7 +1610,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           B. Schedule Configuration
                         </div>
                         <div className="p-5 space-y-4">
-                          <div className="block text-sm font-medium text-gray-700">
+                          <div className="block text-sm font-medium text-body">
                             Study Months
                             <div className="mt-2 grid grid-cols-3 gap-2">
                               {MONTH_NAMES.map((n, i) => {
@@ -1621,7 +1622,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 return (
                                   <label
                                     key={i}
-                                    className="flex items-center gap-2 text-sm font-normal cursor-pointer bg-gray-50 px-3 py-2 rounded border hover:bg-gray-100"
+                                    className="flex items-center gap-2 text-sm font-normal cursor-pointer bg-canvas px-3 py-2 rounded border hover:bg-line/50"
                                   >
                                     <input
                                       type="checkbox"
@@ -1641,10 +1642,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                           return { ...p, studyMonths: next };
                                         });
                                       }}
-                                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                      className="w-4 h-4 text-indigo-600 border-line rounded focus:ring-indigo-500"
                                     />
                                     {n}{" "}
-                                    <span className="text-gray-400 text-xs">
+                                    <span className="text-muted text-xs">
                                       (k={MONTH_DAY_CONSTANTS[monthIndex]})
                                     </span>
                                   </label>
@@ -1653,7 +1654,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Observations/Day (n)
                               <input
                                 type="number"
@@ -1666,10 +1667,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                     observationsPerDay: Number(e.target.value),
                                   }))
                                 }
-                                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                               />
                             </label>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Working Hours/Day (W)
                               <input
                                 type="number"
@@ -1682,10 +1683,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                     workingHoursPerDay: Number(e.target.value),
                                   }))
                                 }
-                                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                               />
                             </label>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Work Start Time (Y₀)
                               <input
                                 type="time"
@@ -1696,10 +1697,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                     workStartTime: e.target.value,
                                   }))
                                 }
-                                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                               />
                             </label>
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-body">
                               Min Cycle Duration A (min)
                               <input
                                 type="number"
@@ -1712,12 +1713,12 @@ const WorkSamplingPageInner: React.FC = () => {
                                     minCycleDuration: Number(e.target.value),
                                   }))
                                 }
-                                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                               />
                             </label>
                           </div>
-                          <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border text-sm">
-                            <span className="text-gray-600">
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-canvas border text-sm">
+                            <span className="text-body">
                               Max Duration (B):
                             </span>
                             <span
@@ -1726,7 +1727,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             >
                               {studyParameters.maxDuration.toFixed(1)} min
                             </span>
-                            <span className="text-xs text-gray-400 ml-auto">
+                            <span className="text-xs text-muted ml-auto">
                               B = (2W×60 − n×A) / n
                             </span>
                           </div>
@@ -1749,7 +1750,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           C. Work Year &amp; Allowance
                         </div>
                         <div className="p-5 space-y-4">
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-body">
                             Available Annual Hours
                             <input
                               type="number"
@@ -1761,13 +1762,13 @@ const WorkSamplingPageInner: React.FC = () => {
                                   availableAnnualHours: Number(e.target.value),
                                 }))
                               }
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                             />
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted">
                               Standard: 2080 hrs
                             </span>
                           </label>
-                          <label className="block text-sm font-medium text-gray-700">
+                          <label className="block text-sm font-medium text-body">
                             Default Performance Allowance (PA%)
                             <input
                               type="number"
@@ -1784,7 +1785,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   ),
                                 }))
                               }
-                              className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                              className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                             />
                           </label>
                         </div>
@@ -1818,7 +1819,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 setLockedDates([]);
                                 setLockedTimes([]);
                               }}
-                              className="text-xs text-gray-500 underline"
+                              className="text-xs text-muted underline"
                             >
                               Edit parameters (will clear locked schedule)
                             </button>
@@ -1856,7 +1857,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
                     {/* Right: Calculated requirements + schedule preview */}
                     <div className="space-y-6">
-                      <div className="bg-gray-50 p-6 rounded-lg sticky top-6 space-y-3">
+                      <div className="bg-canvas p-6 rounded-lg sticky top-6 space-y-3">
                         <h3
                           className="font-semibold text-base"
                           style={{ color: "#322b80" }}
@@ -1885,9 +1886,9 @@ const WorkSamplingPageInner: React.FC = () => {
                         ].map(([label, val]) => (
                           <div
                             key={label as string}
-                            className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100 text-sm"
+                            className="flex justify-between items-center p-3 bg-white rounded-lg border border-line text-sm"
                           >
-                            <span className="text-gray-600">{label}</span>
+                            <span className="text-body">{label}</span>
                             <span
                               className="font-bold"
                               style={{ color: "#322b80" }}
@@ -1925,7 +1926,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             {generateRandomSchedule.map((t, i) => (
                               <div
                                 key={i}
-                                className="flex items-center gap-1.5 p-1.5 bg-gray-50 rounded text-xs"
+                                className="flex items-center gap-1.5 p-1.5 bg-canvas rounded text-xs"
                               >
                                 <span
                                   className="w-4 h-4 rounded-full flex items-center justify-center text-white text-xs font-medium"
@@ -1951,7 +1952,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             >
                               Study Dates
                             </p>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted">
                               {generateRandomDates.length} days total
                             </span>
                           </div>
@@ -1968,7 +1969,7 @@ const WorkSamplingPageInner: React.FC = () => {
 
                               return (
                                 <div key={month} className="mb-4 last:mb-0">
-                                  <p className="text-xs font-semibold text-gray-500 mb-1">
+                                  <p className="text-xs font-semibold text-muted mb-1">
                                     {MONTH_NAMES[month - 1]}
                                   </p>
                                   <div className="flex flex-wrap gap-1.5">
@@ -1992,14 +1993,14 @@ const WorkSamplingPageInner: React.FC = () => {
                                               dateStr,
                                             ])
                                           }
-                                          className="group flex items-center gap-1 px-2 py-1 rounded border border-gray-200 bg-gray-50 hover:border-red-300 hover:bg-red-50 cursor-pointer text-xs"
+                                          className="group flex items-center gap-1 px-2 py-1 rounded border border-line bg-canvas hover:border-red-300 hover:bg-red-50 cursor-pointer text-xs"
                                         >
                                           <span className="group-hover:text-red-700">
                                             {dn} {Number(d)}
                                           </span>
                                           <X
                                             size={10}
-                                            className="text-gray-400 group-hover:text-red-500"
+                                            className="text-muted group-hover:text-red-500"
                                           />
                                         </div>
                                       );
@@ -2009,7 +2010,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               );
                             })}
 
-                          <p className="text-xs text-gray-400 mt-2">
+                          <p className="text-xs text-muted mt-2">
                             Click to exclude (e.g. public holidays)
                           </p>
                           {excludedDates.length > 0 && (
@@ -2020,7 +2021,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 </span>
                                 <button
                                   onClick={() => setExcludedDates([])}
-                                  className="text-xs text-gray-500 flex items-center gap-1"
+                                  className="text-xs text-muted flex items-center gap-1"
                                 >
                                   <RotateCcw size={10} /> Restore all
                                 </button>
@@ -2072,7 +2073,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <Clock size={24} /> Data Collection
                     </h2>
                     {selectedPosition ? (
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted mt-1">
                         Recording observations for{" "}
                         <span className="font-semibold text-indigo-700">
                           {selectedPosition.name}
@@ -2101,7 +2102,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   </div>
 
                   {positions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">
+                    <div className="text-center py-12 text-muted">
                       <Users size={48} className="mx-auto mb-3 opacity-40" />
                       <p>Add positions first before recording observations.</p>
                     </div>
@@ -2285,7 +2286,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
                                 pos.id === selectedPositionId
                                   ? "border-indigo-600 bg-indigo-600 text-white"
-                                  : "border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
+                                  : "border-line text-body hover:border-indigo-400 hover:text-indigo-600"
                               }`}
                             >
                               {pos.name}
@@ -2302,14 +2303,14 @@ const WorkSamplingPageInner: React.FC = () => {
                           ))}
                       </div>
 
-                      <div className="grid md:grid-cols-6 gap-3 mb-6 p-5 bg-gray-50 rounded-lg">
+                      <div className="grid md:grid-cols-6 gap-3 mb-6 p-5 bg-canvas rounded-lg">
                         {/* Position — fixed to selection */}
                         <div className="md:col-span-2 px-4 py-3 border border-indigo-200 bg-indigo-50 rounded-lg text-sm font-medium text-indigo-800 flex items-center gap-2">
                           <Users size={14} />
                           {selectedPosition ? (
                             selectedPosition.name
                           ) : (
-                            <span className="text-gray-400">
+                            <span className="text-muted">
                               Select a position above
                             </span>
                           )}
@@ -2330,7 +2331,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             !paramsSaved ||
                             lockedDates.length === 0
                           }
-                          className="px-4 py-3 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="px-4 py-3 border border-line rounded-lg bg-white disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
                         >
                           <option value="">— Select date —</option>
                           {lockedDates.map((dateVal) => {
@@ -2402,7 +2403,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             !paramsSaved ||
                             lockedTimes.length === 0
                           }
-                          className="px-4 py-3 border border-gray-300 rounded-lg bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="px-4 py-3 border border-line rounded-lg bg-white disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
                         >
                           <option value="">— Select time —</option>
                           {lockedTimes.map((t, i) => {
@@ -2430,7 +2431,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               isBusy: e.target.value === "true",
                             }))
                           }
-                          className="px-4 py-3 border border-gray-300 rounded-lg bg-white"
+                          className="px-4 py-3 border border-line rounded-lg bg-white"
                         >
                           <option value="true">Busy</option>
                           <option value="false">Not Busy</option>
@@ -2449,7 +2450,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               performanceRating: Number(e.target.value),
                             }))
                           }
-                          className="px-4 py-3 border border-gray-300 rounded-lg"
+                          className="px-4 py-3 border border-line rounded-lg"
                         />
 
                         {(() => {
@@ -2522,7 +2523,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   <tr>
                                     <td
                                       colSpan={6}
-                                      className="p-8 text-center text-gray-400"
+                                      className="p-8 text-center text-muted"
                                     >
                                       No observations recorded for{" "}
                                       {selectedPosition?.name ??
@@ -2538,7 +2539,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 return (
                                   <tr
                                     key={obs.id}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
+                                    className="border-b border-line hover:bg-canvas"
                                   >
                                     <td className="p-3">{pos?.name ?? "—"}</td>
                                     <td className="p-3">{obs.date}</td>
@@ -2580,7 +2581,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       </div>
                       {/* Next step navigation */}
                       <div className="mt-8 flex items-center justify-between border-t pt-6">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted">
                           {(() => {
                             const posObs = selectedPositionId
                               ? observations.filter(
@@ -2629,7 +2630,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <BarChart3 size={24} /> Analysis Results
                     </h2>
                     {selectedPosition && (
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted mt-1">
                         Row for{" "}
                         <span className="font-semibold text-indigo-700">
                           {selectedPosition.name}
@@ -2640,7 +2641,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   </div>
 
                   {analysisResults.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">
+                    <div className="text-center py-12 text-muted">
                       <FileText size={48} className="mx-auto mb-3 opacity-40" />
                       <p>Add positions and observations to see analysis.</p>
                     </div>
@@ -2716,10 +2717,10 @@ const WorkSamplingPageInner: React.FC = () => {
                                 onClick={() =>
                                   setSelectedPositionId(r.positionId)
                                 }
-                                className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                                className={`border-b border-line cursor-pointer transition-colors ${
                                   r.positionId === selectedPositionId
                                     ? "bg-indigo-50 font-medium"
-                                    : "hover:bg-gray-50"
+                                    : "hover:bg-canvas"
                                 }`}
                               >
                                 <td className="p-3 font-medium">
@@ -2790,7 +2791,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       </div>
 
                       {/* Formula reference */}
-                      <div className="p-4 rounded-lg border bg-gray-50 text-xs text-gray-600 space-y-1">
+                      <div className="p-4 rounded-lg border bg-canvas text-xs text-body space-y-1">
                         <p
                           className="font-semibold text-sm mb-2"
                           style={{ color: "#322b80" }}
@@ -2799,25 +2800,25 @@ const WorkSamplingPageInner: React.FC = () => {
                         </p>
                         <p>
                           <code>Uᵢ</code> = Busy / Total{" "}
-                          <span className="text-gray-400">(eq 6.11)</span>
+                          <span className="text-muted">(eq 6.11)</span>
                         </p>
                         <p>
                           <code>EAMᵢ</code> = Uᵢ × Available Annual Hours{" "}
-                          <span className="text-gray-400">(eq 6.12)</span>
+                          <span className="text-muted">(eq 6.12)</span>
                         </p>
                         <p>
                           <code>EBMᵢ</code> = EAMᵢ × Perf. Rating / 100{" "}
-                          <span className="text-gray-400">(eq 6.13)</span>
+                          <span className="text-muted">(eq 6.13)</span>
                         </p>
                         <p>
                           <code>ESMᵢ</code> = EBMᵢ + EBMᵢ × PA / 100{" "}
-                          <span className="text-gray-400">(eq 6.14)</span>
+                          <span className="text-muted">(eq 6.14)</span>
                         </p>
                         <p>
                           <code>TAM</code> = Σ ESMᵢ{" "}
-                          <span className="text-gray-400">(eq 6.15)</span>
+                          <span className="text-muted">(eq 6.15)</span>
                         </p>
-                        <div className="mt-2 pt-2 border-t border-gray-200">
+                        <div className="mt-2 pt-2 border-t border-line">
                           <p>
                             <code>Total Staff</code> = TAM / (Available Hours ×
                             Use Factor)
@@ -2826,14 +2827,14 @@ const WorkSamplingPageInner: React.FC = () => {
                       </div>
 
                       {/* Staff Determination Section */}
-                      <div className="p-6 rounded-lg border bg-gray-50 border-gray-200 space-y-4">
-                        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                      <div className="p-6 rounded-lg border bg-canvas border-line space-y-4">
+                        <h3 className="text-base font-bold text-strong flex items-center gap-2">
                           <Users size={18} style={{ color: "#322b80" }} />
                           Staff Determination
                         </h3>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                            <label className="block text-xs font-medium text-body mb-1">
                               Available Hours
                             </label>
                             <input
@@ -2846,11 +2847,11 @@ const WorkSamplingPageInner: React.FC = () => {
                                     : Number(e.target.value),
                                 )
                               }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                              className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                            <label className="block text-xs font-medium text-body mb-1">
                               Use Factor
                             </label>
                             {/* Decimal 0–1 only, with a slider (matches the
@@ -2882,7 +2883,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   // clamp to a valid 0–1 decimal
                                   setSamplingUseFactor(Math.min(1, Math.max(0, n)));
                                 }}
-                                className="w-16 flex-shrink-0 rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+                                className="w-16 flex-shrink-0 rounded-md border border-line bg-canvas focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
                               />
                             </div>
                           </div>
@@ -2982,14 +2983,14 @@ const WorkSamplingPageInner: React.FC = () => {
                   Delete Study #{deleteConfirmId}?
                 </h3>
               </div>
-              <p className="text-gray-600 mb-6 text-sm">
+              <p className="text-body mb-6 text-sm">
                 This action is irreversible and will permanently remove this
                 study, along with all associated positions and observations.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-body bg-canvas rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
@@ -3014,7 +3015,7 @@ const WorkSamplingPage: React.FC = () => (
     fallback={
       <div className="flex items-center justify-center min-h-screen">
         <div
-          className="animate-spin rounded-full h-10 w-10 border-b-2"
+          className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
           style={{ borderColor: "#322b80" }}
         />
       </div>

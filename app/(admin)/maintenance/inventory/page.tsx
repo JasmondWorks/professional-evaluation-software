@@ -48,9 +48,9 @@ export default function MaintenanceInventory() {
         </div>
       </div>
 
-      <table className="min-w-full border-collapse border border-gray-200">
+      <table className="min-w-full border-collapse border border-line">
         <thead>
-          <tr className="bg-gray-100">
+          <tr className="bg-canvas">
             <th className="border px-4 py-2">ID Symbol</th>
             <th className="border px-4 py-2">Description</th>
             <th className="border px-4 py-2">Location</th>
@@ -62,7 +62,7 @@ export default function MaintenanceInventory() {
         </thead>
         <tbody>
           {inventory.map((item, key) => (
-            <tr key={key} className="hover:bg-gray-50">
+            <tr key={key} className="hover:bg-canvas">
               <td className="border px-4 py-2">
                 <Link
                   href={`/maintenance/${encodeURIComponent(item.description_of_facility)}`}

@@ -71,7 +71,7 @@ export default function RedundancyIndex() {
       <div className="mb-4">
         <Link
           href="/models"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Models
         </Link>
@@ -80,35 +80,35 @@ export default function RedundancyIndex() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">Model 24 — Redundancy Index</h1>
-          <p className="text-gray-600 mb-6 max-w-2xl">
+          <p className="text-body mb-6 max-w-2xl">
             Evaluate the proportion of wasted man-hours against the total establishment capacity.
           </p>
         </div>
         <div className="flex gap-3">
           <Link
             href="/models/redundancy-index/history"
-            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             View History
           </Link>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
             <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Man-hour Variables</h2>
-              <p className="text-xs text-gray-500">Inputs calculating the redundancy metric</p>
+              <h2 className="text-lg font-bold text-strong">Man-hour Variables</h2>
+              <p className="text-xs text-muted">Inputs calculating the redundancy metric</p>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-6">
             <div className="block w-full min-w-0">
-              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
                 <span className="truncate">Wasted Man-hours</span>
                 <InfoPopover text="Hours lost due to delays, idleness, or lack of tasks." />
               </div>
@@ -116,11 +116,11 @@ export default function RedundancyIndex() {
                 type="number"
                 value={wasted}
                 onChange={(e) => setWasted(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
               />
             </div>
             <div className="block w-full min-w-0">
-              <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
                 <span className="truncate">Total Establishment Man-hours</span>
                 <InfoPopover text="Total available man-hours across the organization or department." />
               </div>
@@ -128,7 +128,7 @@ export default function RedundancyIndex() {
                 type="number"
                 value={total}
                 onChange={(e) => setTotal(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
               />
             </div>
           </div>
@@ -140,21 +140,21 @@ export default function RedundancyIndex() {
       <button
         onClick={evaluateIndex}
         disabled={!isFilled}
-        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-blue-900" : "bg-gray-400 cursor-not-allowed"}`}
+        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
       >
         Evaluate Redundancy
       </button>
 
       {result !== null && (
-        <div className="mt-8 border-t border-gray-200 pt-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Model Results</h2>
+        <div className="mt-8 border-t border-line pt-8">
+          <h2 className="text-xl font-bold text-strong mb-6">Model Results</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex items-center justify-between col-span-1 md:col-span-2 lg:col-span-1">
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between col-span-1 md:col-span-2 lg:col-span-1">
               <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Redundancy Index</p>
+                <p className="text-sm font-medium text-muted mb-1">Redundancy Index</p>
                 <p className="text-4xl font-bold text-pes">{result}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
               </div>
             </div>

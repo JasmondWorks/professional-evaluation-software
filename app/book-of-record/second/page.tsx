@@ -98,7 +98,7 @@ export default function SecondBookViewer() {
         <button
           onClick={prevPage}
           disabled={currentPage === 1}
-          className="absolute left-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-gray-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-canvas0"
         >
           <ChevronLeft />
         </button>
@@ -106,13 +106,13 @@ export default function SecondBookViewer() {
         <button
           onClick={nextPage}
           disabled={currentPage === totalPages}
-          className="absolute right-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-gray-500"
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-canvas0"
         >
           <ChevronRight />
         </button>
 
         {/* FOOTER PAGE NUMBER */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full shadow text-sm text-gray-700">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full shadow text-sm text-body">
           Page {currentPage} of {totalPages}
         </div>
 
@@ -128,10 +128,14 @@ function PageContent({
   loading: boolean;
   records: RecordType[];
 }) {
-  if (loading) return <p className="text-center mt-20 text-gray-500">Loading...</p>;
+  if (loading) return (
+    <div className="w-full flex justify-center mt-20">
+      <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   if (records.length === 0)
-    return <p className="text-center mt-20 text-gray-400">No entries</p>;
+    return <p className="text-center mt-20 text-muted">No entries</p>;
 
   return (
     <div className="space-y-4">
@@ -141,8 +145,8 @@ function PageContent({
           className="border p-4 bg-white/80 backdrop-blur rounded-lg shadow hover:shadow-lg transition cursor-pointer"
         >
           <Link href={`/reward/certificates/2nd/${encodeURIComponent(rec.name)}`}>
-            <h3 className="text-lg font-bold text-gray-800">{rec.name}</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="text-lg font-bold text-strong">{rec.name}</h3>
+            <p className="text-sm text-muted">
               {rec.title || rec.description}
             </p>
           </Link>

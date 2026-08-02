@@ -101,7 +101,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen w-full relative flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
       {/* Cover Image */}
-      <img onClick={() => setShowCover(false)} src="/2nd-book.png" alt="first book"  className={`${ showCover ? 'translate-x-0': '-translate-x-full' } transition-transform duration-[700ms] ease-in-out absolute h-full w-full top-0 left-0 z-20`}/>
+      <img src="/2nd-book.png" alt="first book" onClick={() => setShowCover(false)} className={`${ showCover ? 'translate-x-0': '-translate-x-full' } transition-transform duration-[700ms] ease-in-out absolute h-full w-full top-0 left-0 z-20`}/>
 
 
       {/* Main Content */}
@@ -131,7 +131,7 @@ useEffect(() => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-800 group-hover:text-pes transition-colors">
+                      <h3 className="text-lg font-semibold text-strong group-hover:text-pes transition-colors">
                         {member.name}
                       </h3>
                     </div>
@@ -148,7 +148,7 @@ useEffect(() => {
         </div>
 
         {/* Pagination Footer */}
-        <div className="border-t bg-gray-50 p-4">
+        <div className="border-t bg-canvas p-4">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={handlePrevPage}
@@ -178,7 +178,7 @@ useEffect(() => {
                 className={`w-10 h-10 rounded-lg font-medium transition-all duration-200 ${
                   page === currentPage
                     ? 'bg-pes text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-pes border border-gray-300'
+                    : 'bg-white text-body hover:bg-pes border border-line'
                 }`}
               >
                 {page}

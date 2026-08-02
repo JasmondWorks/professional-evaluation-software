@@ -31,13 +31,13 @@ function StatusScreen({
 }) {
   return (
     <div className="w-full p-12 flex justify-center">
-      <div className="max-w-lg w-full bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm mt-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
-        <p className="text-gray-600 mb-6">{body}</p>
+      <div className="max-w-lg w-full bg-white border border-line rounded-xl p-8 text-center shadow-sm mt-10">
+        <h1 className="text-2xl font-bold text-strong mb-3">{title}</h1>
+        <p className="text-body mb-6">{body}</p>
         {ctaLabel && ctaHref && (
           <Link
             href={ctaHref}
-            className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-900 transition-colors"
+            className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-pes-800 transition-colors"
           >
             {ctaLabel}
           </Link>
@@ -125,7 +125,7 @@ export default function StressForm5() {
   if (loadingCycle) {
     return (
       <div className="w-full p-12 flex justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent mt-16" />
       </div>
     );
   }
@@ -203,8 +203,8 @@ export default function StressForm5() {
         <h2 className="text-xl font-semibold mb-2">
           Step {currentStep + 1} of {STRESS_INSTRUMENT.length}: {currentCategory.label}
         </h2>
-        <table className="min-w-full border border-gray-300">
-          <thead className="bg-gray-100">
+        <table className="min-w-full border border-line">
+          <thead className="bg-canvas">
             <tr>
               <th className="border px-2 py-1">Item</th>
               {Array.from({ length: 10 }, (_, i) => (
@@ -221,7 +221,7 @@ export default function StressForm5() {
                 <td className="border px-2 py-1">{item.label}</td>
                 {Array.from({ length: 10 }, (_, i) => (
                   <td key={i} className="border p-0 text-center">
-                    <label className="flex h-10 w-full cursor-pointer items-center justify-center hover:bg-gray-50 transition-colors">
+                    <label className="flex h-10 w-full cursor-pointer items-center justify-center hover:bg-canvas transition-colors">
                       <input
                         type="radio"
                         name={`${currentCategory.key}-${item.label}`}
@@ -233,7 +233,7 @@ export default function StressForm5() {
                             parseInt(e.target.value)
                           )
                         }
-                        className="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 cursor-pointer text-pes focus:ring-pes"
                       />
                     </label>
                   </td>
@@ -257,7 +257,7 @@ export default function StressForm5() {
         {currentStep > 0 && (
           <button
             onClick={() => setCurrentStep((prev) => prev - 1)}
-            className="bg-gray-500 text-white px-4 py-2 rounded"
+            className="bg-surface border border-line text-body px-4 py-2 rounded-lg hover:bg-line/50 transition-colors"
           >
             Back
           </button>
@@ -269,12 +269,12 @@ export default function StressForm5() {
               onClick={() => setCurrentStep((prev) => prev + 1)}
               disabled={!currentComplete}
               title={!currentComplete ? "Answer every item in this category to continue" : undefined}
-              className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-pes text-white px-4 py-2 rounded-lg hover:bg-pes-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
             </button>
             {!currentComplete && (
-              <span className="text-xs text-gray-500">Answer every item to continue.</span>
+              <span className="text-xs text-muted">Answer every item to continue.</span>
             )}
           </div>
         ) : (
@@ -288,7 +288,7 @@ export default function StressForm5() {
               {submitting ? "Submitting…" : "Submit Totals"}
             </button>
             {!allComplete && (
-              <span className="text-xs text-gray-500">Every item in all categories must be answered.</span>
+              <span className="text-xs text-muted">Every item in all categories must be answered.</span>
             )}
           </div>
         )}

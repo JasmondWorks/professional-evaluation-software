@@ -7,7 +7,6 @@ import Action from '../components/modals/action'
 import Newgoal from '../components/modals/newgoal'
 import Editgoal from '../components/modals/editgoal'
 import Notification from '../components/modals/notification'
-import { Lato } from 'next/font/google'
 import { Provider } from 'react-redux'
 import { store } from '../state/store'
 import Deletegoal from '../components/modals/deletegoal'
@@ -16,37 +15,19 @@ import NotificationSent from '../components/modals/notification_sent'
 import RoleCreated from '../components/modals/role_created'
 import Viewgoal from '../components/modals/viewgoal'
 import Failure from '../components/modals/failure'
-import { useEffect, useState } from 'react'
-import { DocumentSketch } from 'iconsax-react'
-
-const lato = Lato( 
-  {
-    weight: ['100', '300', '400', '700', '900'],
-    subsets: ['latin']
-   }
-  )
+import { useState } from 'react'
 
 export default function RootLayout({ children, }: { children: React.ReactNode }) {
 
-  const [is_mobile, setMobile] = useState(false);
   const [is_sidebar_active, setSideBarActive] = useState(false);
 
   const handleSideBar = () => {
     setSideBarActive(!is_sidebar_active);
   }
-  const handleMobile = () => {~
-    console.log(is_mobile)
-    setMobile(!is_mobile)
-  }
 
-  useEffect(() => {
-    console.log('dont render twice')
-  }, [])
-  
   return (
     <Provider store={ store }>
-        <div className={ lato.className + ' bg-gray-10 flex flex-row relative justify-center w-screen' }
-        onChange={handleMobile}>
+        <div className="bg-canvas flex flex-row relative justify-center w-screen min-h-screen">
             <Dimmer />
             <Notification />
             <SetNotification />
@@ -60,14 +41,11 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
             <RoleCreated />
 
             <Sidebar is_sidebar_active={is_sidebar_active} handleSideBar={handleSideBar} />
-            <div className="flex flex-col w-4/5 max-lg:w-full">
+            <div className="flex flex-col flex-1 min-w-0 lg:pl-64">
               <Navbar is_sidebar_active={is_sidebar_active} handleSideBar={handleSideBar} />
-              {children}          
+              {children}
             </div>
         </div>
     </Provider>
   )
 }
-
-
-

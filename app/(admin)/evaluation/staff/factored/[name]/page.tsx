@@ -96,7 +96,6 @@ export default function Home({ params }: { params: { name: string } }) {
       input.name === params.name ? { ...input, man_hours: std_time } : input,
     );
 
-    console.log("new tasks are", tempTasks, "old tasks are", tasks);
 
     // dispatch( taskChange(tempTasks) )
   }
@@ -157,7 +156,7 @@ export default function Home({ params }: { params: { name: string } }) {
         );
       })}
 
-      <hr className="border-3 border-gray-300 border-dashed my-4" />
+      <hr className="border-3 border-line border-dashed my-4" />
 
       <div className="flex">
         <label htmlFor="" className="flex flex-col w-72">

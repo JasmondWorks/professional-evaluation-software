@@ -22,7 +22,7 @@ export default function Nav({ children }: { children: React.ReactNode }) {
                 className={`flex items-center p-4 font-semibold transition-colors duration-200 ${
                   pathname === item.href
                     ? 'text-yellow-600 border-b-2 border-yellow-600'
-                    : 'text-gray-800 hover:text-yellow-600'
+                    : 'text-strong hover:text-yellow-600'
                 }`}
               >
                 {item.name}

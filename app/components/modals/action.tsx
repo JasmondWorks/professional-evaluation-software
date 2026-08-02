@@ -25,12 +25,12 @@ export default function Action(){
 
   return (
     <div className = {`${ isVisible? 'visible' : 'invisible' } logout rounded-sm shadow-lg bg-white py-8 z-10 flex flex-col absolute top-24 right-8`}>
-      <Link href={`/`} className='flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-gray-100'>
+      <Link href={`/`} className='flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-line/50'>
         <InfoCircle className='me-2'/>
         Get help
       </Link>
 
-      <div onClick={ handleLogout } className='text-red-500 flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-gray-100 cursor-pointer'>
+      <div onClick={ handleLogout } className='text-red-500 flex py-2 px-2 justify-start ps-8 pe-20 hover:bg-line/50 cursor-pointer'>
         <Logout className='me-2'/>
         logout
       </div>
