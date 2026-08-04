@@ -41,6 +41,7 @@ export async function GET(req: Request) {
       // Prefer stored (locked-in) limits; fall back to the live computation.
       limits: stored ?? computed ?? {},
       locked: !!stored,
+      limitsSource: cycle.limits_source,
     })
   } catch (err) {
     console.error('setting-preview error:', err)

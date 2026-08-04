@@ -80,7 +80,7 @@ export default function AddAuditorPage() {
       {message && (
         <p
           className={`mt-4 text-sm font-medium ${
-            status === "success" ? "text-green-600" : "text-red-600"
+            status === "success" ? "text-green-600" : "text-danger-600"
           }`}
         >
           {message}

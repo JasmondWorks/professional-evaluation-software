@@ -113,7 +113,7 @@ export default function FactoredEstimatingPage() {
                     />
                     <button
                       onClick={() => removeHistoricalTask(task.id)}
-                      className="text-red-500 hover:text-red-700 text-sm"
+                      className="text-danger-600 hover:text-danger-700 text-sm"
                     >
                       Remove
                     </button>

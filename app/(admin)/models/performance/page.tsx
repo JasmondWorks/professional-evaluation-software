@@ -101,7 +101,7 @@ export default function AchievementCriteriaPage() {
       color = "bg-yellow-50 border-yellow-200 text-yellow-700";
     } else {
       rating = "Needs Improvement";
-      color = "bg-red-50 border-red-200 text-red-700";
+      color = "bg-danger-50 border-danger-100 text-danger-700";
     }
 
     setResult({ score: total, rating, color });
@@ -295,7 +295,7 @@ export default function AchievementCriteriaPage() {
           <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
             <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
             
-            {errorMsg && <p className="text-red-600 font-medium text-sm mb-4">{errorMsg}</p>}
+            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
             {successMsg && <p className="text-green-600 font-medium text-sm mb-4">{successMsg}</p>}
 
             <button

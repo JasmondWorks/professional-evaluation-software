@@ -183,7 +183,7 @@ export default function OrgStructurePage() {
                   setList(newList);
                 }}
                 type="button"
-                className="text-red-400 hover:text-red-600 p-1"
+                className="text-danger-600 hover:text-danger-700 p-1"
                 title="Remove row"
               >
                 <BoxRemove size="18" />
@@ -275,7 +275,7 @@ export default function OrgStructurePage() {
 
       {message && (
         <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border text-sm font-medium animate-in slide-in-from-bottom-5 z-50 ${
-          msgType === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
+          msgType === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-danger-50 text-danger-700 border-danger-100"
         }`}>
           {message}
         </div>
@@ -286,7 +286,7 @@ export default function OrgStructurePage() {
         {/* Model 17 */}
         <div className="bg-white rounded-xl border border-line p-6 shadow-sm xl:col-span-1 flex flex-col">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-            <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
               <Chart2 size="16" variant="Bold" />
             </div>
             <div>

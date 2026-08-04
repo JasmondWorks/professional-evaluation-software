@@ -130,7 +130,7 @@ export default function FactoredEstimatingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-pes-50 to-pes-100 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center py-1">
@@ -180,7 +180,7 @@ export default function FactoredEstimatingPage() {
                     />
                   </div>
                   {taskError && (
-                    <p className="text-red-500 text-sm mt-1">{taskError}</p>
+                    <p className="text-danger-600 text-sm mt-1">{taskError}</p>
                   )}
                   <div className="flex items-center gap-2">
                     <LoadingButton className="bg-pes w-fit my-3 rounded text-white px-12 py-3" onClick={addTask}>
@@ -199,11 +199,11 @@ export default function FactoredEstimatingPage() {
                         type="text"
                         value={task.name}
                         onChange={(e) => updateTask(task.id, 'name', e.target.value)}
-                        className="flex-1 px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
+                        className="flex-1 px-2 py-1 border border-line rounded text-sm focus:outline-none focus:shadow-focus"
                       />
                       <button
                         onClick={() => removeTask(task.id)}
-                        className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="ml-2 p-1 text-danger-600 hover:bg-danger-50 rounded transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -218,7 +218,7 @@ export default function FactoredEstimatingPage() {
                           step="0.01"
                           value={task.observedTime}
                           onChange={(e) => updateTask(task.id, 'observedTime', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
+                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:shadow-focus"
                         />
                       </div>
                       <div>
@@ -228,7 +228,7 @@ export default function FactoredEstimatingPage() {
                           step="0.01"
                           value={task.estimatedTime}
                           onChange={(e) => updateTask(task.id, 'estimatedTime', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:ring-1 focus:ring-pes"
+                          className="w-full px-2 py-1 border border-line rounded text-sm focus:outline-none focus:shadow-focus"
                         />
                       </div>
                       <div>
@@ -389,7 +389,7 @@ export default function FactoredEstimatingPage() {
                       </LoadingButton>
 
                       {staffError && (
-                        <p className="text-red-500 text-xs font-medium">{staffError}</p>
+                        <p className="text-danger-600 text-xs font-medium">{staffError}</p>
                       )}
 
                       {calculatedStaff !== null && (
@@ -399,7 +399,7 @@ export default function FactoredEstimatingPage() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-200">
+                    <p className="text-xs text-warning-600 bg-warning-50 p-2.5 rounded border border-warning-100">
                       Only administrators are authorized to calculate the final number of staff.
                     </p>
                   )}

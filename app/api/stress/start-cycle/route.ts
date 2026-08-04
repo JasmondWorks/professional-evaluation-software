@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import { authorize, tokenFromRequest } from '../../_lib/authGuard'
 import { notifyOrgStaff } from '../../_lib/notify'
+import { getActiveSession, startSession } from '../../../lib/stress/sessions'
 
 // Start a new stress cycle for the org (admin only). An org may only have one
 // active cycle at a time. The system chooses the cycle shape:
@@ -34,15 +35,43 @@ export async function POST(req: Request) {
     // Guardrail 2: full vs feeling-only.
     const hasAdoptedSetting = !!(latest && latest.category_limits)
     const needsReset = !!(latest && latest.needs_reset)
-    const full = !hasAdoptedSetting || needsReset || body.forceSettings === true
+    
+    // Determine the source of the settings for this cycle
+    const historyCycleId = body.historyCycleId ? Number(body.historyCycleId) : null;
+    const full = !historyCycleId && (!hasAdoptedSetting || needsReset || body.forceSettings === true)
+
+    let session = await getActiveSession(prisma, org);
+    if (full || !session) {
+       session = await startSession(prisma, org, String(auth.user.userID ?? ''));
+    }
+
+    let limits = undefined;
+    let limitsSource = 'recomputed';
+    let inheritedFrom = null;
+
+    if (!full) {
+      if (historyCycleId) {
+        const historyCycle = await prisma.stressCycle.findUnique({ where: { id: historyCycleId } });
+        limits = historyCycle?.category_limits ?? undefined;
+        limitsSource = 'loaded_from_history';
+        inheritedFrom = historyCycleId;
+      } else {
+        limits = latest?.category_limits ?? undefined;
+        limitsSource = 'inherited';
+        inheritedFrom = latest?.id ?? null;
+      }
+    }
 
     const cycle = await prisma.stressCycle.create({
       data: {
         org,
+        session_id: session.id,
+        iteration: session.current_iteration + 1,
+        limits_source: limitsSource,
+        inherited_from_cycle_id: inheritedFrom,
         mode: body.mode === 'multi' ? 'multi' : 'once',
         phase: full ? 'settings_open' : 'feeling_open',
-        // Feeling-only reuses the last adopted limits.
-        category_limits: full ? undefined : (latest?.category_limits ?? undefined),
+        category_limits: limits ?? undefined,
         settings_opens_at: body.settingsOpensAt ? new Date(body.settingsOpensAt) : full ? new Date() : null,
         settings_closes_at: body.settingsClosesAt ? new Date(body.settingsClosesAt) : null,
         feeling_opens_at: body.feelingOpensAt ? new Date(body.feelingOpensAt) : null,

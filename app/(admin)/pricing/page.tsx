@@ -116,7 +116,7 @@ export default function Home() {
       <div
         className={`price-card ${
           color ? color : "bg-white"
-        } ${color ? "text-white" : ""} h-112 w-72 border rounded-3xl flex flex-col justify-between p-4 ${
+        } ${color ? "text-white" : ""} h-[28rem] w-72 border rounded-3xl flex flex-col justify-between p-4 ${
           canUpgrade ? "border-blue-400 shadow-lg" : ""
         }`}
       >

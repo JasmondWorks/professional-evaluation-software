@@ -17,12 +17,12 @@ export default function StressCycleBanner() {
   // Urgent: a form is open for this user → coloured banner with an action.
   if (cta) {
     return (
-      <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-indigo-200 bg-indigo-50 px-5 py-4">
+      <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-pes-200 bg-pes-50 px-5 py-4">
         <div className="flex items-center gap-3">
-          <Notification size={22} className="text-indigo-600 shrink-0" variant="Bold" />
+          <Notification size={22} className="text-pes-600 shrink-0" variant="Bold" />
           <div>
-            <p className="text-sm font-semibold text-indigo-900">A stress exercise is open</p>
-            <p className="text-sm text-indigo-800">{cta.message}</p>
+            <p className="text-sm font-semibold text-pes-700">A stress exercise is open</p>
+            <p className="text-sm text-pes-700">{cta.message}</p>
           </div>
         </div>
         <Link

@@ -76,7 +76,7 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
         </div>
 
         {loading && <p className="text-muted py-8 text-center">Loading submission…</p>}
-        {error && <p className="text-red-600 bg-red-50 border border-red-100 rounded-md p-3 text-sm">{error}</p>}
+        {error && <p className="text-danger-600 bg-danger-50 border border-danger-100 rounded-md p-3 text-sm">{error}</p>}
 
         {data && !loading && (
           <div className="space-y-6">
@@ -84,7 +84,7 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
               <div className="flex flex-wrap gap-2">
                 <span className="text-xs text-muted self-center">Most-reported themes:</span>
                 {topThemes.map((t) => (
-                  <span key={t.theme} className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-3 py-1 font-medium">
+                  <span key={t.theme} className="text-xs bg-pes-50 text-pes-700 rounded-full px-3 py-1 font-medium">
                     {t.theme} ({t.total})
                   </span>
                 ))}

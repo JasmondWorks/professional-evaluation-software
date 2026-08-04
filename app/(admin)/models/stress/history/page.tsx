@@ -86,7 +86,7 @@ export default function StressEvaluationHistory() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md mb-6 border border-danger-100">
           {error}
         </div>
       )}
@@ -158,11 +158,11 @@ export default function StressEvaluationHistory() {
                   <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Aggregates */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
-                        <span className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">
+                      <div className="bg-danger-50 border border-danger-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
+                        <span className="text-xs font-semibold text-danger-700 uppercase tracking-wider mb-2">
                           Stress
                         </span>
-                        <span className="text-2xl font-bold text-red-900">
+                        <span className="text-2xl font-bold text-danger-700">
                           {Number(run.stress_factor).toFixed(1)}%
                         </span>
                       </div>
@@ -186,9 +186,9 @@ export default function StressEvaluationHistory() {
 
                     {/* ANOVA */}
                     {parsedAnova && parsedAnova.applicable === false ? (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 h-full flex flex-col justify-center">
-                        <h4 className="text-sm font-bold text-amber-900 mb-1">ANOVA not applicable</h4>
-                        <p className="text-xs text-amber-800">
+                      <div className="bg-warning-50 border border-warning-100 rounded-lg p-4 h-full flex flex-col justify-center">
+                        <h4 className="text-sm font-bold text-warning-700 mb-1">ANOVA not applicable</h4>
+                        <p className="text-xs text-warning-700">
                           Not enough departments/staff to test variance for this run. The stress values are still shown.
                         </p>
                       </div>
@@ -218,7 +218,7 @@ export default function StressEvaluationHistory() {
                         <div
                           className={`mt-3 p-2 rounded-md text-xs font-bold text-center border ${
                             parsedAnova?.conclusion?.includes("Reject")
-                              ? "bg-red-100 text-red-800 border-red-200"
+                              ? "bg-danger-100 text-danger-700 border-danger-100"
                               : "bg-green-100 text-green-800 border-green-200"
                           }`}
                         >

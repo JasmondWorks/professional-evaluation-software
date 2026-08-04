@@ -167,7 +167,7 @@ export default function StressApprovals() {
                   {r.submitted ? (
                     <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">Submitted</span>
                   ) : (
-                    <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-medium">Not yet entered</span>
+                    <span className="text-warning-700 bg-warning-50 px-2.5 py-1 rounded-full text-xs font-medium">Not yet entered</span>
                   )}
                 </td>
                 <td className="px-6 py-3">
@@ -191,7 +191,7 @@ export default function StressApprovals() {
                           <button
                             onClick={() => { setRejecting(r.name!); setReason(""); }}
                             disabled={working}
-                            className="text-red-600 text-xs font-medium border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
+                            className="text-danger-600 text-xs font-medium border border-danger-100 rounded-md px-3 py-1.5 hover:bg-danger-50 disabled:opacity-50"
                           >
                             Send back
                           </button>
@@ -240,7 +240,7 @@ export default function StressApprovals() {
               <button
                 onClick={submitReject}
                 disabled={working || !reason.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {working ? "Sending…" : "Send back"}
               </button>

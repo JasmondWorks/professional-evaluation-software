@@ -134,9 +134,9 @@ export default function MultiStepStressForm() {
   return (
     <div className="w-full p-8">
       {cycle?.form6?.returnedReason && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-900">Your previous submission was sent back</p>
-          <p className="text-sm text-amber-800">Reason: {cycle.form6.returnedReason} — please review and resubmit.</p>
+        <div className="mb-4 rounded-lg border border-warning-100 bg-warning-50 px-4 py-3">
+          <p className="text-sm font-semibold text-warning-700">Your previous submission was sent back</p>
+          <p className="text-sm text-warning-700">Reason: {cycle.form6.returnedReason} — please review and resubmit.</p>
         </div>
       )}
       <div className="flex justify-end mb-4 print:hidden">
@@ -172,7 +172,7 @@ export default function MultiStepStressForm() {
               onClick={nextStep}
               disabled={!form6Data?.complete}
               title={!form6Data?.complete ? "Fill every cell in Form 6 to continue" : undefined}
-              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-pes-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>

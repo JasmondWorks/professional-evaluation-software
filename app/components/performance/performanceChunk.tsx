@@ -73,63 +73,49 @@ export default function Performance({ view = "employee" }: { view?: string }) {
    );
 
    const ErrorState = () => (
-      <div className="p-4 m-2 bg-red-50 text-red-600 rounded-sm">
+      <div className="p-3 rounded-lg bg-danger-50 border border-danger-100 text-danger-700 text-sm" role="alert">
          {error}
       </div>
    );
 
-   return(
-      <>
-         <p className='text-xl text-black  my-auto px-4 py-1'>Overperforming {view === "team" ? "Teams" : "Employees"}</p>
-         {loading ? (
-            <LoadingState />
-         ) : error ? (
-            <ErrorState />
-         ) : !performance.goodPerformance || performance.goodPerformance.length === 0 ? (
-            <div className="p-4 m-2 bg-canvas rounded-sm">No data available</div>
-         ) : (
-            <div className='flex flex-col p-4'>
-               {performance.goodPerformance.map((i, key) => (
-                  <div key={key}>
-                     <div className='goal-metrics w-full flex justify-between my-4 text-sm'>
-                        <p>{ view === "team" ? i.dept : i.user_id }</p>
-                        <p> { view === "team" ? "" : i.dept } </p>
-                        <p className={ ` text-green-500 flex` }>
-                           <ArrowUp className='mt-auto font-thin'/>
-                           { `${ i.yield }%` }
-                        </p>        
-                     </div>
-                     <hr />                          
-                  </div>
-               ))}
-            </div>                     
-         )}
+   const NoData = () => (
+      <div className="px-3 py-6 text-center text-sm text-muted">No data available</div>
+   );
 
-         <p className='text-xl text-black  my-auto px-4 py-1'>Underperforming {view === "team" ? "Teams" : "Employees"}</p>
-
-         {loading ? (
-            <LoadingState />
-         ) : error ? (
-            <ErrorState />
-         ) : !performance.badPerformance || performance.badPerformance.length === 0 ? (
-            <div className="p-4 m-2 bg-canvas rounded-sm">No data available</div>
-         ) : (
-            <div className="flex flex-col p-4">
-               {performance.badPerformance.map((i, key) => (
-                  <div key={key}>
-                     <div className='goal-metrics w-full flex justify-between my-4 text-sm'>
-                        <p>{ view === "team" ? i.dept : i.user_id }</p>
-                        <p> { view === "team" ? "" : i.dept } </p>
-                        <p className={ ` text-red-500 flex` }>
-                           <ArrowDown className='mt-auto mx-1 font-thin' />
-                           { `${ i.yield }%` }
-                        </p>        
-                     </div>
-                     <hr />                          
-                  </div>
-               ))}
+   const Rows = ({ rows, positive }: { rows: userData[]; positive: boolean }) => (
+      <div className="flex flex-col divide-y divide-line">
+         {rows.map((i, key) => (
+            <div key={key} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+               <span className="font-medium text-strong truncate">{view === "team" ? i.dept : i.user_id}</span>
+               <span className="text-muted truncate flex-1 text-center">{view === "team" ? "" : i.dept}</span>
+               <span className={`flex items-center gap-0.5 font-semibold tabular-nums shrink-0 ${positive ? "text-success-700" : "text-danger-600"}`}>
+                  {positive ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                  {`${i.yield}%`}
+               </span>
             </div>
-         )}                     
-      </>
+         ))}
+      </div>
+   );
+
+   return (
+      <div className="flex flex-col gap-5">
+         <section>
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
+               Overperforming {view === "team" ? "teams" : "employees"}
+            </h3>
+            {loading ? <LoadingState /> : error ? <ErrorState /> :
+               !performance.goodPerformance?.length ? <NoData /> :
+               <Rows rows={performance.goodPerformance} positive />}
+         </section>
+
+         <section>
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
+               Underperforming {view === "team" ? "teams" : "employees"}
+            </h3>
+            {loading ? <LoadingState /> : error ? <ErrorState /> :
+               !performance.badPerformance?.length ? <NoData /> :
+               <Rows rows={performance.badPerformance} positive={false} />}
+         </section>
+      </div>
    )
 }

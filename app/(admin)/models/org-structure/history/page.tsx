@@ -65,7 +65,7 @@ export default function OrgStructureHistory() {
   const getResultColor = (sectionId: number) => {
     switch (sectionId) {
       case 18: return "bg-pes-100 text-pes-700";
-      case 19: return "bg-indigo-100 text-indigo-800";
+      case 19: return "bg-pes-100 text-pes-700";
       case 20: return "bg-emerald-100 text-emerald-800";
       case 21: return "bg-yellow-100 text-yellow-800";
       case 22: return "bg-purple-100 text-purple-800";
@@ -98,7 +98,7 @@ export default function OrgStructureHistory() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md mb-6 border border-danger-100">
           {error}
         </div>
       )}

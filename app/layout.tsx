@@ -12,7 +12,7 @@ import Logger from "./components/Logger";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-sans",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {

@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
-import Table, { TableColumn } from "@/app/components/ui/Table";
+import { TableColumn } from "@/app/components/ui/Table";
+import DataTable from "@/app/components/ui/DataTable";
 import RoleSelect from "@/app/components/ui/RoleSelect";
+import Badge, { type BadgeTone } from "@/app/components/ui/Badge";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 import { orgTerms } from "@/app/lib/orgTerms";
 import { jwtDecode } from "jwt-decode";
@@ -161,13 +163,15 @@ export default function Employee() {
     }
   }
 
-  function roleColor(role: string) {
-    if (role === "dept-admin") return "blue";
-    if (role === "auditor") return "yellow";
-    if (role === "hod") return "green";
-    if (role === "lecturer") return "purple";
-    if (role === "industrial-engineer") return "red";
-    return "gray";
+  // Static tone map → purge-safe Badge tones (dynamic `bg-${x}` classes don't
+  // render under Tailwind v4's on-demand generation).
+  function roleTone(role: string): BadgeTone {
+    if (role === "dept-admin") return "brand";
+    if (role === "auditor") return "warning";
+    if (role === "hod") return "success";
+    if (role === "lecturer") return "info";
+    if (role === "industrial-engineer") return "danger";
+    return "neutral";
   }
 
   useEffect(() => {
@@ -237,41 +241,39 @@ export default function Employee() {
   };
 
   return (
-    <div className="flex justify-center w-full h-full">
-      <div className="m-4 bg-white w-full h-full">
-        {/* Header Section */}
-        <div className="flex flex-col gap-6 px-6 py-6 border-b border-line">
-          
-          {/* Top Row: Title, Count, and Add Actions */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-strong">Employee Database</h1>
-              <p className="text-sm text-muted mt-1">
-                Total Enrolled Employees: <span className="font-semibold text-pes">{employees.length}</span>
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/em-database/add-auditor"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-pes bg-white border border-pes rounded-md hover:bg-pes hover:text-white transition-colors"
-              >
-                <Add size={18} /> 
-                <span>Add External Auditor</span>
-              </Link>
-              <Link
-                href="/em-database/add-employee"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-pes rounded-md shadow-sm hover:opacity-90 transition-opacity"
-              >
-                <Add size={18} /> 
-                <span>Add Employee</span>
-              </Link>
-            </div>
+    <div className="w-full">
+      <div className="w-full">
+        {/* Header Section: count + add actions (page title lives in the tab bar) */}
+        <div className="flex flex-col gap-4 px-4 sm:px-6 lg:px-8 py-5 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-muted">
+            Total enrolled employees:{" "}
+            <span className="font-semibold text-strong tabular-nums">{employees.length}</span>
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/em-database/add-auditor"
+              className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-pes-700 bg-surface border border-line rounded-lg shadow-xs hover:bg-pes-50 transition-colors"
+            >
+              <Add size={18} />
+              <span>Add external auditor</span>
+            </Link>
+            <Link
+              href="/em-database/add-employee"
+              className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-white bg-pes rounded-lg shadow-xs hover:bg-pes-800 transition-colors"
+            >
+              <Add size={18} />
+              <span>Add employee</span>
+            </Link>
           </div>
         </div>
 
-        <div className="w-full text-bold flex flex-col">
-          <Table 
+        <div className="w-full flex flex-col px-4 sm:px-6 lg:px-8 pb-8">
+          <DataTable
+            searchable
+            searchKeys={["name", "email", "dept", "role", "display_role"]}
+            searchPlaceholder="Search employees…"
+            pageSize={10}
             columns={[
               {
                 key: "sn",
@@ -291,7 +293,7 @@ export default function Employee() {
                     {i.email_status === "bounced" && (
                       <span
                         title="Emails to this address bounced — it may be mistyped or not exist."
-                        className="shrink-0 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5"
+                        className="shrink-0 text-[10px] font-semibold text-danger-700 bg-danger-50 border border-danger-100 rounded-full px-2 py-0.5"
                       >
                         Undeliverable
                       </span>
@@ -305,9 +307,11 @@ export default function Employee() {
                 width: "10%",
                 align: "center",
                 render: (i) => (
-                  <p className={`rounded-full w-fit px-4 py-1 bg-${roleColor(i.role)}-100 text-${roleColor(i.role)}-500 mx-auto`}>
-                    {i.display_role || i.role}
-                  </p>
+                  <div className="flex justify-center">
+                    <Badge tone={roleTone(i.role)} className="capitalize">
+                      {i.display_role || i.role}
+                    </Badge>
+                  </div>
                 ),
               },
               { key: "dept", label: "Dept", width: "25%" },
@@ -384,7 +388,7 @@ export default function Employee() {
                 onSelect={setSelectedRole}
               />
               {headConflict && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                <p className="text-sm text-danger-700 bg-danger-50 border border-danger-100 rounded-md px-3 py-2">
                   {headConflict.message}
                 </p>
               )}
@@ -402,7 +406,7 @@ export default function Employee() {
                 onClick={handleModalAssign}
                 disabled={assigning || !!headConflict}
                 title={headConflict ? headConflict.message : undefined}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-30"
               >
                 {assigning ? (
                   <span className="flex items-center gap-2">

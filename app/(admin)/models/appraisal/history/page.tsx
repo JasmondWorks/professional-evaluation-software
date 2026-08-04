@@ -81,7 +81,7 @@ export default function StaffAppraisalHistory() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md mb-6 border border-danger-100">
           {error}
         </div>
       )}
@@ -120,45 +120,45 @@ export default function StaffAppraisalHistory() {
                     {dayjs(run.created_at).format("MMM D, YYYY • h:mm A")}
                   </span>
                 </div>
-                <div className="text-sm font-semibold px-3 py-1 rounded-full bg-red-100 text-red-800">
+                <div className="text-sm font-semibold px-3 py-1 rounded-full bg-danger-100 text-danger-700">
                   Wasted Cost: {Number(run.total_wasted_cost).toFixed(2)}
                 </div>
               </div>
               
               <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-indigo-900 mb-3 border-b border-indigo-200 pb-2">Appraisal Stats</h4>
+                <div className="bg-pes-50 border border-pes-100 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-pes-700 mb-3 border-b border-pes-200 pb-2">Appraisal Stats</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-xs text-indigo-700">OQ / WQ</span>
+                      <span className="text-xs text-pes-700">OQ / WQ</span>
                       <span className="text-sm font-medium">{Number(run.oq)} / {Number(run.wq)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-indigo-700">Points</span>
+                      <span className="text-xs text-pes-700">Points</span>
                       <span className="text-sm font-medium">{Number(run.points)}</span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-indigo-100">
-                      <span className="text-xs text-indigo-800 font-semibold">Max Score</span>
-                      <span className="text-sm font-bold text-indigo-900">{Number(run.computed_appraisal_max_score).toFixed(2)}</span>
+                    <div className="flex justify-between pt-2 border-t border-pes-100">
+                      <span className="text-xs text-pes-700 font-semibold">Max Score</span>
+                      <span className="text-sm font-bold text-pes-700">{Number(run.computed_appraisal_max_score).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-red-50 border border-red-100 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-red-900 mb-3 border-b border-red-200 pb-2">Unit Overloading</h4>
+                <div className="bg-danger-50 border border-danger-100 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-danger-700 mb-3 border-b border-danger-100 pb-2">Unit Overloading</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-xs text-red-700">Wait Cases / Time</span>
+                      <span className="text-xs text-danger-700">Wait Cases / Time</span>
                       <span className="text-sm font-medium">{Number(run.na)} / {Number(run.ta)}h</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-xs text-red-700">Wasted Hours</span>
+                      <span className="text-xs text-danger-700">Wasted Hours</span>
                       <span className="text-sm font-medium">{Number(run.wasted_man_hours).toFixed(2)}h</span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t border-red-100">
-                      <span className="text-xs text-red-800 font-semibold">Cost (Cwh: {Number(run.cwh)})</span>
-                      <span className="text-sm font-bold text-red-900">{Number(run.wasted_cost).toFixed(2)}</span>
+                    <div className="flex justify-between pt-2 border-t border-danger-100">
+                      <span className="text-xs text-danger-700 font-semibold">Cost (Cwh: {Number(run.cwh)})</span>
+                      <span className="text-sm font-bold text-danger-700">{Number(run.wasted_cost).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

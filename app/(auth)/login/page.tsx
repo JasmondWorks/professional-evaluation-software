@@ -61,9 +61,26 @@ export default function Home() {
 
         notify.dismiss(toastId);
         notify.success("Signed in successfully");
-        
-        // Delay the redirect slightly to ensure the browser's native password 
-        // manager has time to catch the successful form submission and prompt the user.
+
+        // Explicitly ask the browser to save the login via the Credential
+        // Management API. This reliably surfaces the native "save password?"
+        // prompt even though we sign in with fetch() (no full form navigation).
+        // Feature-detected + best-effort: never block the redirect on it.
+        try {
+          const PwdCredential = (window as any).PasswordCredential;
+          if (PwdCredential && navigator.credentials?.store) {
+            const cred = new PwdCredential({
+              id: data.email,
+              password: data.password,
+              name: data.email,
+            });
+            await navigator.credentials.store(cred);
+          }
+        } catch {
+          /* credential store unsupported or declined — ignore */
+        }
+
+        // Delay the redirect slightly to give the save-info prompt time to appear.
         setTimeout(() => {
           router.push("/dashboard");
         }, 100);
@@ -107,7 +124,7 @@ export default function Home() {
             {errorMessage && (
               <div
                 role="alert"
-                className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                className="mb-6 rounded-md border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-700"
               >
                 {errorMessage}
               </div>
@@ -174,7 +191,7 @@ export default function Home() {
             <button
               type="submit"
               className="btn bg-pes text-white px-4 py-3 flex justify-center rounded-lg mb-2 
-                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors"
+                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pes-800 transition-colors"
               disabled={!(dirty && isValid)}
               tabIndex={4}
             >

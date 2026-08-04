@@ -219,7 +219,7 @@ export default function PersonnelUtilizationPage() {
             onChange={(e) =>
               handleChange(key, parseFloat(e.target.value || "0"))
             }
-            className="w-16 flex-shrink-0 rounded-md border border-line bg-canvas focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+            className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
           />
         </div>
       ) : (
@@ -230,7 +230,7 @@ export default function PersonnelUtilizationPage() {
           max={opts.max}
           step={opts.step}
           onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-          className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+          className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
         />
       )}
     </div>
@@ -599,9 +599,9 @@ export default function PersonnelUtilizationPage() {
                 </div>
               </div>
             ) : violations && violations.length > 0 ? (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start">
+              <div className="bg-danger-50 border border-danger-100 rounded-xl p-4 mb-6 flex items-start">
                 <svg
-                  className="w-5 h-5 text-red-500 mt-0.5 mr-3"
+                  className="w-5 h-5 text-danger-600 mt-0.5 mr-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -614,14 +614,14 @@ export default function PersonnelUtilizationPage() {
                   ></path>
                 </svg>
                 <div>
-                  <h3 className="text-sm font-medium text-red-800">
+                  <h3 className="text-sm font-medium text-danger-700">
                     Constraints Violation Warning
                   </h3>
-                  <p className="text-sm text-red-600 mt-1 mb-2">
+                  <p className="text-sm text-danger-600 mt-1 mb-2">
                     The calculated K* value failed the following boundary
                     checks:
                   </p>
-                  <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-danger-700 space-y-1">
                     {violations.map((v, i) => (
                       <li key={i}>{v}</li>
                     ))}

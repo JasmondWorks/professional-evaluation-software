@@ -68,7 +68,7 @@ export default function PerformanceHistory() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md mb-6 border border-danger-100">
           {error}
         </div>
       )}
@@ -111,7 +111,7 @@ export default function PerformanceHistory() {
                   run.rating.includes("Excellent") ? "bg-green-100 text-green-800" :
                   run.rating.includes("Good") ? "bg-pes-100 text-pes-700" :
                   run.rating.includes("Average") ? "bg-yellow-100 text-yellow-800" :
-                  "bg-red-100 text-red-800"
+                  "bg-danger-100 text-danger-700"
                 }`}>
                   {run.rating}
                 </div>

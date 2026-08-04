@@ -91,7 +91,7 @@ export default function StaffEstimationHistoryPage() {
       </div>
 
       {error ? (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md">{error}</div>
       ) : runs.length === 0 ? (
         <div className="bg-white border rounded-xl p-12 text-center shadow-sm">
           <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4">

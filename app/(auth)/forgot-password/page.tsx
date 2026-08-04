@@ -72,7 +72,7 @@ export default function ForgotPassword() {
         {errorMessage && (
           <div
             role="alert"
-            className="mb-6 p-4 rounded bg-red-100 text-red-700 border border-red-400"
+            className="mb-6 p-4 rounded bg-danger-100 text-danger-700 border border-danger-600"
           >
             {errorMessage}
           </div>

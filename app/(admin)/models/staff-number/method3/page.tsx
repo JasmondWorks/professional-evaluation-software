@@ -99,20 +99,20 @@ export default function Method3Page() {
       </div>
 
       {/* Robust Sampling Module Callout */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 mb-8 shadow-sm flex items-start gap-4">
-        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
+      <div className="bg-pes-50 border border-pes-200 rounded-xl p-6 mb-8 shadow-sm flex items-start gap-4">
+        <div className="w-12 h-12 rounded-full bg-pes-100 flex items-center justify-center text-pes-600 shrink-0">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </div>
         <div>
           <h2 className="text-lg font-bold text-strong mb-1">
             Looking for the full Work Sampling Analysis Tool?
           </h2>
-          <p className="text-sm text-indigo-700 mb-4 max-w-3xl">
+          <p className="text-sm text-pes-700 mb-4 max-w-3xl">
             This estimation page uses a simplified approximation. The full tool includes multi-month scheduling, randomized observation times, and comprehensive statistical analysis for higher accuracy.
           </p>
           <Link
             href="/evaluation/staff/sampling"
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+            className="inline-flex items-center px-4 py-2 bg-pes text-white text-sm font-medium rounded-md hover:bg-pes-800 transition-colors shadow-sm"
           >
             Open Full Work Sampling Tool &rarr;
           </Link>

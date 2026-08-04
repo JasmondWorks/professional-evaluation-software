@@ -87,7 +87,7 @@ export default function Page() {
                             {eligible ? (
                               <span className="ml-2 text-green-600 font-bold text-xs">Eligible for Audit</span>
                             ) : (
-                              <span className="ml-2 text-red-600 font-bold text-xs">Max number of audits reached</span>
+                              <span className="ml-2 text-danger-600 font-bold text-xs">Max number of audits reached</span>
                             )}
                           </div>
                         </div>

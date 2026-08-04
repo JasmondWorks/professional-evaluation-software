@@ -23,15 +23,18 @@ export default function Table<T extends Record<string, any>>({
   emptyMessage = "No records found",
   onRowClick,
 }: TableProps<T>) {
+  const alignCls = (a?: 'left' | 'center' | 'right') =>
+    a === 'center' ? 'text-center' : a === 'right' ? 'text-right' : 'text-left';
+
   return (
-    <div className="w-full overflow-x-auto rounded-md border border-line bg-white">
+    <div className="w-full overflow-x-auto rounded-xl border border-line bg-surface">
       <table className="w-full text-left border-collapse min-w-[800px]">
         <thead>
-          <tr className="bg-canvas text-muted border-b border-line">
+          <tr className="bg-canvas border-b border-line">
             {columns.map((col) => (
-              <th 
-                key={col.key} 
-                className={`py-3 px-4 font-medium text-sm ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`}
+              <th
+                key={col.key}
+                className={`py-3 px-4 font-semibold text-xs uppercase tracking-wide text-muted ${alignCls(col.align)}`}
                 style={{ width: col.width }}
               >
                 {col.label}
@@ -39,26 +42,26 @@ export default function Table<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="text-strong">
+        <tbody className="divide-y divide-line">
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <tr key={`loading-${i}`} className="border-b border-gray-50">
-                <td colSpan={columns.length} className="p-0 border-none">
+              <tr key={`loading-${i}`}>
+                <td colSpan={columns.length} className="p-0">
                   <div className="h-12 w-full bg-canvas animate-pulse my-0.5 rounded-sm"></div>
                 </td>
               </tr>
             ))
           ) : data.length > 0 ? (
             data.map((item, rowIndex) => (
-              <tr 
-                key={rowIndex} 
-                className={`border-b border-gray-50 hover:bg-slate-50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+              <tr
+                key={rowIndex}
+                className={`hover:bg-canvas transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
                 onClick={() => onRowClick && onRowClick(item)}
               >
                 {columns.map((col) => (
-                  <td 
-                    key={col.key} 
-                    className={`py-3 px-4 text-sm font-semibold ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'}`}
+                  <td
+                    key={col.key}
+                    className={`py-3 px-4 text-sm text-body ${alignCls(col.align)}`}
                   >
                     {col.render ? col.render(item, rowIndex) : item[col.key]}
                   </td>
@@ -67,7 +70,7 @@ export default function Table<T extends Record<string, any>>({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-8 text-center text-muted text-sm">
+              <td colSpan={columns.length} className="py-10 text-center text-muted text-sm">
                 {emptyMessage}
               </td>
             </tr>

@@ -129,7 +129,7 @@ export default function Method1Page() {
                 type="number"
                 value={basicTime}
                 onChange={(e) => setBasicTime(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -141,7 +141,7 @@ export default function Method1Page() {
                 type="number"
                 value={numTasks}
                 onChange={(e) => setNumTasks(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -153,7 +153,7 @@ export default function Method1Page() {
                 type="number"
                 value={timePerTask}
                 onChange={(e) => setTimePerTask(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function Method1Page() {
                 type="number"
                 value={relaxAllowance}
                 onChange={(e) => setRelaxAllowance(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -210,7 +210,7 @@ export default function Method1Page() {
                 type="number"
                 value={loadFactor}
                 onChange={(e) => setLoadFactor(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -222,14 +222,14 @@ export default function Method1Page() {
                 type="number"
                 value={availableHoursPerPerson}
                 onChange={(e) => setAvailableHoursPerPerson(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {error && <p className="text-red-600 font-medium mb-4">{error}</p>}
+      {error && <p className="text-danger-600 font-medium mb-4">{error}</p>}
 
       <button
         onClick={calculate}

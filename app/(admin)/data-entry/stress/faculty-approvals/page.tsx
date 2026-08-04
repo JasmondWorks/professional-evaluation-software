@@ -184,7 +184,7 @@ export default function FacultyApprovals() {
                     <span className="text-xs text-muted">No submissions</span>
                   ) : !d.readyForFaculty ? (
                     <span
-                      className="text-xs text-amber-600"
+                      className="text-xs text-warning-600"
                       title="The department's HOD must approve all its submissions before you can sign it off."
                     >
                       Awaiting HOD ({d.pendingHod})

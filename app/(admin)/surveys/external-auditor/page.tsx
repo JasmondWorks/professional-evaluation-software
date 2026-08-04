@@ -89,7 +89,7 @@ export default function AuditorSurveyPage() {
 
         {/* --- STRESS OBSERVATION --- */}
         <section>
-          <h2 className="text-xl font-semibold mb-4 text-red-600">Stress Observation</h2>
+          <h2 className="text-xl font-semibold mb-4 text-danger-600">Stress Observation</h2>
           <div className="space-y-6">
             <div>
               <p>1. Rate how you feel the stress level at various departments fairs.</p>

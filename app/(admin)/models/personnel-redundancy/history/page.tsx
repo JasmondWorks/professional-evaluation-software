@@ -85,7 +85,7 @@ export default function RedundancyHistoryPage() {
       </div>
 
       {error ? (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md">{error}</div>
       ) : runs.length === 0 ? (
         <div className="bg-white border rounded-xl p-12 text-center shadow-sm">
           <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4">
@@ -127,7 +127,7 @@ export default function RedundancyHistoryPage() {
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : run.rating.includes("Moderate")
                             ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                            : "bg-red-50 text-red-700 border-red-200"
+                            : "bg-danger-50 text-danger-700 border-danger-100"
                         }`}
                       >
                         {run.rating}

@@ -252,7 +252,7 @@ export default function Home() {
         {errorMessage && (
           <div
             role="alert"
-            className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+            className="mb-6 rounded-md border border-danger-100 bg-danger-50 p-4 text-sm font-semibold text-danger-700"
           >
             {errorMessage}
           </div>
@@ -381,7 +381,7 @@ export default function Home() {
         </div>
 
         <p
-          className={`text-sm mb-4 ${allFieldsFilled ? "text-green-700" : "text-red-700"}`}
+          className={`text-sm mb-4 ${allFieldsFilled ? "text-green-700" : "text-danger-700"}`}
         >
           *All fields are required to proceed.
         </p>
