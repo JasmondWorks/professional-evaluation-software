@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { verifyToken } from "../../_lib/authGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
 
   let email;
   try {
-    const decoded: any = jwtDecode(token);
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     email = decoded?.email;
   } catch (error) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });

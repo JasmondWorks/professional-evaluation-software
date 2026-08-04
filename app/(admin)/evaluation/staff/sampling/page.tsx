@@ -962,7 +962,7 @@ const WorkSamplingPageInner: React.FC = () => {
       Number(samplingUseFactor) <= 0
     ) {
       setSamplingStaffError(
-        "⚠️ Available hours and Use factor must be greater than zero.",
+        "Available hours and use factor must both be greater than zero.",
       );
       return;
     }
@@ -1003,9 +1003,9 @@ const WorkSamplingPageInner: React.FC = () => {
     <span
       className={`text-xs font-medium px-3 py-1 rounded-full ${
         saveStatus === "saving"
-          ? "bg-yellow-100 text-yellow-700"
+          ? "bg-warning-50 text-warning-700"
           : saveStatus === "saved"
-            ? "bg-green-100 text-green-700"
+            ? "bg-success-50 text-success-700"
             : saveStatus === "error"
               ? "bg-danger-100 text-danger-700"
               : "hidden"
@@ -1024,22 +1024,19 @@ const WorkSamplingPageInner: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div
           className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
-          style={{ borderColor: "#322b80" }}
+          style={{ borderColor: "var(--color-pes-700)" }}
         />
       </div>
     );
 
   return (
-    <div
-      className="min-h-screen p-6"
-      style={{ background: "linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%)" }}
-    >
+    <div className="min-h-screen p-4 sm:p-6 bg-canvas">
       <div className="max-w-7xl mx-auto">
         {isListView ? (
           <div>
             <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-3xl font-bold" style={{ color: "#322b80" }}>
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-strong">
                   Work Sampling Studies
                 </h1>
                 <p className="text-muted text-sm mt-1">
@@ -1054,17 +1051,16 @@ const WorkSamplingPageInner: React.FC = () => {
                   setObservations([]);
                   setStudyParameters(DEFAULT_PARAMS);
                 }}
-                className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg hover:opacity-90 font-medium text-sm transition-all shadow-md"
-                style={{ backgroundColor: "#16a34a" }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-pes text-white rounded-lg hover:bg-pes-800 font-medium text-sm transition-colors shadow-xs focus-visible:outline-none focus-visible:shadow-focus"
               >
                 <Plus size={16} /> New Study
               </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow p-6">
+            <div className="bg-surface border border-line rounded-xl shadow-card p-6">
               {studyList.length === 0 ? (
                 <div className="text-center py-12">
-                  <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+                  <FileText size={48} className="mx-auto text-muted mb-4" />
                   <p className="text-muted">
                     No work sampling studies found.
                   </p>
@@ -1150,7 +1146,7 @@ const WorkSamplingPageInner: React.FC = () => {
             {/* Header */}
             <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h1 className="text-3xl font-bold" style={{ color: "#322b80" }}>
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-strong">
                   Work Sampling Analysis
                 </h1>
                 <p className="text-muted text-sm mt-1">
@@ -1190,7 +1186,7 @@ const WorkSamplingPageInner: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex flex-wrap mb-6 bg-white rounded-lg shadow p-1 gap-1">
+            <div className="flex flex-wrap mb-6 bg-surface rounded-lg shadow p-1 gap-1">
               {[
                 {
                   key: "positions" as const,
@@ -1227,7 +1223,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   }`}
                   style={{
                     backgroundColor:
-                      activeTab === key ? "#322b80" : "transparent",
+                      activeTab === key ? "var(--color-pes-700)" : "transparent",
                   }}
                 >
                   <Icon size={16} />
@@ -1236,13 +1232,13 @@ const WorkSamplingPageInner: React.FC = () => {
                     <CheckCircle2
                       size={14}
                       className={
-                        activeTab === key ? "text-green-300" : "text-green-500"
+                        activeTab === key ? "text-white" : "text-success-600"
                       }
                     />
                   ) : (
                     <span
                       className={`w-2 h-2 rounded-full shrink-0 ${
-                        activeTab === key ? "bg-yellow-300" : "bg-yellow-400"
+                        activeTab === key ? "bg-surface" : "bg-warning-600"
                       }`}
                     />
                   )}
@@ -1250,13 +1246,13 @@ const WorkSamplingPageInner: React.FC = () => {
               ))}
             </div>
 
-            <div className="bg-white rounded-xl shadow-xl p-8">
+            <div className="bg-surface border border-line rounded-xl shadow-card p-6 sm:p-8">
               {/* ── POSITIONS TAB ── */}
               {activeTab === "positions" && (
                 <div>
                   <h2
                     className="text-2xl font-bold mb-2 flex items-center gap-2"
-                    style={{ color: "#322b80" }}
+                    style={{ color: "var(--color-pes-700)" }}
                   >
                     <Users size={24} /> Position Management
                   </h2>
@@ -1314,7 +1310,7 @@ const WorkSamplingPageInner: React.FC = () => {
                     <button
                       onClick={addPosition}
                       className="flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 h-[48px]"
-                      style={{ backgroundColor: "#322b80" }}
+                      style={{ backgroundColor: "var(--color-pes-700)" }}
                     >
                       <Plus size={20} /> Add Position
                     </button>
@@ -1350,7 +1346,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             <div className="flex items-center gap-4 flex-1">
                               {/* Selection indicator */}
                               <div
-                                className={`w-3 h-3 rounded-full shrink-0 ${isSelected ? "bg-pes" : "bg-gray-300"}`}
+                                className={`w-3 h-3 rounded-full shrink-0 ${isSelected ? "bg-pes" : "bg-line"}`}
                               />
                               <div className="flex-1">
                                 <p className="font-semibold text-strong">
@@ -1365,7 +1361,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   className="px-2 py-1 rounded-full font-medium"
                                   style={{
                                     backgroundColor: "#322b8015",
-                                    color: "#322b80",
+                                    color: "var(--color-pes-700)",
                                   }}
                                 >
                                   PA: {pos.performanceAllowance}%
@@ -1374,7 +1370,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                   {posObs.length} obs · {busyCount} busy
                                 </span>
                                 {!pos.dbId && (
-                                  <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">
+                                  <span className="text-xs text-warning-700 bg-warning-50 px-2 py-0.5 rounded">
                                     saving…
                                   </span>
                                 )}
@@ -1414,7 +1410,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           select it
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-green-600">
+                        <span className="flex items-center gap-1.5 text-success-700">
                           <CheckCircle2 size={14} />{" "}
                           <strong>{selectedPosition.name}</strong> selected —{" "}
                           {positions.length} position
@@ -1426,7 +1422,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       onClick={() => setActiveTab("parameters")}
                       disabled={positions.length === 0}
                       className="flex items-center gap-2 px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      style={{ backgroundColor: "#322b80" }}
+                      style={{ backgroundColor: "var(--color-pes-700)" }}
                     >
                       Continue to Parameters <ChevronRight size={18} />
                     </button>
@@ -1440,7 +1436,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   <div className="mb-6">
                     <h2
                       className="text-2xl font-bold flex items-center gap-2"
-                      style={{ color: "#322b80" }}
+                      style={{ color: "var(--color-pes-700)" }}
                     >
                       <Calculator size={24} /> Study Parameters
                       {!studyDbId && (
@@ -1472,7 +1468,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="border rounded-lg overflow-hidden">
                         <div
                           className="px-5 py-3 font-semibold text-white text-sm"
-                          style={{ backgroundColor: "#1e1b4b" }}
+                          style={{ backgroundColor: "var(--color-pes-900)" }}
                         >
                           Study Info
                         </div>
@@ -1545,7 +1541,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="border rounded-lg overflow-hidden">
                         <div
                           className="px-5 py-3 font-semibold text-white text-sm"
-                          style={{ backgroundColor: "#322b80" }}
+                          style={{ backgroundColor: "var(--color-pes-700)" }}
                         >
                           A. Sampling Accuracy
                         </div>
@@ -1605,7 +1601,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="border rounded-lg overflow-hidden">
                         <div
                           className="px-5 py-3 font-semibold text-white text-sm"
-                          style={{ backgroundColor: "#4338a8" }}
+                          style={{ backgroundColor: "var(--color-pes-600)" }}
                         >
                           B. Schedule Configuration
                         </div>
@@ -1723,7 +1719,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             </span>
                             <span
                               className="font-semibold"
-                              style={{ color: "#322b80" }}
+                              style={{ color: "var(--color-pes-700)" }}
                             >
                               {studyParameters.maxDuration.toFixed(1)} min
                             </span>
@@ -1745,7 +1741,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="border rounded-lg overflow-hidden">
                         <div
                           className="px-5 py-3 font-semibold text-white text-sm"
-                          style={{ backgroundColor: "#5b4fc7" }}
+                          style={{ backgroundColor: "var(--color-pes-500)" }}
                         >
                           C. Work Year &amp; Allowance
                         </div>
@@ -1793,15 +1789,15 @@ const WorkSamplingPageInner: React.FC = () => {
 
                       {/* Save & Lock button */}
                       <div
-                        className={`border rounded-lg p-5 ${paramsSaved ? "border-green-300 bg-green-50" : "border-pes-200 bg-pes-50"}`}
+                        className={`border rounded-lg p-5 ${paramsSaved ? "border-success-100 bg-success-50" : "border-pes-200 bg-pes-50"}`}
                       >
                         {paramsSaved ? (
                           <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-green-700 font-semibold">
+                            <div className="flex items-center gap-2 text-success-700 font-semibold">
                               Parameters saved — study is ready for observation
                               entry
                             </div>
-                            <p className="text-xs text-green-600">
+                            <p className="text-xs text-success-700">
                               {lockedDates.length} study dates and{" "}
                               {lockedTimes.length} daily time slots are locked
                               in. Go to the{" "}
@@ -1844,7 +1840,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 saveStatus === "saving"
                               }
                               className="w-full py-3 px-6 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                              style={{ backgroundColor: "#322b80" }}
+                              style={{ backgroundColor: "var(--color-pes-700)" }}
                             >
                               {saveStatus === "saving"
                                 ? "Saving…"
@@ -1860,7 +1856,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="bg-canvas p-6 rounded-lg sticky top-6 space-y-3">
                         <h3
                           className="font-semibold text-base"
-                          style={{ color: "#322b80" }}
+                          style={{ color: "var(--color-pes-700)" }}
                         >
                           Calculated Requirements
                         </h3>
@@ -1886,12 +1882,12 @@ const WorkSamplingPageInner: React.FC = () => {
                         ].map(([label, val]) => (
                           <div
                             key={label as string}
-                            className="flex justify-between items-center p-3 bg-white rounded-lg border border-line text-sm"
+                            className="flex justify-between items-center p-3 bg-surface rounded-lg border border-line text-sm"
                           >
                             <span className="text-body">{label}</span>
                             <span
                               className="font-bold"
-                              style={{ color: "#322b80" }}
+                              style={{ color: "var(--color-pes-700)" }}
                             >
                               {val}
                             </span>
@@ -1917,7 +1913,7 @@ const WorkSamplingPageInner: React.FC = () => {
                         <div className="border-t pt-4 mt-2">
                           <p
                             className="text-sm font-medium mb-2"
-                            style={{ color: "#322b80" }}
+                            style={{ color: "var(--color-pes-700)" }}
                           >
                             Sample Times ({studyParameters.observationsPerDay}{" "}
                             obs/day)
@@ -1931,7 +1927,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 <span
                                   className="w-4 h-4 rounded-full flex items-center justify-center text-white text-xs font-medium"
                                   style={{
-                                    backgroundColor: "#322b80",
+                                    backgroundColor: "var(--color-pes-700)",
                                     fontSize: "9px",
                                   }}
                                 >
@@ -1948,7 +1944,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           <div className="flex items-center justify-between mb-2">
                             <p
                               className="text-sm font-medium"
-                              style={{ color: "#322b80" }}
+                              style={{ color: "var(--color-pes-700)" }}
                             >
                               Study Dates
                             </p>
@@ -2046,7 +2042,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                           p.filter((d) => d !== dateStr),
                                         )
                                       }
-                                      className="px-2 py-1 rounded border border-danger-100 bg-danger-50 hover:bg-green-50 cursor-pointer text-xs text-danger-600 line-through"
+                                      className="px-2 py-1 rounded border border-danger-100 bg-danger-50 hover:bg-danger-100 cursor-pointer text-xs text-danger-600 line-through"
                                     >
                                       {dn} {Number(d)}
                                     </div>
@@ -2068,7 +2064,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   <div className="mb-6">
                     <h2
                       className="text-2xl font-bold flex items-center gap-2"
-                      style={{ color: "#322b80" }}
+                      style={{ color: "var(--color-pes-700)" }}
                     >
                       <Clock size={24} /> Data Collection
                     </h2>
@@ -2182,8 +2178,8 @@ const WorkSamplingPageInner: React.FC = () => {
                                         newObservation.date === fullDateStr
                                           ? "border-pes bg-pes text-white"
                                           : obsOnDay > 0
-                                            ? "border-green-400 bg-green-50 text-green-800"
-                                            : "border-pes-200 bg-white text-pes-700 hover:bg-pes-100"
+                                            ? "border-success-100 bg-success-50 text-success-700"
+                                            : "border-pes-200 bg-surface text-pes-700 hover:bg-pes-100"
                                       }`}
                                     >
                                       {dn} {dayNum}
@@ -2222,8 +2218,8 @@ const WorkSamplingPageInner: React.FC = () => {
                                         newObservation.time === t
                                           ? "border-pes bg-pes text-white"
                                           : obsAtTime > 0
-                                            ? "border-green-400 bg-green-50 text-green-800"
-                                            : "border-pes-200 bg-white text-pes-700 hover:bg-pes-100"
+                                            ? "border-success-100 bg-success-50 text-success-700"
+                                            : "border-pes-200 bg-surface text-pes-700 hover:bg-pes-100"
                                       }`}
                                     >
                                       {t}
@@ -2267,7 +2263,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             onClick={saveAndLockParameters}
                             disabled={saveStatus === "saving"}
                             className="px-5 py-2 text-sm text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-40"
-                            style={{ backgroundColor: "#322b80" }}
+                            style={{ backgroundColor: "var(--color-pes-700)" }}
                           >
                             {saveStatus === "saving"
                               ? "Saving…"
@@ -2331,7 +2327,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             !paramsSaved ||
                             lockedDates.length === 0
                           }
-                          className="px-4 py-3 border border-line rounded-lg bg-white disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
+                          className="px-4 py-3 border border-line rounded-lg bg-surface disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
                         >
                           <option value="">— Select date —</option>
                           {lockedDates.map((dateVal) => {
@@ -2403,7 +2399,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             !paramsSaved ||
                             lockedTimes.length === 0
                           }
-                          className="px-4 py-3 border border-line rounded-lg bg-white disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
+                          className="px-4 py-3 border border-line rounded-lg bg-surface disabled:bg-canvas disabled:text-muted disabled:cursor-not-allowed"
                         >
                           <option value="">— Select time —</option>
                           {lockedTimes.map((t, i) => {
@@ -2431,7 +2427,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               isBusy: e.target.value === "true",
                             }))
                           }
-                          className="px-4 py-3 border border-line rounded-lg bg-white"
+                          className="px-4 py-3 border border-line rounded-lg bg-surface"
                         >
                           <option value="true">Busy</option>
                           <option value="false">Not Busy</option>
@@ -2470,7 +2466,9 @@ const WorkSamplingPageInner: React.FC = () => {
                               }
                               className="md:col-span-6 flex items-center justify-center gap-2 px-5 py-3 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                               style={{
-                                backgroundColor: exists ? "#16a34a" : "#322b80",
+                                backgroundColor: exists
+                                  ? "var(--color-success-600)"
+                                  : "var(--color-pes-700)",
                               }}
                             >
                               {exists ? (
@@ -2499,7 +2497,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           <thead>
                             <tr
                               style={{
-                                backgroundColor: "#322b80",
+                                backgroundColor: "var(--color-pes-700)",
                                 color: "white",
                               }}
                             >
@@ -2548,7 +2546,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                     </td>
                                     <td className="p-3">
                                       <span
-                                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${obs.isBusy ? "bg-green-100 text-green-800" : "bg-danger-100 text-danger-700"}`}
+                                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${obs.isBusy ? "bg-success-50 text-success-700" : "bg-danger-100 text-danger-700"}`}
                                       >
                                         {obs.isBusy ? "Busy" : "Not Busy"}
                                       </span>
@@ -2558,7 +2556,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                     </td>
                                     <td className="p-3">
                                       {!obs.dbId ? (
-                                        <span className="text-xs text-yellow-500">
+                                        <span className="text-xs text-warning-700">
                                           saving…
                                         </span>
                                       ) : (
@@ -2589,7 +2587,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 )
                               : observations;
                             return posObs.length > 0 ? (
-                              <span className="flex items-center gap-1.5 text-green-600">
+                              <span className="flex items-center gap-1.5 text-success-700">
                                 <CheckCircle2 size={14} /> {posObs.length}{" "}
                                 observation{posObs.length !== 1 ? "s" : ""}{" "}
                                 recorded
@@ -2609,7 +2607,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           onClick={() => setActiveTab("analysis")}
                           disabled={observations.length === 0}
                           className="flex items-center gap-2 px-6 py-3 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                          style={{ backgroundColor: "#322b80" }}
+                          style={{ backgroundColor: "var(--color-pes-700)" }}
                         >
                           View Analysis <ChevronRight size={18} />
                         </button>
@@ -2625,7 +2623,7 @@ const WorkSamplingPageInner: React.FC = () => {
                   <div className="mb-6">
                     <h2
                       className="text-2xl font-bold flex items-center gap-2"
-                      style={{ color: "#322b80" }}
+                      style={{ color: "var(--color-pes-700)" }}
                     >
                       <BarChart3 size={24} /> Analysis Results
                     </h2>
@@ -2648,43 +2646,33 @@ const WorkSamplingPageInner: React.FC = () => {
                   ) : (
                     <div className="space-y-8">
                       {/* Summary cards */}
-                      <div className="grid md:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-line border border-line rounded-xl overflow-hidden">
                         {[
+                          { label: "Total positions", val: positions.length },
+                          { label: "Total observations", val: observations.length },
                           {
-                            label: "Total Positions",
-                            val: positions.length,
-                            color: "#322b80",
-                          },
-                          {
-                            label: "Total Observations",
-                            val: observations.length,
-                            color: "#16a34a",
-                          },
-                          {
-                            label: "Avg Utilization",
+                            label: "Avg utilization",
                             val: `${Math.round(analysisResults.reduce((s, r) => s + r.utilizationFactor, 0) / analysisResults.length)}%`,
-                            color: "#2563eb",
                           },
                           {
-                            label: "Avg Performance",
+                            label: "Avg performance",
                             val: `${Math.round(analysisResults.reduce((s, r) => s + r.avgPerformanceRating, 0) / analysisResults.length)}%`,
-                            color: "#7c3aed",
                           },
                           {
                             label: "TAM (Σ ESMᵢ)",
                             val: Math.round(TAM).toLocaleString(),
-                            color: "#d97706",
+                            accent: true,
                           },
-                        ].map(({ label, val, color }) => (
-                          <div
-                            key={label}
-                            className="p-5 rounded-lg text-white"
-                            style={{ backgroundColor: color }}
-                          >
-                            <p className="text-xs font-medium opacity-80 mb-1">
+                        ].map(({ label, val, accent }) => (
+                          <div key={label} className="bg-surface p-5">
+                            <p className="text-xs font-medium text-muted mb-1">
                               {label}
                             </p>
-                            <p className="text-2xl font-bold">{val}</p>
+                            <p
+                              className={`text-2xl font-semibold tabular-nums ${accent ? "text-pes-700" : "text-strong"}`}
+                            >
+                              {val}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -2695,7 +2683,7 @@ const WorkSamplingPageInner: React.FC = () => {
                           <thead>
                             <tr
                               style={{
-                                backgroundColor: "#322b80",
+                                backgroundColor: "var(--color-pes-700)",
                                 color: "white",
                               }}
                             >
@@ -2734,12 +2722,12 @@ const WorkSamplingPageInner: React.FC = () => {
                                 </td>
                                 <td className="p-3 text-right">
                                   <div className="flex items-center justify-end gap-2">
-                                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                    <div className="w-16 bg-line rounded-full h-1.5">
                                       <div
                                         className="h-1.5 rounded-full"
                                         style={{
                                           width: `${Math.min(r.utilizationFactor, 100)}%`,
-                                          backgroundColor: "#322b80",
+                                          backgroundColor: "var(--color-pes-700)",
                                         }}
                                       />
                                     </div>
@@ -2762,7 +2750,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 </td>
                                 <td
                                   className="p-3 text-right font-bold"
-                                  style={{ color: "#322b80" }}
+                                  style={{ color: "var(--color-pes-700)" }}
                                 >
                                   {r.estimatedStandardManHours.toFixed(1)}
                                 </td>
@@ -2770,18 +2758,18 @@ const WorkSamplingPageInner: React.FC = () => {
                             ))}
                             <tr
                               className="border-t-2 font-bold"
-                              style={{ backgroundColor: "#f5f3ff" }}
+                              style={{ backgroundColor: "var(--color-pes-50)" }}
                             >
                               <td
                                 className="p-3"
                                 colSpan={8}
-                                style={{ color: "#322b80" }}
+                                style={{ color: "var(--color-pes-700)" }}
                               >
                                 TAM = Σ ESMᵢ (eq 6.15)
                               </td>
                               <td
                                 className="p-3 text-right text-lg"
-                                style={{ color: "#322b80" }}
+                                style={{ color: "var(--color-pes-700)" }}
                               >
                                 {TAM.toFixed(1)}
                               </td>
@@ -2794,7 +2782,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       <div className="p-4 rounded-lg border bg-canvas text-xs text-body space-y-1">
                         <p
                           className="font-semibold text-sm mb-2"
-                          style={{ color: "#322b80" }}
+                          style={{ color: "var(--color-pes-700)" }}
                         >
                           Formulas (Charles-Owaba)
                         </p>
@@ -2829,7 +2817,7 @@ const WorkSamplingPageInner: React.FC = () => {
                       {/* Staff Determination Section */}
                       <div className="p-6 rounded-lg border bg-canvas border-line space-y-4">
                         <h3 className="text-base font-bold text-strong flex items-center gap-2">
-                          <Users size={18} style={{ color: "#322b80" }} />
+                          <Users size={18} style={{ color: "var(--color-pes-700)" }} />
                           Staff Determination
                         </h3>
                         <div className="grid md:grid-cols-2 gap-4">
@@ -2847,7 +2835,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                     : Number(e.target.value),
                                 )
                               }
-                              className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes text-sm bg-white"
+                              className="w-full px-3 py-2 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes text-sm bg-surface"
                             />
                           </div>
                           <div>
@@ -2866,7 +2854,7 @@ const WorkSamplingPageInner: React.FC = () => {
                                 onChange={(e) =>
                                   setSamplingUseFactor(parseFloat(e.target.value))
                                 }
-                                className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
+                                className="w-full min-w-0 h-2 bg-line rounded-lg appearance-none cursor-pointer accent-pes"
                               />
                               <input
                                 type="number"
@@ -2895,7 +2883,7 @@ const WorkSamplingPageInner: React.FC = () => {
                               <button
                                 onClick={handleCalculateSamplingStaff}
                                 className="flex items-center justify-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all shadow"
-                                style={{ backgroundColor: "#322b80" }}
+                                style={{ backgroundColor: "var(--color-pes-700)" }}
                               >
                                 Save &amp; Calculate Number of Staff
                               </button>
@@ -2908,15 +2896,18 @@ const WorkSamplingPageInner: React.FC = () => {
                             </div>
 
                             {samplingStaffError && (
-                              <p className="text-danger-600 text-xs font-medium">
+                              <p
+                                role="alert"
+                                className="text-danger-700 bg-danger-50 border border-danger-100 rounded-lg px-3 py-2 text-xs font-medium"
+                              >
                                 {samplingStaffError}
                               </p>
                             )}
 
                             {samplingCalculatedStaff !== null && (
-                              <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 font-semibold text-sm">
+                              <div className="p-3 bg-success-50 border border-success-100 rounded-lg text-success-700 text-sm">
                                 Recommended number of staff:{" "}
-                                <span className="font-mono font-bold text-base text-pes underline">
+                                <span className="font-semibold text-base tabular-nums">
                                   {samplingCalculatedStaff.toFixed(2)}
                                 </span>
                               </div>
@@ -2958,7 +2949,7 @@ const WorkSamplingPageInner: React.FC = () => {
                             URL.revokeObjectURL(a.href);
                           }}
                           className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg hover:opacity-90 text-sm font-medium"
-                          style={{ backgroundColor: "#322b80" }}
+                          style={{ backgroundColor: "var(--color-pes-700)" }}
                         >
                           <Download size={16} /> Export JSON
                         </button>
@@ -2974,7 +2965,7 @@ const WorkSamplingPageInner: React.FC = () => {
         {/* Delete Confirmation Modal */}
         {deleteConfirmId !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="bg-surface border border-line rounded-xl shadow-md max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
               <div className="flex items-center gap-3 text-danger-600 mb-4">
                 <div className="p-2 bg-danger-100 rounded-full">
                   <AlertCircle size={24} />
@@ -2990,7 +2981,7 @@ const WorkSamplingPageInner: React.FC = () => {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setDeleteConfirmId(null)}
-                  className="px-4 py-2 text-sm font-medium text-body bg-canvas rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-body bg-canvas rounded-lg hover:bg-line transition-colors"
                 >
                   Cancel
                 </button>
@@ -3016,7 +3007,7 @@ const WorkSamplingPage: React.FC = () => (
       <div className="flex items-center justify-center min-h-screen">
         <div
           className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent"
-          style={{ borderColor: "#322b80" }}
+          style={{ borderColor: "var(--color-pes-700)" }}
         />
       </div>
     }

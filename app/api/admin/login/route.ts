@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
 
 type reqInfo = {
   email: string
@@ -37,7 +38,17 @@ async function getUser(info: reqInfo) {
 
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  const body = await req.json();
+
+  const validation = validateData(loginSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: "Validation failed", details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    );
+  }
+
+  const { email, password } = validation.data!;
 
   try {
     const data = await getUser({ email, password });

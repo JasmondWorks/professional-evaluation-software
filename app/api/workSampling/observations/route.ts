@@ -15,47 +15,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if an observation already exists for the same position, date, and time
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "WorkSamplingObservation" WHERE "positionId" = $1 AND date = $2 AND time = $3`,
-      Number(positionId),
-      date,
-      time
-    ) as any[];
+    const existing = await prisma.workSamplingObservation.findFirst({
+      where: {
+        positionId: Number(positionId),
+        date: date,
+        time: time
+      }
+    });
 
     let result;
-    if (existing.length > 0) {
+    if (existing) {
       // Update existing observation
-      result = await prisma.$queryRawUnsafe(
-        `UPDATE "WorkSamplingObservation"
-         SET "isBusy" = $1, "performanceRating" = $2, notes = $3
-         WHERE id = $4
-         RETURNING *;`,
-        Boolean(isBusy),
-        performanceRating ?? null,
-        notes ?? null,
-        existing[0].id
-      );
+      result = await prisma.workSamplingObservation.update({
+        where: { id: existing.id },
+        data: {
+          isBusy: Boolean(isBusy),
+          performanceRating: performanceRating ?? null,
+          notes: notes ?? null
+        }
+      });
     } else {
       // Insert new observation
-      const query = `
-        INSERT INTO "WorkSamplingObservation"
-          ("positionId", date, time, "isBusy", "performanceRating", notes)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *;
-      `;
-      result = await prisma.$queryRawUnsafe(
-        query,
-        Number(positionId),
-        date,
-        time,
-        Boolean(isBusy),
-        performanceRating ?? null,
-        notes ?? null
-      );
+      result = await prisma.workSamplingObservation.create({
+        data: {
+          positionId: Number(positionId),
+          date: date,
+          time: time,
+          isBusy: Boolean(isBusy),
+          performanceRating: performanceRating ?? null,
+          notes: notes ?? null
+        }
+      });
     }
 
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error saving observation:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -69,10 +62,11 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
-    await prisma.$queryRawUnsafe(
-      `DELETE FROM "WorkSamplingObservation" WHERE id = $1`,
-      Number(id)
-    );
+    
+    await prisma.workSamplingObservation.delete({
+      where: { id: Number(id) }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting observation:", error);
