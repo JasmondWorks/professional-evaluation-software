@@ -63,7 +63,7 @@ export default function ForgotPassword() {
             Back to Login
           </Button>
           <h1 className="text-4xl font-semibold mb-2">Forgot Password?</h1>
-          <p className="text-gray-600">
+          <p className="text-body">
             Enter your email address and we'll send you a link to reset your
             password.
           </p>
@@ -72,7 +72,7 @@ export default function ForgotPassword() {
         {errorMessage && (
           <div
             role="alert"
-            className="mb-6 p-4 rounded bg-red-100 text-red-700 border border-red-400"
+            className="mb-6 p-4 rounded bg-danger-100 text-danger-700 border border-danger-600"
           >
             {errorMessage}
           </div>
@@ -89,7 +89,7 @@ export default function ForgotPassword() {
               name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-transparent border border-gray-200 text-gray-700 focus:outline-blue-600 px-4 py-3 rounded-lg"
+              className="bg-transparent border border-line text-body focus:outline-blue-600 px-4 py-3 rounded-lg"
               placeholder="Enter your email"
               required
               disabled={isSubmitting}
@@ -106,7 +106,7 @@ export default function ForgotPassword() {
             {isSubmitting ? "Sending..." : "Send Reset Link"}
           </Button>
 
-          <p className="text-center text-gray-600 mt-4">
+          <p className="text-center text-body mt-4">
             Remember your password?{" "}
             <Link
               href="/login"

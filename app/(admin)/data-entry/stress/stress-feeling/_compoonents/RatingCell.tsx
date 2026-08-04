@@ -61,7 +61,7 @@ export default function RatingCell({
         className={`mx-auto flex h-9 w-12 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
           value
             ? "border-green-400 bg-green-50 text-green-700"
-            : "border-gray-300 text-gray-400 hover:border-gray-400"
+            : "border-line text-muted hover:border-gray-400"
         }`}
       >
         {value ?? "–"}
@@ -70,7 +70,7 @@ export default function RatingCell({
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
           <div
-            className="fixed z-50 grid grid-cols-5 gap-1 rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl"
+            className="fixed z-50 grid grid-cols-5 gap-1 rounded-lg border border-line bg-white p-1.5 shadow-xl"
             style={{ top: pos.top, left: pos.left, width: PAD_W }}
           >
             {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
@@ -82,7 +82,7 @@ export default function RatingCell({
                   onClose();
                 }}
                 className={`h-8 w-8 rounded-md text-sm font-medium transition-colors ${
-                  value === n ? "bg-pes text-white" : "text-gray-700 hover:bg-gray-100"
+                  value === n ? "bg-pes text-white" : "text-body hover:bg-line/50"
                 }`}
               >
                 {n}

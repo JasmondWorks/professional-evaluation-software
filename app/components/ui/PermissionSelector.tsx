@@ -9,6 +9,7 @@
 // the keys that changed, which the parent merges into its own state.
 
 import { PERMISSION_TREE, PermissionKey } from '../utils/roles';
+import { Checkbox } from './checkbox';
 
 type Value = Partial<Record<string, boolean>>;
 
@@ -26,13 +27,12 @@ export default function PermissionSelector({
       {PERMISSION_TREE.map((parent) => {
         const parentOn = on(parent.key);
         return (
-          <div key={parent.key} className="border-b border-gray-100 p-4 flex flex-col">
-            <label className="flex cursor-pointer">
-              <input
-                type="checkbox"
+          <div key={parent.key} className="border-b border-line last:border-0 p-4 flex flex-col">
+            <label className="flex gap-3 cursor-pointer">
+              <Checkbox
                 checked={parentOn}
-                onChange={(e) => {
-                  if (e.target.checked) {
+                onCheckedChange={(checked) => {
+                  if (checked) {
                     onChange({ [parent.key]: true });
                   } else {
                     // Turning the parent off clears all its scope children.
@@ -41,32 +41,27 @@ export default function PermissionSelector({
                     onChange(patch);
                   }
                 }}
-                className="h-6 w-6 mt-1 me-3 shrink-0"
+                className="mt-0.5"
               />
-              <span className="w-10/12">
-                <span className="text-lg block">{parent.label}</span>
-                <span className="text-gray-600 text-sm">{parent.description}</span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-strong">{parent.label}</span>
+                <span className="block text-body text-sm">{parent.description}</span>
               </span>
             </label>
 
             {parent.children.length > 0 && (
-              <div
-                className={`flex flex-wrap gap-x-6 gap-y-1 ms-9 my-2 text-sm ${
-                  parentOn ? 'text-gray-500' : 'text-gray-300'
-                }`}
-              >
+              <div className="flex flex-wrap gap-x-5 gap-y-2 ms-7 mt-3 text-sm">
                 {parent.children.map((child) => (
                   <label
                     key={child.key}
-                    className={`flex items-center gap-1 ${
-                      parentOn ? 'cursor-pointer' : 'cursor-not-allowed'
+                    className={`flex items-center gap-2 ${
+                      parentOn ? 'cursor-pointer text-body' : 'cursor-not-allowed text-muted/60'
                     }`}
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       disabled={!parentOn}
                       checked={parentOn && on(child.key)}
-                      onChange={(e) => onChange({ [child.key]: e.target.checked })}
+                      onCheckedChange={(checked) => onChange({ [child.key]: checked === true })}
                     />
                     <span>{child.label}</span>
                   </label>

@@ -42,7 +42,7 @@ export default function Page() {
   const sortedOrgs = Object.keys(grouped).sort((a, b) => a.localeCompare(b))
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-canvas">
 
       {/* Header */}
       <div className="p-6 bg-white shadow-sm">
@@ -58,13 +58,13 @@ export default function Page() {
           return (
             <div key={org}>
               {/* Org Header with total count */}
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">
+              <h2 className="text-lg font-semibold text-body mb-3">
                 {org} ({orgAuditors.length})
               </h2>
 
               {/* Auditors in Org */}
               {orgAuditors.length === 0 ? (
-                <div className="text-gray-400 italic">
+                <div className="text-muted italic">
                   No auditors in this organisation
                 </div>
               ) : (
@@ -81,13 +81,13 @@ export default function Page() {
                       >
                         <div>
                           <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-muted">{user.email}</div>
                           <div className="text-sm mt-1">
                             Audit count: <span className="font-semibold">{user.audit_count}</span>
                             {eligible ? (
                               <span className="ml-2 text-green-600 font-bold text-xs">Eligible for Audit</span>
                             ) : (
-                              <span className="ml-2 text-red-600 font-bold text-xs">Max number of audits reached</span>
+                              <span className="ml-2 text-danger-600 font-bold text-xs">Max number of audits reached</span>
                             )}
                           </div>
                         </div>

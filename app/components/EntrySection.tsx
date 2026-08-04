@@ -16,7 +16,7 @@ export function EntrySection({ title, to, disabled = false }: EntrySectionProps)
     >
       <div
         className={`w-full bg-white rounded-md shadow mb-4 flex justify-between items-center p-4
-        ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
+        ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-canvas"}`}
       >
         <span className="text-lg font-semibold">{title}</span>
         <span className="text-sm">{">"}</span>

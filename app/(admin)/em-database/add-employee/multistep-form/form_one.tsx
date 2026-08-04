@@ -70,8 +70,8 @@ function Input({
   }
 
   return (
-    <div className={`formgroup flex flex-col my-2 w-full ${classNameProp}`}>
-      <label className="my-2 text-sm">{label}</label>
+    <div className={`formgroup flex flex-col gap-1.5 mb-3 w-full ${classNameProp}`}>
+      <label className="text-sm font-medium text-body">{label}</label>
       <input
         name={name}
         type={type}
@@ -90,9 +90,9 @@ function Input({
             advanceFocus(e.currentTarget);
           }
         }}
-        className="font-medium text-lg text-gray-800 placeholder-gray-500 py-3 px-6 outline-0 border rounded-sm focus:border-gray-400"
+        className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted transition-shadow focus:outline-none focus:border-pes-400 focus:shadow-focus"
       />
-      {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name]}</p>}
+      {errors[name] && <p className="text-danger-600 text-xs mt-1">{errors[name]}</p>}
     </div>
   );
 }
@@ -146,11 +146,9 @@ function PhoneInput({
   }
 
   return (
-    <div className="my-4 w-full">
+    <div className="flex flex-col gap-1.5 mb-3 w-full">
       {label && (
-        <label className="text-gray-800 placeholder-gray-500 font-bold text-lg placeholder-lg block mb-1">
-          {label}
-        </label>
+        <label className="text-sm font-medium text-body">{label}</label>
       )}
       <input
         type="text"
@@ -171,7 +169,7 @@ function PhoneInput({
           }
         }}
         tabIndex={tabIndex}
-        className="border font-bold border-gray-300 rounded p-2 w-full outline-none focus:border-black"
+        className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted transition-shadow focus:outline-none focus:border-pes-400 focus:shadow-focus"
         maxLength={16}
       />
     </div>
@@ -338,7 +336,6 @@ export default function FormOne({
       const uploaded = await cloudRes.json();
       setCredentialData((prev: any) => ({ ...prev, [labelName]: uploaded.secure_url }));
     } catch (err) {
-      console.log(err);
     }
   }
 
@@ -353,10 +350,10 @@ export default function FormOne({
   const inputProps = { formdata, errors, updateFields, validateField };
 
   return (
-    <div className="flex flex-col gap-8 w-full px-10">
+    <div className="flex flex-col gap-6 w-full">
 
       {/* Row 1 */}
-      <div className="grid grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
         <div>
           <Input {...inputProps} name="name" label="Employee's Full Name:" placeholder="Enter full name" tabIndex={1} />
           <Input {...inputProps} name="address" label="Current Home Address:" placeholder="Home address" tabIndex={3} />
@@ -368,7 +365,7 @@ export default function FormOne({
             const suggestion = formdata.email ? suggestEmail(formdata.email) : null;
             if (!suggestion) return null;
             return (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-warning-600 mt-1">
                 Did you mean{" "}
                 <button
                   type="button"
@@ -400,7 +397,7 @@ export default function FormOne({
       </div>
 
       {/* Row 2 */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-5">
         <Input {...inputProps} name="dob" label="Date of birth:" type="date" tabIndex={7} />
         <Input {...inputProps} name="doa" label="Date of first appointment:" type="date" tabIndex={8} />
         <Input {...inputProps} name="post" label="Post/grade of first appointment:" placeholder="Enter post" tabIndex={9} />
@@ -408,9 +405,9 @@ export default function FormOne({
       </div>
 
       {/* Row 3 */}
-      <div className="grid grid-cols-3 gap-6 w-full">
-        <div className="flex flex-col">
-          <label className="my-2 text-sm">Present post:</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-2 w-full">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-body">Present post:</label>
           <RoleSelect
             value={formdata.role || ''}
             presetRoles={[
@@ -434,9 +431,9 @@ export default function FormOne({
             tabIndex={11}
             hasError={!!errors.role}
           />
-          {errors.role && <p className="text-red-500 text-xs mt-1">{errors.role}</p>}
+          {errors.role && <p className="text-danger-600 text-xs mt-1">{errors.role}</p>}
           {headConflict && (
-            <p className="text-red-600 text-xs mt-2 bg-red-50 border border-red-100 rounded-md px-2.5 py-1.5">
+            <p className="text-danger-700 text-xs mt-2 bg-danger-50 border border-danger-100 rounded-md px-2.5 py-1.5">
               {headConflict}
             </p>
           )}
@@ -446,34 +443,37 @@ export default function FormOne({
       </div>
 
       {/* Qualifications */}
-      <div className="w-full flex flex-col">
-        <p className="text-sm text-pes my-3">
-          Academic & Professional Qualifications held:
-          <span className="text-gray-300"> (certificates must be attached)</span>
+      <div className="w-full flex flex-col gap-3">
+        <p className="text-sm font-medium text-strong">
+          Academic &amp; Professional Qualifications held
+          <span className="font-normal text-muted"> — certificates must be attached</span>
         </p>
 
-        <div className="flex flex-col bg-gray-50 rounded-xs p-4">
-          <div className="flex flex-col justify-between m-2 w-[30%]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 rounded-lg border border-line bg-canvas p-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-body">Title or qualification</label>
             <input
               id="title"
               type="text"
-              placeholder="Title or Qualification"
+              placeholder="e.g. B.Sc. Mechanical Engineering"
               name="qualification"
               value={formdata.qualification || ''}
               onChange={handleChange}
-              className="font-medium text-sm text-gray-500 py-3 px-6 border rounded-sm"
+              className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted focus:outline-none focus:border-pes-400 focus:shadow-focus"
             />
-            <Input {...inputProps} name="year" label="Year Obtained" type="date" classNameProp="w-[20%] ms-auto" />
           </div>
 
-          <div className="flex flex-col justify-between m-2">
-            <label htmlFor="file" className="w-[30%] my-auto border">
-              <div className="flex justify-end bg-white rounded-sm w-11/12 relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-300">
-                  {selectedFile !== '' ? selectedFile : 'No image selected'}
-                </p>
-                <div className="bg-gray-100 rounded-sm px-5 py-3 text-sm text-gray-500">Browse Files</div>
-              </div>
+          <Input {...inputProps} name="year" label="Year obtained" type="date" />
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label className="text-sm font-medium text-body">Certificate</label>
+            <label htmlFor="file" className="flex items-center gap-3 rounded-lg border border-line bg-surface pl-3 pr-1.5 py-1.5 cursor-pointer hover:border-pes-200 transition-colors">
+              <span className="text-sm text-muted truncate flex-1">
+                {selectedFile !== '' ? selectedFile : 'No file selected'}
+              </span>
+              <span className="shrink-0 rounded-md bg-pes-50 text-pes-700 text-sm font-medium px-3 py-1.5">
+                Browse files
+              </span>
               <input id="file" type="file" name="credential" className="hidden" onChange={handleFileUpload} />
             </label>
           </div>

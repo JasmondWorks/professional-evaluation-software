@@ -128,14 +128,14 @@ const modelDefinitions: Record<
     description:
       "Evaluate and track organizational performance metrics and yields.",
     icon: Graph,
-    color: "text-blue-500 bg-blue-50",
+    color: "text-blue-500 bg-pes-50",
   },
   Appraisal: {
     path: "/models/appraisal",
     description:
       "Conduct staff academic appraisals and evaluate teaching quality.",
     icon: Award,
-    color: "text-amber-500 bg-amber-50",
+    color: "text-warning-600 bg-warning-50",
   },
   Motivation: {
     path: "/models/motivation",
@@ -147,7 +147,7 @@ const modelDefinitions: Record<
     path: "/models/stress",
     description: "Monitor workplace stress factors and emotional fatigue.",
     icon: Activity,
-    color: "text-red-500 bg-red-50",
+    color: "text-danger-600 bg-danger-50",
   },
   "Non-Academic Appraisal": {
     path: "/models/non-academic-appraisal",
@@ -160,7 +160,7 @@ const modelDefinitions: Record<
     description:
       "Design and optimize reporting hierarchies and span of control.",
     icon: Hierarchy,
-    color: "text-indigo-500 bg-indigo-50",
+    color: "text-pes-600 bg-pes-50",
   },
   "Personnel Redundancy": {
     path: "/models/personnel-redundancy",
@@ -270,12 +270,12 @@ export default function ModelsPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full min-h-screen bg-gray-50/50">
+    <div className="p-8 max-w-7xl mx-auto w-full min-h-screen bg-canvas/50">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-3xl font-bold text-strong tracking-tight">
           Mathematical Models
         </h1>
-        <p className="mt-2 text-gray-500 max-w-2xl text-sm">
+        <p className="mt-2 text-muted max-w-2xl text-sm">
           Select a model to begin analysis. These operations research and HR
           algorithms process your data to yield insights on structure, capacity,
           and workforce performance.
@@ -283,14 +283,14 @@ export default function ModelsPage() {
       </div>
 
       {filteredRoutes.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center shadow-sm">
-          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Hierarchy className="text-gray-400" size={32} />
+        <div className="bg-white rounded-2xl border border-dashed border-line p-12 text-center shadow-sm">
+          <div className="mx-auto w-16 h-16 bg-canvas rounded-full flex items-center justify-center mb-4">
+            <Hierarchy className="text-muted" size={32} />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">
+          <h3 className="text-lg font-medium text-strong mb-1">
             No Models Available
           </h3>
-          <p className="text-gray-500">
+          <p className="text-muted">
             Your current plan ({productDetails?.productPlan}) does not include
             access to these mathematical models.
           </p>
@@ -306,7 +306,7 @@ export default function ModelsPage() {
               <Link
                 key={index}
                 href={def.path}
-                className="group relative bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-pes/30 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
+                className="group relative bg-white border border-line rounded-2xl p-6 hover:shadow-xl hover:border-pes/30 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
               >
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-pes/5 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
 
@@ -316,19 +316,19 @@ export default function ModelsPage() {
                   >
                     <Icon size={26} variant="Bulk" />
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-pes group-hover:text-white transition-colors duration-300">
+                  <div className="w-8 h-8 rounded-full bg-canvas flex items-center justify-center group-hover:bg-pes group-hover:text-white transition-colors duration-300">
                     <ArrowRight2
                       size={16}
-                      className="text-gray-400 group-hover:text-white transition-colors duration-300"
+                      className="text-muted group-hover:text-white transition-colors duration-300"
                     />
                   </div>
                 </div>
 
-                <div className="mt-6 relative z-10 flex-grow">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-pes transition-colors duration-200">
+                <div className="mt-6 relative z-10 grow">
+                  <h3 className="text-lg font-semibold text-strong group-hover:text-pes transition-colors duration-200">
                     {route}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-500 leading-relaxed line-clamp-2">
+                  <p className="mt-2 text-sm text-muted leading-relaxed line-clamp-2">
                     {def.description}
                   </p>
                 </div>

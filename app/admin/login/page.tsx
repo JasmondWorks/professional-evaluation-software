@@ -63,7 +63,6 @@ export default function Home() {
         });
       }
     } catch (error) {
-      console.log(error);
     }
   }
 
@@ -78,7 +77,7 @@ export default function Home() {
       {/* message box */}
       <div
         style={{ borderColor: message.color }}
-        className={`z-10 bg-white absolute p-6 px-12 shadow-md rounded-md border text-gray-600 font-semibold ${message.visibility} top-3 left-1/2 -translate-x-1/2`}
+        className={`z-10 bg-white absolute p-6 px-12 shadow-md rounded-md border text-body font-semibold ${message.visibility} top-3 left-1/2 -translate-x-1/2`}
       >
         {message.text}
       </div>
@@ -109,7 +108,7 @@ export default function Home() {
                 Email Address:
               </label>
               <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
+                className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg"
                 type="email"
                 name="email"
                 id="email"
@@ -123,7 +122,7 @@ export default function Home() {
               </label>
               <div className="relative w-full">
                 <Field
-                  className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
+                  className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   id="password"
@@ -132,7 +131,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-body focus:outline-none"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

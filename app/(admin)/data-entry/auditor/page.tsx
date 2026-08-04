@@ -1,7 +1,10 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
 
 
 interface JWTPayload {
@@ -74,7 +77,7 @@ export default function AuditorScoresPage() {
     if (!selectedEmployee || !selectedGroup) return;
 
     if (!allInputsFilled) {
-      alert("Please fill in all auditor resolution fields ⚠️");
+      notify.error("Please fill in all auditor resolution fields");
       return;
     }
 
@@ -104,42 +107,65 @@ export default function AuditorScoresPage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Failed");
 
-      alert("✅ Auditor scores submitted successfully!");
+      notify.success("Auditor scores submitted successfully!");
       setAuditorScores({});
       setSelectedEmployee(null);
     } catch (err) {
       console.error("Error submitting auditor scores:", err);
-      alert("❌ Failed to submit auditor scores");
+      notify.error("Failed to submit auditor scores");
     }
   }
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="rounded-lg border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between">       
-        <h1 className="text-xl font-bold mb-4">Auditor Resolution</h1>
-        {selectedGroup && !selectedEmployee && (
-          <button
-            onClick={() => setSelectedGroup(null)}
-            className="mb-4 px-3 py-1 bg-gray-200 rounded"
-          >
-            ← Back
-          </button>            
-        )}
-      </div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <PageHeader
+        title="Auditor resolution"
+        subtitle={
+          !selectedGroup
+            ? "Select a score group to resolve flagged submissions."
+            : selectedEmployee
+              ? `Resolving ${selectedEmployee.pesuser_name}`
+              : `${selectedGroup} scores`
+        }
+        actions={
+          selectedGroup && !selectedEmployee ? (
+            <Button variant="secondary" size="sm" onClick={() => setSelectedGroup(null)}>
+              ← Back
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Step 1: Select Group */}
       {!selectedGroup && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {(["appraisal", "performance"] as GroupKey[]).map((g) => (
             <button
               key={g}
               onClick={() => setSelectedGroup(g)}
-              className="p-6 bg-yellow-50 hover:bg-yellow-100 rounded-lg shadow text-lg font-semibold capitalize"
+              className="p-6 bg-surface border border-line hover:border-pes-200 hover:shadow-md rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left transition-[box-shadow,border-color] focus-visible:shadow-focus"
             >
               {g}
+              <span className="block mt-1 text-sm font-normal text-muted">
+                Resolve flagged {g} scores
+              </span>
             </button>
           ))}
         </div>
@@ -147,109 +173,105 @@ export default function AuditorScoresPage() {
 
       {/* Step 2: Select Employee */}
       {selectedGroup && !selectedEmployee && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4 capitalize">
-            {selectedGroup} Scores
-          </h2>
-          <ul className="space-y-3">
-            {scores?.map((emp) => {
-              const groupScores = emp[selectedGroup];
-              if (!groupScores) return null;
-              return (
-                <li
-                  key={emp.pesuser_name}
-                  className="flex justify-between items-center p-4 bg-white border rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedEmployee(emp)}
-                >
-                  <div>
-                    <p className="font-semibold">{emp.pesuser_name}</p>
-                    <p className="text-sm text-gray-500">{emp.dept}</p>
-                  </div>
-                  <span className="text-blue-600 font-medium">Resolve →</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="space-y-2.5">
+          {scores?.map((emp) => {
+            const groupScores = emp[selectedGroup];
+            if (!groupScores) return null;
+            return (
+              <li
+                key={emp.pesuser_name}
+                className="flex justify-between items-center p-4 bg-surface border border-line rounded-lg shadow-card hover:border-pes-200 hover:shadow-md cursor-pointer transition-[box-shadow,border-color]"
+                onClick={() => setSelectedEmployee(emp)}
+              >
+                <div>
+                  <p className="font-semibold text-strong">{emp.pesuser_name}</p>
+                  <p className="text-sm text-muted">{emp.dept}</p>
+                </div>
+                <span className="text-pes-600 font-medium text-sm">Resolve →</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {/* Step 3: Auditor Resolution */}
       {selectedGroup && selectedEmployee && (
         <div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mb-5"
             onClick={() => setSelectedEmployee(null)}
-            className="mb-4 ms-auto px-3 py-1 bg-gray-200 rounded"
           >
             ← Back to {selectedGroup} list
-          </button>
-          <h2 className="text-lg font-semibold mb-4">
-            {selectedEmployee.pesuser_name} ({selectedEmployee.dept})
-          </h2>
+          </Button>
 
-          {/* Table header */}
-          <div className="grid grid-cols-3 font-semibold bg-gray-100 p-2 rounded">
-            <span>Employee Score</span>
-            <span>HOD Score</span>
-            <span>Auditor Resolution</span>
+          <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+            {/* Table header */}
+            <div className="grid grid-cols-3 gap-3 text-xs font-semibold text-muted uppercase tracking-wide bg-canvas px-4 py-3 border-b border-line">
+              <span>Employee score</span>
+              <span>HOD score</span>
+              <span>Auditor resolution</span>
+            </div>
+
+            {/* Table rows */}
+            <div className="divide-y divide-line">
+              {Object.entries(selectedEmployee[selectedGroup] || {}).map(([metric, empScore]) => {
+                const counterKey = `counter_${selectedGroup}` as keyof EmployeeScores;
+                const hodScore =
+                  typeof selectedEmployee[counterKey] === "object" &&
+                  selectedEmployee[counterKey] !== null &&
+                  !Array.isArray(selectedEmployee[counterKey]) // Ensure it's not an array
+                    ? (selectedEmployee[counterKey] as Record<string, number>)[metric]
+                    : undefined;
+
+                return (
+                  <div
+                    key={metric}
+                    className="grid grid-cols-3 gap-3 items-center px-4 py-3"
+                  >
+                    {/* Employee score */}
+                    <div>
+                      <p className="font-medium text-strong capitalize">{metric.replace(/_/g, " ")}</p>
+                      <p className="text-success-700 font-semibold tabular-nums">{empScore}</p>
+                    </div>
+
+                    {/* HOD score */}
+                    <div>
+                      {hodScore !== undefined ? (
+                        <p className="text-pes-700 font-semibold tabular-nums">{hodScore}</p>
+                      ) : (
+                        <p className="text-muted italic">N/A</p>
+                      )}
+                    </div>
+
+                    {/* Auditor input */}
+                    <div>
+                      <input
+                        type="number"
+                        aria-label={`Auditor resolution for ${metric.replace(/_/g, " ")}`}
+                        className="w-24 h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm text-right tabular-nums focus:outline-none focus:border-pes-400 focus:shadow-focus"
+                        value={auditorScores[metric] ?? ""}
+                        onChange={(e) => handleAuditorChange(metric, e.target.value)}
+                        placeholder="—"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Table rows */}
-          <div className="space-y-2 mt-2">
-            {Object.entries(selectedEmployee[selectedGroup] || {}).map(([metric, empScore]) => {
-              const counterKey = `counter_${selectedGroup}` as keyof EmployeeScores;
-              const hodScore =
-                typeof selectedEmployee[counterKey] === "object" &&
-                selectedEmployee[counterKey] !== null &&
-                !Array.isArray(selectedEmployee[counterKey]) // Ensure it's not an array
-                  ? (selectedEmployee[counterKey] as Record<string, number>)[metric]
-                  : undefined;
-
-              return (
-                <div
-                  key={metric}
-                  className="grid grid-cols-3 items-center border rounded p-2 bg-white shadow-sm"
-                >
-                  {/* Employee score */}
-                  <div>
-                    <p className="font-medium capitalize">{metric.replace(/_/g, " ")}</p>
-                    <p className="text-green-600 font-bold">{empScore}</p>
-                  </div>
-
-                  {/* HOD score */}
-                  <div>
-                    {hodScore !== undefined ? (
-                      <p className="text-blue-600 font-bold">{hodScore}</p>
-                    ) : (
-                      <p className="text-gray-400 italic">N/A</p>
-                    )}
-                  </div>
-
-                  {/* Auditor input */}
-                  <div>
-                    <input
-                      type="number"
-                      className="border border-gray-400 rounded p-1 w-20 text-sm"
-                      value={auditorScores[metric] ?? ""}
-                      onChange={(e) => handleAuditorChange(metric, e.target.value)}
-                      placeholder="Enter"
-                    />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-6 flex items-center gap-3">
+            <Button disabled={!allInputsFilled} onClick={handleSubmit}>
+              Submit auditor scores
+            </Button>
+            {!allInputsFilled && (
+              <p className="text-sm text-muted">
+                Fill in every auditor resolution field to submit.
+              </p>
+            )}
           </div>
-
-          <button
-            disabled={!allInputsFilled}
-            onClick={handleSubmit}
-            className={`mt-6 px-4 py-2 rounded shadow text-white ${
-              allInputsFilled
-                ? "bg-purple-700 hover:bg-purple-900"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
-          >
-            Submit Auditor Scores
-          </button>
         </div>
       )}
     </div>

@@ -1,31 +1,30 @@
-import { useSelector } from "react-redux";
+'use client'
+
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/app/state/store";
 import { Verify } from "iconsax-react";
-import Link from "next/link";
+import { roleCreatedView } from "@/app/state/rolecreated/roleCreatedSlice";
+import { Modal } from '../ui/modal';
+import Button from '../ui/Button';
 
 export default function RoleCreated() {
-  const isVisible = useSelector(
-    (state: RootState) => state.roleCreated.visible,
-  );
+  const isVisible = useSelector((state: RootState) => state.roleCreated.visible);
+  const dispatch = useDispatch();
+  const close = () => dispatch(roleCreatedView());
 
   return (
-    <div
-      className={`notification ${isVisible ? "visible" : "invisible"} rounded-lg shadow-lg p-6 z-30 flex flex-col w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}
+    <Modal
+      isOpen={isVisible}
+      setIsOpen={(open) => { if (!open) close() }}
+      title="Role created successfully"
+      footer={<Button href="/em-database" onClick={close}>Back to roles &amp; permissions</Button>}
     >
-      <div className="flex flex-col">
-        <Verify
-          className="text-pes text-2xl mx-auto"
-          size={100}
-          variant="Bold"
-        />
-        <h1 className="font-bold mx-auto">Role Created Successfully</h1>
-        <Link
-          href="/em-database"
-          className="flex bg-pes rounded-md text-white w-fit px-8 py-3 mx-auto mt-4"
-        >
-          Back to Roles and Permissions
-        </Link>
+      <div className="flex flex-col items-center gap-3 py-2 text-center">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-pes-50 text-pes-700">
+          <Verify size={32} variant="Bold" />
+        </span>
+        <p className="text-sm text-muted">The new role and its permissions are ready to assign.</p>
       </div>
-    </div>
+    </Modal>
   );
 }

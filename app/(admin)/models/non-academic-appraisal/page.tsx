@@ -68,13 +68,13 @@ export default function NonAcademicAppraisalPage() {
       color = "bg-green-50 border-green-200 text-green-700";
     } else if (total >= thresholds.good) {
       rating = "Good";
-      color = "bg-blue-50 border-blue-200 text-blue-700";
+      color = "bg-pes-50 border-blue-200 text-pes-700";
     } else if (total >= thresholds.average) {
       rating = "Average";
       color = "bg-yellow-50 border-yellow-200 text-yellow-700";
     } else {
       rating = "Needs Improvement";
-      color = "bg-red-50 border-red-200 text-red-700";
+      color = "bg-danger-50 border-danger-100 text-danger-700";
     }
 
     setResult({ score: total, rating, color });
@@ -114,7 +114,7 @@ export default function NonAcademicAppraisalPage() {
     description: string
   ) => (
     <div className="block">
-      <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
         <span className="truncate">{label}</span>
         <InfoPopover text={description} />
       </div>
@@ -124,7 +124,7 @@ export default function NonAcademicAppraisalPage() {
         min="0"
         max="100"
         onChange={(e) => setMetrics({ ...metrics, [field]: Number(e.target.value) })}
-        className="mt-1.5 block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+        className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
       />
     </div>
   );
@@ -134,8 +134,8 @@ export default function NonAcademicAppraisalPage() {
     value: number,
     field: keyof typeof weights,
   ) => (
-    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+    <div className="flex items-center justify-between p-3 bg-canvas rounded-lg border border-line">
+      <span className="text-sm font-medium text-body">{label}</span>
       <input
         type="number"
         step="0.05"
@@ -143,7 +143,7 @@ export default function NonAcademicAppraisalPage() {
         max="1"
         value={value}
         onChange={(e) => setWeights({ ...weights, [field]: Number(e.target.value) })}
-        className="w-24 rounded border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-pes"
+        className="w-24 rounded border border-line px-3 py-1.5 text-sm outline-none focus:border-pes"
       />
     </div>
   );
@@ -153,7 +153,7 @@ export default function NonAcademicAppraisalPage() {
       <div className="mb-4">
         <Link
           href="/models"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Models
         </Link>
@@ -162,16 +162,16 @@ export default function NonAcademicAppraisalPage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold mb-2">Non-Academic Staff Appraisal</h1>
-          <p className="text-gray-600 mb-6 max-w-2xl">
+          <p className="text-body mb-6 max-w-2xl">
             Evaluate non-academic staff based on output, quality, efficiency, attendance, and teamwork.
           </p>
         </div>
         <div className="flex gap-3">
           <Link
             href="/models/non-academic-appraisal/history"
-            className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
           >
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             View History
           </Link>
         </div>
@@ -181,14 +181,14 @@ export default function NonAcademicAppraisalPage() {
         {/* Left Column */}
         <div className="xl:col-span-2 space-y-6">
           
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+              <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
                 <Star size="16" variant="Bold" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Performance Metrics</h2>
-                <p className="text-xs text-gray-500">Score each category from 0 to 100</p>
+                <h2 className="text-lg font-bold text-strong">Performance Metrics</h2>
+                <p className="text-xs text-muted">Score each category from 0 to 100</p>
               </div>
             </div>
             
@@ -201,14 +201,14 @@ export default function NonAcademicAppraisalPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
               <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <Calculator size="16" variant="Bold" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Metric Weights</h2>
-                <p className="text-xs text-gray-500">Must sum to 1.0 exactly</p>
+                <h2 className="text-lg font-bold text-strong">Metric Weights</h2>
+                <p className="text-xs text-muted">Must sum to 1.0 exactly</p>
               </div>
             </div>
             
@@ -225,51 +225,51 @@ export default function NonAcademicAppraisalPage() {
 
         {/* Right Column */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Rating Thresholds</h2>
-            <p className="text-xs text-gray-500 mb-6">Define the minimum score for each rating tier</p>
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-strong mb-1">Rating Thresholds</h2>
+            <p className="text-xs text-muted mb-6">Define the minimum score for each rating tier</p>
             
             <div className="space-y-4">
               <div className="block">
-                <span className="block text-sm font-semibold text-gray-700 mb-1.5">Excellent (≥)</span>
+                <span className="block text-sm font-semibold text-body mb-1.5">Excellent (≥)</span>
                 <input
                   type="number"
                   value={thresholds.excellent}
                   onChange={(e) => setThresholds({ ...thresholds, excellent: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
+                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
                 />
               </div>
               <div className="block">
-                <span className="block text-sm font-semibold text-gray-700 mb-1.5">Good (≥)</span>
+                <span className="block text-sm font-semibold text-body mb-1.5">Good (≥)</span>
                 <input
                   type="number"
                   value={thresholds.good}
                   onChange={(e) => setThresholds({ ...thresholds, good: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
+                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
                 />
               </div>
               <div className="block">
-                <span className="block text-sm font-semibold text-gray-700 mb-1.5">Average (≥)</span>
+                <span className="block text-sm font-semibold text-body mb-1.5">Average (≥)</span>
                 <input
                   type="number"
                   value={thresholds.average}
                   onChange={(e) => setThresholds({ ...thresholds, average: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
+                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Calculate & Save</h2>
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
             
-            {errorMsg && <p className="text-red-600 font-medium text-sm mb-4">{errorMsg}</p>}
+            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
             {successMsg && <p className="text-green-600 font-medium text-sm mb-4">{successMsg}</p>}
 
             <button
               onClick={calculateScore}
               disabled={loading}
-              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-blue-900 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
             >
               {loading ? "Saving..." : (
                 <>

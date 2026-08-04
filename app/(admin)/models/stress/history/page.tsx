@@ -61,46 +61,46 @@ export default function StressEvaluationHistory() {
         <div>
           <Link
             href="/models/stress"
-            className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors mb-2"
+            className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-2"
           >
             <ArrowLeft2 size="16" className="mr-1" /> Back to Stress Evaluation
             Model
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-strong">
             Stress Evaluation History
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-muted text-sm mt-1">
             Review past organizational stress evaluations and ANOVA results.
           </p>
         </div>
         <button
           onClick={fetchHistory}
           disabled={refreshing}
-          className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
+          className="px-4 py-2 bg-white border border-line rounded-md text-sm font-medium hover:bg-canvas transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
         >
           {refreshing && (
-            <span className="animate-spin h-4 w-4 border-b-2 border-gray-500 rounded-full" />
+            <span className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full" />
           )}
           {refreshing ? "Refreshing…" : "Refresh Data"}
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-danger-50 text-danger-600 p-4 rounded-md mb-6 border border-danger-100">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pes mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading history data...</p>
+        <div className="bg-white rounded-xl shadow-sm border border-line p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-pes border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-muted">Loading history data...</p>
         </div>
       ) : history.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-line p-12 text-center">
+          <div className="w-16 h-16 bg-canvas rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-gray-400"
+              className="w-8 h-8 text-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -113,10 +113,10 @@ export default function StressEvaluationHistory() {
               ></path>
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">
+          <h3 className="text-lg font-medium text-strong mb-1">
             No history found
           </h3>
-          <p className="text-gray-500">
+          <p className="text-muted">
             Run the Stress Evaluation model and save results to see them here.
           </p>
         </div>
@@ -142,14 +142,14 @@ export default function StressEvaluationHistory() {
               return (
                 <div
                   key={run.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                  className="bg-white rounded-xl shadow-sm border border-line overflow-hidden"
                 >
-                  <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                  <div className="px-6 py-4 border-b border-line bg-canvas flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <div className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                      <div className="bg-pes-100 text-pes-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
                         ID: {run.id}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">
+                      <span className="text-sm font-medium text-body">
                         {dayjs(run.created_at).format("MMM D, YYYY • h:mm A")}
                       </span>
                     </div>
@@ -158,11 +158,11 @@ export default function StressEvaluationHistory() {
                   <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Aggregates */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
-                        <span className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-2">
+                      <div className="bg-danger-50 border border-danger-100 rounded-lg p-4 flex flex-col justify-center items-center text-center h-full">
+                        <span className="text-xs font-semibold text-danger-700 uppercase tracking-wider mb-2">
                           Stress
                         </span>
-                        <span className="text-2xl font-bold text-red-900">
+                        <span className="text-2xl font-bold text-danger-700">
                           {Number(run.stress_factor).toFixed(1)}%
                         </span>
                       </div>
@@ -186,20 +186,20 @@ export default function StressEvaluationHistory() {
 
                     {/* ANOVA */}
                     {parsedAnova && parsedAnova.applicable === false ? (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 h-full flex flex-col justify-center">
-                        <h4 className="text-sm font-bold text-amber-900 mb-1">ANOVA not applicable</h4>
-                        <p className="text-xs text-amber-800">
+                      <div className="bg-warning-50 border border-warning-100 rounded-lg p-4 h-full flex flex-col justify-center">
+                        <h4 className="text-sm font-bold text-warning-700 mb-1">ANOVA not applicable</h4>
+                        <p className="text-xs text-warning-700">
                           Not enough departments/staff to test variance for this run. The stress values are still shown.
                         </p>
                       </div>
                     ) : parsedAnova && (
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-                        <h4 className="text-sm font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">
+                      <div className="bg-canvas border border-line rounded-lg p-4 h-full flex flex-col">
+                        <h4 className="text-sm font-bold text-strong mb-3 border-b border-line pb-2">
                           ANOVA Test Results
                         </h4>
                         <div className="space-y-2 flex-1">
                           <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-body">
                               F-Statistic:
                             </span>
                             <span className="text-sm font-semibold">
@@ -207,7 +207,7 @@ export default function StressEvaluationHistory() {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-body">
                               Critical Value:
                             </span>
                             <span className="text-sm font-semibold">
@@ -218,7 +218,7 @@ export default function StressEvaluationHistory() {
                         <div
                           className={`mt-3 p-2 rounded-md text-xs font-bold text-center border ${
                             parsedAnova?.conclusion?.includes("Reject")
-                              ? "bg-red-100 text-red-800 border-red-200"
+                              ? "bg-danger-100 text-danger-700 border-danger-100"
                               : "bg-green-100 text-green-800 border-green-200"
                           }`}
                         >

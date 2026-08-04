@@ -27,7 +27,6 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
     setSideBarActive(!is_sidebar_active);
   }
   const handleMobile = () => {~
-    console.log(is_mobile)
     setMobile(!is_mobile)
   }
 
@@ -43,11 +42,10 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
   ]
 
   useEffect(() => {
-    console.log('dont render twice')
   }, [])
   
   return (
-      <div className={ lato.className + 'bg-gray-50 flex flex-row relative justify-center w-screen' }
+      <div className={ lato.className + 'bg-canvas flex flex-row relative justify-center w-screen' }
         onChange={handleMobile}>
 
           <div className="(sidebar) bg-white w-2/12 border-e">
@@ -73,7 +71,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
                         <Link
                           href={ i.href }
                           key={ i.key }
-                          className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-gray-400'} 
+                          className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-muted'} 
                                       hover:bg-gray-200 hover:text-pes p-3 ps-8 my-1 text-md flex transition-colors duration-200`}
                         >
                           <p className="mx-3">{ i.name }</p>
@@ -107,7 +105,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
                               onClick={() => handleSideBar()} 
                               href={ i.href } 
                               key={ i.key } 
-                              className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-gray-400'} 
+                              className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-muted'} 
                                           hover:bg-gray-200 hover:text-pes p-3 ps-8 my-1 text-md flex`}
                           >
                               <p className='mx-3'> { i.name }</p>

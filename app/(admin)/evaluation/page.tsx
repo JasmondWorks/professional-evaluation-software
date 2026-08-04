@@ -135,7 +135,7 @@ const ResultsView: React.FC<{
         results.iqrOutliers.length === 0 &&
         results.zScoreOutliers.length === 0
           ? "text-green-600"
-          : "text-red-600"
+          : "text-danger-600"
       }`}
     >
       {results.passedCount} users passed data integrity test
@@ -143,7 +143,7 @@ const ResultsView: React.FC<{
 
     {results.iqrOutliers.length > 0 && (
       <div className="mb-4">
-        <h3 className="font-semibold text-red-600">
+        <h3 className="font-semibold text-danger-600">
           IQR Outliers ({results.iqrOutliers.length})
         </h3>
         <ul className="list-disc pl-6">
@@ -158,7 +158,7 @@ const ResultsView: React.FC<{
 
     {results.zScoreOutliers.length > 0 && (
       <div className="mb-4">
-        <h3 className="font-semibold text-red-600">
+        <h3 className="font-semibold text-danger-600">
           Z-Score Outliers ({results.zScoreOutliers.length})
         </h3>
         <ul className="list-disc pl-6">

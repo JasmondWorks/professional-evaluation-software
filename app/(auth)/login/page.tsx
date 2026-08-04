@@ -45,10 +45,8 @@ export default function Home() {
       });
 
       let res = await req.json();
-      console.log(res);
 
       if (res.status == 200) {
-        console.log("logged in");
         setAccessToken(res.token);
 
         setRole(res.role);
@@ -63,9 +61,26 @@ export default function Home() {
 
         notify.dismiss(toastId);
         notify.success("Signed in successfully");
-        
-        // Delay the redirect slightly to ensure the browser's native password 
-        // manager has time to catch the successful form submission and prompt the user.
+
+        // Explicitly ask the browser to save the login via the Credential
+        // Management API. This reliably surfaces the native "save password?"
+        // prompt even though we sign in with fetch() (no full form navigation).
+        // Feature-detected + best-effort: never block the redirect on it.
+        try {
+          const PwdCredential = (window as any).PasswordCredential;
+          if (PwdCredential && navigator.credentials?.store) {
+            const cred = new PwdCredential({
+              id: data.email,
+              password: data.password,
+              name: data.email,
+            });
+            await navigator.credentials.store(cred);
+          }
+        } catch {
+          /* credential store unsupported or declined — ignore */
+        }
+
+        // Delay the redirect slightly to give the save-info prompt time to appear.
         setTimeout(() => {
           router.push("/dashboard");
         }, 100);
@@ -80,7 +95,6 @@ export default function Home() {
         notify.error(errorText);
       }
     } catch (error) {
-      console.log(error);
       const errorText =
         "Unable to reach the server. Please check your connection and try again.";
       setErrorMessage(errorText);
@@ -110,7 +124,7 @@ export default function Home() {
             {errorMessage && (
               <div
                 role="alert"
-                className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                className="mb-6 rounded-md border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-700"
               >
                 {errorMessage}
               </div>
@@ -121,7 +135,7 @@ export default function Home() {
                 Email Address:
               </label>
               <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
+                className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg"
                 type="email"
                 name="email"
                 id="email"
@@ -137,7 +151,7 @@ export default function Home() {
               </label>
               <div className="relative w-full">
                 <Field
-                  className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
+                  className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   id="password"
@@ -148,7 +162,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-body focus:outline-none"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -177,7 +191,7 @@ export default function Home() {
             <button
               type="submit"
               className="btn bg-pes text-white px-4 py-3 flex justify-center rounded-lg mb-2 
-                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors"
+                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pes-800 transition-colors"
               disabled={!(dirty && isValid)}
               tabIndex={4}
             >

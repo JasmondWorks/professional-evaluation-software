@@ -102,7 +102,7 @@ export default function ChangePassword() {
   return (
     <div className="form w-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-semibold text-gray-800">
+        <h1 className="text-4xl font-semibold text-strong">
           Change Password
         </h1>
         <button
@@ -117,7 +117,7 @@ export default function ChangePassword() {
       {errorMessage && (
         <div
           role="alert"
-          className="mb-6 p-4 rounded bg-red-100 text-red-700 border border-red-400"
+          className="mb-6 p-4 rounded bg-danger-100 text-danger-700 border border-danger-600"
         >
           {errorMessage}
         </div>
@@ -125,7 +125,7 @@ export default function ChangePassword() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-body mb-2">
                 Current Password
               </label>
               <input
@@ -134,7 +134,7 @@ export default function ChangePassword() {
                 name="currentPassword"
                 value={formData.currentPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                 required
                 disabled={isSubmitting}
                 tabIndex={1}
@@ -148,7 +148,7 @@ export default function ChangePassword() {
             </div>
 
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-body mb-2">
                 New Password
               </label>
               <input
@@ -157,7 +157,7 @@ export default function ChangePassword() {
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                 required
                 disabled={isSubmitting}
                 tabIndex={2}
@@ -169,11 +169,11 @@ export default function ChangePassword() {
                   }
                 }}
               />
-              <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
+              <p className="text-xs text-muted mt-1">Must be at least 6 characters long</p>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-body mb-2">
                 Confirm New Password
               </label>
               <input
@@ -182,7 +182,7 @@ export default function ChangePassword() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-pes"
                 required
                 disabled={isSubmitting}
                 tabIndex={3}
@@ -192,7 +192,7 @@ export default function ChangePassword() {
 
             <LoadingButton
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-pes text-white py-3 rounded-md hover:bg-pes-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting}
               tabIndex={4}
             >
