@@ -11,21 +11,7 @@ type CycleLike = {
 
 // The phase the cycle should be in right now, given the window close dates.
 export function effectivePhase(c: CycleLike): string {
-  const now = Date.now();
-  if (
-    c.phase === 'settings_open' &&
-    c.settings_closes_at &&
-    now > c.settings_closes_at.getTime()
-  ) {
-    return 'settings_closed';
-  }
-  if (
-    c.phase === 'feeling_open' &&
-    c.feeling_closes_at &&
-    now > c.feeling_closes_at.getTime()
-  ) {
-    return 'feeling_closed';
-  }
+  // Removed time-based auto-close so admins manually close each session.
   return c.phase;
 }
 
