@@ -97,7 +97,7 @@ export const addEmployeeSchema = z.object({
   doa: z.string(),
   post: z.string().min(2).max(100),
   doc: z.string().optional(),
-  role: z.enum(['lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor']),
+  role: z.string().min(1, 'Role is required'),
   dopp: z.string().optional(),
   level: z.string().optional(),
   org: z.string().min(1),

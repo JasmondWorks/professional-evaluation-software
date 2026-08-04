@@ -5,9 +5,21 @@ import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { compactPermissions } from '@/app/components/utils/roles'
+import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
 
 export async function POST(req: Request) {
-  const { email, password, remember } = await req.json();
+  const body = await req.json();
+  
+  const validation = validateData(loginSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: "Validation failed", details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    );
+  }
+
+  const { email, password } = validation.data!;
+  const remember = body.remember;
 
   try {
     const cleanEmail = email.trim();

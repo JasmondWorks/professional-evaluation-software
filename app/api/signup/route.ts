@@ -89,8 +89,19 @@ export async function GET() {
   return NextResponse.json({ name: 'successful!', data: 'true' })
 }
 
+import { validateData, signupSchema, formatZodErrors } from '@/app/lib/validation'
+
 export async function POST(req: Request) {
   const body = await req.json()
+  
+  const validation = validateData(signupSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: "Validation failed", details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    );
+  }
+
   const { name, org, email, password, type, category, plan, planCode, logo } = body
 
   // A plan/category must be selected (they come from the pricing page as query

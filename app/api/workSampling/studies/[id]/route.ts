@@ -5,15 +5,15 @@ import prisma from "../../../prisma.dev";
 // Helper to run raw SQL migrations to ensure columns exist in development/production dynamically.
 async function ensureColumnsExist() {
   try {
-    await prisma.$executeRawUnsafe(`
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedDates" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
+    `;
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedTimes" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
+    `;
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "studyMonths" jsonb;
-    `);
+    `;
   } catch (error) {
     console.error("Auto-migration column check failed:", error);
   }
@@ -31,31 +31,25 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
 
-    const [studies, positions, observations] = await Promise.all([
-      prisma.$queryRawUnsafe(
-        `SELECT * FROM "WorkSamplingStudy" WHERE id = $1`,
-        id
-      ) as Promise<any[]>,
-      prisma.$queryRawUnsafe(
-        `SELECT * FROM "WorkSamplingPosition" WHERE "studyId" = $1 ORDER BY id ASC`,
-        id
-      ) as Promise<any[]>,
-      prisma.$queryRawUnsafe(
-        `SELECT o.* FROM "WorkSamplingObservation" o
-         JOIN "WorkSamplingPosition" p ON o."positionId" = p.id
-         WHERE p."studyId" = $1
-         ORDER BY o.id ASC`,
-        id
-      ) as Promise<any[]>,
+    const [study, positions, observations] = await Promise.all([
+      prisma.workSamplingStudy.findUnique({ where: { id } }),
+      prisma.workSamplingPosition.findMany({ 
+        where: { studyId: id },
+        orderBy: { id: 'asc' }
+      }),
+      prisma.workSamplingObservation.findMany({
+        where: { position: { studyId: id } },
+        orderBy: { id: 'asc' }
+      }),
     ]);
 
-    if (!studies.length) {
+    if (!study) {
       return NextResponse.json({ success: false, error: "Study not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      data: { study: studies[0], positions, observations },
+      data: { study, positions, observations },
     });
   } catch (error) {
     console.error("Error loading study:", error);
@@ -73,72 +67,34 @@ export async function PATCH(
     const id = Number(params.id);
     const body = await req.json();
 
-    const {
-      confidenceLevel,
-      desiredAccuracy,
-      preliminaryP,
-      totalObservationsRequired,
-      studyMonth,
-      studyMonths,
-      observationsPerDay,
-      workingHoursPerDay,
-      workStartTime,
-      minCycleDuration,
-      maxDuration,
-      estimatedStudyDays,
-      availableAnnualHours,
-      defaultPerformanceAllowance,
-      org,
-      department,
-      analyst,
-      authorizedBy,
-      lockedDates,
-      lockedTimes,
-    } = body;
+    const updateData: any = {};
+    if (body.org !== undefined) updateData.org = body.org;
+    if (body.department !== undefined) updateData.department = body.department;
+    if (body.analyst !== undefined) updateData.analyst = body.analyst;
+    if (body.authorizedBy !== undefined) updateData.authorizedBy = body.authorizedBy;
+    if (body.confidenceLevel !== undefined) updateData.confidenceLevel = body.confidenceLevel;
+    if (body.desiredAccuracy !== undefined) updateData.desiredAccuracy = body.desiredAccuracy;
+    if (body.preliminaryP !== undefined) updateData.preliminaryP = body.preliminaryP;
+    if (body.totalObservationsRequired !== undefined) updateData.totalObservationsRequired = body.totalObservationsRequired;
+    if (body.studyMonth !== undefined) updateData.studyMonth = body.studyMonth;
+    if (body.studyMonths !== undefined) updateData.studyMonths = body.studyMonths;
+    if (body.observationsPerDay !== undefined) updateData.observationsPerDay = body.observationsPerDay;
+    if (body.workingHoursPerDay !== undefined) updateData.workingHoursPerDay = body.workingHoursPerDay;
+    if (body.workStartTime !== undefined) updateData.workStartTime = body.workStartTime;
+    if (body.minCycleDuration !== undefined) updateData.minCycleDuration = body.minCycleDuration;
+    if (body.maxDuration !== undefined) updateData.maxDuration = body.maxDuration;
+    if (body.estimatedStudyDays !== undefined) updateData.estimatedStudyDays = body.estimatedStudyDays;
+    if (body.availableAnnualHours !== undefined) updateData.availableAnnualHours = body.availableAnnualHours;
+    if (body.defaultPerformanceAllowance !== undefined) updateData.defaultPerformanceAllowance = body.defaultPerformanceAllowance;
+    if (body.lockedDates !== undefined) updateData.lockedDates = body.lockedDates;
+    if (body.lockedTimes !== undefined) updateData.lockedTimes = body.lockedTimes;
 
-    const query = `
-      UPDATE "WorkSamplingStudy" SET
-        org = $1, department = $2, analyst = $3, "authorizedBy" = $4,
-        "confidenceLevel" = $5, "desiredAccuracy" = $6, "preliminaryP" = $7,
-        "totalObservationsRequired" = $8, "studyMonth" = $9,
-        "studyMonths" = COALESCE($10::jsonb, "studyMonths"),
-        "observationsPerDay" = $11, "workingHoursPerDay" = $12,
-        "workStartTime" = $13, "minCycleDuration" = $14,
-        "maxDuration" = $15, "estimatedStudyDays" = $16,
-        "availableAnnualHours" = $17, "defaultPerformanceAllowance" = $18,
-        "lockedDates" = COALESCE($19::jsonb, "lockedDates"),
-        "lockedTimes" = COALESCE($20::jsonb, "lockedTimes")
-      WHERE id = $21
-      RETURNING *;
-    `;
+    const result = await prisma.workSamplingStudy.update({
+      where: { id },
+      data: updateData
+    });
 
-    const result = await prisma.$queryRawUnsafe(
-      query,
-      org ?? null,
-      department ?? null,
-      analyst ?? null,
-      authorizedBy ?? null,
-      confidenceLevel ?? null,
-      desiredAccuracy ?? null,
-      preliminaryP ?? null,
-      totalObservationsRequired ?? null,
-      studyMonth ?? null,
-      studyMonths ? JSON.stringify(studyMonths) : null,
-      observationsPerDay ?? null,
-      workingHoursPerDay ?? null,
-      workStartTime ?? null,
-      minCycleDuration ?? null,
-      maxDuration ?? null,
-      estimatedStudyDays ?? null,
-      availableAnnualHours ?? null,
-      defaultPerformanceAllowance ?? null,
-      lockedDates ? JSON.stringify(lockedDates) : null,
-      lockedTimes ? JSON.stringify(lockedTimes) : null,
-      id
-    );
-
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error updating study:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -156,23 +112,19 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
 
-    // Due to the lack of explicit cascading deletes in the raw sql or schema for these specific manual relations,
-    // we delete dependent records first.
-    // 1. Observations
-    await prisma.$executeRawUnsafe(
-      `DELETE FROM "WorkSamplingObservation" WHERE "positionId" IN (SELECT id FROM "WorkSamplingPosition" WHERE "studyId" = $1)`,
-      id
-    );
-    // 2. Positions
-    await prisma.$executeRawUnsafe(
-      `DELETE FROM "WorkSamplingPosition" WHERE "studyId" = $1`,
-      id
-    );
-    // 3. The Study
-    await prisma.$executeRawUnsafe(
-      `DELETE FROM "WorkSamplingStudy" WHERE id = $1`,
-      id
-    );
+    // Since schema has onDelete: Cascade, deleting the study is sufficient,
+    // but we can explicitly delete dependents first to be absolutely sure.
+    await prisma.workSamplingObservation.deleteMany({
+      where: { position: { studyId: id } }
+    });
+    
+    await prisma.workSamplingPosition.deleteMany({
+      where: { studyId: id }
+    });
+    
+    await prisma.workSamplingStudy.delete({
+      where: { id }
+    });
 
     return NextResponse.json({ success: true, message: "Study deleted successfully" });
   } catch (error) {

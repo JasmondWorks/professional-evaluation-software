@@ -1,31 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
-
-type ChangePasswordRequest = {
-  email: string
-  currentPassword: string
-  newPassword: string
-}
+import { validateData, changePasswordSchema, formatZodErrors } from '@/app/lib/validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, currentPassword, newPassword }: ChangePasswordRequest = await request.json()
+    const body = await request.json()
 
-    // Validate input
-    if (!email || !currentPassword || !newPassword) {
+    const validation = validateData(changePasswordSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { error: 'New password must be at least 6 characters long' },
-        { status: 400 }
-      )
-    }
+    const { email, currentPassword, newPassword } = validation.data!
 
     // Find user
     const user = await prisma.pesuser.findUnique({

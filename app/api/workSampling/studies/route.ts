@@ -5,15 +5,15 @@ import prisma from "../../prisma.dev";
 // Helper to run raw SQL migrations to ensure columns exist in development/production dynamically.
 async function ensureColumnsExist() {
   try {
-    await prisma.$executeRawUnsafe(`
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedDates" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
+    `;
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedTimes" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
+    `;
+    await prisma.$executeRaw`
       ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "studyMonths" jsonb;
-    `);
+    `;
   } catch (error) {
     console.error("Auto-migration column check failed:", error);
   }
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     await ensureColumnsExist();
-    const results = await prisma.$queryRawUnsafe(`
+    const results = await prisma.$queryRaw`
       SELECT s.*,
         (SELECT COUNT(*)::int FROM "WorkSamplingPosition" WHERE "studyId" = s.id) AS "positionCount",
         (SELECT COUNT(*)::int FROM "WorkSamplingObservation" o
@@ -93,7 +93,7 @@ export async function GET() {
           WHERE p."studyId" = s.id) AS "observationCount"
       FROM "WorkSamplingStudy" s
       ORDER BY s."createdAt" DESC
-    `);
+    `;
     return NextResponse.json({ success: true, data: results });
   } catch (error) {
     console.error("Error fetching studies:", error);

@@ -47,3 +47,4 @@ already says everything.
 - **Stress evaluation:** never mix cycles — scope Form 5 data to the effective
   settings cycle. Faculty stress = mean of its departments; organization stress
   = mean of its faculties. See project memory `stress-eval-rules`.
+- **Database queries:** NEVER use raw SQL queries (`$queryRaw`, `$queryRawUnsafe`, or `$executeRaw`) unless absolutely necessary (e.g., for DDL schema migrations like `ALTER TABLE`). Always leverage the power of the Prisma ORM methods (like `findMany`, `create`, `updateMany`) for all CRUD operations to ensure type-safety, relationship cascades, and automatic protection against SQL injection.
