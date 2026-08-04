@@ -98,7 +98,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
             href={href}
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
-            className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
+            className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
                ${active ? 'bg-pes-50 text-pes-700' : 'text-body hover:bg-line/60 hover:text-strong'}`}
          >
             <span className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-pes-700 transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`} />
@@ -137,7 +137,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
          </div>
 
          {/* Links */}
-         <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
+         <nav className="flex-1 overflow-y-auto px-3 py-5 flex flex-col gap-1">
             {allowedTabs.map(i => (
                <NavItem key={i.key} href={i.href} name={i.name} Icon={i.icon} onNavigate={onNavigate} />
             ))}

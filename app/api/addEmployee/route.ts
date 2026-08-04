@@ -6,6 +6,7 @@ import { sendMail } from '@/app/lib/email'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { PRESET_ROLES, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
 import { checkSingleHead } from '../_lib/singleHead'
+import { validateData, addEmployeeSchema, formatZodErrors } from '@/app/lib/validation'
 
 const randombytes = require('randombytes');
 
@@ -224,11 +225,21 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), { anyOf: ['can_access_employee_data'] })
   if (!auth.ok) return auth.response
 
-  const reqInfo: ReqInfo = await req.json()
+  const body: any = await req.json()
 
   // Bind the new employee to the caller's own org — never trust the org sent in
   // the body, so a user can't create employees in another organization.
-  if (auth.user.org) reqInfo.org = auth.user.org
+  if (auth.user.org) body.org = auth.user.org
+
+  const validation = validateData(addEmployeeSchema, body)
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: "Validation failed", details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    )
+  }
+
+  const reqInfo: ReqInfo = body;
 
   const randPassword = generateUniquePassword();
 

@@ -23,9 +23,22 @@ export async function GET(
       )
     }
 
+    const latestStressCycle = await prisma.stressCycle.findFirst({
+      where: { org: orgName },
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      select: {
+        settings_closes_at: true,
+        feeling_closes_at: true,
+        phase: true
+      }
+    })
+
     return NextResponse.json({
       status: 200,
-      data: org
+      data: {
+        ...org,
+        stressCycle: latestStressCycle
+      }
     })
   } catch (error) {
     console.error(error)

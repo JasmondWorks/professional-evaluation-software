@@ -121,23 +121,25 @@ export async function POST(req: NextRequest) {
     // must NOT fail the actual PayPal subscription (the payment already exists).
     let createdSub: any = null;
     try {
-      const planRow = await prisma.$queryRaw<
-        Array<{ id: string }>
-      >`SELECT id FROM "plans" WHERE name = ${pkg.name} LIMIT 1`;
+      const planRow = await prisma.plans.findFirst({
+        where: { name: pkg.name }
+      });
 
-      if (planRow && planRow.length > 0) {
-        const localPlanId = planRow[0].id;
-        const inserted = await prisma.$queryRawUnsafe<Array<any>>(
-          `INSERT INTO "subscriptions" (pesuser_id, plan_id, paypal_subscription_id, status, start_time, metadata, created_at, updated_at)
-           VALUES ($1, $2::uuid, $3, $4, $5, $6::jsonb, now(), now()) RETURNING *`,
-          Number(userID),
-          localPlanId,
-          paypalSubId,
-          status,
-          startTime ? new Date(startTime) : null,
-          metadataJson,
-        );
-        createdSub = inserted[0];
+      if (planRow) {
+        const localPlanId = planRow.id;
+        
+        createdSub = await prisma.subscriptions.create({
+          data: {
+            pesuser_id: Number(userID),
+            plan_id: localPlanId,
+            paypal_subscription_id: paypalSubId,
+            status: status,
+            start_time: startTime ? new Date(startTime) : null,
+            metadata: metadata, // Passing the JSON object directly to JSONB column
+            created_at: new Date(),
+            updated_at: new Date(),
+          }
+        });
       } else {
         console.warn("subByPaypal: no local plan row for", pkg.name);
       }

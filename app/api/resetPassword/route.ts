@@ -3,6 +3,8 @@ import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
+import { validateData, resetPasswordSchema, confirmResetSchema, formatZodErrors } from '@/app/lib/validation'
+
 type ResetPasswordRequest = {
   email: string
 }
@@ -15,14 +17,17 @@ type ConfirmResetRequest = {
 // Request password reset (send email with token)
 export async function POST(request: NextRequest) {
   try {
-    const { email }: ResetPasswordRequest = await request.json()
-
-    if (!email) {
+    const body = await request.json()
+    
+    const validation = validateData(resetPasswordSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
     }
+
+    const { email } = validation.data!
 
     // Find user
     const user = await prisma.pesuser.findUnique({
@@ -80,21 +85,17 @@ export async function POST(request: NextRequest) {
 // Confirm password reset with token
 export async function PUT(request: NextRequest) {
   try {
-    const { token, newPassword }: ConfirmResetRequest = await request.json()
-
-    if (!token || !newPassword) {
+    const body = await request.json()
+    
+    const validation = validateData(confirmResetSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Token and new password are required' },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
-        { status: 400 }
-      )
-    }
+    const { token, newPassword } = validation.data!
 
     // Find user with valid token
     const user = await prisma.pesuser.findFirst({

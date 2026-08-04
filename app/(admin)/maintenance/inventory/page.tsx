@@ -6,6 +6,9 @@ import jwt from "jsonwebtoken";
 import { ArrowLeft } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { DataTable } from "@/app/components/ui/DataTable";
+import { PageHeader } from "@/app/components/ui";
+import type { TableColumn } from "@/app/components/ui/Table";
 
 type InventoryItem = {
   identification_symbol: string;
@@ -19,71 +22,74 @@ type InventoryItem = {
 
 export default function MaintenanceInventory() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const access_token = getAccessToken() as string;
     const tokenData = jwt.decode(access_token);
 
     async function fetchInventory() {
-      const data = await apiFetch("/api/getInventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tokenData),
-      });
-      const InventoryData = await data.json();
-      setInventory(InventoryData);
+      try {
+        const data = await apiFetch("/api/getInventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tokenData),
+        });
+        const InventoryData = await data.json();
+        setInventory(Array.isArray(InventoryData) ? InventoryData : []);
+      } catch {
+        setInventory([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchInventory();
   }, []);
 
-  return (
-    <div className="p-4 w-full">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <Link href="/maintenance" className="flex items-center">
-            <ArrowLeft className="me-4" />
-          </Link>
-          <h1 className="text-2xl font-semibold">Inventory Sheet</h1>
-        </div>
-      </div>
+  const columns: TableColumn<InventoryItem>[] = [
+    {
+      key: "identification_symbol",
+      label: "ID symbol",
+      render: (item) => (
+        <Link
+          href={`/maintenance/${encodeURIComponent(item.description_of_facility)}`}
+          className="font-medium text-pes-700 hover:underline"
+        >
+          {item.identification_symbol}
+        </Link>
+      ),
+    },
+    { key: "description_of_facility", label: "Description" },
+    { key: "location", label: "Location" },
+    { key: "facility_register_id_no", label: "Register no." },
+    { key: "type", label: "Type" },
+    { key: "priority_rating", label: "Priority" },
+    { key: "remarks", label: "Remarks" },
+  ];
 
-      <table className="min-w-full border-collapse border border-line">
-        <thead>
-          <tr className="bg-canvas">
-            <th className="border px-4 py-2">ID Symbol</th>
-            <th className="border px-4 py-2">Description</th>
-            <th className="border px-4 py-2">Location</th>
-            <th className="border px-4 py-2">Register No.</th>
-            <th className="border px-4 py-2">Type</th>
-            <th className="border px-4 py-2">Priority</th>
-            <th className="border px-4 py-2">Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          {inventory.map((item, key) => (
-            <tr key={key} className="hover:bg-canvas">
-              <td className="border px-4 py-2">
-                <Link
-                  href={`/maintenance/${encodeURIComponent(item.description_of_facility)}`}
-                >
-                  {item.identification_symbol}
-                </Link>
-              </td>
-              <td className="border px-4 py-2">
-                {item.description_of_facility}
-              </td>
-              <td className="border px-4 py-2">{item.location}</td>
-              <td className="border px-4 py-2">
-                {item.facility_register_id_no}
-              </td>
-              <td className="border px-4 py-2">{item.type}</td>
-              <td className="border px-4 py-2">{item.priority_rating}</td>
-              <td className="border px-4 py-2">{item.remarks}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  return (
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+      <Link
+        href="/maintenance"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-4"
+      >
+        <ArrowLeft size={18} />
+        Back to maintenance
+      </Link>
+
+      <PageHeader title="Inventory sheet" />
+
+      <DataTable
+        columns={columns}
+        data={inventory}
+        loading={loading}
+        searchable
+        searchKeys={["identification_symbol", "description_of_facility", "location", "type", "priority_rating"]}
+        searchPlaceholder="Search inventory…"
+        pageSize={15}
+        emptyMessage="No inventory items yet."
+      />
     </div>
   );
 }
