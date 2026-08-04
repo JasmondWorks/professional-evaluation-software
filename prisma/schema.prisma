@@ -47,15 +47,81 @@ model StressCycle {
   settings_closes_at DateTime?
   feeling_opens_at   DateTime?
   feeling_closes_at  DateTime?
+  // Snapshot of the effective category limits for this cycle. Even when the
+  // cycle reuses/loads limits (limits_source != 'recomputed') this holds the
+  // resolved snapshot so a cycle is self-describing after a session reset.
   category_limits    Json?
   // Set when the evaluation's 5% rule fires — the next cycle must re-collect
   // Form 5 (settings) rather than reuse the stored limits.
   needs_reset        Boolean   @default(false)
-  created_by         String?   @db.VarChar(255)
-  created_at         DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // --- WellbeingSession linkage (see docs/stress-sessions.md) ---
+  // The session (a run of iterations sharing one F1 baseline) this cycle is in.
+  session_id              Int?
+  session                 WellbeingSession? @relation(fields: [session_id], references: [id])
+  // Iteration `i` within the session. First real cycle = 1.
+  iteration               Int?
+  // How this cycle got its limits: recomputed | inherited | loaded_from_history
+  limits_source           String?           @db.VarChar(30)
+  // Soft reference (no FK, to avoid a self-relation) to the cycle whose limits
+  // were reused/loaded. `category_limits` above is the resolved snapshot.
+  inherited_from_cycle_id Int?
+
+  feelingResults FeelingResult[]
+
+  created_by String?  @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([org])
+  @@index([session_id])
+}
+
+// A WellbeingSession groups an org's stress + feeling cycles (iterations) that
+// share one F1 baseline. A reset (feeling mean outside F1 ± 5%) ends the session
+// and a new one begins. Nothing is deleted — old sessions/cycles stay for
+// history recall. See docs/stress-sessions.md.
+model WellbeingSession {
+  id                 Int       @id @default(autoincrement())
+  org                String    @db.VarChar(255)
+  // active | reset | closed
+  status             String    @default("active") @db.VarChar(20)
+  // Iteration of the latest cycle (0 = just started / just reset).
+  current_iteration  Int       @default(0)
+  // The ±5% baseline: the org-level feeling value from iteration 1 and the
+  // Form 5 limits that produced it.
+  f1_feeling_value   Float?
+  f1_category_limits Json?
+  started_at         DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at           DateTime?
+  // e.g. "5% rule: feeling mean outside F1 band"
+  ended_reason       String?   @db.VarChar(255)
+  created_by         String?   @db.VarChar(255)
+
+  cycles         StressCycle[]
+  feelingResults FeelingResult[]
+
+  @@index([org])
+}
+
+// The feeling side of a cycle's outcome. Kept separate from the stress side
+// (stress_analysis_results / ANOVA) — the two are never mixed in one row.
+model FeelingResult {
+  id              Int               @id @default(autoincrement())
+  cycle_id        Int
+  cycle           StressCycle       @relation(fields: [cycle_id], references: [id])
+  session_id      Int?
+  session         WellbeingSession? @relation(fields: [session_id], references: [id])
+  // Mean feeling across all staff who took part in this cycle.
+  feeling_mean    Float?
+  // Result of the ±5% test against the session's F1.
+  within_f1_band  Boolean?
+  // True when this result ended the session (out of band → reset).
+  triggered_reset Boolean           @default(false)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+
+  @@index([cycle_id])
+  @@index([session_id])
 }
 
 model StaffEstimation {
@@ -374,45 +440,45 @@ model personnel_utilization {
 }
 
 model pesuser {
-  id               Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
-  name             String          @db.VarChar(255)
-  email            String          @unique @db.VarChar(255)
-  password         String          @db.VarChar(255)
-  gsm              String?         @db.VarChar(50)
+  id                     Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
+  name                   String          @db.VarChar(255)
+  email                  String          @unique @db.VarChar(255)
+  password               String          @db.VarChar(255)
+  gsm                    String?         @db.VarChar(50)
   // Email deliverability, updated by the Resend webhook: delivered | bounced |
   // complained. "bounced" flags the address as undeliverable in the UI.
-  email_status     String?         @db.VarChar(30)
-  email_status_at  DateTime?
+  email_status           String?         @db.VarChar(30)
+  email_status_at        DateTime?
   // Read access the org admin grants a staff member to see their own
   // department's / faculty's stress results (toggled by the admin).
-  view_department_stress Boolean    @default(false)
-  view_faculty_stress    Boolean    @default(false)
+  view_department_stress Boolean         @default(false)
+  view_faculty_stress    Boolean         @default(false)
   // Functional role — always a system PRESET so role-based UI stays predictable.
-  role             String?         @db.VarChar(50)
+  role                   String?         @db.VarChar(50)
   // Human-facing role label to SHOW (e.g. the custom role name "Paginator").
   // Falls back to `role` when the employee holds a preset directly.
-  display_role     String?         @db.VarChar(255)
-  address          String?
-  faculty_college  String?         @db.VarChar(255)
-  dob              DateTime?       @db.Date
-  doa              DateTime?       @db.Date
-  poa              String?         @db.VarChar(255)
-  doc              String?         @db.VarChar(255)
-  post             String?         @db.VarChar(255)
-  dopp             DateTime?       @db.Date
-  level            String?         @db.VarChar(50)
-  image            String?         @db.VarChar(255)
-  org              String?         @db.VarChar(255)
-  dept             String?         @db.VarChar(255)
-  tier             String?         @default("bronze") @db.VarChar(50)
-  category         String?         @db.VarChar(100)
-  plan             String?         @db.VarChar(100)
-  resettoken       String?         @db.VarChar(255)
-  resettokenexpiry DateTime?       @db.Timestamp(6)
-  audit_count      Int?            @default(0)
-  updated_at       DateTime?       @default(now()) @db.Timestamp(6)
-  notifications    notifications[]
-  subscriptions    subscriptions[]
+  display_role           String?         @db.VarChar(255)
+  address                String?
+  faculty_college        String?         @db.VarChar(255)
+  dob                    DateTime?       @db.Date
+  doa                    DateTime?       @db.Date
+  poa                    String?         @db.VarChar(255)
+  doc                    String?         @db.VarChar(255)
+  post                   String?         @db.VarChar(255)
+  dopp                   DateTime?       @db.Date
+  level                  String?         @db.VarChar(50)
+  image                  String?         @db.VarChar(255)
+  org                    String?         @db.VarChar(255)
+  dept                   String?         @db.VarChar(255)
+  tier                   String?         @default("bronze") @db.VarChar(50)
+  category               String?         @db.VarChar(100)
+  plan                   String?         @db.VarChar(100)
+  resettoken             String?         @db.VarChar(255)
+  resettokenexpiry       DateTime?       @db.Timestamp(6)
+  audit_count            Int?            @default(0)
+  updated_at             DateTime?       @default(now()) @db.Timestamp(6)
+  notifications          notifications[]
+  subscriptions          subscriptions[]
 
   @@unique([name, dept, org], map: "unique_user_per_dept_org")
   @@index([resettoken], map: "idx_pesuser_resettoken")
@@ -558,7 +624,15 @@ model stress_analysis_results {
   ms_within      Float?
   mean           Float?
   std_dev        Float?
+  // Per-cycle linkage (the stress side of a cycle's outcome; the feeling side
+  // lives in FeelingResult). Nullable — soft FK for legacy rows. See
+  // docs/stress-sessions.md.
+  cycle_id       Int?
+  session_id     Int?
   created_at     DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([cycle_id])
+  @@index([session_id])
 }
 
 model stress_scores {

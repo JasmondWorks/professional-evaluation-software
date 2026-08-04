@@ -51,7 +51,7 @@ export default function PersonnelRedundancyPage() {
       color = "bg-yellow-50 text-yellow-800 border-yellow-200";
     } else {
       rating = "High Redundancy";
-      color = "bg-red-50 text-red-800 border-red-200";
+      color = "bg-danger-50 text-danger-700 border-danger-100";
     }
 
     setResult({ pr, rating, color });
@@ -166,7 +166,7 @@ export default function PersonnelRedundancyPage() {
                 type="number"
                 value={actualStaff}
                 onChange={(e) => setActualStaff(Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -178,7 +178,7 @@ export default function PersonnelRedundancyPage() {
                 type="number"
                 value={optimalStaff}
                 onChange={(e) => setOptimalStaff(Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function PersonnelRedundancyPage() {
                   type="number"
                   value={thresholds.low}
                   onChange={(e) => setThresholds({ ...thresholds, low: Number(e.target.value) })}
-                  className="w-16 flex-shrink-0 rounded-md border border-line bg-canvas focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
                 />
               </div>
             </div>
@@ -238,7 +238,7 @@ export default function PersonnelRedundancyPage() {
                   type="number"
                   value={thresholds.moderate}
                   onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
-                  className="w-16 flex-shrink-0 rounded-md border border-line bg-canvas focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
                 />
               </div>
             </div>
@@ -275,7 +275,7 @@ export default function PersonnelRedundancyPage() {
                 <p className="text-sm font-medium opacity-80 mb-1">Classification Rating</p>
                 <p className="text-3xl font-bold">{result.rating}</p>
               </div>
-              <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
             </div>

@@ -20,7 +20,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from './useAuth';
 import { LucideDatabase } from 'lucide-react';
-import LoadingButton from './ui/LoadingButton';
 import { resolveEffectiveRole, PermissionKey } from './utils/roles';
 import { usePermissions } from './usePermissions';
 import { getAccessToken } from '@/app/utils/auth';
@@ -113,18 +112,28 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    const NavBody = ({ onNavigate }: { onNavigate?: () => void }) => (
       <>
          {/* Brand / org header */}
-         <div className="flex items-center gap-3 px-5 h-16 border-b border-line shrink-0">
-            {user.logo ? (
-               <Image src={user.logo} alt="" width={32} height={32} className="object-contain rounded-md" />
-            ) : (
-               <div className="w-8 h-8 rounded-md bg-pes text-white grid place-items-center text-sm font-semibold">
-                  {initial}
+         <div className="flex items-center justify-between px-5 h-16 border-b border-line shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+               {user.logo ? (
+                  <Image src={user.logo} alt="" width={32} height={32} className="object-contain rounded-md shrink-0" />
+               ) : (
+                  <div className="w-8 h-8 rounded-md bg-pes text-white grid place-items-center text-sm font-semibold shrink-0">
+                     {initial}
+                  </div>
+               )}
+               <div className="min-w-0">
+                  <p className="text-sm font-semibold text-strong truncate leading-tight">{user.org || 'PES'}</p>
+                  <p className="text-[11px] text-muted truncate leading-tight">Evaluation platform</p>
                </div>
-            )}
-            <div className="min-w-0">
-               <p className="text-sm font-semibold text-strong truncate leading-tight">{user.org || 'PES'}</p>
-               <p className="text-[11px] text-muted truncate leading-tight">Evaluation platform</p>
             </div>
+            {/* Close button for mobile drawer */}
+            <button
+               onClick={onNavigate}
+               className="lg:hidden p-1.5 -mr-2 text-muted hover:text-strong hover:bg-line/50 rounded-lg transition-colors focus:outline-none focus-visible:shadow-focus shrink-0"
+               aria-label="Close menu"
+            >
+               <CloseSquare size={24} />
+            </button>
          </div>
 
          {/* Links */}
@@ -174,12 +183,6 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
             >
                <NavBody onNavigate={handleSideBar} />
             </aside>
-            {/* Close button */}
-            <div className={`fixed top-3 right-4 z-50 ${is_sidebar_active ? 'block' : 'hidden'}`}>
-               <LoadingButton className="p-1 bg-surface rounded-lg shadow-md border border-line" onClick={handleSideBar}>
-                  <CloseSquare size={28} color="#3c3c52" />
-               </LoadingButton>
-            </div>
          </div>
       </>
    )

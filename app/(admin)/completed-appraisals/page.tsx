@@ -86,7 +86,7 @@ export default function CompletedAppraisalsPage() {
         {loading ? (
           <div className="p-8 text-center text-muted">Loading…</div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">{error}</div>
+          <div className="p-8 text-center text-danger-600">{error}</div>
         ) : rows.length === 0 ? (
           <div className="p-10 text-center text-muted">
             <p className="font-medium">No completed appraisals yet.</p>

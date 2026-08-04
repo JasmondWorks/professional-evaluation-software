@@ -189,12 +189,12 @@ export default function GeneratePage() {
         {/* Derived B */}
         <div className="flex flex-col text-sm font-medium text-body">
           <span>Max Duration B (min) <span className="text-muted font-normal">auto</span></span>
-          <div className={`mt-1 border rounded px-3 py-2 font-bold ${validB > 0 ? 'bg-canvas text-pes' : 'bg-red-50 text-red-600 border-red-300'}`}>
+          <div className={`mt-1 border rounded px-3 py-2 font-bold ${validB > 0 ? 'bg-canvas text-pes' : 'bg-danger-50 text-danger-600 border-danger-100'}`}>
             {validB.toFixed(1)}
           </div>
           <span className="text-xs text-muted mt-1">B = (W×60 − n×A) / n  (eq 6.9)</span>
           {validB <= 0 && (
-            <span className="text-xs text-red-500 mt-1">⚠ Reduce obs/day or increase working hours</span>
+            <span className="text-xs text-danger-600 mt-1">⚠ Reduce obs/day or increase working hours</span>
           )}
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function GeneratePage() {
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
                           {s.times.length > 0 ? s.times.map((t, ti) => (
-                            <span key={ti} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-2 py-0.5 font-mono text-xs">
+                            <span key={ti} className="bg-pes-50 text-pes-700 border border-pes-100 rounded px-2 py-0.5 font-mono text-xs">
                               {t}
                             </span>
                           )) : (

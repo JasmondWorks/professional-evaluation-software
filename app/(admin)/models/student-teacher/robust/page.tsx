@@ -142,14 +142,14 @@ export default function RobustOptimization() {
             {loading ? "Calculating..." : "Calculate"}
           </button>
         ) : (
-          <p className="mt-4 text-red-600 font-semibold text-sm">Only admins can perform calculations.</p>
+          <p className="mt-4 text-danger-600 font-semibold text-sm">Only admins can perform calculations.</p>
         )}
       </div>
 
       {status && (
         <p
           className={`mt-3 text-sm ${
-            status.startsWith("✅") ? "text-green-600" : "text-red-600"
+            status.startsWith("✅") ? "text-green-600" : "text-danger-600"
           }`}
         >
           {status}

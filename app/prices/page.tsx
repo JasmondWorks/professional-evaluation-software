@@ -240,7 +240,7 @@ export default function SubscriptionPage() {
         }`}
       >
         {/* Decorative background element */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 opacity-50 blur-3xl -z-10 pointer-events-none"></div>
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 rounded-full bg-gradient-to-br from-pes-50 to-blue-100 opacity-50 blur-3xl -z-10 pointer-events-none"></div>
 
         <Link href="/pricing" className="inline-flex items-center text-muted hover:text-body transition-colors mb-6 group">
           <ArrowLeft className="group-hover:-translate-x-1 transition-transform" />
@@ -273,7 +273,7 @@ export default function SubscriptionPage() {
           <ul className="space-y-4 text-body">
             {(selectedPlan?.features || []).map((f: string, i: number) => (
               <li key={i} className="flex items-start break-words">
-                <div className="flex-shrink-0 mt-1">
+                <div className="shrink-0 mt-1">
                   <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>

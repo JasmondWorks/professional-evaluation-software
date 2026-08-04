@@ -165,8 +165,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
   if (verificationError || !email) {
     return (
       <div className="max-w-3xl mx-auto mt-10 p-10 rounded-2xl shadow-md bg-white text-pes text-center space-y-4">
-        <div className="text-red-500 text-5xl mb-4">⚠️</div>
-        <h1 className="text-2xl font-semibold text-red-600">Access Denied</h1>
+        <div className="text-danger-600 text-5xl mb-4">⚠️</div>
+        <h1 className="text-2xl font-semibold text-danger-600">Access Denied</h1>
         <p className="text-body font-medium">{verificationError || "Invalid or Expired Invitation Link"}</p>
         <p className="text-sm text-muted mt-4">Please contact the administrator to request a new invitation.</p>
       </div>
@@ -311,7 +311,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
             message.includes("✅")
               ? "text-green-600"
               : message.includes("❌")
-              ? "text-red-600"
+              ? "text-danger-600"
               : "text-yellow-600"
           }`}
         >

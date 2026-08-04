@@ -49,12 +49,14 @@ export default function Goals({
       }
    }
 
+   // Returns a full static Tailwind class (dynamic `text-${x}-500` doesn't render
+   // under Tailwind v4's on-demand generation).
    function colorGrade( num: any ): string{
       if( typeof(num) == 'number' ){
-        return (num < 50)? 'red' : 'green';
+        return (num < 50)? 'text-danger-600' : 'text-success-600';
       }
-      else if ( typeof(num) == 'string' ) return 'yellow'
-      return ''
+      else if ( typeof(num) == 'string' ) return 'text-warning-600'
+      return 'text-muted'
    }
 
    // Whole days between now and the goal's due_date (null when no/invalid date).
@@ -93,7 +95,7 @@ export default function Goals({
                ))}
             </div>
          ) : error ? (
-            <div className="p-4 m-2 bg-red-50 text-red-600 rounded-sm">
+            <div className="p-4 m-2 bg-danger-50 text-danger-600 rounded-sm">
                {error}
             </div>
          ) : goals.length === 0 ? (
@@ -106,10 +108,10 @@ export default function Goals({
                   <div key={key}>
                      <div className='goal-metrics w-full grid grid-cols-3 gap-4 items-center my-4 text-sm text-left'>
                         <p>{ i.name }</p>
-                        <p className={ ` text-${ colorGrade(i.status) }-500 ` }> 
-                           { typeof( i.status ) == 'string'? `${ i.status }` : `${ i.status }% Completed` } 
+                        <p className={ colorGrade(i.status) }>
+                           { typeof( i.status ) == 'string'? `${ i.status }` : `${ i.status }% Completed` }
                         </p>
-                        <p className={ ` text-${ (daysLeft(i.due_date) ?? 0) < 3 ? 'red' : 'green' }-500 ` }>
+                        <p className={ (daysLeft(i.due_date) ?? 0) < 3 ? 'text-danger-600' : 'text-success-600' }>
                            { daysLeftLabel(i.due_date) }
                         </p>
                      </div>

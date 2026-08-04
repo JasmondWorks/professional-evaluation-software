@@ -135,7 +135,7 @@ const modelDefinitions: Record<
     description:
       "Conduct staff academic appraisals and evaluate teaching quality.",
     icon: Award,
-    color: "text-amber-500 bg-amber-50",
+    color: "text-warning-600 bg-warning-50",
   },
   Motivation: {
     path: "/models/motivation",
@@ -147,7 +147,7 @@ const modelDefinitions: Record<
     path: "/models/stress",
     description: "Monitor workplace stress factors and emotional fatigue.",
     icon: Activity,
-    color: "text-red-500 bg-red-50",
+    color: "text-danger-600 bg-danger-50",
   },
   "Non-Academic Appraisal": {
     path: "/models/non-academic-appraisal",
@@ -160,7 +160,7 @@ const modelDefinitions: Record<
     description:
       "Design and optimize reporting hierarchies and span of control.",
     icon: Hierarchy,
-    color: "text-indigo-500 bg-indigo-50",
+    color: "text-pes-600 bg-pes-50",
   },
   "Personnel Redundancy": {
     path: "/models/personnel-redundancy",
@@ -324,7 +324,7 @@ export default function ModelsPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 relative z-10 flex-grow">
+                <div className="mt-6 relative z-10 grow">
                   <h3 className="text-lg font-semibold text-strong group-hover:text-pes transition-colors duration-200">
                     {route}
                   </h3>

@@ -74,7 +74,7 @@ export default function NonAcademicAppraisalPage() {
       color = "bg-yellow-50 border-yellow-200 text-yellow-700";
     } else {
       rating = "Needs Improvement";
-      color = "bg-red-50 border-red-200 text-red-700";
+      color = "bg-danger-50 border-danger-100 text-danger-700";
     }
 
     setResult({ score: total, rating, color });
@@ -124,7 +124,7 @@ export default function NonAcademicAppraisalPage() {
         min="0"
         max="100"
         onChange={(e) => setMetrics({ ...metrics, [field]: Number(e.target.value) })}
-        className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+        className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
       />
     </div>
   );
@@ -263,7 +263,7 @@ export default function NonAcademicAppraisalPage() {
           <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
             <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
             
-            {errorMsg && <p className="text-red-600 font-medium text-sm mb-4">{errorMsg}</p>}
+            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
             {successMsg && <p className="text-green-600 font-medium text-sm mb-4">{successMsg}</p>}
 
             <button

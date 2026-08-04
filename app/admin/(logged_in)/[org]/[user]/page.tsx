@@ -123,7 +123,7 @@ export default function Page({ params }: { params: { user: string } }) {
           <button
             onClick={deleteUser}
             disabled={deleting}
-            className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg disabled:opacity-50"
+            className="w-full bg-danger-600 hover:bg-danger-700 text-white py-2 rounded-lg disabled:opacity-50"
           >
             {deleting ? "Deleting..." : "Delete User"}
           </button>

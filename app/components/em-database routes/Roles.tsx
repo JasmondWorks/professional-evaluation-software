@@ -256,9 +256,9 @@ export default function Roles() {
       width: "12%",
       render: (r) =>
         isPreset(r.name) ? (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700">Preset</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-pes-50 text-pes-700">Preset</span>
         ) : (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-amber-50 text-amber-700">Custom</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-warning-50 text-warning-700">Custom</span>
         ),
     },
     {
@@ -306,7 +306,7 @@ export default function Roles() {
             }}
             disabled={isPreset(r.name)}
             title={isPreset(r.name) ? "System roles can't be deleted" : "Delete role"}
-            className="text-red-600 text-xs font-medium border border-red-200 rounded-md px-2.5 py-1.5 hover:bg-red-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-danger-600 text-xs font-medium border border-danger-100 rounded-md px-2.5 py-1.5 hover:bg-danger-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Trash size={14} /> Delete
           </button>
@@ -464,7 +464,7 @@ export default function Roles() {
 
           <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
             <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-70">
+            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 rounded-lg disabled:opacity-70">
               {deleting ? "Deleting…" : delRole.assigned > 0 ? "Reassign & Delete" : "Delete Role"}
             </button>
           </div>
@@ -549,7 +549,7 @@ function Modal({
         <div className="flex justify-between items-start mb-1">
           <h2 className="text-xl font-bold text-strong">{title}</h2>
           <button onClick={onClose} aria-label="Close">
-            <CloseCircle className="text-muted hover:text-red-500" />
+            <CloseCircle className="text-muted hover:text-danger-600" />
           </button>
         </div>
         <div className="mt-3">{children}</div>

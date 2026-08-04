@@ -116,7 +116,7 @@ export default function ProductivityIndex() {
                 type="number"
                 value={output}
                 onChange={(e) => setOutput(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -128,14 +128,14 @@ export default function ProductivityIndex() {
                 type="number"
                 value={input}
                 onChange={(e) => setInput(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {errorMsg && <p className="text-red-600 font-medium mb-4">{errorMsg}</p>}
+      {errorMsg && <p className="text-danger-600 font-medium mb-4">{errorMsg}</p>}
 
       <button
         onClick={evaluateProductivity}

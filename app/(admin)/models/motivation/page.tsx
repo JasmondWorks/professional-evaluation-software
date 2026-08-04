@@ -137,7 +137,7 @@ export default function StaffMotivationPage() {
       color = "text-yellow-700 bg-yellow-50 border-yellow-200";
     } else {
       rating = "Low Motivation";
-      color = "text-red-700 bg-red-50 border-red-200";
+      color = "text-danger-700 bg-danger-50 border-danger-100";
     }
 
     setResult({ score: total, rating, color });
@@ -247,7 +247,7 @@ export default function StaffMotivationPage() {
                             type="text"
                             value={sub.label}
                             onChange={(e) => updateSubItem(cIndex, sIndex, "label", e.target.value)}
-                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
+                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none"
                             placeholder="Enter parameter name..."
                           />
                         </div>
@@ -257,13 +257,13 @@ export default function StaffMotivationPage() {
                             type="number"
                             value={sub.score}
                             onChange={(e) => updateSubItem(cIndex, sIndex, "score", Number(e.target.value))}
-                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none"
+                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none"
                           />
                         </div>
                         <div className="pt-6">
                           <button
                             onClick={() => removeSubItem(cIndex, sIndex)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-md transition-colors"
+                            className="text-danger-600 hover:text-danger-700 hover:bg-danger-50 p-2 rounded-md transition-colors"
                             title="Remove Parameter"
                           >
                             <Trash size="18" />
@@ -307,7 +307,7 @@ export default function StaffMotivationPage() {
                   type="number"
                   value={thresholds.high}
                   onChange={(e) => setThresholds({ ...thresholds, high: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
                 />
               </div>
               <div className="block">
@@ -319,7 +319,7 @@ export default function StaffMotivationPage() {
                   type="number"
                   value={thresholds.moderate}
                   onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
                 />
               </div>
             </div>
@@ -328,7 +328,7 @@ export default function StaffMotivationPage() {
           <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
             <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
             
-            {errorMsg && <p className="text-red-600 font-medium text-sm mb-4">{errorMsg}</p>}
+            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
             {message && <p className="text-green-600 font-medium text-sm mb-4">{message}</p>}
 
             <button

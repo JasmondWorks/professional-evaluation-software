@@ -129,7 +129,7 @@ export default function StaffAppraisalAllPage() {
         step={opts.step}
         value={value}
         onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
-        className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+        className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
       />
     </div>
   );
@@ -188,7 +188,7 @@ export default function StaffAppraisalAllPage() {
           
           <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
                 <DocumentText size="16" variant="Bold" />
               </div>
               <div>
@@ -207,7 +207,7 @@ export default function StaffAppraisalAllPage() {
 
           <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+              <div className="w-8 h-8 rounded-full bg-danger-50 flex items-center justify-center text-danger-600">
                 <Warning2 size="16" variant="Bold" />
               </div>
               <div>
@@ -256,30 +256,30 @@ export default function StaffAppraisalAllPage() {
             {totalWastedCost !== null && (
               <div className="space-y-4">
                 
-                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
+                <div className="p-4 bg-pes-50 border border-pes-100 rounded-lg">
                   <h3 className="text-sm font-semibold text-pes-700 mb-2">Appraisal Result</h3>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-indigo-700">Appraisal Max Score:</span>
+                    <span className="text-pes-700">Appraisal Max Score:</span>
                     <span className="font-bold">{staffAppraisalResult?.computedAppraisalMaxScore.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-indigo-700">HOD Max Score:</span>
+                    <span className="text-pes-700">HOD Max Score:</span>
                     <span className="font-bold">{staffAppraisalResult?.hodMaxScore.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-indigo-700">RTP:</span>
+                    <span className="text-pes-700">RTP:</span>
                     <span className="font-bold">{staffAppraisalResult?.RTP.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
-                  <h3 className="text-sm font-semibold text-red-900 mb-2">Unit Overloading</h3>
+                <div className="p-4 bg-danger-50 border border-danger-100 rounded-lg">
+                  <h3 className="text-sm font-semibold text-danger-700 mb-2">Unit Overloading</h3>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-red-700">Wasted Hours:</span>
+                    <span className="text-danger-700">Wasted Hours:</span>
                     <span className="font-bold">{unitOverloadingResult?.wastedManHours.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-red-700">Wasted Cost:</span>
+                    <span className="text-danger-700">Wasted Cost:</span>
                     <span className="font-bold">{unitOverloadingResult?.wastedCost.toFixed(2)}</span>
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function StaffAppraisalAllPage() {
                   </div>
                 </div>
 
-                {errorMsg && <p className="text-red-600 text-sm font-medium text-center">{errorMsg}</p>}
+                {errorMsg && <p className="text-danger-600 text-sm font-medium text-center">{errorMsg}</p>}
                 {successMsg && <p className="text-green-600 text-sm font-medium text-center">{successMsg}</p>}
 
                 <button

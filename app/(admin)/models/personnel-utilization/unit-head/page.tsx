@@ -166,7 +166,7 @@ export default function UnitHeadOverloadingPage() {
                 type="number"
                 value={actualHours}
                 onChange={(e) => setActualHours(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -178,7 +178,7 @@ export default function UnitHeadOverloadingPage() {
                 type="number"
                 value={numSubs}
                 onChange={(e) => setNumSubs(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function UnitHeadOverloadingPage() {
                 type="number"
                 value={extraComplexity}
                 onChange={(e) => setExtraComplexity(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -218,7 +218,7 @@ export default function UnitHeadOverloadingPage() {
                   type="number"
                   value={optimalHours}
                   onChange={(e) => setOptimalHours(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
                 />
               </div>
               <div className="block w-full min-w-0">
@@ -230,7 +230,7 @@ export default function UnitHeadOverloadingPage() {
                   type="number"
                   value={optimalK}
                   onChange={(e) => setOptimalK(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
                 />
               </div>
             </div>
@@ -263,7 +263,7 @@ export default function UnitHeadOverloadingPage() {
 
             <div className={`rounded-xl border p-6 shadow-sm flex flex-col justify-center ${
                 result.status === "Overloaded" 
-                  ? "bg-red-50 text-red-800 border-red-200" 
+                  ? "bg-danger-50 text-danger-700 border-danger-100" 
                   : result.status === "Underloaded" 
                     ? "bg-yellow-50 text-yellow-800 border-yellow-200"
                     : "bg-emerald-50 text-emerald-800 border-emerald-200"

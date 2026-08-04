@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import { factors } from "@/app/lib/stress/scoring";
 import { CategoryValues } from "@/app/lib/stress/scoring";
+import { RESET_MESSAGE } from "@/app/lib/stress/sessions";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
 import { orgTerms } from "@/app/lib/orgTerms";
 import {
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { ArrowLeft2, Calculator, Chart2, Save2, DocumentText, Warning2 } from "iconsax-react";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/app/components/ui/dialog";
 
 const generateNormalCurve = (mean = 50, stdDev = 15) => {
   const data = [];
@@ -128,6 +130,31 @@ export default function StressAnalysisTool() {
   const [opening, setOpening] = useState(false);
   const [ending, setEnding] = useState(false);
   const [approvingUnit, setApprovingUnit] = useState<string | null>(null);
+
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyCycles, setHistoryCycles] = useState<any[]>([]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const token = getAccessToken();
+      const res = await apiFetch('/api/stress/sessions-history', { headers: { Authorization: `Bearer ${token}` }});
+      const data = await res.json();
+      setHistoryCycles(data.history || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (settingsModalOpen) {
+      fetchHistory();
+    }
+  }, [settingsModalOpen]);
 
   const postCycleAction = async (endpoint: string, setBusy: (b: boolean) => void) => {
     setBusy(true);
@@ -241,14 +268,15 @@ export default function StressAnalysisTool() {
             const latest = Array.isArray(runs) ? runs[0] : null;
             if (latest) {
               setSummary({
-                stress: Number(latest.stress_factor),
-                pressure: Number(latest.pressure_factor),
-                conflict: Number(latest.conflict_factor),
+                stress: Number(latest.stress_factor ?? latest.f_statistic ?? 0), // fallback for shape changes
+                pressure: Number(latest.pressure_factor ?? 0),
+                conflict: Number(latest.conflict_factor ?? 0),
                 generatedAt: latest.created_at ?? null,
+                needsReset: payload?.cycle?.needs_reset ?? false,
               });
-              if (latest.anova_result) {
+              if (latest.anova_result || latest.conclusion) {
                 try {
-                  setAnovaResult(JSON.parse(latest.anova_result));
+                  setAnovaResult(latest.anova_result ? JSON.parse(latest.anova_result) : { conclusion: latest.conclusion });
                 } catch {
                   /* ignore malformed stored anova */
                 }
@@ -389,6 +417,7 @@ export default function StressAnalysisTool() {
       pressure: institutionResults[0]?.pressure ?? 0,
       conflict: institutionResults[0]?.conflict ?? 0,
       generatedAt: new Date().toISOString(),
+      needsReset: undefined, // Unknown until saved
     });
     setActiveTab("results");
   };
@@ -417,7 +446,7 @@ export default function StressAnalysisTool() {
           ? `Evaluation is locked until every submitted response is approved. ${totalPendingApproval} submission(s) are still awaiting ${approvalStatus?.academic ? `HOD / ${terms.head}` : "HOD"} approval.`
           : null;
 
-  const handleStartCycle = async () => {
+  const handleStartCycle = async (overrideFull?: boolean) => {
     setStartingCycle(true);
     setCycleMsg(null);
     try {
@@ -425,11 +454,16 @@ export default function StressAnalysisTool() {
       const res = await apiFetch("/api/stress/start-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...cycleWindows, forceSettings }),
+        body: JSON.stringify({
+          ...cycleWindows,
+          forceSettings: overrideFull ?? forceSettings,
+          historyCycleId: selectedHistoryId
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start cycle");
       setCycleMsg(data.message || "Cycle started.");
+      setSettingsModalOpen(false);
       refetchCycle();
     } catch (e) {
       setCycleMsg(e instanceof Error ? e.message : "Failed to start cycle");
@@ -480,11 +514,15 @@ export default function StressAnalysisTool() {
       }
       setSettingLimits(data.limits || {});
       setPreviewLocked(!!data.locked);
-      setSettingMsg(
-        data.staffCount > 0
-          ? `Form 5 results from ${data.staffCount} staff submission(s)${data.locked ? " (locked in by Run Setting)" : " (live preview — not yet locked in)"}.`
-          : "No Form 5 submissions yet for this cycle.",
-      );
+      if (data.limitsSource === "loaded_from_history" || data.limitsSource === "inherited") {
+        setSettingMsg("Limits loaded from a previous session (no new Form 5 submissions required).");
+      } else {
+        setSettingMsg(
+          data.staffCount > 0
+            ? `Form 5 results from ${data.staffCount} staff submission(s)${data.locked ? " (locked in by Run Setting)" : " (live preview — not yet locked in)"}.`
+            : "No Form 5 submissions yet for this cycle."
+        );
+      }
     } catch (e) {
       setSettingMsg(e instanceof Error ? e.message : "Failed to load Form 5 results");
     } finally {
@@ -513,6 +551,7 @@ export default function StressAnalysisTool() {
       });
       const data = await res.json();
       if (res.ok) {
+        setSummary((s: any) => ({ ...s, needsReset: data.needsReset }));
         setMsg({ type: "success", text: "Evaluation saved successfully!" });
       } else {
         setMsg({ type: "error", text: data.error || "Failed to save evaluation." });
@@ -555,7 +594,7 @@ export default function StressAnalysisTool() {
             <button
               onClick={handleEndCycle}
               disabled={ending}
-              className="bg-white border border-red-300 text-red-700 shadow-sm px-4 py-2 rounded-md hover:bg-red-50 font-medium text-sm transition-colors disabled:opacity-50"
+              className="bg-white border border-danger-100 text-danger-700 shadow-sm px-4 py-2 rounded-md hover:bg-danger-50 font-medium text-sm transition-colors disabled:opacity-50"
             >
               {ending ? "Ending…" : "End cycle"}
             </button>
@@ -573,7 +612,7 @@ export default function StressAnalysisTool() {
       {/* Which cycle's Form 5 data these results are based on — so carried-over
           values from an earlier cycle are never confused with the current one. */}
       {dataCycle && (
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-xs font-medium text-indigo-700">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-pes-50 border border-pes-100 px-4 py-1.5 text-xs font-medium text-pes-700">
           Results based on stress cycle #{dataCycle.id}
           {dataCycle.created_at ? ` · started ${new Date(dataCycle.created_at).toLocaleDateString()}` : ""}
         </div>
@@ -641,7 +680,7 @@ export default function StressAnalysisTool() {
               )}
               {form?.status === "open" && (
                 <button onClick={handleCloseWindow} disabled={closing}
-                  className="px-5 py-2.5 border border-red-200 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50">
+                  className="px-5 py-2.5 border border-danger-100 text-danger-700 rounded-lg font-medium hover:bg-danger-50 transition-colors disabled:opacity-50">
                   {closing ? "Closing…" : `Close ${inSettings ? "Form 5" : "Form 6/7"} now`}
                 </button>
               )}
@@ -653,7 +692,7 @@ export default function StressAnalysisTool() {
               )}
               <button onClick={handleEndCycle} disabled={ending}
                 title="Close this cycle off for the whole organization"
-                className="px-5 py-2.5 border border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50">
+                className="px-5 py-2.5 border border-danger-100 text-danger-700 rounded-lg font-medium hover:bg-danger-50 transition-colors disabled:opacity-50">
                 {ending ? "Ending…" : "End cycle"}
               </button>
             </div>
@@ -663,105 +702,117 @@ export default function StressAnalysisTool() {
 
       {/* START CYCLE (admin) — only when no cycle is in session */}
       {activeTab === "analysis" && isAdmin && !inSession && (
-        <div className="bg-white rounded-xl border border-line p-8 shadow-sm mb-6">
-          {(() => {
-            // The effective shape of the cycle about to start. Feeling-only is the
-            // default when a prior setting exists and no reset was flagged — unless
-            // the admin ticks "re-collect Form 5".
-            const willBeFull = nextMode ? nextMode.willBeFull || forceSettings : true;
-            const canChoose = !!nextMode && nextMode.hasSetting && !nextMode.needsReset;
-            return (
-              <>
-                <h2 className="text-xl font-bold text-strong">Start a Stress Cycle</h2>
-                <p className="text-sm text-muted max-w-2xl mt-1 mb-4">
-                  Open a new stress exercise for your organization. Only one cycle can run at a time.
-                </p>
-
-                {/* Make the mode obvious BEFORE starting, so a Form 5 window is never silently ignored. */}
-                <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${willBeFull ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-                  {willBeFull ? (
-                    <>This will be a <strong>full cycle</strong>: staff fill <strong>Form 5</strong> first, then you run the setting to open Form 6/7.</>
-                  ) : (
-                    <>This will be a <strong>feeling-only cycle</strong>: it <strong>reuses the setting from your last cycle</strong> and opens <strong>Form 6/7 directly</strong> — Form 5 is skipped. {nextMode?.needsReset ? "" : "Tick “re-collect Form 5” below to run a full cycle instead."}</>
-                  )}
-                </div>
-
-                {canChoose && (
-                  <label className="flex items-center gap-2 text-sm font-medium text-body mb-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={forceSettings}
-                      onChange={(e) => setForceSettings(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Re-collect Form 5 this cycle (run a full cycle instead of reusing the last setting)
-                  </label>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-                  {(willBeFull
-                    ? [
-                        { k: "settingsOpensAt", label: "Form 5 opens" },
-                        { k: "settingsClosesAt", label: "Form 5 closes" },
-                      ]
-                    : [
-                        { k: "feelingOpensAt", label: "Form 6/7 opens" },
-                        { k: "feelingClosesAt", label: "Form 6/7 closes" },
-                      ]
-                  ).map((f) => (
-                    <label key={f.k} className="flex flex-col text-sm font-medium text-body">
-                      {f.label}
-                      <input
-                        type="datetime-local"
-                        value={(cycleWindows as any)[f.k]}
-                        onChange={(e) => setCycleWindows((w) => ({ ...w, [f.k]: e.target.value }))}
-                        className="mt-1 px-3 py-2 border border-line rounded-lg font-normal"
-                      />
-                    </label>
-                  ))}
-                </div>
-                {willBeFull && (
-                  <p className="text-xs text-muted mt-2 max-w-2xl">
-                    Form 6/7 opens when you run the setting (after Form 5 closes) — you set its close date then, not now.
-                  </p>
-                )}
-
-                {(() => {
-                  // Require the open + close dates for the relevant form before
-                  // the cycle can be started, and that close is after open.
-                  const opensKey = willBeFull ? "settingsOpensAt" : "feelingOpensAt";
-                  const closesKey = willBeFull ? "settingsClosesAt" : "feelingClosesAt";
-                  const opensAt = (cycleWindows as any)[opensKey];
-                  const closesAt = (cycleWindows as any)[closesKey];
-                  const label = willBeFull ? "Form 5" : "Form 6/7";
-                  const datesMissing = !opensAt || !closesAt;
-                  const badOrder = !datesMissing && new Date(closesAt) <= new Date(opensAt);
-                  const blocked = datesMissing || badOrder;
-                  return (
-                    <>
-                      <button
-                        onClick={handleStartCycle}
-                        disabled={startingCycle || blocked}
-                        title={blocked ? `Set the ${label} open and close dates first` : undefined}
-                        className="mt-4 px-6 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {startingCycle ? "Starting…" : willBeFull ? "Start full cycle" : "Start feeling-only cycle"}
-                      </button>
-                      {datesMissing && (
-                        <p className="text-xs text-amber-600 mt-2">Set the {label} open and close date &amp; time to start.</p>
-                      )}
-                      {badOrder && (
-                        <p className="text-xs text-amber-600 mt-2">The close date must be after the open date.</p>
-                      )}
-                    </>
-                  );
-                })()}
-                {cycleMsg && <p className="text-sm text-body mt-3">{cycleMsg}</p>}
-              </>
-            );
-          })()}
+        <div className="bg-white rounded-xl border border-line p-8 shadow-sm mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-strong">Start a Stress Cycle</h2>
+            <p className="text-sm text-muted max-w-2xl mt-1">
+              Open a new stress exercise for your organization. Only one cycle can run at a time.
+            </p>
+          </div>
+          <button
+            onClick={() => setSettingsModalOpen(true)}
+            className="px-6 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm"
+          >
+            Manage stress settings
+          </button>
         </div>
       )}
+
+      {/* SETTINGS MODAL */}
+      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Manage Stress Settings</DialogTitle>
+            <DialogDescription>
+              Choose how you want to configure the limits for this stress cycle.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="bg-canvas border border-line rounded-xl p-5 hover:border-pes hover:shadow-sm transition-all cursor-pointer" onClick={() => setSelectedHistoryId(null)}>
+              <div className="flex items-center gap-3 mb-2">
+                <input type="radio" checked={selectedHistoryId === null} onChange={() => setSelectedHistoryId(null)} className="w-4 h-4 text-pes" />
+                <h3 className="font-bold text-strong">Start from scratch</h3>
+              </div>
+              <p className="text-sm text-muted ml-7">
+                Open Form 5 to collect stress setting data from staff, then run the setting to lock in limits.
+              </p>
+              {selectedHistoryId === null && (
+                <div className="ml-7 mt-4 grid gap-3">
+                  <label className="flex flex-col text-sm text-body">
+                    Form 5 opens
+                    <input type="datetime-local" value={cycleWindows.settingsOpensAt} onChange={(e) => setCycleWindows((w) => ({ ...w, settingsOpensAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
+                  </label>
+                  <label className="flex flex-col text-sm text-body">
+                    Form 5 closes
+                    <input type="datetime-local" value={cycleWindows.settingsClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, settingsClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
+                  </label>
+                  <button onClick={() => handleStartCycle(true)} disabled={startingCycle || !cycleWindows.settingsOpensAt || !cycleWindows.settingsClosesAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                    {startingCycle ? "Starting..." : "Start full cycle"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-canvas border border-line rounded-xl p-5 hover:border-pes hover:shadow-sm transition-all cursor-pointer" onClick={() => setSelectedHistoryId(historyCycles[0]?.id || null)}>
+              <div className="flex items-center gap-3 mb-2">
+                <input type="radio" checked={selectedHistoryId !== null} onChange={() => { if(historyCycles.length > 0) setSelectedHistoryId(historyCycles[0].id) }} disabled={historyCycles.length === 0} className="w-4 h-4 text-pes" />
+                <h3 className="font-bold text-strong">Load from history</h3>
+              </div>
+              <p className="text-sm text-muted ml-7 mb-4">
+                Reuse limits from a past cycle and jump straight to Form 6 (feeling).
+              </p>
+              {selectedHistoryId !== null && (
+                <div className="ml-7 grid gap-3">
+                  {historyLoading ? (
+                    <p className="text-sm text-muted animate-pulse">Loading history...</p>
+                  ) : historyCycles.length === 0 ? (
+                    <p className="text-sm text-warning-700">No past cycles found.</p>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto space-y-2 mb-2 pr-2">
+                      {historyCycles.map(c => {
+                        const limits = typeof c.limits === 'string' ? JSON.parse(c.limits) : c.limits;
+                        const sessionLabel = c.sessionId ? String(c.sessionId) : 'Legacy';
+                        const iterLabel = c.iteration ?? 1;
+                        return (
+                          <label key={c.id} className={`flex flex-col p-3 border rounded cursor-pointer transition-colors ${selectedHistoryId === c.id ? 'border-pes bg-pes-50' : 'border-line bg-white hover:bg-canvas'}`}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <input type="radio" name="historyId" checked={selectedHistoryId === c.id} onChange={() => setSelectedHistoryId(c.id)} className="w-3 h-3 text-pes" />
+                              <span className="text-xs font-semibold">Session {sessionLabel} (Iter {iterLabel})</span>
+                              <span className="text-[10px] text-muted ml-auto">{new Date(c.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            {limits && typeof limits === 'object' && (
+                              <div className={`ml-5 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 transition-opacity ${selectedHistoryId === c.id ? 'opacity-100' : 'opacity-60'}`}>
+                                {Object.entries(limits).map(([k, v]) => (
+                                  <div key={k} className="flex justify-between items-center text-[10px] border-b border-line/50 pb-0.5">
+                                    <span className="text-muted capitalize truncate pr-2">{k.replace(/_/g, ' ')}</span>
+                                    <span className="font-semibold text-strong">{Number(v).toFixed(1)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <label className="flex flex-col text-sm text-body">
+                    Form 6/7 opens
+                    <input type="datetime-local" value={cycleWindows.feelingOpensAt} onChange={(e) => setCycleWindows((w) => ({ ...w, feelingOpensAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
+                  </label>
+                  <label className="flex flex-col text-sm text-body">
+                    Form 6/7 closes
+                    <input type="datetime-local" value={cycleWindows.feelingClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, feelingClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
+                  </label>
+                  <button onClick={() => handleStartCycle(false)} disabled={startingCycle || !selectedHistoryId || !cycleWindows.feelingOpensAt || !cycleWindows.feelingClosesAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                    {startingCycle ? "Starting..." : "Start feeling-only cycle"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ESTAB / PERSONNEL: departmental & faculty submission/approval status */}
       {activeTab === "analysis" && isAdmin && inSession && approvalStatus?.active && (
@@ -796,7 +847,7 @@ export default function StressAnalysisTool() {
                         <td className="px-4 py-2 font-medium text-strong">
                           {d.name}
                           {noHead && (
-                            <span className="ml-2 text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full text-[11px] font-medium">No {headLabel} assigned</span>
+                            <span className="ml-2 text-danger-600 bg-danger-50 border border-danger-100 px-2 py-0.5 rounded-full text-[11px] font-medium">No {headLabel} assigned</span>
                           )}
                         </td>
                         <td className="px-4 py-2 text-right text-body">{d.staff}</td>
@@ -806,7 +857,7 @@ export default function StressAnalysisTool() {
                           {d.cleared ? (
                             <span className="text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium">Cleared</span>
                           ) : (
-                            <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <span className="text-warning-700 bg-warning-50 px-2.5 py-1 rounded-full text-xs font-medium">
                               Pending{d.pendingApproval > 0 ? ` (${d.pendingApproval} to approve)` : ""}
                             </span>
                           )}
@@ -901,7 +952,7 @@ export default function StressAnalysisTool() {
                 <button
                   onClick={handlePreviewSetting}
                   disabled={previewing || !cycleStatus?.active}
-                  className="px-5 py-3 border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-3 border border-pes-200 text-pes-700 rounded-lg hover:bg-pes-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {previewing ? "Loading…" : "View Form 5 results"}
                 </button>
@@ -909,7 +960,7 @@ export default function StressAnalysisTool() {
                   onClick={handleRunSetting}
                   disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
                   title={cycleStatus?.phase !== "settings_closed" ? "Close Form 5 first to lock in the setting" : undefined}
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
                 </button>
@@ -925,7 +976,7 @@ export default function StressAnalysisTool() {
           {settingLimits && (
             <>
             {!previewLocked && (
-              <p className="text-xs font-medium text-amber-600 mb-2">
+              <p className="text-xs font-medium text-warning-600 mb-2">
                 Live preview — these limits are not locked in until you Run Setting.
               </p>
             )}
@@ -946,7 +997,7 @@ export default function StressAnalysisTool() {
       {activeTab === "analysis" && inSession && (
         <div className="bg-white rounded-xl border border-line p-8 shadow-sm">
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-line">
-            <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
               <Calculator size="24" variant="Bold" />
             </div>
             <div>
@@ -973,18 +1024,18 @@ export default function StressAnalysisTool() {
                   Run ANOVA & Generate Report
                 </button>
                 {anovaBlockedReason && (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 max-w-xl">
-                    <Warning2 size="18" className="text-amber-500 mt-0.5 shrink-0" variant="Bold" />
+                  <div className="flex items-start gap-2 rounded-lg border border-warning-100 bg-warning-50 px-4 py-3 text-sm text-warning-700 max-w-xl">
+                    <Warning2 size="18" className="text-warning-600 mt-0.5 shrink-0" variant="Bold" />
                     <span>{anovaBlockedReason}</span>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
-                <Warning2 className="text-red-600 mt-0.5" size="20" />
+              <div className="bg-danger-50 border border-danger-100 rounded-lg p-4 flex gap-3">
+                <Warning2 className="text-danger-600 mt-0.5" size="20" />
                 <div>
-                  <h4 className="text-sm font-bold text-red-900 mb-1">Access Denied</h4>
-                  <p className="text-xs text-red-700">Only administrators can run the ANOVA analysis and generate organizational reports.</p>
+                  <h4 className="text-sm font-bold text-danger-700 mb-1">Access Denied</h4>
+                  <p className="text-xs text-danger-700">Only administrators can run the ANOVA analysis and generate organizational reports.</p>
                 </div>
               </div>
             )}
@@ -1004,7 +1055,7 @@ export default function StressAnalysisTool() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Stress</span>
-              <span className="text-4xl font-bold text-red-600">{(summary.stress).toFixed(1)}%</span>
+              <span className="text-4xl font-bold text-danger-600">{(summary.stress).toFixed(1)}%</span>
             </div>
             <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Pressure</span>
@@ -1064,9 +1115,9 @@ export default function StressAnalysisTool() {
               <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-strong mb-4 border-b border-line pb-2">ANOVA Results</h3>
                 {anovaResult && anovaResult.applicable === false && (
-                  <div className="p-4 rounded-md border border-amber-300 bg-amber-50">
-                    <p className="text-sm font-bold text-amber-900 mb-1">ANOVA not applicable</p>
-                    <p className="text-sm text-amber-800">
+                  <div className="p-4 rounded-md border border-warning-100 bg-warning-50">
+                    <p className="text-sm font-bold text-warning-700 mb-1">ANOVA not applicable</p>
+                    <p className="text-sm text-warning-700">
                       An ANOVA needs at least two departments with at least two staff between them to measure variance.
                       {typeof anovaResult.groups === "number" && typeof anovaResult.staff === "number"
                         ? ` This analysis has ${anovaResult.staff} staff across ${anovaResult.groups} department${anovaResult.groups === 1 ? "" : "s"}.`
@@ -1087,21 +1138,24 @@ export default function StressAnalysisTool() {
                     </div>
                     <div className={`mt-4 p-3 rounded-md text-sm font-semibold border ${
                       (anovaResult.conclusion || "").includes("Reject")
-                        ? "bg-red-50 text-red-800 border-red-200"
+                        ? "bg-danger-50 text-danger-700 border-danger-100"
                         : "bg-green-50 text-green-800 border-green-200"
                     }`}>
                       {anovaResult.conclusion}
                     </div>
-                    {/* Reset rule: a rejected H₀ means the stress feeling shifted
-                        significantly, so the setting (Form 5) must be re-run. */}
+                    {/* Reset rule callout based on the 5% threshold */}
                     <div className={`mt-2 p-3 rounded-md text-sm border ${
-                      (anovaResult.conclusion || "").includes("Reject")
-                        ? "bg-amber-50 text-amber-800 border-amber-200"
-                        : "bg-canvas text-body border-line"
+                      summary.needsReset === true
+                        ? "bg-warning-50 text-warning-700 border-warning-100"
+                        : summary.needsReset === false
+                          ? "bg-canvas text-body border-line"
+                          : "bg-gray-50 text-gray-500 border-gray-200"
                     }`}>
-                      {(anovaResult.conclusion || "").includes("Reject")
-                        ? "The feeling is changed and there is need for reset of the setting."
-                        : "Not violated, still within range."}
+                      {summary.needsReset === true
+                        ? RESET_MESSAGE
+                        : summary.needsReset === false
+                          ? "Within range — no reset needed."
+                          : "Save results to see F1 ± 5% boundary check."}
                     </div>
                   </div>
                 )}
@@ -1111,7 +1165,7 @@ export default function StressAnalysisTool() {
                 <h3 className="text-lg font-bold text-strong mb-4 border-b border-line pb-2">Save Evaluation</h3>
                 {msg && (
                   <div className={`mb-4 p-3 rounded-md text-sm font-medium border ${
-                    msg.type === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"
+                    msg.type === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-danger-50 text-danger-700 border-danger-100"
                   }`}>
                     {msg.text}
                   </div>
@@ -1224,7 +1278,7 @@ export default function StressAnalysisTool() {
                           <td className="px-6 py-3 font-medium text-strong">{r.name}</td>
                           <td className="px-6 py-3 text-right text-body">{r.count}</td>
                           <td className="px-6 py-3 text-right">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger-100 text-danger-700">
                               {(r.stress).toFixed(1)}%
                             </span>
                           </td>

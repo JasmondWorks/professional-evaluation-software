@@ -9,8 +9,9 @@ import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import { apiFetch } from '@/app/utils/apiFetch';
 
+// Full static class — dynamic `text-${x}-500` doesn't render under Tailwind v4.
 function colorGrade(num: any): string {
-  return num < 50 ? "red" : "green";
+  return num < 50 ? "text-danger-600" : "text-success-600";
 }
 
 // Whole days between now and a goal's due_date (null when missing/invalid).
@@ -183,7 +184,7 @@ export default function Goals() {
               onClick={handleClearOverdue}
               disabled={clearing}
               title="Remove goals overdue by more than 2 weeks"
-              className="my-auto mr-3 rounded-md border border-red-300 text-red-700 px-4 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+              className="my-auto mr-3 rounded-md border border-danger-100 text-danger-700 px-4 py-2 text-sm font-medium hover:bg-danger-50 disabled:opacity-50"
             >
               {clearing ? "Clearing…" : `Clear overdue (${overdueGoals.length})`}
             </button>
@@ -274,7 +275,7 @@ export default function Goals() {
                   </span>
                   {dueDate && (
                     <span
-                      className={`text-xs ${isPastDue ? "text-red-500" : "text-muted"}`}
+                      className={`text-xs ${isPastDue ? "text-danger-600" : "text-muted"}`}
                     >
                       Due: {dueDate}
                       {isPastDue ? " (past due)" : ""}
@@ -324,7 +325,7 @@ export default function Goals() {
                   <p className="flex my-auto">
                     <Status />
                     <span
-                      className={`mx-2 text-${typeof i.status == "number" ? colorGrade(i.status) : "yellow"}-500 `}
+                      className={`mx-2 ${typeof i.status == "number" ? colorGrade(i.status) : "text-warning-600"}`}
                     >
                       {typeof i.status == "number"
                         ? `${i.status}% completed`
@@ -335,7 +336,7 @@ export default function Goals() {
                   <p className="flex my-auto">
                     <CalendarRemove />
                     <span
-                      className={`mx-2 text-${(daysLeft(i.due_date) ?? -1) < 3 ? "red" : "green"}-500 `}
+                      className={`mx-2 ${(daysLeft(i.due_date) ?? -1) < 3 ? "text-danger-600" : "text-success-600"}`}
                     >
                       {daysLeftLabel(i.due_date)}
                     </span>

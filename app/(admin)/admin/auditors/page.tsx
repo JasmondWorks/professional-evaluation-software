@@ -98,7 +98,7 @@ export default function AdminAuditorsPage() {
                           // Reject action
                           handleAction(a.id, "reject");
                         }}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:opacity-90"
+                        className="px-3 py-1 bg-danger-600 text-white rounded hover:opacity-90"
                       >
                         Reject
                       </button>
@@ -123,7 +123,7 @@ export default function AdminAuditorsPage() {
                           <tr key={index} className="border-b">
                             <td className="p-2">{index + 1}</td>
                             <td className="p-2 text-xs">{ questions[index] }</td>
-                            <td className={`p-2 text-${ (response.toString().toLowerCase() === 'yes')? 'green': 'red'}-500`}>{ response }</td>
+                            <td className={`p-2 ${ (response.toString().toLowerCase() === 'yes') ? 'text-success-600' : 'text-danger-600'}`}>{ response }</td>
                           </tr>
                         ))}
                       </tbody>

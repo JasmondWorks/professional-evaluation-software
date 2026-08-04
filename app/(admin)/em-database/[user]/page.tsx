@@ -526,8 +526,8 @@ export default function Page({ params }: { params: { user: string } }){
                         <div className='bg-white p-4'>
                             <div className='flex justify-between my-3'>
                                 <p className='w-6/12 font-semibold text-lg'>Appraisal</p>
-                                <p className='w-3/12 text-red-500'>210</p>
-                                <p className='w-3/12 text-red-500'>fair</p>
+                                <p className='w-3/12 text-danger-600'>210</p>
+                                <p className='w-3/12 text-danger-600'>fair</p>
                             </div>
                             <div className='flex flex-col'>
                                 <p className='font-semibold my-3 text-lg'>Performance</p>
@@ -543,13 +543,13 @@ export default function Page({ params }: { params: { user: string } }){
                                 </div>
                                 <div className='flex justify-between py-3 border-b border-[#cfcfcf1a]'>
                                     <p className='w-6/12'>Compatibility</p>
-                                    <p className='w-3/12 text-red-500'>24%</p>
-                                    <p className='w-3/12 text-red-500'>6th class(Poor)</p>
+                                    <p className='w-3/12 text-danger-600'>24%</p>
+                                    <p className='w-3/12 text-danger-600'>6th class(Poor)</p>
                                 </div>
                                 <div className='flex justify-between py-3 border-b border-[#cfcfcf1a]'>
                                     <p className='w-6/12'>Use of resources</p>
-                                    <p className='w-3/12 text-red-500'>24%</p>
-                                    <p className='w-3/12 text-red-500'>6th class(Poor)</p>
+                                    <p className='w-3/12 text-danger-600'>24%</p>
+                                    <p className='w-3/12 text-danger-600'>6th class(Poor)</p>
                                 </div>
                             </div>
 
@@ -568,18 +568,18 @@ export default function Page({ params }: { params: { user: string } }){
                                 </div>
                                 <div className='flex justify-between py-3 border-b border-[#cfcfcf1a]'>
                                     <p className='w-6/12'>Conflict Stress Level</p>
-                                    <p className='w-3/12 text-red-500'>24%</p>
-                                    <p className='w-3/12 text-red-500'>6th class(Poor)</p>
+                                    <p className='w-3/12 text-danger-600'>24%</p>
+                                    <p className='w-3/12 text-danger-600'>6th class(Poor)</p>
                                 </div>
                                 <div className='flex justify-between py-3 border-b border-[#cfcfcf1a]'>
                                     <p className='w-6/12'>Total stress frequency</p>
-                                    <p className='w-3/12 text-red-500'>24%</p>
-                                    <p className='w-3/12 text-red-500'>6th class(Poor)</p>
+                                    <p className='w-3/12 text-danger-600'>24%</p>
+                                    <p className='w-3/12 text-danger-600'>6th class(Poor)</p>
                                 </div>
                                 <div className='flex justify-between py-3 border-b border-[#cfcfcf1a]'>
                                     <p className='w-6/12'>Major feelings based on stress category</p>
-                                    <p className='w-3/12 text-red-500'>24%</p>
-                                    <p className='w-3/12 text-red-500'>6th class(Poor)</p>
+                                    <p className='w-3/12 text-danger-600'>24%</p>
+                                    <p className='w-3/12 text-danger-600'>6th class(Poor)</p>
                                 </div>
                             </div>
                         </div>

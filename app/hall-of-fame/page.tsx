@@ -100,7 +100,7 @@ export default function HallOfFame() {
                   {member.title && <p className="text-lg text-body">{member.title}</p>}
                   {member.year && <p className="text-sm text-yellow-700">{member.year}</p>}
                 </div>
-                <div className="flex-shrink-0 ml-4">
+                <div className="shrink-0 ml-4">
                   <span className="inline-block bg-white text-pes text-sm font-medium px-3 py-1 rounded-full">
                     <Download/>
                   </span>

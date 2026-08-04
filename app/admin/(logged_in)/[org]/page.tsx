@@ -64,7 +64,7 @@ export default function Page({ params }: { params: { org: string } }) {
 
         <button
           onClick={logout}
-          className="text-muted hover:text-red-500"
+          className="text-muted hover:text-danger-600"
         >
           Logout
         </button>

@@ -17,7 +17,7 @@ function gradeColor(num: number) {
   if (num >= 80) return "text-blue-500"; // Excellent
   if (num >= 70) return "text-green-500"; // Good
   if (num >= 50) return "text-orange-400"; // Fair
-  return "text-red-500"; // Poor
+  return "text-danger-600"; // Poor
 }
 
 export default function Home() {
@@ -66,7 +66,7 @@ export default function Home() {
     </div>
   );
   if (!data?.performance && !data?.appraisal)
-    return <p className="p-8 text-red-600">No data found.</p>;
+    return <p className="p-8 text-danger-600">No data found.</p>;
 
   const perf = data.performance || {};
   const appr = data.appraisal || {};

@@ -170,7 +170,7 @@ export default function MaintenancePaymentPage() {
           <button
             onClick={startPayment}
             disabled={loading}
-            className="flex-1 bg-indigo-600 text-white py-2 rounded"
+            className="flex-1 bg-pes text-white py-2 rounded"
           >
             {loading ? "Processing..." : "Pay with Paystack"}
           </button>

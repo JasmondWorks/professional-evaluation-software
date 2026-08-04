@@ -108,9 +108,9 @@ export default function MaintenancePage() {
       {/* SUCCESS / ERROR TOAST */}
       {dialog && (
         <div className={`fixed top-8 right-8 z-50 p-4 rounded-lg shadow-lg border flex items-center gap-3 animate-in fade-in slide-in-from-top-5 ${
-          status ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
+          status ? "bg-green-50 border-green-200 text-green-800" : "bg-danger-50 border-danger-100 text-danger-700"
         }`}>
-          {status ? <div className="w-2 h-2 rounded-full bg-green-500" /> : <div className="w-2 h-2 rounded-full bg-red-500" />}
+          {status ? <div className="w-2 h-2 rounded-full bg-green-500" /> : <div className="w-2 h-2 rounded-full bg-danger-600" />}
           <p className="font-medium text-sm">{message}</p>
         </div>
       )}
@@ -133,7 +133,7 @@ export default function MaintenancePage() {
 
       {/* CONTROL BAR */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-4 rounded-xl border border-line shadow-sm">
-        <div className="relative flex-grow w-full md:max-w-md">
+        <div className="relative grow w-full md:max-w-md">
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted">
             <SearchNormal1 size="18" />
           </div>

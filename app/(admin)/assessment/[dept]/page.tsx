@@ -121,7 +121,7 @@ export default function Page({ params }: { params: { dept: string } }) {
             analysis.status === "success"
               ? "bg-green-100 border-green-500 text-green-700"
               : analysis.status === "outliers"
-              ? "bg-red-100 border-red-500 text-red-700"
+              ? "bg-danger-100 border-danger-600 text-danger-700"
               : "bg-yellow-100 border-yellow-500 text-yellow-700"
           }`}
         >

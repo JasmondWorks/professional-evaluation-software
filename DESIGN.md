@@ -17,9 +17,17 @@ UI should look. See [PRODUCT.md](PRODUCT.md) for product truth.
 - **Craft bar:** Linear — tight type scale, restrained color, immaculate spacing,
   every state designed (hover, focus, disabled, loading, empty, error).
 
+## Stack
+
+**Tailwind v4, CSS-first.** All design tokens live in `@theme` inside
+[app/globals.css](app/globals.css) and are generated into utilities
+(`bg-pes-600`, `text-muted`, `border-line`, `shadow-card`, `font-sans`, …). There is
+**no `tailwind.config.ts`** — change a token in one place and it flows everywhere.
+PostCSS uses `@tailwindcss/postcss`; the font is exposed as `--font-inter`.
+
 ## Color
 
-Tokens live in [tailwind.config.ts](tailwind.config.ts) and [app/globals.css](app/globals.css).
+Tokens live in the `@theme` block of [app/globals.css](app/globals.css).
 
 ### Brand — systematized indigo (`pes`)
 `pes` is a full ramp **and** keeps a `DEFAULT`, so `bg-pes`/`text-pes` still resolve
@@ -72,7 +80,19 @@ alerts/badges (e.g. `bg-danger-50 text-danger-700`).
 - Focus is one system: a visible `:focus-visible` indigo ring (globals.css) plus
   `focus-visible:shadow-focus` on interactive components.
 
-## Components (`app/components/ui/`)
+## Components (`app/components/ui/`) — the UI kit
+
+Radix-based (shadcn-style) primitives + compound abstractions, all themed to the
+tokens above (not a parallel shadcn theme). `components.json` is configured so
+`npx shadcn add <x>` drops new pieces here. One barrel: `@/app/components/ui`.
+Specialized, few-use components go in `app/components/widgets/`.
+
+**Primitives / compounds available:** Button, Input (+`inputBase`), Field
+(label+control+error, ARIA-wired), Label, Textarea, Select, Checkbox, RadioGroup,
+Switch, DateTimeInput, FileUpload, Card, Badge, Alert, Empty, Skeleton, Progress,
+Separator, Avatar, Breadcrumb, Pagination, Tabs, Tooltip (+`SimpleTooltip`),
+DropdownMenu, Dialog + **Modal** (`isOpen`/`setIsOpen`/`title`/`footer`), PageHeader,
+Table.
 
 Prefer these over bespoke markup:
 

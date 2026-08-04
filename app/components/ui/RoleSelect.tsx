@@ -64,7 +64,7 @@ export default function RoleSelect({
           }
         }}
         className={`w-full flex items-center justify-between font-medium text-lg py-3 px-6 border rounded-sm outline-0 text-left transition-colors ${
-          hasError ? 'border-red-400' : open ? 'border-gray-400' : 'border-line'
+          hasError ? 'border-danger-600' : open ? 'border-gray-400' : 'border-line'
         } ${selectedLabel ? 'text-strong' : 'text-muted'}`}
       >
         <span className="truncate">{selectedLabel || 'Select a role'}</span>

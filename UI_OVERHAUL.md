@@ -74,3 +74,75 @@ bar — light, systematized indigo (`#322b80`), mobile-first. Chosen over a roll
 - Browser-based finish review (no browser automation was available in the session).
 - `<button>` → shared `Button` migration (opportunistic, page-by-page).
 - `bg-white` → `bg-surface` alignment (skipped — visually identical).
+
+## 2026-08-02 — Token completion + WellbeingSession-adjacent UI
+
+- **Full palette unification (round 2):** `indigo-*` → `pes` and `amber-*` → `warning`
+  tokens across the app (~188 occurrences / ~25 files, two passes incl. `-600`/border/
+  gradient shades). The app palette is now entirely indigo-brand + semantic tokens —
+  **0 stray `blue-*`/`indigo-*`/`amber-*` accents remain.**
+- **Stress evaluation reset callout** ([app/(admin)/models/stress/page.tsx](<app/(admin)/models/stress/page.tsx>)):
+  copy updated to the client-confirmed `RESET_MESSAGE` ("Significant difference
+  recorded (H₀ rejected) — call for reset of the settings"), warning-token styling.
+  (Trigger still the ANOVA H₀ as an interim; moves to the feeling band with the
+  WellbeingSession migration — see docs/stress-sessions.md.)
+- **Login save-info prompt** ([app/(auth)/login/page.tsx](<app/(auth)/login/page.tsx>)):
+  Credential Management API call on success so the native "save password?" prompt fires.
+
+> This entry's stress-session/data-model work (schema, migration, service layer) is
+> tracked separately in [docs/stress-sessions.md](docs/stress-sessions.md).
+
+## 2026-08-02 (pt.2) — Tailwind v4 + shadcn component library
+
+- **Upgraded to Tailwind v4 (CSS-first).** All tokens moved into `@theme` in
+  [app/globals.css](app/globals.css) and generate utilities; `tailwind.config.ts`
+  retired; PostCSS → `@tailwindcss/postcss`; font var → `--font-inter`. Fixed v4
+  renames across the app (`flex-shrink-0`→`shrink-0`, `flex-grow`→`grow`,
+  `bg-opacity-*`→`/opacity`). Verified: typecheck 0, all routes 200.
+- **Initialized shadcn** (`components.json`, aliases → `app/components/ui` +
+  `app/components/widgets`) and built a **Radix-based component library themed to the
+  tokens** (not a parallel theme, to keep one source of truth): Dialog + Modal, Tabs,
+  Select, Checkbox, RadioGroup, Switch, DropdownMenu, Tooltip, Avatar, Label,
+  Textarea, Field, Alert, Empty, Separator, Progress, Breadcrumb, Pagination,
+  FileUpload, DateTimeInput. Barrel at `@/app/components/ui`.
+- **Fixed flagged pages:** dashboard Over/Underperforming (oversized `text-xl` → tidy
+  section labels, token colors); `/em-database/add-employee` (off-center success
+  overlay → Modal, yellow → warning tokens, step bars → `PageHeader` + `Progress`,
+  oversized `text-lg` inputs → token inputs, tightened spacing); `PermissionSelector`
+  (huge `h-6 w-6` checkboxes → shared `Checkbox` component).
+- **`/em-database`:** dated top-nav (`bg-white h-[4rem] text-gray-300`, `w-[30%]`,
+  ad-hoc underlines) → the new `Tabs` component + a proper page title; Employee header
+  de-duplicated (title now in the tab bar), Add buttons + Undeliverable/error badges
+  tokenized.
+- **v4 dynamic-class bug fix (important):** the migration exposed latent
+  `bg-${x}-100`/`text-${x}-500`/`border-${x}` classes that **Tailwind v4 can't generate
+  on-demand** (they rendered colorless). Converted all of them to static conditional
+  token classes — role badges (`Employee` → `Badge` tones), goal/status colors
+  (`goalChunk`, `goals`), auditor yes/no cells, and the `/evaluation` tab underlines.
+  Verified: **0 dynamic color classes remain**, typecheck 0.
+- **Header on the new kit:** the navbar notification bell now opens a
+  **`DropdownMenu`** with recent notifications (unread dots, relative time, empty
+  state) instead of a redux modal; the profile button is also a `DropdownMenu`
+  (account label, Profile, Get help, Log out). The old redux `Action`/`Notification`
+  modals are now unused (left mounted, harmless).
+- **Visual once-over** via headless Chrome confirmed the v4 token system renders
+  correctly (login pixel-correct). Authenticated pages can't be screenshotted without
+  a live session; they're covered by typecheck + detector + route-200 + review.
+- **`red-*` → `danger` token sweep** (307 occurrences across 72 files; 0 remaining) +
+  fixed stray `hover:bg-purple-*` on indigo buttons. Error/danger styling is now
+  fully tokenized.
+- **Redux modals → `Modal` (all of them):** failure, success, role_created,
+  notification_sent, deletegoal, **newgoal, editgoal, viewgoal, setnotification** now
+  use the Radix `Modal` (backdrop + focus trap + escape), bridging redux visibility to
+  `isOpen`/`setIsOpen`. The goal/notification forms were rebuilt on `Field` + `Input` +
+  `Select` + `DateTimeInput` + `Button` + `Alert` (replacing bespoke `border rounded-sm
+  py-4` inputs and raw `<select>`). Deleted the orphaned `action.tsx` + `notification.tsx`
+  (replaced by the header dropdowns). **Every modal in `app/components/modals/` is now on
+  the kit.**
+- **`DataTable`:** new kit component wrapping `Table` + `Pagination` — client-side
+  search, pagination with a "showing X–Y of N" line, and a toolbar slot. Tokenized the
+  base `Table` (divide-line rows, uppercase muted header, `bg-surface`). Applied to the
+  **em-database Employee list** (searchable by name/email/dept/role, 10/page).
+- **Model-page inputs unified:** swept the bespoke `numberInput` input class (ring +
+  `rounded-md` + `bg-canvas`) to the kit style (`rounded-lg`, `bg-surface`,
+  `focus:shadow-focus`) — ~40 inputs across ~16 files; 0 ring-based inputs remain.

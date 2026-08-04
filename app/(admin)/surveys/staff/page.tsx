@@ -138,7 +138,7 @@ export default function StaffSurveyPage() {
         <button
           onClick={submitSurvey}
           disabled={submitting}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          className="bg-pes text-white px-6 py-3 rounded-md hover:bg-pes-800 disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Submit Survey"}
         </button>

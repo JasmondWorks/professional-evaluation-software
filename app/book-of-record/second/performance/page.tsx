@@ -136,7 +136,7 @@ useEffect(() => {
                       </h3>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 ml-4">
+                  <div className="shrink-0 ml-4">
                     <span className="inline-block bg-white text-pes text-sm font-medium px-3 py-1 rounded-full">
                       <Download/>
                     </span>
