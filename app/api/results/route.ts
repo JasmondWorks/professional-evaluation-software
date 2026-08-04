@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { verifyToken } from "../_lib/authGuard";
 
 // ✅ GET: Fetch all results (optionally by mode)
 export async function GET(req: Request) {
@@ -13,7 +13,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
   }
   const token = authHeader.split(" ")[1];
-  const decoded = jwtDecode<{ org: string }>(token);
+  const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
   const results = await prisma.optimizationResult.findMany({
     where: { 
@@ -33,7 +34,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
   }
   const token = authHeader.split(" ")[1];
-  const decoded = jwtDecode<{ org: string }>(token);
+  const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
   const data = await req.json();
 

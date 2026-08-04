@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { PERMISSION_KEYS, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
+import { validateData, createRoleSchema, formatZodErrors } from '@/app/lib/validation'
 
 type reqInfo = {
     role_name: string
@@ -42,7 +43,17 @@ async function addUser(info: reqInfo) {
 }
 
 export async function POST(req: Request) {
-  const reqInfo = await req.json()
+  const body = await req.json()
+
+  const validation = validateData(createRoleSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: 'Validation failed', details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    )
+  }
+
+  const reqInfo = body as reqInfo;
 
    try {
       let data = await addUser(reqInfo)

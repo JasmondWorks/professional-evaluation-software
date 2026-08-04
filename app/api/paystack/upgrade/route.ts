@@ -9,12 +9,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Mark previous plan as inactive
-    await prisma.$queryRawUnsafe(`
-      UPDATE subscriptions_info
-      SET status = 'cancelled'
-      WHERE pesuser_email = '${email}' AND plan_name = '${oldPlan.toUpperCase()}'
-    `);
+    await prisma.subscriptions_info.updateMany({
+      where: {
+        pesuser_email: email,
+        plan_name: oldPlan.toUpperCase(),
+      },
+      data: {
+        status: 'cancelled',
+      },
+    });
 
     return NextResponse.json({ success: true, message: "Old plan cancelled, ready to upgrade" });
   } catch (err) {

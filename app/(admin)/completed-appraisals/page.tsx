@@ -5,6 +5,9 @@ import Link from "next/link";
 import { ArrowLeft } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { DataTable } from "@/app/components/ui/DataTable";
+import { PageHeader } from "@/app/components/ui";
+import type { TableColumn } from "@/app/components/ui/Table";
 
 type Appraisal = {
   id: number;
@@ -61,70 +64,59 @@ export default function CompletedAppraisalsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const numCol = (key: string, label: string): TableColumn<Appraisal> => ({
+    key,
+    label,
+    align: "right",
+    render: (a) => <span className="text-body tabular-nums">{fmt((a as any)[key])}</span>,
+  });
+
+  const columns: TableColumn<Appraisal>[] = [
+    { key: "pesuser_name", label: "Employee", render: (a) => <span className="font-medium text-strong">{a.pesuser_name}</span> },
+    { key: "dept", label: "Department", render: (a) => a.dept || "—" },
+    numCol("teaching_quality_evaluation", "Teaching"),
+    numCol("research_quality_evaluation", "Research"),
+    numCol("administrative_quality_evaluation", "Admin"),
+    numCol("community_quality_evaluation", "Community"),
+    {
+      key: "average",
+      label: "Average",
+      align: "right",
+      render: (a) => <span className="font-semibold text-pes-700 tabular-nums">{average(a)}</span>,
+    },
+  ];
+
   return (
-    <main className="w-full min-h-screen bg-canvas p-6 md:p-8">
+    <main className="w-full min-h-screen bg-canvas px-4 sm:px-6 lg:px-8 py-6">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-4"
       >
         <ArrowLeft size={18} />
-        Back to Dashboard
+        Back to dashboard
       </Link>
 
-      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-line">
-          <h1 className="text-2xl font-semibold text-strong">
-            Completed Appraisals
-          </h1>
-          {!loading && !error && (
-            <span className="text-sm text-muted">
-              {rows.length} record{rows.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
+      <PageHeader
+        title="Completed appraisals"
+        subtitle={!loading && !error ? `${rows.length} record${rows.length === 1 ? "" : "s"}` : undefined}
+      />
 
-        {loading ? (
-          <div className="p-8 text-center text-muted">Loading…</div>
-        ) : error ? (
-          <div className="p-8 text-center text-danger-600">{error}</div>
-        ) : rows.length === 0 ? (
-          <div className="p-10 text-center text-muted">
-            <p className="font-medium">No completed appraisals yet.</p>
-            <p className="text-sm mt-1">
-              Appraisals appear here once they’ve been submitted and accepted.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted bg-canvas">
-                  <th className="px-6 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">Department</th>
-                  <th className="px-4 py-3 font-medium text-right">Teaching</th>
-                  <th className="px-4 py-3 font-medium text-right">Research</th>
-                  <th className="px-4 py-3 font-medium text-right">Admin</th>
-                  <th className="px-4 py-3 font-medium text-right">Community</th>
-                  <th className="px-6 py-3 font-medium text-right">Average</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((a) => (
-                  <tr key={a.id} className="border-t border-line hover:bg-canvas">
-                    <td className="px-6 py-3 font-medium text-strong">{a.pesuser_name}</td>
-                    <td className="px-4 py-3 text-body">{a.dept || "—"}</td>
-                    <td className="px-4 py-3 text-right text-body">{fmt(a.teaching_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-body">{fmt(a.research_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-body">{fmt(a.administrative_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-body">{fmt(a.community_quality_evaluation)}</td>
-                    <td className="px-6 py-3 text-right font-semibold text-pes">{average(a)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {error ? (
+        <div className="rounded-xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">
+          {error}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={rows}
+          loading={loading}
+          searchable
+          searchKeys={["pesuser_name", "dept"]}
+          searchPlaceholder="Search by employee or department…"
+          pageSize={12}
+          emptyMessage="No completed appraisals yet — they appear here once submitted and accepted."
+        />
+      )}
     </main>
   );
 }

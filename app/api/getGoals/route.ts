@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { authorize, tokenFromRequest, verifyToken } from '../_lib/authGuard'
 
 // Goals are set by the organization's admin and apply to the WHOLE org, so every
 // user in that org must see them — not just the admin who created them. Goals are
@@ -8,28 +8,32 @@ import { authorize, tokenFromRequest } from '../_lib/authGuard'
 // member ids and return goals created by any of them. Falls back to the caller's
 // own goals only when the org can't be determined.
 async function getData(org: string | null, fallbackUserId: string | null) {
+  console.log("getGoals -> org:", org, "fallbackUserId:", fallbackUserId);
   if (org) {
     const orgUsers = await prisma.pesuser.findMany({
       where: { org },
       select: { id: true },
     })
     const ids = orgUsers.map((u) => String(u.id))
+    console.log("getGoals -> ids length:", ids.length, "first few:", ids.slice(0,5));
     if (ids.length) {
-      return prisma.goals.findMany({ where: { user_id: { in: ids } } })
+      const goals = await prisma.goals.findMany({ where: { user_id: { in: ids } } });
+      console.log("getGoals -> found goals for org:", goals.length);
+      return goals;
     }
   }
   if (fallbackUserId) {
-    return prisma.goals.findMany({ where: { user_id: fallbackUserId } })
+    const goals = await prisma.goals.findMany({ where: { user_id: fallbackUserId } });
+    console.log("getGoals -> found goals for fallback user:", goals.length);
+    return goals;
   }
   return []
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = authorize(tokenFromRequest(request), {});
-    if (!auth.ok) return auth.response;
-    
-    const user = auth.user;
+    const user = verifyToken(tokenFromRequest(request));
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
     let userIdentifier: string | null = null;
     if (user.userID) userIdentifier = String(user.userID);

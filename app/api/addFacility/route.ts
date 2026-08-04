@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import { jwtDecode } from 'jwt-decode'
+import { verifyToken } from '@/app/api/_lib/authGuard'
 import nodemailer from "nodemailer";
+import { validateData, addFacilitySchema, formatZodErrors } from '@/app/lib/validation'
 
 type Facility = {
    description: string,
@@ -37,18 +38,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
   }
 
-  let org;
-  try {
-    const decoded: any = jwtDecode(token);
-    org = decoded?.org;
-  } catch (error) {
+  const payload = verifyToken(token);
+  if (!payload) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
+  
+  const org = payload.org as string;
 
   const { data } = await request.json();
   console.log(data, org)
 
   if (data) {
+    // Add org to data so it can be validated by schema
+    data.org = org;
+    const validation = validateData(addFacilitySchema, data);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
+        { status: 400 }
+      );
+    }
+    
     try {
       let goals = await updateData(data, org)
       console.log(goals)
@@ -70,8 +81,8 @@ export async function POST(request: NextRequest) {
 
 
         const mailOptions = {
-        from: `"Super Admin" <${process.env.EMAIL_USER}>`,
-        to: adminUser?.email,
+        from: `"Super Admin" <${process.env.EMAIL_USER || "noreply@example.com"}>`,
+        to: adminUser?.email || process.env.EMAIL_USER || "admin@example.com",
         subject: "New Entry added",
         text: `Hello,\n\nA user at ${org} has filled entries for maintenance models.\n\nBest,\nPES team`,
         };

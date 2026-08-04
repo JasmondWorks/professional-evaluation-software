@@ -14,22 +14,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const query = `
-      INSERT INTO "WorkSamplingPosition" ("studyId", name, department, "performanceAllowance")
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
+    const result = await prisma.workSamplingPosition.create({
+      data: {
+        studyId: Number(studyId),
+        name: name,
+        department: department ?? null,
+        performanceAllowance: performanceAllowance ?? null,
+      }
+    });
 
-    const result = await prisma.$queryRawUnsafe(
-      query,
-      Number(studyId),
-      name,
-      department ?? null,
-      performanceAllowance ?? null
-    );
-
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error saving position:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -43,10 +37,16 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
-    await prisma.$queryRawUnsafe(
-      `DELETE FROM "WorkSamplingPosition" WHERE id = $1`,
-      Number(id)
-    );
+    
+    // Explicitly delete observations first to be safe, then delete the position
+    await prisma.workSamplingObservation.deleteMany({
+      where: { positionId: Number(id) }
+    });
+    
+    await prisma.workSamplingPosition.delete({
+      where: { id: Number(id) }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting position:", error);

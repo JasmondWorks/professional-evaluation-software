@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { verifyToken } from "../_lib/authGuard";
 
 // Completed appraisals for the caller's org (pending = false) — the "View All"
 // target for the dashboard's "Completed Appraisals" card.
@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decoded: any = jwtDecode(token);
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
     if (!org) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });

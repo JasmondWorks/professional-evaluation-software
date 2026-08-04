@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { verifyToken } from "../_lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing token" }, { status: 401 });
     }
 
-    const decoded: any = jwtDecode(token);
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
     if (!org) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
