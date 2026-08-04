@@ -744,10 +744,10 @@ export default function StressAnalysisTool() {
                     <input type="datetime-local" value={cycleWindows.settingsOpensAt} onChange={(e) => setCycleWindows((w) => ({ ...w, settingsOpensAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
                   <label className="flex flex-col text-sm text-body">
-                    Form 5 closes
+                    Form 5 closes (optional)
                     <input type="datetime-local" value={cycleWindows.settingsClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, settingsClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
-                  <button onClick={() => handleStartCycle(true)} disabled={startingCycle || !cycleWindows.settingsOpensAt || !cycleWindows.settingsClosesAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                  <button onClick={() => handleStartCycle(true)} disabled={startingCycle || !cycleWindows.settingsOpensAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
                     {startingCycle ? "Starting..." : "Start full cycle"}
                   </button>
                 </div>
@@ -801,10 +801,10 @@ export default function StressAnalysisTool() {
                     <input type="datetime-local" value={cycleWindows.feelingOpensAt} onChange={(e) => setCycleWindows((w) => ({ ...w, feelingOpensAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
                   <label className="flex flex-col text-sm text-body">
-                    Form 6/7 closes
+                    Form 6/7 closes (optional)
                     <input type="datetime-local" value={cycleWindows.feelingClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, feelingClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
-                  <button onClick={() => handleStartCycle(false)} disabled={startingCycle || !selectedHistoryId || !cycleWindows.feelingOpensAt || !cycleWindows.feelingClosesAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                  <button onClick={() => handleStartCycle(false)} disabled={startingCycle || !selectedHistoryId || !cycleWindows.feelingOpensAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
                     {startingCycle ? "Starting..." : "Start feeling-only cycle"}
                   </button>
                 </div>
