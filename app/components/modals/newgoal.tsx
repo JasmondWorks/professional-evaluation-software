@@ -1,65 +1,73 @@
+'use client'
+
 import { useDispatch, useSelector } from 'react-redux';
 import { newGoal } from '@/app/state/goals/goalSlice';
 import { notify } from '@/lib/toast';
 import { RootState } from '../../state/store';
-import { CloseCircle } from 'iconsax-react';
 import { useState } from 'react';
 import jwt from 'jsonwebtoken';
 import { useRouter } from 'next/navigation';
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Modal } from '../ui/modal';
+import { Field } from '../ui/field';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import { Alert } from '../ui/alert';
+import { DateTimeInput } from '../ui/datetime-input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../ui/select';
+
+const goalTypes = [
+  "appraisal",
+  "non-academic appraisal",
+  "motivation",
+  "performance",
+  "stress",
+  "student-teacher ratio",
+  "utility-index",
+  "redundancy-index",
+  "productivity-index",
+  "personnnel redundancy",
+  "personnnel utilization",
+  "number of staff",
+  "maintenance models",
+  "organizational structure",
+];
 
 export default function Newgoal() {
   const isVisible = useSelector((state: RootState) => state.goal.new);
   const dispatch = useDispatch();
   const router = useRouter();
-  const [formData, setFormdata] = useState({ 
-    goalType: '', 
-    description: '', 
+  const [formData, setFormdata] = useState({
+    goalType: '',
+    description: '',
     due_date: '',
-    evaluation_type: 'appraisal' as 'appraisal' | 'performance' | 'stress'
+    evaluation_type: 'appraisal' as 'appraisal' | 'performance' | 'stress',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const goalTypes = [
-    "appraisal",
-    "non-academic appraisal",
-    "motivation",
-    "performance",
-    "stress",
-    "student-teacher ratio",
-    "utility-index",
-    "redundancy-index",
-    "productivity-index",
-    "personnnel redundancy",
-    "personnnel utilization",
-    "number of staff",
-    "maintenance models",
-    "organizational structure"
-  ];
+  const close = () => dispatch(newGoal());
 
-  // Map goal types to evaluation types
   const getEvaluationType = (goalType: string): 'appraisal' | 'performance' | 'stress' => {
     if (goalType.includes('appraisal')) return 'appraisal';
     if (goalType.includes('performance') || goalType.includes('productivity')) return 'performance';
     if (goalType.includes('stress')) return 'stress';
-    return 'appraisal'; // default
+    return 'appraisal';
   };
 
-  function handleChange(event: { target: { name: string; value: string; }; }) {
-    const updatedData = { ...formData, [event.target.name]: event.target.value };
-    
-    // Auto-set evaluation_type when goalType changes
-    if (event.target.name === 'goalType') {
-      updatedData.evaluation_type = getEvaluationType(event.target.value);
-    }
-    
-    setFormdata(updatedData);
-    setError(''); // Clear error on change
+  function handleChange(event: { target: { name: string; value: string } }) {
+    setFormdata((prev) => ({ ...prev, [event.target.name]: event.target.value }));
+    setError('');
   }
 
-  async function handleSubmit(event: { preventDefault: () => void; }) {
+  async function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
     setIsSubmitting(true);
     setError('');
@@ -79,7 +87,6 @@ export default function Newgoal() {
         return;
       }
 
-      // Validate form data
       if (!formData.goalType || !formData.description || !formData.due_date) {
         setError('Please fill in all required fields.');
         setIsSubmitting(false);
@@ -89,14 +96,14 @@ export default function Newgoal() {
       const response = await apiFetch('/api/addGoals', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name: formData.goalType, 
-          description: formData.description, 
-          due_date: formData.due_date, 
+        body: JSON.stringify({
+          name: formData.goalType,
+          description: formData.description,
+          due_date: formData.due_date,
           user_id: String((user as { userID: string | number }).userID),
           evaluation_type: formData.evaluation_type,
-          token
-        })
+          token,
+        }),
       });
 
       if (!response.ok) {
@@ -105,7 +112,6 @@ export default function Newgoal() {
       }
 
       const result = await response.json();
-      
       if (result.status === 200) {
         dispatch(newGoal());
         notify.success('Goal created successfully');
@@ -122,91 +128,64 @@ export default function Newgoal() {
   }
 
   return (
-    <div className={`notification ${ isVisible ? 'visible' : 'invisible' } rounded-lg shadow-lg p-6 z-30 flex flex-col w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto bg-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}>
-      <CloseCircle 
-        onClick={() => !isSubmitting && dispatch(newGoal())} 
-        className={`ms-auto ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'hover:text-red-500 cursor-pointer'}`}
-        tabIndex={isVisible ? 0 : -1}
-      />
-      <form onSubmit={ handleSubmit }>
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
+    <Modal
+      isOpen={isVisible}
+      setIsOpen={(open) => { if (!open && !isSubmitting) close(); }}
+      title="Set a new goal"
+      description="Choose the goal type, describe it, and set a due date."
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <Alert tone="danger">{error}</Alert>}
 
-        <div className="formgroup flex flex-col w-full">
-          <label htmlFor="goalType" className='font-bold my-2 text-sm'>Goal Type:</label>
-          <select
-            id="goalType"
-            name="goalType"
+        <Field label="Goal type" required>
+          <Select
             value={formData.goalType}
-            onChange={ handleChange }
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                const nextInput = document.getElementById('new-description');
-                nextInput?.focus();
-              }
-            }}
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
-            required
+            onValueChange={(v) =>
+              setFormdata((prev) => ({ ...prev, goalType: v, evaluation_type: getEvaluationType(v) }))
+            }
             disabled={isSubmitting}
-            tabIndex={isVisible ? 1 : -1}
           >
-            <option value="" disabled>Select a Goal Type</option>
-            { goalTypes.map( (gt) => (
-              <option key={gt} value={gt}>{gt}</option>
-            )) }
-          </select>
-        </div>
+            <SelectTrigger className="capitalize">
+              <SelectValue placeholder="Select a goal type" />
+            </SelectTrigger>
+            <SelectContent>
+              {goalTypes.map((gt) => (
+                <SelectItem key={gt} value={gt} className="capitalize">{gt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
-        <div className="formgroup flex flex-col w-full">
-          <label htmlFor="new-description" className='font-bold my-2 text-sm'>Description:</label>
-          <input
-            onChange={ handleChange }
-            name='description'
-            id='new-description'
-            type="text"
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
-            placeholder='Add goal description'
-            required
+        <Field label="Description" required>
+          <Input
+            name="description"
+            placeholder="Add goal description"
+            onChange={handleChange}
             disabled={isSubmitting}
-            tabIndex={isVisible ? 2 : -1}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                const nextInput = document.getElementById('new-due_date');
-                nextInput?.focus();
-              }
-            }}
+            required
           />
-        </div>
+        </Field>
 
-        <div className="formgroup flex flex-col w-full">
-          <label htmlFor="new-due_date" className='font-bold my-2 text-sm'>Due Date:</label>
-          <input
-            onChange={ handleChange }
-            name='due_date'
-            id='new-due_date'
+        <Field label="Due date" required>
+          <DateTimeInput
             type="date"
-            className='font-light text-sm text-gray-500 placeholder-gray-500 py-4 px-4 outline-0 border focus:border-gray-400 rounded-sm'
-            required
+            name="due_date"
+            onChange={handleChange}
             disabled={isSubmitting}
-            tabIndex={isVisible ? 3 : -1}
             min={new Date().toISOString().split('T')[0]}
+            required
           />
-        </div>
+        </Field>
 
-        <button
-          type='submit'
-          className='bg-pes rounded-md text-white w-full py-4 mt-6 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-900 transition-colors'
-          disabled={isSubmitting}
-          tabIndex={isVisible ? 4 : -1}
-        >
-          {isSubmitting ? 'Creating Goal...' : 'Set Goal'}
-        </button>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={close} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating' : 'Set goal'}
+          </Button>
+        </div>
       </form>
-    </div>
+    </Modal>
   );
 }

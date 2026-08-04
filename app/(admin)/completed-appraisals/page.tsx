@@ -62,33 +62,33 @@ export default function CompletedAppraisalsPage() {
   }, []);
 
   return (
-    <main className="w-full min-h-screen bg-gray-50 p-6 md:p-8">
+    <main className="w-full min-h-screen bg-canvas p-6 md:p-8">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-6"
       >
         <ArrowLeft size={18} />
         Back to Dashboard
       </Link>
 
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h1 className="text-2xl font-semibold text-gray-800">
+      <div className="bg-white border border-line rounded-xl shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-line">
+          <h1 className="text-2xl font-semibold text-strong">
             Completed Appraisals
           </h1>
           {!loading && !error && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted">
               {rows.length} record{rows.length === 1 ? "" : "s"}
             </span>
           )}
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading…</div>
+          <div className="p-8 text-center text-muted">Loading…</div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">{error}</div>
+          <div className="p-8 text-center text-danger-600">{error}</div>
         ) : rows.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">
+          <div className="p-10 text-center text-muted">
             <p className="font-medium">No completed appraisals yet.</p>
             <p className="text-sm mt-1">
               Appraisals appear here once they’ve been submitted and accepted.
@@ -98,7 +98,7 @@ export default function CompletedAppraisalsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 bg-gray-50">
+                <tr className="text-left text-muted bg-canvas">
                   <th className="px-6 py-3 font-medium">Employee</th>
                   <th className="px-4 py-3 font-medium">Department</th>
                   <th className="px-4 py-3 font-medium text-right">Teaching</th>
@@ -110,13 +110,13 @@ export default function CompletedAppraisalsPage() {
               </thead>
               <tbody>
                 {rows.map((a) => (
-                  <tr key={a.id} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="px-6 py-3 font-medium text-gray-800">{a.pesuser_name}</td>
-                    <td className="px-4 py-3 text-gray-600">{a.dept || "—"}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(a.teaching_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(a.research_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(a.administrative_quality_evaluation)}</td>
-                    <td className="px-4 py-3 text-right text-gray-700">{fmt(a.community_quality_evaluation)}</td>
+                  <tr key={a.id} className="border-t border-line hover:bg-canvas">
+                    <td className="px-6 py-3 font-medium text-strong">{a.pesuser_name}</td>
+                    <td className="px-4 py-3 text-body">{a.dept || "—"}</td>
+                    <td className="px-4 py-3 text-right text-body">{fmt(a.teaching_quality_evaluation)}</td>
+                    <td className="px-4 py-3 text-right text-body">{fmt(a.research_quality_evaluation)}</td>
+                    <td className="px-4 py-3 text-right text-body">{fmt(a.administrative_quality_evaluation)}</td>
+                    <td className="px-4 py-3 text-right text-body">{fmt(a.community_quality_evaluation)}</td>
                     <td className="px-6 py-3 text-right font-semibold text-pes">{average(a)}</td>
                   </tr>
                 ))}

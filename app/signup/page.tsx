@@ -51,7 +51,6 @@ export default function Home() {
   const productCategory = searchParams.get("product_category") as string;
   const planType = searchParams.get("product_plan") as string;
 
-  console.log(planType, productCategory);
   // --- React state ---
   // Inline error state for the specific network/server error message.
   const [errorMessage, setErrorMessage] = useState("");
@@ -118,7 +117,6 @@ export default function Home() {
         logo: uploaded.secure_url,
       }));
     } catch (err) {
-      console.log(err);
     }
   }
 
@@ -170,13 +168,11 @@ export default function Home() {
 
       const res = await req.json();
 
-      console.log("token before storage:", res.token);
       localStorage.setItem("access_token", res.token);
       notify.dismiss(toastId);
       notify.success("Account created successfully");
       router.push("/dashboard");
     } catch (error) {
-      console.log(error);
       let errorMsg = "An unexpected error occurred";
       if (error instanceof Error) {
         if (
@@ -256,7 +252,7 @@ export default function Home() {
         {errorMessage && (
           <div
             role="alert"
-            className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"
+            className="mb-6 rounded-md border border-danger-100 bg-danger-50 p-4 text-sm font-semibold text-danger-700"
           >
             {errorMessage}
           </div>
@@ -273,7 +269,7 @@ export default function Home() {
             required
             onChange={handleChange}
             value={formData.name}
-            className="bg-transparent border border-gray-200 text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
+            className="bg-transparent border border-line text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
             type="text"
             name="name"
             id="name"
@@ -289,7 +285,7 @@ export default function Home() {
             required
             onChange={handleChange}
             value={formData.org}
-            className="bg-transparent border border-gray-200 text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
+            className="bg-transparent border border-line text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
             type="text"
             name="org"
             id="org"
@@ -305,7 +301,7 @@ export default function Home() {
             required
             onChange={handleChange}
             value={formData.email}
-            className="bg-transparent border border-gray-200 text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
+            className="bg-transparent border border-line text-black placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
             type="email"
             name="email"
             id="email"
@@ -321,7 +317,7 @@ export default function Home() {
             required
             onChange={handleChange}
             value={formData.password}
-            className="bg-transparent border border-gray-200 text-gray-700 placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
+            className="bg-transparent border border-line text-body placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
             type="password"
             name="password"
             id="password"
@@ -340,7 +336,7 @@ export default function Home() {
             type="password"
             name="confirmPassword"
             id="confirmPassword"
-            className="bg-transparent border border-gray-200 text-gray-700 placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
+            className="bg-transparent border border-line text-body placeholder:text-gray-300 text-sm focus:outline-pes ps-4 py-3 rounded-md"
             placeholder="Confirm your Password"
           />
         </div>
@@ -370,7 +366,7 @@ export default function Home() {
             type="file"
             accept="image/*"
             onChange={handleImageUpload}
-            className="text-sm text-gray-400"
+            className="text-sm text-muted"
           />
 
           {formData.logo && (
@@ -379,13 +375,13 @@ export default function Home() {
               alt="Logo preview"
               width={80}
               height={80}
-              className="mt-3 rounded-md border border-gray-300"
+              className="mt-3 rounded-md border border-line"
             />
           )}
         </div>
 
         <p
-          className={`text-sm mb-4 ${allFieldsFilled ? "text-green-700" : "text-red-700"}`}
+          className={`text-sm mb-4 ${allFieldsFilled ? "text-green-700" : "text-danger-700"}`}
         >
           *All fields are required to proceed.
         </p>

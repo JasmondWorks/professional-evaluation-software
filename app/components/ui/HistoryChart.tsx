@@ -29,8 +29,8 @@ export default function HistoryChart({ data, dataKey, name, color = "#322b80", f
   }));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">{name} Trend</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-line p-6 mb-6">
+      <h3 className="text-lg font-bold text-strong mb-4">{name} Trend</h3>
       <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={sortedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

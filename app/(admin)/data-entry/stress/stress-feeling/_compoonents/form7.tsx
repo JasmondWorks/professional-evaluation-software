@@ -108,10 +108,10 @@ export default function Form7({
   return (
     <div className="overflow-x-auto">
       <h2 className="text-2xl font-bold mb-1">Form 7: Stress Feelings</h2>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-muted mb-4">
         For each stress category, rate how often you experience each feeling on a scale of 1 (rarely) to 10 (very often).
       </p>
-      <table className="w-full border border-gray-300 text-sm">
+      <table className="w-full border border-line text-sm">
         <thead>
           <tr className="bg-purple-200">
             <th className="border px-3 py-2 text-left">Stress Category / Freq</th>
@@ -124,7 +124,7 @@ export default function Form7({
         </thead>
         <tbody>
           {categories.map((cat, idx) => (
-            <tr key={cat.key} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+            <tr key={cat.key} className={idx % 2 === 0 ? "bg-white" : "bg-canvas"}>
               <td className="border p-2 font-medium">{cat.label}</td>
               {feelings.map((feel) => {
                 const key = `${cat.key}-${feel}`;

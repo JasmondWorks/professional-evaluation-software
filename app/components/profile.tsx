@@ -10,7 +10,7 @@ export default function Profile(){
             <h1 className="text-2xl font-bold my-auto">Employee profile</h1>
          </div>
          
-         <div className="bg-gray-50 h-[3rem] flex justify-between">
+         <div className="bg-canvas h-[3rem] flex justify-between">
             <h1 className="my-auto mx-6 font-semibold">Employee details</h1>
          </div>  
 
@@ -18,7 +18,7 @@ export default function Profile(){
 
          <div className="flex border">
             <div className="border-r w-1/2">
-               <div className="bg-gray-50 border-b h-[3rem] flex">
+               <div className="bg-canvas border-b h-[3rem] flex">
                   <h1 className="my-auto mx-4 font-semibold">Reporting Hierachy</h1>
                </div>
                
@@ -33,7 +33,7 @@ export default function Profile(){
             </div>
 
             <div className="w-1/2">
-               <div className="bg-gray-50 border-b h-[3rem] flex">
+               <div className="bg-canvas border-b h-[3rem] flex">
                   <h1 className="my-auto mx-4 font-semibold">Permission Settings</h1>
                </div>
 
@@ -60,7 +60,7 @@ export default function Profile(){
                            <p>View and edit the details of employees.</p>
                         </span>
                      </label>
-                     <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                     <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                         <label className="flex me-4">
                            <input disabled type="checkbox" className="me-1" />
                            <span>All Employees</span>
@@ -84,7 +84,7 @@ export default function Profile(){
                            <p>View and edit the performance metrics of employees.</p>
                         </span>
                      </label>
-                     <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                     <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                         <label className="flex me-4">
                            <input type="checkbox" className="me-1" />
                            <span>All Employees</span>
@@ -118,7 +118,7 @@ export default function Profile(){
                            <p>Schedule, modify, or cancel performance review meetings for any employee.</p>
                         </span>
                      </label>
-                     <div className="flex ms-8 my-2 text-gray-400 text-sm font-extralight">
+                     <div className="flex ms-8 my-2 text-muted text-sm font-extralight">
                         <label className="flex me-4">
                            <input type="checkbox" className="me-1" />
                            <span>All Employees</span>

@@ -67,7 +67,6 @@ export default function Roles() {
       const res = await req.json();
       if (Array.isArray(res)) setRoles(res);
     } catch (error) {
-      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -257,9 +256,9 @@ export default function Roles() {
       width: "12%",
       render: (r) =>
         isPreset(r.name) ? (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-700">Preset</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-pes-50 text-pes-700">Preset</span>
         ) : (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-amber-50 text-amber-700">Custom</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-warning-50 text-warning-700">Custom</span>
         ),
     },
     {
@@ -267,7 +266,7 @@ export default function Roles() {
       label: "Behaves Like",
       width: "16%",
       render: (r) => (
-        <span className="text-gray-600 text-sm">
+        <span className="text-body text-sm">
           {isPreset(r.name) ? "—" : roleLabel(r.base_role || "employee-w")}
         </span>
       ),
@@ -277,7 +276,7 @@ export default function Roles() {
       label: "Users",
       width: "12%",
       render: (r) => (
-        <span className="rounded-full w-fit px-3 py-1 bg-gray-100 text-gray-700 text-sm">
+        <span className="rounded-full w-fit px-3 py-1 bg-canvas text-body text-sm">
           {`${r.assigned ?? 0}`}
         </span>
       ),
@@ -296,7 +295,7 @@ export default function Roles() {
           </button>
           <button
             onClick={() => openEdit(r)}
-            className="text-gray-700 text-xs font-medium border border-gray-300 rounded-md px-2.5 py-1.5 hover:bg-gray-50 transition-colors inline-flex items-center gap-1"
+            className="text-body text-xs font-medium border border-line rounded-md px-2.5 py-1.5 hover:bg-canvas transition-colors inline-flex items-center gap-1"
           >
             <Edit2 size={14} /> Edit
           </button>
@@ -307,7 +306,7 @@ export default function Roles() {
             }}
             disabled={isPreset(r.name)}
             title={isPreset(r.name) ? "System roles can't be deleted" : "Delete role"}
-            className="text-red-600 text-xs font-medium border border-red-200 rounded-md px-2.5 py-1.5 hover:bg-red-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-danger-600 text-xs font-medium border border-danger-100 rounded-md px-2.5 py-1.5 hover:bg-danger-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Trash size={14} /> Delete
           </button>
@@ -356,23 +355,23 @@ export default function Roles() {
       {/* VIEW PERMISSIONS MODAL */}
       {permRole && (
         <Modal title={`Permissions for ${roleLabel(permRole.name)}`} onClose={() => setPermRole(null)}>
-          <p className="text-sm text-gray-500 mb-5">
+          <p className="text-sm text-muted mb-5">
             {isPreset(permRole.name) ? "System preset role" : "Custom role"}
           </p>
           {permsLoading ? (
-            <p className="text-sm text-gray-400 py-6 text-center">Loading…</p>
+            <p className="text-sm text-muted py-6 text-center">Loading…</p>
           ) : grantedList.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">No permissions granted to this role.</p>
+            <p className="text-sm text-muted py-6 text-center">No permissions granted to this role.</p>
           ) : (
             <ul className="space-y-2 max-h-80 overflow-y-auto">
               {PERMISSION_TREE.filter((n) => perms?.[n.key]).map((n) => (
-                <li key={n.key} className="text-sm text-gray-700">
+                <li key={n.key} className="text-sm text-body">
                   <div className="flex items-center gap-2 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                     {n.label}
                   </div>
                   {n.children.filter((c) => perms?.[c.key]).length > 0 && (
-                    <div className="ms-5 text-xs text-gray-500">
+                    <div className="ms-5 text-xs text-muted">
                       {n.children.filter((c) => perms?.[c.key]).map((c) => c.label).join(" · ")}
                     </div>
                   )}
@@ -388,22 +387,22 @@ export default function Roles() {
         <Modal title={`Edit ${roleLabel(editRole.name)}`} onClose={() => setEditRole(null)} wide>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Role Name</label>
+              <label className="text-sm font-medium text-body">Role Name</label>
               <input
                 value={roleLabel(editRole.name)}
                 disabled
-                className="mt-1 w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg bg-canvas text-muted"
               />
-              <p className="text-xs text-gray-400 mt-1">Role name can't be changed.</p>
+              <p className="text-xs text-muted mt-1">Role name can't be changed.</p>
             </div>
 
             {!isPreset(editRole.name) && (
               <div>
-                <label className="text-sm font-medium text-gray-700">Behaves Like</label>
+                <label className="text-sm font-medium text-body">Behaves Like</label>
                 <select
                   value={editBase}
                   onChange={(e) => setEditBase(e.target.value)}
-                  className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                  className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                 >
                   {PRESET_ROLES.map((r) => (
                     <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
@@ -413,7 +412,7 @@ export default function Roles() {
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Permissions</label>
+              <label className="text-sm font-medium text-body">Permissions</label>
               <div className="mt-1 border rounded-md">
                 <PermissionSelector
                   value={editPerms}
@@ -422,14 +421,14 @@ export default function Roles() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               Saving updates this role and everyone currently assigned to it.
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
-            <button onClick={() => setEditRole(null)} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={saveEdit} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-900 rounded-lg disabled:opacity-70">
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
+            <button onClick={() => setEditRole(null)} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={saveEdit} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg disabled:opacity-70">
               {editSaving ? "Saving…" : "Save Changes"}
             </button>
           </div>
@@ -441,16 +440,16 @@ export default function Roles() {
         <Modal title={`Delete "${roleLabel(delRole.name)}"?`} onClose={() => setDelRole(null)}>
           {delRole.assigned > 0 ? (
             <>
-              <p className="text-sm text-gray-600 mb-4">
-                <span className="font-semibold text-gray-800">{delRole.assigned}</span>{" "}
+              <p className="text-sm text-body mb-4">
+                <span className="font-semibold text-strong">{delRole.assigned}</span>{" "}
                 staff member{delRole.assigned === 1 ? "" : "s"} currently hold this role. They must be
                 reassigned to another role before it can be deleted.
               </p>
-              <label className="text-sm font-medium text-gray-700">Reassign them to</label>
+              <label className="text-sm font-medium text-body">Reassign them to</label>
               <select
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
-                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg mb-2"
+                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg mb-2"
               >
                 {replacementOptions.map((r) => (
                   <option key={r.name} value={r.name}>{roleLabel(r.name)}</option>
@@ -458,14 +457,14 @@ export default function Roles() {
               </select>
             </>
           ) : (
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-body mb-4">
               No staff hold this role. It will be permanently deleted.
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
-            <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-70">
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
+            <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 rounded-lg disabled:opacity-70">
               {deleting ? "Deleting…" : delRole.assigned > 0 ? "Reassign & Delete" : "Delete Role"}
             </button>
           </div>
@@ -477,40 +476,40 @@ export default function Roles() {
         <Modal title="Create a role" onClose={() => setCreateOpen(false)} wide>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">Role Name</label>
+              <label className="text-sm font-medium text-body">Role Name</label>
               <input
                 value={cName}
                 onChange={(e) => setCName(e.target.value)}
                 placeholder="e.g. Registry Officer"
-                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Role Description</label>
+              <label className="text-sm font-medium text-body">Role Description</label>
               <input
                 value={cDesc}
                 onChange={(e) => setCDesc(e.target.value)}
                 placeholder="Brief description of the role's purpose"
-                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Behaves Like</label>
+              <label className="text-sm font-medium text-body">Behaves Like</label>
               <select
                 value={cBase}
                 onChange={(e) => setCBase(e.target.value)}
-                className="mt-1 w-full px-4 py-2.5 border border-gray-300 rounded-lg"
+                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
               >
                 {PRESET_ROLES.map((r) => (
                   <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Which system role this custom role behaves as (screens & navigation).
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Permissions</label>
+              <label className="text-sm font-medium text-body">Permissions</label>
               <div className="mt-1 border rounded-md">
                 <PermissionSelector
                   value={cPerms}
@@ -520,9 +519,9 @@ export default function Roles() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-gray-100">
-            <button onClick={() => setCreateOpen(false)} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={submitCreate} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-blue-900 rounded-lg disabled:opacity-70">
+          <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
+            <button onClick={() => setCreateOpen(false)} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
+            <button onClick={submitCreate} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg disabled:opacity-70">
               {creating ? "Creating…" : "Create Role"}
             </button>
           </div>
@@ -546,11 +545,11 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className={`bg-white rounded-xl shadow-xl w-full ${wide ? "max-w-lg" : "max-w-md"} p-6 border border-gray-100 max-h-[90vh] overflow-y-auto`}>
+      <div className={`bg-white rounded-xl shadow-xl w-full ${wide ? "max-w-lg" : "max-w-md"} p-6 border border-line max-h-[90vh] overflow-y-auto`}>
         <div className="flex justify-between items-start mb-1">
-          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <h2 className="text-xl font-bold text-strong">{title}</h2>
           <button onClick={onClose} aria-label="Close">
-            <CloseCircle className="text-gray-400 hover:text-red-500" />
+            <CloseCircle className="text-muted hover:text-danger-600" />
           </button>
         </div>
         <div className="mt-3">{children}</div>

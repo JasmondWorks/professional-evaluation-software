@@ -64,19 +64,19 @@ export default function ApprovalBanner() {
   if (!cfg || pending <= 0) return null;
 
   return (
-    <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4">
+    <div className="mx-6 mt-4 flex items-center justify-between gap-4 rounded-lg border border-warning-100 bg-warning-50 px-5 py-4">
       <div className="flex items-center gap-3">
-        <Notification size={22} className="text-amber-600 shrink-0" variant="Bold" />
+        <Notification size={22} className="text-warning-600 shrink-0" variant="Bold" />
         <div>
-          <p className="text-sm font-semibold text-amber-900">Approvals waiting on you</p>
-          <p className="text-sm text-amber-800">
+          <p className="text-sm font-semibold text-warning-700">Approvals waiting on you</p>
+          <p className="text-sm text-warning-700">
             {pending} stress submission{pending === 1 ? "" : "s"} in your {cfg.unit} {pending === 1 ? "is" : "are"} awaiting your approval.
           </p>
         </div>
       </div>
       <Link
         href={cfg.href}
-        className="shrink-0 bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-amber-700 transition-colors"
+        className="shrink-0 bg-warning-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-warning-700 transition-colors"
       >
         Review &amp; approve
       </Link>

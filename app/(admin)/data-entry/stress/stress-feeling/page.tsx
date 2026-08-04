@@ -1,4 +1,5 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useState } from "react";
 import Link from "next/link";
 import Form6 from "./_compoonents/form6";
@@ -10,11 +11,11 @@ import { apiFetch } from '@/app/utils/apiFetch';
 function StatusScreen({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel?: string; ctaHref?: string }) {
   return (
     <div className="w-full p-12 flex justify-center">
-      <div className="max-w-lg w-full bg-white border border-gray-200 rounded-xl p-8 text-center shadow-sm mt-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">{title}</h1>
-        <p className="text-gray-600 mb-6">{body}</p>
+      <div className="max-w-lg w-full bg-white border border-line rounded-xl p-8 text-center shadow-sm mt-10">
+        <h1 className="text-2xl font-bold text-strong mb-3">{title}</h1>
+        <p className="text-body mb-6">{body}</p>
         {ctaLabel && ctaHref && (
-          <Link href={ctaHref} className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-900 transition-colors">{ctaLabel}</Link>
+          <Link href={ctaHref} className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-pes-800 transition-colors">{ctaLabel}</Link>
         )}
       </div>
     </div>
@@ -63,13 +64,13 @@ export default function MultiStepStressForm() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.message || "Could not submit the form.");
+        notify.error(data.message ||"Could not submit the form.");
         return;
       }
       setSuccess(true);
     } catch (err) {
       console.error(err);
-      alert("Error saving stress assessment");
+      notify.error("Error saving stress assessment");
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ export default function MultiStepStressForm() {
   if (loadingCycle) {
     return (
       <div className="w-full p-12 flex justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent mt-16" />
       </div>
     );
   }
@@ -133,20 +134,20 @@ export default function MultiStepStressForm() {
   return (
     <div className="w-full p-8">
       {cycle?.form6?.returnedReason && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-semibold text-amber-900">Your previous submission was sent back</p>
-          <p className="text-sm text-amber-800">Reason: {cycle.form6.returnedReason} — please review and resubmit.</p>
+        <div className="mb-4 rounded-lg border border-warning-100 bg-warning-50 px-4 py-3">
+          <p className="text-sm font-semibold text-warning-700">Your previous submission was sent back</p>
+          <p className="text-sm text-warning-700">Reason: {cycle.form6.returnedReason} — please review and resubmit.</p>
         </div>
       )}
       <div className="flex justify-end mb-4 print:hidden">
         <button
           onClick={() => window.print()}
-          className="text-sm border border-gray-300 rounded-md px-4 py-2 text-gray-700 hover:bg-gray-50"
+          className="text-sm border border-line rounded-md px-4 py-2 text-body hover:bg-canvas"
         >
           Print this form (guide)
         </button>
       </div>
-      {loading && <p className="text-gray-500">Saving your responses...</p>}
+      {loading && <p className="text-muted">Saving your responses...</p>}
       {success && (
         <p className="text-green-600 font-semibold">
           Stress assessment submitted successfully!
@@ -171,7 +172,7 @@ export default function MultiStepStressForm() {
               onClick={nextStep}
               disabled={!form6Data?.complete}
               title={!form6Data?.complete ? "Fill every cell in Form 6 to continue" : undefined}
-              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-pes-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
@@ -188,10 +189,10 @@ export default function MultiStepStressForm() {
           )}
         </div>
         {step === 1 && !form6Data?.complete && (
-          <span className="text-xs text-gray-500">Every cell must be rated before you can continue.</span>
+          <span className="text-xs text-muted">Every cell must be rated before you can continue.</span>
         )}
         {step === 2 && !form7Data?.complete && (
-          <span className="text-xs text-gray-500">Every cell must be rated before you can submit.</span>
+          <span className="text-xs text-muted">Every cell must be rated before you can submit.</span>
         )}
       </div>
     </div>

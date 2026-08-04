@@ -54,7 +54,7 @@ export default function AdminAuditorsPage() {
 
       {message && <p className="mb-4 text-sm text-pes font-medium">{message}</p>}
 
-      <table className="w-full border border-gray-300 rounded-lg overflow-hidden">
+      <table className="w-full border border-line rounded-lg overflow-hidden">
         <thead className="bg-pes text-white">
           <tr>
             <th className="p-2">Name</th>
@@ -70,7 +70,7 @@ export default function AdminAuditorsPage() {
           {auditors.map((a) => (
             <React.Fragment key={a.id}>
               <tr
-                className="border-b text-sm hover:bg-gray-100 cursor-pointer"
+                className="border-b text-sm hover:bg-line/50 cursor-pointer"
                 onClick={() => toggleRow(a.id)}
               >
                 <td className="p-2">{a.name}</td>
@@ -98,7 +98,7 @@ export default function AdminAuditorsPage() {
                           // Reject action
                           handleAction(a.id, "reject");
                         }}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:opacity-90"
+                        className="px-3 py-1 bg-danger-600 text-white rounded hover:opacity-90"
                       >
                         Reject
                       </button>
@@ -107,10 +107,10 @@ export default function AdminAuditorsPage() {
                 </td>
               </tr>
               {expandedRows.includes(a.id) && (
-                <tr className="bg-gray-50">
+                <tr className="bg-canvas">
                   <td colSpan={7} className="p-4">
                     <h3 className="font-bold mb-2">Responses:</h3>
-                    <table className="w-full border border-gray-300 rounded-lg">
+                    <table className="w-full border border-line rounded-lg">
                       <thead className="bg-gray-200">
                         <tr>
                           <th className="p-2">#</th>
@@ -123,7 +123,7 @@ export default function AdminAuditorsPage() {
                           <tr key={index} className="border-b">
                             <td className="p-2">{index + 1}</td>
                             <td className="p-2 text-xs">{ questions[index] }</td>
-                            <td className={`p-2 text-${ (response.toString().toLowerCase() === 'yes')? 'green': 'red'}-500`}>{ response }</td>
+                            <td className={`p-2 ${ (response.toString().toLowerCase() === 'yes') ? 'text-success-600' : 'text-danger-600'}`}>{ response }</td>
                           </tr>
                         ))}
                       </tbody>

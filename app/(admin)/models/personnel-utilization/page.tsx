@@ -193,7 +193,7 @@ export default function PersonnelUtilizationPage() {
     opts: { min?: number; max?: number; step?: number },
   ) => (
     <div key={key} className="block w-full min-w-0">
-      <div className="flex items-center text-sm font-semibold text-gray-700 mb-1.5">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
         <span className="truncate">{label}</span>
         <InfoPopover text={hint} />
       </div>
@@ -219,7 +219,7 @@ export default function PersonnelUtilizationPage() {
             onChange={(e) =>
               handleChange(key, parseFloat(e.target.value || "0"))
             }
-            className="w-16 flex-shrink-0 rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-1 py-1.5 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all text-center font-medium"
+            className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
           />
         </div>
       ) : (
@@ -230,7 +230,7 @@ export default function PersonnelUtilizationPage() {
           max={opts.max}
           step={opts.step}
           onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-          className="block w-full rounded-md border border-gray-300 bg-gray-50 focus:bg-white px-3 py-2 text-sm focus:border-pes focus:ring-1 focus:ring-pes outline-none transition-all"
+          className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
         />
       )}
     </div>
@@ -241,7 +241,7 @@ export default function PersonnelUtilizationPage() {
       <div className="mb-4">
         <Link
           href="/models"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-pes transition-colors"
+          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
         >
           <ArrowLeft2 size="16" className="mr-1" /> Back to Models
         </Link>
@@ -251,17 +251,17 @@ export default function PersonnelUtilizationPage() {
           <h1 className="text-2xl font-bold mb-2">
             Model 11 — Personnel Utilization
           </h1>
-          <p className="text-gray-600 mb-6 max-w-2xl">
+          <p className="text-body mb-6 max-w-2xl">
             Calculate optimal K* for a decision centre with given workload
             parameters. Based on H(t,K), with optional constraints (eqs.39–42).
           </p>
         </div>
         <Link
           href="/models/personnel-utilization/history"
-          className="bg-white border border-gray-300 shadow-sm text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium text-sm transition-colors flex items-center gap-2"
+          className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
         >
           <svg
-            className="w-4 h-4 text-gray-500"
+            className="w-4 h-4 text-muted"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -280,9 +280,9 @@ export default function PersonnelUtilizationPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Category 1: Workload & Time Allocation */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -298,10 +298,10 @@ export default function PersonnelUtilizationPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-strong">
                 Workload & Time Allocation
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Core hours and operational timeline parameters
               </p>
             </div>
@@ -341,8 +341,8 @@ export default function PersonnelUtilizationPage() {
         </div>
 
         {/* Category 2: Proportions & Activity Constants */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
               <svg
                 className="w-4 h-4"
@@ -365,10 +365,10 @@ export default function PersonnelUtilizationPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-strong">
                 Proportions & Activity
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Percentages and fractional coefficients (0-1)
               </p>
             </div>
@@ -398,8 +398,8 @@ export default function PersonnelUtilizationPage() {
         </div>
 
         {/* Category 3: Weighting Constants */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
             <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
               <svg
                 className="w-4 h-4"
@@ -416,10 +416,10 @@ export default function PersonnelUtilizationPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-strong">
                 Weighting Constants
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Algorithmic multipliers (t₁ - t₄)
               </p>
             </div>
@@ -445,8 +445,8 @@ export default function PersonnelUtilizationPage() {
         </div>
 
         {/* Category 4: Advanced Constraints */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
             <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
               <svg
                 className="w-4 h-4"
@@ -463,10 +463,10 @@ export default function PersonnelUtilizationPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-strong">
                 Advanced Constraints
               </h2>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Parameters for equations 41 & 42
               </p>
             </div>
@@ -505,27 +505,27 @@ export default function PersonnelUtilizationPage() {
       <button
         onClick={calculate}
         disabled={!isFormValid()}
-        className={`px-4 py-2 rounded text-white ${isFormValid() ? "bg-pes hover:bg-blue-900" : "bg-gray-400 cursor-not-allowed"}`}
+        className={`px-4 py-2 rounded text-white ${isFormValid() ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
       >
         Calculate
       </button>
 
       {result && (
         <>
-          <div className="mt-8 border-t border-gray-200 pt-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">
+          <div className="mt-8 border-t border-line pt-8">
+            <h2 className="text-xl font-bold text-strong mb-6">
               Model Results
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* K* Card */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">
+                  <p className="text-sm font-medium text-muted mb-1">
                     Optimal Personnel (K*)
                   </p>
                   <p className="text-4xl font-bold text-pes">{result.Kstar}</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
                   <svg
                     className="w-6 h-6"
                     fill="none"
@@ -543,9 +543,9 @@ export default function PersonnelUtilizationPage() {
               </div>
 
               {/* H* Card */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex items-center justify-between">
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">
+                  <p className="text-sm font-medium text-muted mb-1">
                     Efficiency Ratio (H*)
                   </p>
                   <p className="text-4xl font-bold text-emerald-600">
@@ -599,9 +599,9 @@ export default function PersonnelUtilizationPage() {
                 </div>
               </div>
             ) : violations && violations.length > 0 ? (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start">
+              <div className="bg-danger-50 border border-danger-100 rounded-xl p-4 mb-6 flex items-start">
                 <svg
-                  className="w-5 h-5 text-red-500 mt-0.5 mr-3"
+                  className="w-5 h-5 text-danger-600 mt-0.5 mr-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -614,14 +614,14 @@ export default function PersonnelUtilizationPage() {
                   ></path>
                 </svg>
                 <div>
-                  <h3 className="text-sm font-medium text-red-800">
+                  <h3 className="text-sm font-medium text-danger-700">
                     Constraints Violation Warning
                   </h3>
-                  <p className="text-sm text-red-600 mt-1 mb-2">
+                  <p className="text-sm text-danger-600 mt-1 mb-2">
                     The calculated K* value failed the following boundary
                     checks:
                   </p>
-                  <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                  <ul className="list-disc list-inside text-sm text-danger-700 space-y-1">
                     {violations.map((v, i) => (
                       <li key={i}>{v}</li>
                     ))}
@@ -643,7 +643,7 @@ export default function PersonnelUtilizationPage() {
             {/* 🔗 Show link here when results exist */}
             <Link
               href="/models/personnel-utilization/unit-head"
-              className="bg-gray-100 hover:bg-gray-200 text-blue-700 font-medium px-4 py-2 rounded border border-gray-300"
+              className="bg-canvas hover:bg-gray-200 text-pes-700 font-medium px-4 py-2 rounded border border-line"
             >
               ➜ Go to Unit Head Model
             </Link>

@@ -108,7 +108,7 @@ export default function BookPerformance() {
         </button>
 
         {/* FOOTER */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full shadow text-sm text-gray-700">
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full shadow text-sm text-body">
           Page {currentPage} of {totalPages}
         </div>
       </div>
@@ -117,8 +117,12 @@ export default function BookPerformance() {
 }
 
 function PageContent({ records, loading }: { records: HallOfFameMember[]; loading: boolean }) {
-  if (loading) return <p className="text-center mt-20 text-gray-500">Loading...</p>;
-  if (!records.length) return <p className="text-center mt-20 text-gray-400">No records on this page</p>;
+  if (loading) return (
+    <div className="w-full flex justify-center mt-20">
+      <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (!records.length) return <p className="text-center mt-20 text-muted">No records on this page</p>;
 
   return (
     <div className="space-y-4">
@@ -128,8 +132,8 @@ function PageContent({ records, loading }: { records: HallOfFameMember[]; loadin
           href={`/reward/certificates/2nd/${encodeURIComponent(rec.name)}`}
           className="block border p-4 bg-white/80 backdrop-blur rounded-lg shadow hover:shadow-md transition cursor-pointer"
         >
-          <h3 className="text-lg font-bold text-gray-700">{rec.name}</h3>
-          <p className="text-sm text-gray-500">{rec.title}</p>
+          <h3 className="text-lg font-bold text-body">{rec.name}</h3>
+          <p className="text-sm text-muted">{rec.title}</p>
           <div className="mt-2">
             <button className="text-pes flex items-center gap-2 text-sm font-medium">
               <Download size={16} /> Download

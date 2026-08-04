@@ -37,7 +37,6 @@ export default function AdminPage() {
   }
 
   const handleMobile = () => {~
-    console.log(is_mobile)
     setMobile(!is_mobile)
   }
 
@@ -61,17 +60,17 @@ export default function AdminPage() {
   }, []);
 
   return (
-    <div className="flex flex-col w-full bg-gray-50 justify-between">
+    <div className="flex flex-col w-full bg-canvas justify-between">
       <div className='flex w-full justify-between'>
           <h1 className='text-pes text-3xl m-4'>Super Admin Dashboard</h1>
-          <LoadingButton onClick={logout} className="hover:text-pes active:text-pes text-gray-400 text-lg">Logout</LoadingButton>
+          <LoadingButton onClick={logout} className="hover:text-pes active:text-pes text-muted text-lg">Logout</LoadingButton>
       </div>
 
       <hr />
 
       <div className="flex flex-col w-full">
           {orgs.map((org) => (
-          <Link href={`/admin/${org.org}`} key={org.org} className='flex bg-gray-100 p-5 rounded-lg w-full m-4 justify-between'>
+          <Link href={`/admin/${org.org}`} key={org.org} className='flex bg-canvas p-5 rounded-lg w-full m-4 justify-between'>
               <p>{org.org}</p>
               <ArrowRight2/>
           </Link>

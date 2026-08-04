@@ -1,10 +1,14 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { jwtDecode } from "jwt-decode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
+import { inputBase } from "@/app/components/ui/Input";
 
 
 type JWTPayload = {
@@ -85,7 +89,7 @@ export default function AppraisalStep() {
         }),
       });
       const data = await res.json();
-      alert(data.message || "Action completed");
+      notify.success(data.message ||"Action completed");
       fetchScores(selectedStaff);
     } catch (err) {
       console.error("Error submitting decision:", err);
@@ -94,7 +98,7 @@ export default function AppraisalStep() {
 
   const handlePrint = async () => {
     const element = document.getElementById("print-section");
-    if (!element) return alert("Nothing to print!");
+    if (!element) return notify.error("Nothing to print!");
 
     const canvas = await html2canvas(element);
     const imgData = canvas.toDataURL("image/png");
@@ -106,20 +110,24 @@ export default function AppraisalStep() {
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-6">Appraisal Review & Print</h1>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <PageHeader
+        title="Appraisal review & print"
+        subtitle="Select a staff member to review staff vs. HOD scores and export the appraisal."
+      />
 
       {/* Staff selection */}
-      <div className="mb-4 flex gap-4 items-center">
+      <div className="mb-6 flex flex-wrap gap-3 items-center">
         <select
           value={selectedStaff}
           onChange={(e) => {
             setSelectedStaff(e.target.value);
             fetchScores(e.target.value);
           }}
-          className="border px-3 py-2 rounded"
+          aria-label="Select a staff member"
+          className={`${inputBase} max-w-xs`}
         >
-          <option value="">Select a staff</option>
+          <option value="">Select a staff member</option>
           {employees.map((emp, i) => (
             <option key={i} value={emp.name}>
               {emp.name}
@@ -128,67 +136,66 @@ export default function AppraisalStep() {
         </select>
 
         {selectedStaff && (
-          <button
-            onClick={handlePrint}
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
+          <Button onClick={handlePrint} variant="secondary">
             Print PDF
-          </button>
+          </Button>
         )}
       </div>
 
       {loading ? (
-        <p>Loading appraisal data...</p>
+        <div className="w-full h-40 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : (
         selectedStaff && (
-          <div id="print-section" className="bg-white p-6 rounded shadow">
-            <h2 className="text-xl font-semibold mb-4">
-              Appraisal for: {selectedStaff}
-            </h2>
+          <div id="print-section" className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+            <div className="px-5 py-4 border-b border-line">
+              <h2 className="font-semibold text-strong">
+                Appraisal for {selectedStaff}
+              </h2>
+            </div>
 
-            <table className="w-full border text-sm">
-              <thead>
-                <tr className="bg-gray-100 text-left">
-                  <th className="border p-2">Section</th>
-                  <th className="border p-2">Staff Score</th>
-                  <th className="border p-2">HOD Score</th>
-                  <th className="border p-2">Decision</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  "teaching_quality_evaluation",
-                  "research_quality_evaluation",
-                  "administrative_quality_evaluation",
-                  "community_quality_evaluation",
-                  "other_relevant_information",
-                ].map((section, i) => {
-                  const staffVal = staffScores?.[0]?.[section] ?? "—";
-                  const hodVal = hodScores?.[0]?.[section] ?? "—";
-                  return (
-                    <tr key={i}>
-                      <td className="border p-2">{section.replace(/_/g, " ")}</td>
-                      <td className="border p-2">{staffVal}</td>
-                      <td className="border p-2">{hodVal}</td>
-                      <td className="border p-2 flex gap-2">
-                        <button
-                          onClick={() => handleDecision(section, "accepted")}
-                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleDecision(section, "rejected")}
-                          className="bg-red-500 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-canvas text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                    <th className="px-4 py-3">Section</th>
+                    <th className="px-4 py-3">Staff score</th>
+                    <th className="px-4 py-3">HOD score</th>
+                    <th className="px-4 py-3">Decision</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {[
+                    "teaching_quality_evaluation",
+                    "research_quality_evaluation",
+                    "administrative_quality_evaluation",
+                    "community_quality_evaluation",
+                    "other_relevant_information",
+                  ].map((section, i) => {
+                    const staffVal = staffScores?.[0]?.[section] ?? "—";
+                    const hodVal = hodScores?.[0]?.[section] ?? "—";
+                    return (
+                      <tr key={i} className="align-middle">
+                        <td className="px-4 py-3 capitalize text-body">{section.replace(/_/g, " ")}</td>
+                        <td className="px-4 py-3 tabular-nums text-strong">{staffVal}</td>
+                        <td className="px-4 py-3 tabular-nums text-strong">{hodVal}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleDecision(section, "accepted")}>
+                              Accept
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDecision(section, "rejected")}>
+                              Reject
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )
       )}

@@ -95,7 +95,6 @@ export default function Home() {
         [event.target.name]: event.target.value,
       };
     });
-    console.log("the change isFinite", factored);
   }
 
   interface ObservedEvent extends React.ChangeEvent<HTMLInputElement> {
@@ -175,10 +174,8 @@ export default function Home() {
     setNewExtra((prev) => [...prev, tempTask]);
     setObserved_time((prev) => [...prev, (prev[prev.length] = 0)]);
     setEstimated_time((prev) => {
-      console.log(prev.length);
       return [...prev, (prev[prev.length] = 0)];
     });
-    console.log("times edited", observed_time, estimated_time);
   }
 
   useEffect(() => {}, [newExtra]);

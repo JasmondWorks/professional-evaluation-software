@@ -1,10 +1,12 @@
 'use client'
+import { notify } from "@/lib/toast";
 import { useState, useEffect } from 'react'
 import { jwtDecode } from 'jwt-decode'
 import CriteriaForm from './criteria/form'
-import LoadingButton from '../../../components/ui/LoadingButton'
 import { getAccessToken } from '@/app/utils/auth'
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
 
 type JWTPayload = {
   name?: string
@@ -116,7 +118,7 @@ export default function PerformanceStep() {
   const handleAcceptReject = async (section: string, decision: 'accepted' | 'rejected') => {
     try {
       const token = getAccessToken()
-      if (!token) return alert('No token found ❌')
+      if (!token) return notify.error('No token found')
       const user: JWTPayload = jwtDecode(token)
 
       const res = await apiFetch('/api/acceptRejectPerformance', {
@@ -131,11 +133,11 @@ export default function PerformanceStep() {
       })
 
       if (!res.ok) throw new Error('Accept/Reject failed ❌')
-      alert(`You have ${decision} the HOD counter score for ${section} ✅`)
+      notify.success(`You have ${decision} the HOD counter score for ${section} `)
       window.location.reload()
     } catch (err) {
       console.error(err)
-      alert('Error performing accept/reject ❌')
+      notify.error('Error performing accept/reject')
     }
   }
 
@@ -147,12 +149,12 @@ export default function PerformanceStep() {
   const handleFinalSubmit = async () => {
     const incomplete = steps.find((_, i) => !isStepComplete(i))
     if (incomplete) {
-      alert(`Please complete all fields in "${incomplete.title}" ✅`)
+      notify.error(`Please complete all fields in "${incomplete.title}"`)
       return
     }
 
     const token = getAccessToken()
-    if (!token) return alert('No token found ❌')
+    if (!token) return notify.error('No token found')
 
     const user: JWTPayload = jwtDecode(token)
     const payload = {
@@ -174,10 +176,10 @@ export default function PerformanceStep() {
       })
 
       if (!res.ok) throw new Error('Error saving performance ❌')
-      alert('Performance submitted successfully ✅')
+      notify.success('Performance submitted successfully')
     } catch (err) {
       console.error(err)
-      alert('Error submitting performance ❌')
+      notify.error('Error submitting performance')
     }
   }
 
@@ -187,50 +189,66 @@ export default function PerformanceStep() {
   const hodVal = hodScores?.[0]?.[current.key]
   const hasScores = staffVal !== undefined || hodVal !== undefined
 
-  if (loading) return <p className="text-center p-8">Loading...</p>
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full mx-auto p-8 space-y-6">
-      <h1 className="text-2xl font-bold text-center">Performance Data Entry</h1>
-      <div className="text-center text-gray-600">
-        Step {step + 1} of {steps.length} — <span className="font-semibold">{current.title}</span>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <PageHeader
+        title="Performance data entry"
+        subtitle={`Step ${step + 1} of ${steps.length} — ${current.title}`}
+      />
+
+      {/* Step progress */}
+      <div className="flex items-center gap-2 mb-6" aria-hidden>
+        {steps.map((s, i) => (
+          <div key={s.key} className="flex-1">
+            <div
+              className={`h-1.5 rounded-full transition-colors ${i <= step ? 'bg-pes' : 'bg-line'}`}
+            />
+            <p className={`mt-1.5 text-xs font-medium truncate ${i === step ? 'text-pes-700' : 'text-muted'}`}>
+              {s.title}
+            </p>
+          </div>
+        ))}
       </div>
 
       {/* Step content */}
       <div>
         {hasScores ? (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">{current.title} — Submitted Scores</h2>
-            <table className="w-full border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border p-2">Section</th>
-                  <th className="border p-2">Staff Score</th>
-                  <th className="border p-2">HOD Counter Score</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border p-2">{current.title}</td>
-                  <td className="border p-2 text-center">{staffVal ?? '—'}</td>
-                  <td className="border p-2 text-center">{hodVal ?? '—'}</td>
-                </tr>
-              </tbody>
-            </table>
+            <h2 className="text-lg font-semibold text-strong">{current.title} — submitted scores</h2>
+            <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-canvas text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                    <th className="px-4 py-3">Section</th>
+                    <th className="px-4 py-3">Staff score</th>
+                    <th className="px-4 py-3">HOD counter score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="px-4 py-3 text-body">{current.title}</td>
+                    <td className="px-4 py-3 tabular-nums text-strong">{staffVal ?? '—'}</td>
+                    <td className="px-4 py-3 tabular-nums text-strong">{hodVal ?? '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-            <div className="flex gap-4">
-              <LoadingButton
-                onClick={() => handleAcceptReject(current.key, 'accepted')}
-                className="px-3 py-1 bg-green-600 text-white rounded"
-              >
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => handleAcceptReject(current.key, 'accepted')}>
                 Accept
-              </LoadingButton>
-              <LoadingButton
-                onClick={() => handleAcceptReject(current.key, 'rejected')}
-                className="px-3 py-1 bg-red-600 text-white rounded"
-              >
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => handleAcceptReject(current.key, 'rejected')}>
                 Reject
-              </LoadingButton>
+              </Button>
             </div>
           </div>
         ) : (
@@ -245,22 +263,22 @@ export default function PerformanceStep() {
 
       {/* Navigation */}
       <div className="flex justify-between pt-6">
-        <LoadingButton
+        <Button
+          variant="secondary"
           disabled={step === 0}
           onClick={() => setStep(step - 1)}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
         >
           Prev
-        </LoadingButton>
+        </Button>
 
         {step < steps.length - 1 ? (
-          <LoadingButton onClick={() => setStep(step + 1)} className="px-4 py-2 bg-blue-500 text-white rounded">
+          <Button onClick={() => setStep(step + 1)}>
             Next
-          </LoadingButton>
+          </Button>
         ) : !hasScores ? (
-          <LoadingButton onClick={handleFinalSubmit} className="px-4 py-2 bg-green-600 text-white rounded">
-            Submit All
-          </LoadingButton>
+          <Button onClick={handleFinalSubmit}>
+            Submit all
+          </Button>
         ) : null}
       </div>
     </div>

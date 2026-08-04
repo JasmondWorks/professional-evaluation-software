@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -14,7 +15,6 @@ export default function SubscriptionButton({ plan }: { plan: string }) {
       if (!token) throw new Error("Not authenticated");
       type MyJwtPayload = { userID: string, name: string };
       let decoded = jwtDecode<MyJwtPayload>(token);
-      console.log("the decoded", decoded)
       let { userID, name } = decoded;
 
         const res = await apiFetch("/api/subByPaypal", {
@@ -29,18 +29,17 @@ export default function SubscriptionButton({ plan }: { plan: string }) {
         // PayPal JS SDK expects actions.subscription.create from client
         // But instead you can return sub.id so PayPal picks up the subscription
         // If you want, you could also provide a direct JS-SDK create with plan_id
-        console.log("the sub", sub)
         return sub.paypal.id;
       }}
       onApprove={async (data, actions) => {
         // subscription approved
         // data.subscriptionID has the subscription id
         // store this with your backend if needed, or finalise UX
-        alert("Subscription successful ✅\nID: " + data.subscriptionID);
+        notify.success("Subscription successful", "ID: " + data.subscriptionID);
       }}
       onError={(err) => {
         console.error("PayPal subscription error:", err);
-        alert("Subscription could not be completed.");
+        notify.error("Subscription could not be completed.");
       }}
     />
   );

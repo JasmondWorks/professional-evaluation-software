@@ -97,14 +97,14 @@ export default function FacultyApprovals() {
   if (loading) {
     return (
       <div className="w-full p-12 flex justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pes mt-16" />
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent mt-16" />
       </div>
     );
   }
 
   if (!status?.active) {
     return (
-      <div className="w-full p-12 text-center text-gray-500 mt-10">
+      <div className="w-full p-12 text-center text-muted mt-10">
         No stress exercise is currently open for your {terms.unit.toLowerCase()}.
       </div>
     );
@@ -114,10 +114,10 @@ export default function FacultyApprovals() {
 
   return (
     <div className="w-full p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-strong">
         {terms.unit} Approvals — {status.faculty}
       </h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-muted mb-6">
         As {terms.head}, verify and approve the departments in your {terms.unit.toLowerCase()} for the current cycle.
       </p>
 
@@ -129,9 +129,9 @@ export default function FacultyApprovals() {
           { label: `Awaiting ${terms.head}`, value: c.pendingApproval },
           { label: "Approved", value: c.approved },
         ].map((s) => (
-          <div key={s.label} className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-xs uppercase tracking-wide text-gray-400">{s.label}</p>
-            <p className="text-2xl font-bold text-gray-800">{s.value}</p>
+          <div key={s.label} className="bg-canvas rounded-lg p-4 text-center">
+            <p className="text-xs uppercase tracking-wide text-muted">{s.label}</p>
+            <p className="text-2xl font-bold text-strong">{s.value}</p>
           </div>
         ))}
       </div>
@@ -140,13 +140,13 @@ export default function FacultyApprovals() {
         <button
           onClick={() => approve()}
           disabled={working || c.pendingApproval === 0 || !c.allHodApproved}
-          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-pes-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Approve entire {terms.unit.toLowerCase()} ({c.pendingApproval})
         </button>
         {/* Never a bare disabled button — say why it's disabled (see AGENTS.md). */}
         {(c.pendingApproval === 0 || !c.allHodApproved) && (
-          <div className="w-full sm:max-w-md text-sm rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-600">
+          <div className="w-full sm:max-w-md text-sm rounded-lg border border-line bg-canvas px-4 py-3 text-body">
             {c.submitted === 0
               ? `Nothing to approve yet — no staff in your ${terms.unit.toLowerCase()} have submitted their theme & feeling form for this cycle.`
               : !c.allHodApproved
@@ -156,9 +156,9 @@ export default function FacultyApprovals() {
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-line rounded-xl overflow-hidden">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b text-gray-700">
+          <thead className="bg-canvas border-b text-body">
             <tr>
               <th className="px-6 py-3 font-semibold">Department</th>
               <th className="px-6 py-3 font-semibold text-right">Staff</th>
@@ -167,24 +167,24 @@ export default function FacultyApprovals() {
               <th className="px-6 py-3 font-semibold text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-line">
             {status.departments!.map((d) => (
-              <tr key={d.dept} className="hover:bg-gray-50/50">
-                <td className="px-6 py-3 font-medium text-gray-900">
+              <tr key={d.dept} className="hover:bg-canvas/50">
+                <td className="px-6 py-3 font-medium text-strong">
                   {d.dept}
                   {d.cleared && (
                     <span className="ml-2 text-green-700 bg-green-50 px-2 py-0.5 rounded-full text-xs font-medium">Cleared</span>
                   )}
                 </td>
-                <td className="px-6 py-3 text-right text-gray-600">{d.staff}</td>
-                <td className="px-6 py-3 text-right text-gray-600">{d.submitted}</td>
-                <td className="px-6 py-3 text-right text-gray-600">{d.approved}</td>
+                <td className="px-6 py-3 text-right text-body">{d.staff}</td>
+                <td className="px-6 py-3 text-right text-body">{d.submitted}</td>
+                <td className="px-6 py-3 text-right text-body">{d.approved}</td>
                 <td className="px-6 py-3 text-right">
                   {d.submitted === 0 ? (
-                    <span className="text-xs text-gray-400">No submissions</span>
+                    <span className="text-xs text-muted">No submissions</span>
                   ) : !d.readyForFaculty ? (
                     <span
-                      className="text-xs text-amber-600"
+                      className="text-xs text-warning-600"
                       title="The department's HOD must approve all its submissions before you can sign it off."
                     >
                       Awaiting HOD ({d.pendingHod})

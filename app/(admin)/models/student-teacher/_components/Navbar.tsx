@@ -17,7 +17,7 @@ export default function NavBar() {
         <div className="flex flex-col">
           <Link
             href="/models"
-            className="text-xs text-gray-400 hover:text-white transition w-fit"
+            className="text-xs text-muted hover:text-white transition w-fit"
           >
             &larr; Back to Models
           </Link>

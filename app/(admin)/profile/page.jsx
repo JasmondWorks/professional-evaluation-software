@@ -3,7 +3,7 @@ import Profile from '../../components/profile'
 
 export default function Home() {
    return(
-      <main className="w-full flex flex-col border bg-gray-50">
+      <main className="w-full flex flex-col border bg-canvas">
          <Profile />
       </main>     
    )

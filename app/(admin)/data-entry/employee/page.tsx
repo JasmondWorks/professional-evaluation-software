@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { notify } from "@/lib/toast";
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
 
 
 interface JWTPayload {
@@ -24,6 +27,7 @@ export default function EmployeeScoresPage() {
   const [scores, setScores] = useState<EmployeeScores[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [selectedGroup, setSelectedGroup] = useState<GroupKey | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeScores | null>(null);
@@ -38,7 +42,6 @@ export default function EmployeeScoresPage() {
     }
     const decoded: JWTPayload = jwtDecode(token);
     const dept = decoded.dept;
-    const org = decoded.org;
     if (!dept) {
       setError("No dept found in token");
       setLoading(false);
@@ -64,162 +67,193 @@ export default function EmployeeScoresPage() {
       });
   }, []);
 
-  function handleCounterChange(metric: string, value: number) {
-    setCounterScores((prev) => ({ ...prev, [metric]: value }));
-  }
-
-async function handleSubmit() {
-  if (!selectedEmployee || !selectedGroup) {
-    console.error("No employee or group selected");
-    return;
-  }
-
-  const decoded = jwtDecode<JWTPayload>(getAccessToken() || "");
-  const org = decoded.org
-  const dept = decoded.dept
-
-  console.log('counter scores are:', counterScores)
-
-  const apiEndpoints: Record<GroupKey, string> = {
-    appraisal: `/api/saveAppraisal`,
-    performance: `/api/savePerformance`,
-  };
-
-  const endpoint = apiEndpoints[selectedGroup];
-  console.log(selectedEmployee, org)
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token: getAccessToken(),
-        pesuser_name: selectedEmployee.pesuser_name,
-        org,
-        dept,
-        isCounter: true,
-        payload: counterScores,
-      }),
+  function handleCounterChange(metric: string, value: string) {
+    // Guard against NaN writes: an empty or invalid field clears that metric
+    // rather than storing NaN in the payload.
+    const parsed = parseInt(value, 10);
+    setCounterScores((prev) => {
+      const next = { ...prev };
+      if (Number.isNaN(parsed)) {
+        delete next[metric];
+      } else {
+        next[metric] = parsed;
+      }
+      return next;
     });
-
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.message || "Failed");
-
-    console.log("Counter scores submitted:", result);
-    alert("Counter scores submitted successfully!");
-    setCounterScores({});
-    setSelectedEmployee(null);
-  } catch (err) {
-    console.error("Error submitting counter scores:", err);
-    alert("Failed to submit counter scores");
   }
-}
+
+  async function handleSubmit() {
+    if (!selectedEmployee || !selectedGroup) {
+      notify.error("Select an employee and a score group first.");
+      return;
+    }
+
+    const decoded = jwtDecode<JWTPayload>(getAccessToken() || "");
+    const org = decoded.org;
+    const dept = decoded.dept;
+
+    const apiEndpoints: Record<GroupKey, string> = {
+      appraisal: `/api/saveAppraisal`,
+      performance: `/api/savePerformance`,
+    };
+
+    const endpoint = apiEndpoints[selectedGroup];
+    setSubmitting(true);
+    const toastId = notify.loading("Submitting HOD scores…");
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: getAccessToken(),
+          pesuser_name: selectedEmployee.pesuser_name,
+          org,
+          dept,
+          isCounter: true,
+          payload: counterScores,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed");
+
+      notify.dismiss(toastId);
+      notify.success("Counter scores submitted successfully.");
+      setCounterScores({});
+      setSelectedEmployee(null);
+    } catch (err) {
+      console.error("Error submitting counter scores:", err);
+      notify.dismiss(toastId);
+      notify.error(err instanceof Error ? err.message : "Failed to submit counter scores.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="rounded-lg border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between">       
-        <h1 className="text-xl font-bold mb-4">Employee Scores</h1>
-        {
-          selectedGroup && !selectedEmployee &&(
-            <button
-              onClick={() => setSelectedGroup(null)}
-              className="mb-4 px-3 py-1 bg-gray-200 rounded"
-            >
-              ← Back
-            </button>            
-          )
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <PageHeader
+        title="Employee scores"
+        subtitle={
+          !selectedGroup
+            ? "Select a score group to review your department's submissions."
+            : selectedEmployee
+              ? `Reviewing ${selectedEmployee.pesuser_name}`
+              : `${selectedGroup} scores`
         }
-      </div>
+        actions={
+          selectedGroup && !selectedEmployee ? (
+            <Button variant="secondary" size="sm" onClick={() => setSelectedGroup(null)}>
+              ← Back
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Step 1: Select Group */}
       {!selectedGroup && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {(["appraisal", "performance"] as GroupKey[]).map((g) => (
             <button
               key={g}
               onClick={() => setSelectedGroup(g)}
-              className="p-6 bg-blue-50 hover:bg-blue-100 rounded-lg shadow text-lg font-semibold capitalize"
+              className="p-6 bg-surface border border-line hover:border-pes-200 hover:shadow-md rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left transition-[box-shadow,border-color] focus-visible:shadow-focus"
             >
               {g}
+              <span className="block mt-1 text-sm font-normal text-muted">
+                Review and counter {g} scores
+              </span>
             </button>
           ))}
         </div>
       )}
 
       {selectedGroup && !selectedEmployee && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4 capitalize">
-            {selectedGroup} Scores
-          </h2>
-          <ul className="space-y-3">
-            {scores?.map((emp) => {
-              const groupScores = emp[selectedGroup];
-              if (!groupScores) return null;
-              return (
-                <li
-                  key={emp.pesuser_name}
-                  className="flex justify-between items-center p-4 bg-white border rounded-lg shadow-sm hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedEmployee(emp)}
-                >
-                  <div>
-                    <p className="font-semibold">{emp.pesuser_name}</p>
-                    <p className="text-sm text-gray-500">{emp.dept}</p>
-                  </div>
-                  <span className="text-blue-600 font-medium">View →</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="space-y-2.5">
+          {scores?.map((emp) => {
+            const groupScores = emp[selectedGroup];
+            if (!groupScores) return null;
+            return (
+              <li
+                key={emp.pesuser_name}
+                className="flex justify-between items-center p-4 bg-surface border border-line rounded-lg shadow-card hover:border-pes-200 hover:shadow-md cursor-pointer transition-[box-shadow,border-color]"
+                onClick={() => setSelectedEmployee(emp)}
+              >
+                <div>
+                  <p className="font-semibold text-strong">{emp.pesuser_name}</p>
+                  <p className="text-sm text-muted">{emp.dept}</p>
+                </div>
+                <span className="text-pes-600 font-medium text-sm">View →</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {/* Step 3: View Employee Scores + Counter Inputs */}
       {selectedGroup && selectedEmployee && (
         <div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mb-5"
             onClick={() => setSelectedEmployee(null)}
-            className="mb-4 ms-auto px-3 py-1 bg-gray-200 rounded"
           >
             ← Back to {selectedGroup} list
-          </button>
-          <h2 className="text-lg font-semibold mb-4">
-            {selectedEmployee.pesuser_name} ({selectedEmployee.dept})
-          </h2>
-          <div className="space-y-4">
+          </Button>
+          <div className="bg-surface border border-line rounded-xl shadow-card divide-y divide-line">
             {Object.entries(selectedEmployee[selectedGroup] || {}).map(
               ([metric, score]) => (
                 <div
                   key={metric}
-                  className="flex justify-between items-center border-b pb-2"
+                  className="flex justify-between items-center gap-4 px-5 py-4"
                 >
                   <div>
-                    <p className="font-medium capitalize">
+                    <p className="font-medium text-strong capitalize">
                       {metric.replace(/_/g, " ")}
                     </p>
-                    <p className="text-sm text-gray-500">
-                      Employee Score: <span className="text-green-500 font-extrabold text-md">{score}</span>
+                    <p className="text-sm text-muted">
+                      Employee score:{" "}
+                      <span className="text-success-700 font-semibold tabular-nums">{score}</span>
                     </p>
                   </div>
                   <input
                     type="number"
-                    className="border border-gray-400 rounded p-1 w-20 h-15 text-sm me-6"
-                    onChange={(e) =>
-                      handleCounterChange(metric, parseInt(e.target.value, 10))
-                    }
+                    aria-label={`HOD counter score for ${metric.replace(/_/g, " ")}`}
+                    placeholder="—"
+                    className="w-24 h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm text-right tabular-nums focus:outline-none focus:border-pes-400 focus:shadow-focus"
+                    onChange={(e) => handleCounterChange(metric, e.target.value)}
                   />
                 </div>
               )
             )}
           </div>
-          <button
+          <Button
+            className="mt-6"
             onClick={handleSubmit}
-            className="mt-6 px-4 py-2 bg-pes hover:bg-purple-900 text-white rounded shadow"
+            loading={submitting}
+            disabled={submitting}
           >
-            Submit HOD Scores
-          </button>
+            Submit HOD scores
+          </Button>
         </div>
       )}
     </div>

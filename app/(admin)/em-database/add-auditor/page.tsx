@@ -45,7 +45,7 @@ export default function AddAuditorPage() {
 
   return (
     <div className="w-1/2 mx-auto mt-10 p-6 rounded-2xl shadow-md bg-white">
-      <Link href="/em-database" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-6 group">
+      <Link href="/em-database" className="inline-flex items-center text-sm font-medium text-muted hover:text-pes transition-colors mb-6 group">
         <svg className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -71,7 +71,7 @@ export default function AddAuditorPage() {
           type="submit"
           disabled={isLoading}
           className={`w-full py-2 px-4 rounded-lg text-white font-medium transition 
-            ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:bg-blue-700"}`}
+            ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:bg-pes-800"}`}
         >
           {isLoading ? "Sending..." : "Send Invitation"}
         </button>
@@ -80,7 +80,7 @@ export default function AddAuditorPage() {
       {message && (
         <p
           className={`mt-4 text-sm font-medium ${
-            status === "success" ? "text-green-600" : "text-red-600"
+            status === "success" ? "text-green-600" : "text-danger-600"
           }`}
         >
           {message}

@@ -64,7 +64,6 @@ export default function Assesment() {
         setAssessmentData(data);
         setData(true);
         setLoading(false);
-        console.log("data", data);
       })
       .catch((error) => console.log("noooo"));
   }, []);
@@ -86,7 +85,7 @@ export default function Assesment() {
 
   return (
     <main className="m-6 h-full">
-      <div className="assessment bg-white flex justify-between p-4 border-b border-gray-100">
+      <div className="assessment bg-white flex justify-between p-4 border-b border-line">
         <h1 className="text-2xl font-bold my-auto">Assessment</h1>
         <h1 className="text-pes my-auto">View Past Appraisal Results</h1>
       </div>
@@ -94,10 +93,10 @@ export default function Assesment() {
       <div className={`flex flex-col bg-white min-h-full mb-2`}>
         {data ? (
           <>
-            <div className="bg-white flex justify-between max-md:gap-2 max-sm:flex-col p-4 mb-2 border-b border-gray-100">
+            <div className="bg-white flex justify-between max-md:gap-2 max-sm:flex-col p-4 mb-2 border-b border-line">
               <div className="bg-[#9E740011] border text-[#9E7400] border-[#9E7400] flex justify-center rounded-lg p-4 w-3/5 max-sm:w-full">
                 <Warning2 />
-                <p className="text-gray-500 w-11/12 ms-3">
+                <p className="text-muted w-11/12 ms-3">
                   {`
                               Data received from ${stats?.submittedCount ?? 0} of ${stats?.staffCount ?? 0} staff across ${
                                 assessmentData?.length === 1
@@ -122,18 +121,18 @@ export default function Assesment() {
             </div>
 
             <div className="flex gap-4 px-4 mx-4 mb-2">
-              <div className="flex items-center flex-1 bg-white border border-gray-200 rounded-md px-3 py-2">
-                <SearchNormal1 size="20" className="text-gray-400 mr-2" />
+              <div className="flex items-center flex-1 bg-white border border-line rounded-md px-3 py-2">
+                <SearchNormal1 size="20" className="text-muted mr-2" />
                 <input
                   type="text"
                   placeholder="Search departments..."
-                  className="w-full outline-none text-sm text-gray-700"
+                  className="w-full outline-none text-sm text-body"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <select
-                className="bg-white border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
+                className="bg-white border border-line rounded-md px-3 py-2 text-sm text-body outline-none cursor-pointer"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -146,7 +145,7 @@ export default function Assesment() {
             {filteredData.length > 0 ? (
               filteredData.map((i, key) => <Dept key={key} data={i} />)
             ) : (
-              <div className="text-center text-gray-500 py-10 text-sm font-light">
+              <div className="text-center text-muted py-10 text-sm font-light">
                 No departments match your filters.
               </div>
             )}
@@ -163,13 +162,13 @@ export default function Assesment() {
                   />
                 </div>
 
-                <p className="mx-auto text-center text-sm text-gray-500 font-light">
+                <p className="mx-auto text-center text-sm text-muted font-light">
                   Loading assessment data, please wait...
                 </p>
               </div>
             ) : (
               <div className="flex flex-col w-3/5 m-auto">
-                <p className="mx-auto text-center text-sm text-gray-500 font-light">
+                <p className="mx-auto text-center text-sm text-muted font-light">
                   No data available for assessment at the moment. You can
                   kickstart the assessment process by notifying your employees
                   to input their data. Set a deadline to ensure everyone

@@ -107,7 +107,7 @@ export default function Dept({ data }: DeptProps) {
               ? data.dept
               : `${data.dept} department`}
           </p>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted text-sm">
             {(data.submitted ?? data.total_unique_users)} of {(data.total ?? data.total_unique_users)} staff submitted
           </p>
         </div>
@@ -143,7 +143,7 @@ export default function Dept({ data }: DeptProps) {
 
       {status === "outliers" && (
         <div className="mt-4">
-          <p className="text-red-600 font-semibold">❌ Outliers Found</p>
+          <p className="text-danger-600 font-semibold">❌ Outliers Found</p>
           <ul className="list-disc ml-6 mt-2">
             {outliers.map((u, i) => (
               <li key={i}>{u}</li>

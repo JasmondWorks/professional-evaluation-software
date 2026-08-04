@@ -15,13 +15,13 @@ export default function StaffNumberLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation Bar */}
-      <nav className="bg-gray-100 border-b p-4 flex gap-4">
+      <nav className="bg-canvas border-b p-4 flex gap-4">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={`px-4 py-2 rounded ${
-              pathname === item.href ? "bg-pes text-white" : "bg-white border text-gray-700"
+              pathname === item.href ? "bg-pes text-white" : "bg-white border text-body"
             }`}
           >
             {item.label}

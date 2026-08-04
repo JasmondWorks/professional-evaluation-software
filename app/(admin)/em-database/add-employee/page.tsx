@@ -11,6 +11,12 @@ import Formtwo from "./multistep-form/form_two";
 import Formthree from "./multistep-form/form_three";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { ArrowLeft } from "iconsax-react";
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
+import { Progress } from "@/app/components/ui/progress";
+import { Alert } from "@/app/components/ui/alert";
+import { Modal } from "@/app/components/ui/modal";
 
 export default function MainForm() {
   const [formdata, setFormdata] = useState({ org: "" });
@@ -148,124 +154,64 @@ export default function MainForm() {
     }
   }
 
+  const totalSteps = stepList.length;
+  const pct = ((currentStepIndex + 1) / totalSteps) * 100;
+
   return (
-    <div className="w-full h-full flex flex-col p-4 bg-gray-50/50">
-      <Link href="/em-database" className="inline-flex items-center w-fit text-sm font-medium text-gray-500 hover:text-pes transition-colors mb-4 ml-4 group">
-        <svg className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Database
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+      <Link href="/em-database" className="inline-flex items-center gap-1.5 w-fit text-sm font-medium text-muted hover:text-pes transition-colors mb-4 group">
+        <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-0.5" />
+        Back to database
       </Link>
-      
-      <form onSubmit={handleSubmit} className="flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden flex-1 m-2 p-4">
-        {isSuccessful && (
-        <div className="bg-white border rounded-lg border-pes flex justify-center align-center shadow-md flex-col p-6 absolute left-1/2 w-fit m-auto">
-          <p className="font-bold text-xl text-pes mb-3">
-            Employee Added successfully
-          </p>
-          <p>redirecting...</p>
-        </div>
-      )}
+
+      <PageHeader
+        title="Add an employee"
+        subtitle={`Step ${currentStepIndex + 1} of ${totalSteps}`}
+      />
 
       {emailFailed && (
-        <div className="bg-yellow-50 border border-yellow-400 rounded-lg p-6 mb-4 flex flex-col gap-3">
-          <p className="font-bold text-yellow-800 text-lg">Employee created, but the welcome email failed to send.</p>
-          <p className="text-yellow-700 text-sm">
-            The account for <strong>{failedName}</strong> ({failedEmail}) was created successfully.
-            You can resend their login credentials below.
+        <Alert
+          tone="warning"
+          title="Employee created, but the welcome email failed to send."
+          className="mb-5"
+        >
+          <p className="mb-3">
+            The account for <strong>{failedName}</strong> ({failedEmail}) was created
+            successfully. You can resend their login credentials below.
           </p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleResendCredentials}
-              disabled={resending}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded disabled:opacity-50"
-            >
-              {resending ? 'Resending...' : 'Resend Credentials'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { window.location.href = '/em-database'; }}
-              className="border border-gray-400 text-gray-600 px-6 py-2 rounded hover:bg-gray-50"
-            >
-              Skip & Go to Employee List
-            </button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={handleResendCredentials} loading={resending} disabled={resending}>
+              Resend credentials
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => { window.location.href = '/em-database'; }}>
+              Skip &amp; go to employee list
+            </Button>
           </div>
-        </div>
+        </Alert>
       )}
 
-      <div className="w-full h-[4rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold text-xl">
-          Add an Employee
-        </h1>
-      </div>
+      <form onSubmit={handleSubmit} className="bg-surface border border-line rounded-xl shadow-card p-5 sm:p-6">
+        <Progress value={pct} className="mb-6" />
 
-      <div className="bg-gray-50 h-[3rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold">
-          Step {currentStepIndex + 1}
-        </h1>
+        {step}
 
-        <h1 className="my-auto mx-6 font-semibold">
-          {currentStepIndex + 1} / {stepList.length}
-        </h1>
-      </div>
+        <div className="mt-6 flex items-center justify-between gap-3">
+          {!isFirstStep ? (
+            <Button type="button" variant="secondary" onClick={back}>
+              Previous
+            </Button>
+          ) : <span />}
 
-      {step}
-
-      <div className="w-full my-4 flex justify-between">
-        {!isFirstStep && (
-          <button
-            type="button"
-            className="btn rounded-sm py-2 px-8 border mx-8 border-pes text-pes"
-            onClick={back}
-          >
-            Previous
-          </button>
-        )}
-
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className={`btn rounded-sm py-2 px-16 mx-8 border border-pes text-white ms-auto 
-            ${
-              isDisabled
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-pes hover:bg-blue-800"
-            }`}
-        >
-          {adding ? (
-            <span className="flex items-center gap-2 justify-center">
-              <svg
-                className="animate-spin h-4 w-4 text-white"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                />
-              </svg>
-
-              Submitting...
-            </span>
-          ) : isLastStep ? (
-            "Finish"
-          ) : (
-            "Next"
-          )}
-        </button>
-      </div>
+          <Button type="submit" disabled={isDisabled} loading={adding}>
+            {adding ? "Submitting" : isLastStep ? "Finish" : "Next"}
+          </Button>
+        </div>
       </form>
+
+      {/* Success confirmation */}
+      <Modal isOpen={isSuccessful} setIsOpen={() => {}} showClose={false} title="Employee added successfully">
+        <p className="text-sm text-muted">Redirecting to the employee list…</p>
+      </Modal>
     </div>
   );
 }

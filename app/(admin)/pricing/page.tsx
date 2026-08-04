@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
 import Subscriptionbutton from "../../components/subscription/paypal";
@@ -51,7 +52,6 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, oldPlan, newPlan }),
       });
-      console.log("Upgrade ready for new payment.");
     } catch (err) {
       console.error("Upgrade failed:", err);
     }
@@ -76,18 +76,18 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        alert("All plans canceled and account deleted.");
+        notify.success("All plans canceled and account deleted.");
         removeAccessToken();
         try {
           await apiFetch('/api/logout', { method: 'POST' });
         } catch(e) { console.error(e) }
         window.location.href = "/"; // Redirect to home or signup page
       } else {
-        alert(data.error || "Failed to cancel plans.");
+        notify.error(data.error ||"Failed to cancel plans.");
       }
     } catch (err) {
       console.error("Cancel plan failed:", err);
-      alert("Cancel plan failed. Check console for details.");
+      notify.error("Cancel plan failed. Check console for details.");
     }
   };
 
@@ -116,13 +116,13 @@ export default function Home() {
       <div
         className={`price-card ${
           color ? color : "bg-white"
-        } ${color ? "text-white" : ""} h-112 w-72 border rounded-3xl flex flex-col justify-between p-4 ${
+        } ${color ? "text-white" : ""} h-[28rem] w-72 border rounded-3xl flex flex-col justify-between p-4 ${
           canUpgrade ? "border-blue-400 shadow-lg" : ""
         }`}
       >
         <div className="flex flex-col">
           {isActive ? (
-            <div className="bg-blue-100 text-pes rounded-full py-1 px-2 text-center mb-2 font-light text-sm">
+            <div className="bg-pes-100 text-pes rounded-full py-1 px-2 text-center mb-2 font-light text-sm">
               Current plan
             </div>
           ) : (
@@ -181,7 +181,7 @@ export default function Home() {
     <PayPalProviderWrapper>
       <main className="w-full flex flex-col">
         {/* Header */}
-        <div className="px-12 pt-8 pb-4 ms-6 mt-6 me-6 border-b border-gray-100 bg-white">
+        <div className="px-12 pt-8 pb-4 ms-6 mt-6 me-6 border-b border-line bg-white">
           <h1 className="text-2xl my-3 font-bold">Pricing</h1>
           <p className="text-sm">
             Simple pricing. No hidden fees. Advanced features for your company.
@@ -199,8 +199,8 @@ export default function Home() {
         {!maintenance ? (
           <div className="flex flex-col px-12 p-12 ms-6 mb-6 me-6 bg-white">
             <h1 className="text-xl my-3 font-bold">Other Available Packages</h1>
-            <div className="border border-gray-100 rounded-lg px-6 pb-6 flex flex-col">
-              <div className="mainte flex justify-between py-4 mb-2 border-b border-gray-100">
+            <div className="border border-line rounded-lg px-6 pb-6 flex flex-col">
+              <div className="mainte flex justify-between py-4 mb-2 border-b border-line">
                 <h1 className="font-bold my-auto">Maintenance model</h1>
                 <Link
                   href={"/maintenance-payment"}

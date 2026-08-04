@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { jwtDecode } from "jwt-decode";
-
+import { recordFeelingAndTransition } from "../../lib/stress/sessions";
 export async function POST(req: NextRequest) {
   try {
     const token = req.headers.get("authorization")?.split(" ")[1];
@@ -18,31 +18,50 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { stress, pressure, conflict, anovaResult } = body;
 
-    const record = await prisma.stress_evaluation_history.create({
-      data: {
-        org,
-        stress_factor: Number(stress),
-        pressure_factor: Number(pressure),
-        conflict_factor: Number(conflict),
-        anova_result: anovaResult ? JSON.stringify(anovaResult) : null,
-      },
-    });
-
-    // Close the cycle and record the 5% verdict. A rejected H0 means the feeling
-    // shifted significantly, so the NEXT cycle must re-collect Form 5 (settings).
-    const needsReset = !!(anovaResult?.conclusion || "").includes("Reject");
     const cycle = await prisma.stressCycle.findFirst({
       where: { org },
       orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
-    if (cycle && cycle.phase !== "evaluated") {
+
+    if (!cycle) {
+      return NextResponse.json({ error: "No active cycle found" }, { status: 400 });
+    }
+
+    // Record the feeling verdict vs F1 (the ±5% rule) which drives the reset.
+    // The feeling side goes to FeelingResult (written by the service), while the
+    // stress side (ANOVA) goes to stress_analysis_results below.
+    const feelingTransition = await recordFeelingAndTransition(prisma, {
+      org,
+      cycleId: cycle.id,
+      sessionId: cycle.session_id,
+      iteration: cycle.iteration,
+      feelingMean: Number(stress),
+      createdBy: decoded?.userID ? String(decoded.userID) : undefined,
+    });
+    const needsReset = feelingTransition.triggeredReset;
+
+    let record = null;
+    if (anovaResult) {
+      record = await prisma.stress_analysis_results.create({
+        data: {
+          org,
+          cycle_id: cycle.id,
+          session_id: feelingTransition.sessionId,
+          f_statistic: anovaResult.fStatistic ? Number(anovaResult.fStatistic) : null,
+          critical_value: anovaResult.criticalValue ? Number(anovaResult.criticalValue) : null,
+          conclusion: anovaResult.conclusion || null,
+        },
+      });
+    }
+
+    if (cycle.phase !== "evaluated") {
       await prisma.stressCycle.update({
         where: { id: cycle.id },
         data: { phase: "evaluated", needs_reset: needsReset },
       });
     }
 
-    return NextResponse.json({ success: true, record, needsReset }, { status: 201 });
+    return NextResponse.json({ success: true, record, needsReset, feelingTransition }, { status: 201 });
   } catch (err: any) {
     console.error("Error saving stress evaluation:", err);
     return NextResponse.json(

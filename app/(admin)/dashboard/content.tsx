@@ -1,8 +1,7 @@
 "use client";
 
-import { People, Award, Timer, ArrowRight, Add } from "iconsax-react";
+import { Add, ArrowRight } from "iconsax-react";
 import jwt from "jsonwebtoken";
-import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Goalchunk from "@/app/components/goals/goalChunk";
@@ -13,6 +12,8 @@ import StressCycleBanner from "@/app/components/StressCycleBanner";
 import ApprovalBanner from "@/app/components/ApprovalBanner";
 import MyStressResultsCard from "@/app/components/MyStressResultsCard";
 import { getAccessToken } from "@/app/utils/auth";
+import Button from "@/app/components/ui/Button";
+import Card from "@/app/components/ui/Card";
 
 export default function Dashboard() {
   const [performanceView, setPerformanceView] = useState("employee");
@@ -40,7 +41,6 @@ export default function Dashboard() {
   useEffect(() => {
     const access_token = getAccessToken() as string;
     if (!access_token || access_token === undefined) {
-      console.log("No valid token found, redirecting...");
       router.push("/login");
       return;
     }
@@ -60,112 +60,116 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="w-full h-screen flex justify-center items-center">
-        Loading...
+      <div className="w-full h-[60vh] flex justify-center items-center">
+        <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  const isAdmin = user?.role == "admin";
+
   return (
-    <main className="w-full flex flex-col bg-gray-50">
+    <main className="w-full flex flex-col">
       <StressCycleBanner />
       <ApprovalBanner />
-      {user?.role == "admin" ? (
-        <Quickstats openEvaluations={openEvaluationsCount} />
-      ) : (
-        <div className="flex flex-col m-8 p-8 bg-white">
-          <ProfileChunk />
-        </div>
-      )}
 
-      {/* Staff see their own dept/faculty stress here when the admin grants access. */}
-      {user?.role !== "admin" && <MyStressResultsCard />}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        {isAdmin ? (
+          <Quickstats openEvaluations={openEvaluationsCount} />
+        ) : (
+          <Card>
+            <div className="p-6">
+              <ProfileChunk />
+            </div>
+          </Card>
+        )}
 
-      <div className="(Goals and Insights)-- flex justify-between max-md:flex-col max-md:gap-2 mx-6 mb-6">
-        <div className="(left_panel)-- w-4_5 max-md:w-full flex flex-col">
-          <div className="w-full shadow-md shadow-gray-100 p-4 bg-white">
-            <div className="flex justify-between w-full p-4">
-              <p className="text-3xl text-black my-auto">Goals</p>
+        {/* Staff see their own dept/faculty stress here when the admin grants access. */}
+        {!isAdmin && <MyStressResultsCard />}
 
-              {user?.role == "admin" ? (
-                <Link
-                  href={"/goals"}
-                  className="text-md font-light my-auto text-pes flex"
-                >
-                  Set new Goal
-                  <Add className="mx-2 font-thin" />
-                </Link>
-              ) : (
-                <></>
+        {/* Goals + Insights */}
+        <div
+          className={`grid gap-6 ${isAdmin ? "lg:grid-cols-2" : "grid-cols-1"}`}
+        >
+          {/* Goals panel */}
+          <Card className="flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+              <h2 className="text-lg font-semibold text-strong">Goals</h2>
+              {isAdmin && (
+                <Button href="/goals" variant="ghost" size="sm">
+                  <Add size={18} /> Set new goal
+                </Button>
               )}
             </div>
 
-            <div className="text-white flex justify-between w-full py-4">
-              <div className="bg-orng flex flex-col justify-between p-4 rounded-md text-center w-4_5">
-                <p className="font-light">Active Goals Set</p>
-                <p className="text-4xl font-semibold">{activeGoalsCount}</p>
-              </div>
-
-              <div className="bg-grn flex flex-col justify-between p-4 rounded-md text-center w-4_5">
-                <p className="font-light">Goals Completed</p>
-                <p className="text-4xl font-semibold">{completedGoalsCount}</p>
-              </div>
-            </div>
-
-            <p className="text-xl text-black my-auto p-4">
-              Active Goal Metrics
-            </p>
-            <Goalchunk onGoalsLoaded={setGoals} />
-            <div className="viewgoals flex justify-end my-4">
-              <Link
-                href={`/goals`}
-                className="bg-pes rounded-md py-2 px-4 text-white flex"
-              >
-                View Goals <ArrowRight className="ms-2 text-sm" />{" "}
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {user?.role == "admin" ? (
-          <div className="(right_panel)-- w-1/2 max-md:w-full">
-            <div className="w-full shadow-md shadow-gray-100 p-4 bg-white">
-              <div className="flex justify-start w-full">
-                <p className="text-3xl text-black my-auto p-4">
-                  Performance Insights
-                </p>
-              </div>
-
-              <div className="flex flex-col justify-center relative mx-4 my-2">
-                <div className="flex justify-start w-3/12">
-                  <p
-                    className={`me-4  py-4 cursor-pointer ${performanceView == "employee" ? "text-pes" : ""}`}
-                    onClick={() => {
-                      setPerformanceView("employee");
-                    }}
-                  >
-                    Employees
-                  </p>
-                  <p
-                    className={`me-4  py-4 cursor-pointer ${performanceView == "team" ? "text-pes" : ""}`}
-                    onClick={() => {
-                      setPerformanceView("team");
-                    }}
-                  >
-                    Teams
+            <div className="p-5 flex flex-col gap-5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-warning-100 bg-warning-50 p-4">
+                  <p className="text-sm text-warning-700">Active goals set</p>
+                  <p className="mt-1 text-3xl font-semibold text-warning-700 tabular-nums">
+                    {activeGoalsCount}
                   </p>
                 </div>
-
-                <div
-                  className={`line w-20 bg-pes h-1 absolute bottom-0 ${performanceView == "employee" ? "left-0" : "left-20"} transition-all rounded-full`}
-                ></div>
-                <div className="line w-full bg-slate-100 h-1"></div>
+                <div className="rounded-lg border border-success-100 bg-success-50 p-4">
+                  <p className="text-sm text-success-700">Goals completed</p>
+                  <p className="mt-1 text-3xl font-semibold text-success-700 tabular-nums">
+                    {completedGoalsCount}
+                  </p>
+                </div>
               </div>
 
-              <Performance view={performanceView} />
+              <div>
+                <p className="text-sm font-medium text-muted mb-2">
+                  Active goal metrics
+                </p>
+                <Goalchunk onGoalsLoaded={setGoals} />
+              </div>
+
+              <div className="flex justify-end">
+                <Button href="/goals" variant="primary" size="sm">
+                  View goals <ArrowRight size={16} />
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : null}
+          </Card>
+
+          {/* Performance insights (admin only) */}
+          {isAdmin && (
+            <Card className="flex flex-col">
+              <div className="px-5 py-4 border-b border-line">
+                <h2 className="text-lg font-semibold text-strong">
+                  Performance insights
+                </h2>
+              </div>
+
+              <div className="p-5">
+                <div
+                  role="tablist"
+                  aria-label="Performance view"
+                  className="inline-flex items-center gap-1 rounded-lg bg-line/50 p-1 mb-4"
+                >
+                  {(["employee", "team"] as const).map((v) => (
+                    <button
+                      key={v}
+                      role="tab"
+                      aria-selected={performanceView === v}
+                      onClick={() => setPerformanceView(v)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
+                        performanceView === v
+                          ? "bg-surface text-pes-700 shadow-xs"
+                          : "text-muted hover:text-strong"
+                      }`}
+                    >
+                      {v === "employee" ? "Employees" : "Teams"}
+                    </button>
+                  ))}
+                </div>
+
+                <Performance view={performanceView} />
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
     </main>
   );

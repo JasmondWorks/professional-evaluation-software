@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <main className="flex flex-col w-full h-full bg-gray-100">
+    <main className="flex flex-col w-full h-full bg-canvas">
       <div className="flex flex-wrap gap-2 ms-auto w-fit p-4">
         {tabs.map((t) => {
           const active = t.exact
@@ -25,7 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 active
                   ? "bg-pes text-white"
-                  : "text-gray-600 bg-white border border-gray-200 hover:border-pes hover:text-pes"
+                  : "text-body bg-white border border-line hover:border-pes hover:text-pes"
               }`}
             >
               {t.label}

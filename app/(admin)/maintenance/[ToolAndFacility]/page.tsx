@@ -89,7 +89,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 flex justify-center items-center">
+    <div className="min-h-screen w-full bg-canvas flex justify-center items-center">
       <div className="bg-white shadow-md rounded-lg w-[95%]">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
@@ -128,7 +128,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 mt-2">
+                  <p className="text-muted mt-2">
                     No direct inputs required for calculations.
                   </p>
                 )}
@@ -146,7 +146,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
 
         {/* Results */}
         {Object.keys(results).length > 0 && (
-          <div className="p-4 border-t bg-gray-50">
+          <div className="p-4 border-t bg-canvas">
             <h2 className="font-semibold mb-2">Results:</h2>
             <p>MTBF: {results.mtbf?.toFixed(2)} hours</p>
             <p>

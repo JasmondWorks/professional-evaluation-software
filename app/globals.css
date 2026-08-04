@@ -1,22 +1,141 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
 
+/* ============================================================
+   PES design foundation — refined institutional dashboard.
+   Tailwind v4, CSS-first. Brand design tokens live here in
+   @theme and are generated into utilities (bg-pes-600,
+   text-muted, border-line, shadow-card, font-sans, …) used
+   across every component — one source of truth. See DESIGN.md.
+   ============================================================ */
 
-:root {
-  --foreground-rgb: gray;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@theme {
+  /* ----- Brand: systematized indigo ----------------------------------- */
+  /* `--color-pes` (DEFAULT) keeps `bg-pes`/`text-pes` working; the ramp adds
+     pes-50…950. */
+  --color-pes:     #322b80;
+  --color-pes-50:  #f3f3fb;
+  --color-pes-100: #e6e6f6;
+  --color-pes-200: #c9c7ec;
+  --color-pes-300: #a5a2dd;
+  --color-pes-400: #7d78c9;
+  --color-pes-500: #5b55b3;
+  --color-pes-600: #464099;
+  --color-pes-700: #322b80;
+  --color-pes-800: #2a2469;
+  --color-pes-900: #221d52;
+  --color-pes-950: #161135;
+
+  /* ----- Semantic surfaces & text ------------------------------------- */
+  --color-canvas:  #f7f7fa;   /* app background, table headers, inset panels */
+  --color-surface: #ffffff;   /* cards, sidebar, navbar, inputs             */
+  --color-line:    #e5e5ee;   /* hairline borders / dividers                */
+  --color-strong:  #18182b;   /* headings, key values (AA+)                 */
+  --color-body:    #3c3c52;   /* body copy, labels                          */
+  --color-muted:   #6c6c82;   /* secondary / captions (AA on white ≈5.3:1)  */
+
+  /* ----- Status ------------------------------------------------------- */
+  --color-success:     #1c9c07;
+  --color-success-50:  #f0faec;
+  --color-success-100: #dcf3d2;
+  --color-success-500: #1c9c07;
+  --color-success-600: #178205;
+  --color-success-700: #136a05;
+
+  --color-warning:     #9e7400;
+  --color-warning-50:  #fdf6ec;
+  --color-warning-100: #fae7c8;
+  --color-warning-500: #c2820b;
+  --color-warning-600: #9e7400;
+  --color-warning-700: #7c5a00;
+
+  --color-danger:     #dc2626;
+  --color-danger-50:  #fef2f2;
+  --color-danger-100: #fde3e3;
+  --color-danger-500: #e5484d;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  /* ----- Legacy tokens (kept for backward-compat) --------------------- */
+  --color-orng: #9e7400;
+  --color-grn: #1c9c07;
+  --color-gray-10: #f8f8fa85;
+
+  /* ----- Typography ---------------------------------------------------- */
+  /* next/font exposes Inter as --font-inter (see app/layout.tsx). */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* ----- Depth: offset + soft blur (never a zero-offset halo) ---------- */
+  --shadow-xs:   0 1px 2px 0 rgb(16 17 53 / 0.05);
+  --shadow-sm:   0 1px 3px 0 rgb(16 17 53 / 0.08), 0 1px 2px -1px rgb(16 17 53 / 0.06);
+  --shadow-card: 0 1px 2px 0 rgb(16 17 53 / 0.04), 0 4px 12px -2px rgb(16 17 53 / 0.06);
+  --shadow-md:   0 4px 16px -2px rgb(16 17 53 / 0.10), 0 2px 6px -2px rgb(16 17 53 / 0.06);
+  --shadow-lg:   0 12px 32px -8px rgb(16 17 53 / 0.16), 0 4px 12px -4px rgb(16 17 53 / 0.08);
+  --shadow-focus: 0 0 0 3px rgb(50 43 128 / 0.18);
+  --shadow-custom: 0px 0px 20px 5px;
 }
 
-body {
-  color: rgb(94, 93, 93);
-  font-size: 15.5px;
-  background: white;
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-body);
+    font-size: 15px;
+    line-height: 1.55;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    color: var(--color-strong);
+    letter-spacing: -0.014em;
+    text-wrap: balance;
+  }
+
+  /* One consistent, visible keyboard focus — no mouse-click halos. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    border-radius: 4px;
+  }
+
+  /* Calm, thin scrollbars that match the neutral system. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border: 3px solid var(--color-surface);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background: #c8c8d6; }
+
+  ::selection { background: rgb(50 43 128 / 0.14); }
 }
-*{
-  /* border: 1px solid red; */
-  padding: 0px;
-  margin: 0px;
-  box-sizing: border-box;
+
+/* Legacy background utilities migrated from the old JS config. */
+@utility bg-my {
+  background: linear-gradient(#322b80ee, #322b80ee), url('/bg-forpes.png');
+}
+@utility bg-pes-gradient {
+  background: linear-gradient(173deg, #3125ae 3.71%, rgba(255, 199, 42, 0.85) 257.51%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
