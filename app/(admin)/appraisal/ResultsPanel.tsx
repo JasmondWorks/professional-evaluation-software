@@ -246,7 +246,7 @@ export default function ResultsPanel() {
                               <span className="text-muted">—</span>
                             )}
                             {e.partial_target ? (
-                              <span className="ml-2 text-xs text-warning-700">partial target</span>
+                              <span className="ml-2 text-xs text-warning-700">provisional</span>
                             ) : null}
                           </td>
                           <td className="px-4 py-3 text-right">
