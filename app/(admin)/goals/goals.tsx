@@ -335,16 +335,22 @@ export default function Goals() {
                     )}
                   </div>
 
-                  {type === 'stress' && orgData?.stressCycle && (
+                  {type === 'stress' && (
                     <div className="mt-2 pt-2 border-t border-line text-xs text-muted space-y-1">
-                      <p>
-                        <span className="font-medium text-strong">Form 5 Closes:</span>{" "}
-                        {orgData.stressCycle.settings_closes_at ? new Date(orgData.stressCycle.settings_closes_at).toLocaleString() : 'N/A'}
-                      </p>
-                      <p>
-                        <span className="font-medium text-strong">Form 6/7 Closes:</span>{" "}
-                        {orgData.stressCycle.feeling_closes_at ? new Date(orgData.stressCycle.feeling_closes_at).toLocaleString() : 'N/A'}
-                      </p>
+                      {orgData?.stressCycle ? (
+                        <>
+                          <p>
+                            <span className="font-medium text-strong">Form 5 Closes:</span>{" "}
+                            {orgData.stressCycle.settings_closes_at ? new Date(orgData.stressCycle.settings_closes_at).toLocaleString() : 'N/A'}
+                          </p>
+                          <p>
+                            <span className="font-medium text-strong">Form 6/7 Closes:</span>{" "}
+                            {orgData.stressCycle.feeling_closes_at ? new Date(orgData.stressCycle.feeling_closes_at).toLocaleString() : 'N/A'}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="italic">No active cycle is currently running.</p>
+                      )}
                     </div>
                   )}
                 </div>

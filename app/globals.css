@@ -132,6 +132,21 @@
   background: linear-gradient(173deg, #3125ae 3.71%, rgba(255, 199, 42, 0.85) 257.51%);
 }
 
+/* ------------------------------------------------------------------
+   Layering scale — ONE source of truth for z-index across the app.
+   Named utilities (always valid, unlike bare `z-9999`), so overlays,
+   modals and popovers stack correctly in every environment.
+   Order: content < sidebar rail (z-20) < navbar < drawer < modal
+   overlay < modal content < popovers (select/dropdown/tooltip),
+   so a Select opened INSIDE a Dialog still renders above it.
+   ------------------------------------------------------------------ */
+@utility z-nav          { z-index: 30; }   /* sticky navbar */
+@utility z-drawer-scrim { z-index: 40; }   /* mobile sidebar backdrop */
+@utility z-drawer       { z-index: 50; }   /* mobile sidebar panel */
+@utility z-overlay      { z-index: 100; }  /* dialog / modal backdrop */
+@utility z-modal        { z-index: 110; }  /* dialog / modal content */
+@utility z-popover      { z-index: 120; }  /* select, dropdown, tooltip, popover */
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
