@@ -153,10 +153,14 @@ export default function EntryPage() {
                 <p className="text-xs uppercase tracking-wide text-muted">Grade</p>
                 <p className="text-2xl font-semibold text-pes">{entry.grade}</p>
               </div>
-              {entry.partial_target ? (
+              {/* RTP is computed only from categories that were actually scored.
+                  Say so, otherwise a lecturer who entered one form sees a grade
+                  that looks like a verdict on their whole year. */}
+              {entered < forms.length || entry.partial_target ? (
                 <Alert tone="warning" className="flex-1">
-                  One or more categories have no target set, so this covers only part of the
-                  appraisal.
+                  {entered < forms.length
+                    ? `Based on ${entered} of ${forms.length} forms. Categories with nothing entered are left out of the total, so this is provisional until every form is in.`
+                    : 'One or more categories have no target set, so this covers only part of the appraisal.'}
                 </Alert>
               ) : null}
             </div>

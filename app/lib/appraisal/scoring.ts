@@ -291,9 +291,10 @@ export function gradeOf(rtp: number): Grade {
 export type ReconciliationDecision =
   /** Inside the tolerance band: average the two and record it. */
   | { outcome: 'accepted'; recorded: number; store: true; flag: false }
-  /** Outside the band and the appraisee accepted the HOD's score: average and
-   *  record, exactly as an in-band case. */
-  | { outcome: 'accepted_by_staff'; recorded: number; store: true; flag: false }
+  /** Outside the band and the appraisee accepted the HOD's score. The average is
+   *  recorded, and the client's notes still call for a flag so the auditor can
+   *  look at a large gap even when both sides agreed on it. */
+  | { outcome: 'accepted_by_staff'; recorded: number; store: true; flag: boolean }
   /** Outside the band and the appraisee rejected it: hold the score out of the
    *  database and pass it to the external auditor, whose figure is final. */
   | { outcome: 'referred_to_auditor'; recorded: number; store: false; flag: true };
@@ -310,9 +311,17 @@ export type ReconciliationInput = {
 
 /** Decide what happens to a pair of scores.
  *
- *  The tolerance band is background-only: it decides whether the appraisee is
- *  ever asked, but it is never shown to staff or HODs, and a referral surfaces
- *  only to the organization admin. Keep this on the server. */
+ *  IMPORTANT: the appraisee is asked whenever the HOD records a different score,
+ *  in band or out. An earlier version only asked when the gap exceeded the band,
+ *  which meant that being asked at all announced "your score is more than N%
+ *  from your HOD's", and staff would have deduced the threshold within two
+ *  appraisals. The client requires the band to stay unknown to staff and HODs,
+ *  so the prompt must carry no information.
+ *
+ *  The band therefore decides only what an ACCEPTANCE records. A rejection
+ *  always goes to the auditor, which is what the client described: "where the
+ *  staff rejects the HOD's suggestion that score shouldn't be registered in the
+ *  system database yet but be pulled aside for the external auditor". */
 export function reconcile(input: ReconciliationInput): ReconciliationDecision | { outcome: 'awaiting_staff_response' } {
   const band = TOLERANCE_BAND[input.model];
   const average = (input.appraisalScore + input.hodScore) / 2;
@@ -321,19 +330,25 @@ export function reconcile(input: ReconciliationInput): ReconciliationDecision | 
   const deviation = input.hodScore === 0
     ? 0
     : ((input.appraisalScore - input.hodScore) / input.hodScore) * 100;
+  const inBand = Math.abs(deviation) <= band;
 
-  if (Math.abs(deviation) <= band) {
-    return { outcome: 'accepted', recorded: average, store: true, flag: false };
-  }
-
-  // Out of band. The model requires the HOD to justify the score they gave
-  // before the appraisee is asked to accept or reject it.
+  // The HOD must justify a changed score before the appraisee is asked.
   if (!input.hodJustified) return { outcome: 'awaiting_staff_response' };
   if (input.staffAccepted === undefined) return { outcome: 'awaiting_staff_response' };
 
-  return input.staffAccepted
-    ? { outcome: 'accepted_by_staff', recorded: average, store: true, flag: false }
-    : { outcome: 'referred_to_auditor', recorded: input.hodScore, store: false, flag: true };
+  if (!input.staffAccepted) {
+    return { outcome: 'referred_to_auditor', recorded: input.hodScore, store: false, flag: true };
+  }
+
+  // Accepted. In band, average and settle. Outside it, the client's notes apply:
+  // below the band record the HOD's figure and flag; above it record the average
+  // and flag.
+  if (inBand) {
+    return { outcome: 'accepted', recorded: average, store: true, flag: false };
+  }
+  return deviation < 0
+    ? { outcome: 'referred_to_auditor', recorded: input.hodScore, store: false, flag: true }
+    : { outcome: 'accepted_by_staff', recorded: average, store: true, flag: true };
 }
 
 // ---------------------------------------------------------------------------

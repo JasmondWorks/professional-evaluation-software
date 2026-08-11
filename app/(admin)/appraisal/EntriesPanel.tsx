@@ -7,6 +7,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
 import { notify } from '@/lib/toast';
 import { POSITIONS, NON_ACADEMIC_CADRES, modelFor } from '@/app/lib/appraisal/instrument';
 
@@ -90,10 +92,23 @@ export default function EntriesPanel() {
     load();
   }, []);
 
-  // The client's rule: only academic staff inside an academic institution use
-  // the academic model. Product category comes from the org, so the staff type
-  // chosen here is the other half of the decision.
-  const model = modelFor('academic', staffType);
+  // The client's rule: only academic staff inside an ACADEMIC institution use
+  // the academic model. Everyone in a company or public-sector organization uses
+  // the non-academic one, whatever they are called. The product category is
+  // carried in the token, so read it rather than assuming.
+  const [productCategory, setProductCategory] = useState<string>('academic');
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    try {
+      setProductCategory((jwtDecode(t) as any)?.productCategory ?? 'academic');
+    } catch {
+      /* leave the default */
+    }
+  }, []);
+
+  const model = modelFor(productCategory, staffType);
+  const staffTypeApplies = productCategory === 'academic';
 
   async function create() {
     setBusy(true);
@@ -237,6 +252,7 @@ export default function EntriesPanel() {
             )}
           </Field>
 
+          {staffTypeApplies ? (
           <Field
             label="Staff type"
             hint="Academic staff use four categories across five forms. Everyone else uses three."
@@ -253,6 +269,12 @@ export default function EntriesPanel() {
               </Select>
             )}
           </Field>
+          ) : (
+            <p className="text-sm text-muted">
+              This organization is not an academic institution, so everyone is appraised
+              on the non-academic model of three forms.
+            </p>
+          )}
 
           {model === 'academic' ? (
             <Field label="Position" hint="Position selects the annual target.">
