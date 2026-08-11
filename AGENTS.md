@@ -30,6 +30,31 @@ missing prerequisite, a permission, an empty queue). Examples in this repo:
 Rule of thumb: **if a user could reasonably ask "why can't I click this?", the
 answer must already be on the screen.**
 
+### Nothing may look machine-generated
+Everything a client or user reads (UI copy, docs, specs, reports, artifacts) must
+read as though a person wrote it. Avoid the tells:
+
+- **Em dashes.** Use a comma, colon, full stop, or rewrite the sentence.
+- **Emphasis sprayed everywhere.** If half a paragraph is bold, nothing is
+  emphasised. Reserve bold for the rare word that genuinely carries the sentence,
+  and let headings, tables and structure do the rest.
+- **Contrastive filler:** "not just X, but Y", "it isn't A, it's B".
+- **Triadic padding:** "precise, restrained and immaculate" where one word works.
+- **Empty intensifiers:** "critically", "notably", "seamlessly", "robust",
+  "leverage", "delve", "comprehensive".
+- **Openers that restate the heading** before saying anything new.
+- **Emoji as section markers**, and decorative numbering (01 / 02 / 03) on things
+  that are not an actual sequence. Numbering is fine when order carries meaning.
+
+Same rule in visual design. Avoid the current generated-design cluster: warm
+cream grounds with a serif display and terracotta accent, near-black with one
+acid-green pop, purple-to-blue gradient heroes, Inter or Space Grotesk chosen by
+default, `rounded-lg` on everything, accent bars on rounded cards, and centred
+everything. Make deliberate choices instead, and follow [DESIGN.md](DESIGN.md).
+
+Write from the reader's side of the screen: name things as people recognise them,
+use active voice, and say what happened plainly.
+
 ### Every page has a title (and an optional subtitle)
 Every page MUST show a clear **title** at the top so the user always knows where
 they are, and an **optional subtitle** only when a short line of context helps

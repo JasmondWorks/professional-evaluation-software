@@ -24,7 +24,7 @@ export async function GET(
     }
 
     const latestStressCycle = await prisma.stressCycle.findFirst({
-      where: { org: orgName },
+      where: { org: orgName, phase: { not: 'evaluated' } },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
       select: {
         settings_closes_at: true,

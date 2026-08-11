@@ -92,6 +92,7 @@ export default function DataEntryPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <ModelCard def={{ title: "Auditor entries", description: "Enter and review staff audit responses.", href: "/data-entry/auditor", Icon: Verify, color: "bg-purple-50 text-purple-600" }} />
+          <ModelCard def={{ title: "Contested appraisals", description: "Rule on scores a member of staff has contested.", href: "/appraisal/auditor", Icon: Verify, color: "bg-rose-50 text-rose-600" }} />
         </div>
       </div>
     );
@@ -99,9 +100,9 @@ export default function DataEntryPage() {
 
   const modelCards: CardDef[] = [
     {
-      title: "Appraisal",
+      title: "Appraisal forms",
       description: "Complete your appraisal self-assessment forms.",
-      href: "/data-entry/appraisal",
+      href: "/appraisal/entries",
       Icon: Award,
       color: "bg-pes-50 text-pes-600",
       enabled: has("appraisal"),
