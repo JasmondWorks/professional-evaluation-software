@@ -826,3 +826,210 @@ model WorkSamplingObservation {
   notes             String?
   position          WorkSamplingPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
 }
+
+// ---------------------------------------------------------------------------
+// Appraisal model (academic and non-academic)
+//
+// The scoring rules live in app/lib/appraisal/. These tables hold the per-org
+// configuration and the per-period entries the engine runs over.
+// ---------------------------------------------------------------------------
+
+// An appraisal period, opened by Estab./Personnel. The client confirmed this is
+// configurable rather than fixed to a year: yearly, bi-annual or quarterly.
+// Every score belongs to exactly one period so figures can never mix across
+// periods.
+model appraisal_period {
+  id          Int       @id @default(autoincrement())
+  org         String    @db.VarChar(255)
+  frequency   String    @db.VarChar(20)
+  starts_on   DateTime  @db.Date
+  ends_on     DateTime  @db.Date
+  // 'open' while entries are accepted, 'closed' once Estab./Personnel has run
+  // the final evaluation.
+  status      String    @default("open") @db.VarChar(20)
+  opened_by   String?   @db.VarChar(255)
+  // Closing a period ends data entry. Releasing is a separate, deliberate act by
+  // the organization admin, which is when staff finally see their grade.
+  released_at DateTime? @db.Timestamp(6)
+  released_by String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  targets    appraisal_target[]
+  entries    appraisal_entry[]
+  courses    appraisal_course[]
+  indicators appraisal_indicator[]
+
+  @@index([org, status])
+}
+
+// Annual targets, per org and per period so an institution can adjust them
+// without rewriting history. Seeded from ACADEMIC_TARGETS in the instrument.
+//
+// This table exists so the two targets the source document never supplied — the
+// student evaluation target, and the whole non-academic cadre scheme — can be
+// filled in as configuration rather than blocking the model. A missing row means
+// "not targeted", and the engine leaves that category out of the combined total
+// instead of scoring it as zero.
+model appraisal_target {
+  id        Int     @id @default(autoincrement())
+  org       String  @db.VarChar(255)
+  period_id Int?
+  // 'academic' | 'non_academic'
+  model     String  @db.VarChar(20)
+  // Academic positions key on position; administration keys on post held;
+  // non-academic keys on cadre. Exactly one of these is set.
+  position  String? @db.VarChar(60)
+  post      String? @db.VarChar(60)
+  cadre     String? @db.VarChar(60)
+  // One of the five CategoryKey values, or null for the non-academic single
+  // combined target.
+  category  String? @db.VarChar(40)
+  target    Decimal @db.Decimal(10, 2)
+
+  period appraisal_period? @relation(fields: [period_id], references: [id], onDelete: Cascade)
+
+  @@unique([org, period_id, model, position, post, cadre, category], map: "appraisal_target_unique")
+  @@index([org, model])
+}
+
+// One staff member's appraisal within a period: the five category results and
+// the reconciliation state. `flagged` is visible only to the organization admin.
+model appraisal_entry {
+  id           Int     @id @default(autoincrement())
+  org          String  @db.VarChar(255)
+  dept         String? @db.VarChar(255)
+  period_id    Int
+  pesuser_name String  @db.VarChar(255)
+  model        String  @db.VarChar(20)
+  position     String? @db.VarChar(60)
+  post         String? @db.VarChar(60)
+  cadre        String? @db.VarChar(60)
+
+  total_observed Decimal? @db.Decimal(12, 3)
+  total_target   Decimal? @db.Decimal(12, 3)
+  rtp            Decimal? @db.Decimal(10, 3)
+  grade          String?  @db.VarChar(20)
+  // True when a scored category had no configured target, so the combined
+  // figure covers only part of the appraisal.
+  partial_target Boolean  @default(false)
+
+  // Workflow: 'draft' | 'submitted' | 'hod_reviewed' | 'awaiting_staff' |
+  // 'referred_to_auditor' | 'approved'
+  status           String    @default("draft") @db.VarChar(30)
+  flagged          Boolean   @default(false)
+  submitted_at     DateTime? @db.Timestamp(6)
+  approved_at      DateTime? @db.Timestamp(6)
+  // The non-academic qualitative questionnaire, items (a) to (h).
+  questionnaire    Json?
+  // The Dean approves a department's submissions before Estab./Personnel run
+  // the final evaluation. Deans do not score individual academics.
+  dean_approved_at DateTime? @db.Timestamp(6)
+  dean_approved_by String?   @db.VarChar(255)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+
+  period     appraisal_period           @relation(fields: [period_id], references: [id], onDelete: Cascade)
+  categories appraisal_category_score[]
+  evidence   appraisal_evidence[]
+
+  @@unique([period_id, pesuser_name], map: "appraisal_entry_unique")
+  @@index([org, status])
+  @@index([org, flagged])
+}
+
+// One category result within an entry, holding both the appraisee's figures and
+// the HOD's counter-score plus the justification the model requires.
+//
+// `worth` is stored because it is needed to reproduce a historic result, but it
+// must never be sent to the browser: the client confirmed the worth table stays
+// unknown to every user, the organization admin included.
+model appraisal_category_score {
+  id       Int    @id @default(autoincrement())
+  entry_id Int
+  category String @db.VarChar(40)
+
+  // Line-item scores as entered, kept so a result can be audited back to source.
+  line_items Json?
+  quality    Decimal? @db.Decimal(6, 2)
+  quantity   Decimal? @db.Decimal(12, 4)
+  worth      Int?
+  observed   Decimal? @db.Decimal(12, 3)
+  target     Decimal? @db.Decimal(10, 2)
+
+  // Reconciliation. hod_score is the HOD/Unit Max Score.
+  appraisal_score   Decimal? @db.Decimal(6, 2)
+  hod_score         Decimal? @db.Decimal(6, 2)
+  hod_justification String?
+  staff_accepted    Boolean?
+  // 'accepted' | 'accepted_by_staff' | 'referred_to_auditor' |
+  // 'awaiting_staff_response'
+  reconciliation    String?  @db.VarChar(40)
+  recorded_score    Decimal? @db.Decimal(6, 2)
+  auditor_score     Decimal? @db.Decimal(6, 2)
+  auditor_note      String?
+
+  // Student evaluation only: how many completed copies were submitted. The
+  // recorded quality is their mean, and the course cannot be scored below the
+  // minimum.
+  copies_submitted Int?
+
+  entry appraisal_entry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@unique([entry_id, category], map: "appraisal_category_unique")
+}
+
+// A piece of evidence feeding the quantity side: which quantification rule it
+// falls under, and its measure (pages, semester hours, or certified works).
+model appraisal_evidence {
+  id           Int      @id @default(autoincrement())
+  entry_id     Int
+  category     String   @db.VarChar(40)
+  rule_key     String   @db.VarChar(60)
+  label        String?  @db.VarChar(255)
+  measure      Decimal  @db.Decimal(12, 3)
+  scripts      Int?
+  // Uploaded proof, required for research entries.
+  evidence_url String?  @db.VarChar(500)
+  units        Decimal? @db.Decimal(12, 4)
+
+  entry appraisal_entry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@index([entry_id, category])
+}
+
+// The course registry (Form 2). Course units feed the teaching quantity, so a
+// course must exist before a lecturer can be appraised on it.
+model appraisal_course {
+  id         Int       @id @default(autoincrement())
+  org        String    @db.VarChar(255)
+  period_id  Int
+  dept       String?   @db.VarChar(255)
+  title      String    @db.VarChar(255)
+  code       String    @db.VarChar(50)
+  unit       Decimal   @db.Decimal(6, 2)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+
+  period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
+
+  @@unique([org, period_id, code], map: "appraisal_course_unique")
+  @@index([org, period_id])
+}
+
+// Form 4: which departmental indicators apply to a given staff member. This is
+// what defines the work a person will actually be appraised on.
+model appraisal_indicator {
+  id           Int       @id @default(autoincrement())
+  org          String    @db.VarChar(255)
+  period_id    Int
+  pesuser_name String    @db.VarChar(255)
+  // Which achievement category the indicator belongs to.
+  category     String    @db.VarChar(40)
+  label        String    @db.VarChar(255)
+  // Set when the indicator is a registered course.
+  course_id    Int?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
+
+  @@index([org, period_id, pesuser_name])
+}

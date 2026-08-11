@@ -146,3 +146,16 @@ bar — light, systematized indigo (`#322b80`), mobile-first. Chosen over a roll
 - **Model-page inputs unified:** swept the bespoke `numberInput` input class (ring +
   `rounded-md` + `bg-canvas`) to the kit style (`rounded-lg`, `bg-surface`,
   `focus:shadow-focus`) — ~40 inputs across ~16 files; 0 ring-based inputs remain.
+
+## 2026-08-04 — Z-index scale + more table migrations
+
+- **Z-index scale (one source of truth).** Replaced ad-hoc/invalid z-index classes
+  (bare `z-9999` generates NO css in Tailwind v4; scattered `z-[99999]`/`z-[999999]`)
+  with named `@utility` classes in `app/globals.css`:
+  `z-nav`(30) < `z-drawer-scrim`(40) < `z-drawer`(50) < `z-overlay`(100) <
+  `z-modal`(110) < `z-popover`(120). Applied to navbar, sidebar drawer, Dialog
+  overlay/content, and Select/Dropdown/Tooltip content — so a modal overlay covers the
+  navbar and a Select opened *inside* a modal renders above it. Verified the utilities
+  compile with the right values.
+- Converted **completed-appraisals** and **maintenance/inventory** tables to `DataTable`
+  (searchable + paginated).

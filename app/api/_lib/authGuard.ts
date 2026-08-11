@@ -54,6 +54,15 @@ export function hasAccess(user: DecodedUser | null, rule: AccessRule): boolean {
   if (!user) return false;
   const role = user.role ?? '';
   if ((rule.allowAdmins ?? true) && ADMIN_TIERS.includes(role)) return true;
+
+  // An empty rule means "any signed-in user is allowed". Twenty routes call
+  // authorize(token, {}) for exactly that, including /api/getUser, which serves
+  // a person their own record. Without this line those routes fell through to
+  // the final `return false` and answered 403 to everyone who was not an admin,
+  // so a lecturer could not load their own profile.
+  const restricts = (rule.roles?.length ?? 0) > 0 || (rule.anyOf?.length ?? 0) > 0;
+  if (!restricts) return true;
+
   if (rule.roles?.includes(role)) return true;
   if (rule.anyOf?.some((k) => user.perms?.[k] === true)) return true;
   return false;
