@@ -63,6 +63,39 @@ they are, and an **optional subtitle** only when a short line of context helps
 it when useful. Don't add a subtitle just to fill space — omit it if the title
 already says everything.
 
+## Project stage: pre-launch
+
+**This application has not launched. There are no real customers and no
+production data.** The Vercel "production" deployment and the Neon database it
+points at are a demo environment the client tests in. Everything in them is
+seed or test data.
+
+So do not stop to ask permission for the things that would normally need it.
+Proceed and report what you did:
+
+- **Run migrations on any database, including Neon.** Destructive statements
+  (`TRUNCATE`, `DROP COLUMN`, `DROP TABLE`) are fine. Still check the live state
+  first and use `prisma migrate resolve --applied` where a migration's effect
+  already exists, because re-running it wastes time and can fail the queue.
+- **Deploy.** Commit, merge into `dev`, push. `dev` is the production branch.
+- **Change the schema** whenever the model requires it, and write the migration.
+- **Delete superseded code, routes and pages** once something replaces them.
+  Leaving two implementations of the same feature reachable is worse than
+  removing the old one.
+- **Reset or reseed data** to get a flow into a testable state.
+
+Judgement still applies to a few things, so ask before:
+
+- rotating or replacing secrets and API keys,
+- deleting the Neon project, the Vercel project, or a git branch someone else
+  is working on,
+- removing the client's own uploaded documents from the repo,
+- force-pushing over anyone else's commits.
+
+**Revisit this section the moment a real organization onboards.** From then on
+the deployed database holds other people's staff records, and the caution above
+becomes mandatory again rather than optional.
+
 ## Data / correctness constraints
 
 - **Organization isolation:** every query is scoped by `org`. No data may leak
