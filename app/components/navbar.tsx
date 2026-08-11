@@ -11,6 +11,8 @@ import jwt from "jsonwebtoken";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import UserAvatar from "@/app/components/ui/UserAvatar";
+import { useCurrentUser } from "@/app/components/useCurrentUser";
 import LoadingButton from "./ui/LoadingButton";
 import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
 import { apiFetch } from "@/app/utils/apiFetch";
@@ -41,6 +43,9 @@ export default function Navbar({
 }): JSX.Element {
   const router = useRouter();
   const [user, setUser] = useState<jwt.JwtPayload | string | null>(null);
+  // The photo comes from the live record, not the token: a token issued at login
+  // would still show the old picture after an upload.
+  const { user: currentUser } = useCurrentUser();
   const [notifications, setNotifications] = useState<Notif[]>([]);
 
   useEffect(() => {
@@ -98,7 +103,7 @@ export default function Navbar({
   const recent = notifications.slice(0, 6);
 
   return (
-    <header className="sticky top-0 z-9999 h-16 bg-surface/85 backdrop-blur-md border-b border-line">
+    <header className="sticky top-0 z-nav h-16 bg-surface/85 backdrop-blur-md border-b border-line">
       <div className="flex items-center gap-3 h-full px-4 sm:px-6">
         {/* Mobile sidebar toggle */}
         <LoadingButton
@@ -180,9 +185,7 @@ export default function Navbar({
               type="button"
               className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg hover:bg-line/60 transition-colors focus-visible:outline-none focus-visible:shadow-focus data-[state=open]:bg-line/60"
             >
-              <span className="w-8 h-8 rounded-full bg-pes-100 text-pes-700 grid place-items-center text-sm font-semibold overflow-hidden">
-                {name ? name.charAt(0).toUpperCase() : "?"}
-              </span>
+              <UserAvatar name={name} image={currentUser?.image} size="sm" />
               <span className="hidden sm:block text-sm font-medium text-strong max-w-48 truncate">
                 {name}
               </span>

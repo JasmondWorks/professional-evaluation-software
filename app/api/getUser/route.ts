@@ -19,7 +19,19 @@ async function getUser(userNameOrEmail: string | null, userId: number | null) {
   }
 
   try {
-    return await prisma.pesuser.findFirst({ where: { OR: or } })
+    // Never select `password`. This row is returned straight to the browser, and
+    // the navbar and sidebar now request it on every page, so the hash would
+    // otherwise be sent over the wire constantly.
+    return await prisma.pesuser.findFirst({
+      where: { OR: or },
+      select: {
+        id: true, name: true, email: true, gsm: true, role: true,
+        display_role: true, address: true, faculty_college: true,
+        dob: true, doa: true, poa: true, doc: true, post: true, dopp: true,
+        level: true, image: true, org: true, dept: true, tier: true,
+        category: true, plan: true,
+      },
+    })
   } catch (err) {
     console.error('Error fetching user in getUser:', err)
     return null
@@ -32,7 +44,6 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const decoded = auth.user;
-    console.log('Decoded token payload:', decoded);
 
     let identifier: string | null = null;
     let userId: number | null = null;
@@ -75,7 +86,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userInfo = await getUser(identifier, userId)
-    console.log('userInfo:', userInfo)
 
     if (!userInfo) {
       return NextResponse.json(null)

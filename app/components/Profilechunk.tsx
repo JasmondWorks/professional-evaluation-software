@@ -1,137 +1,97 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import { getAccessToken } from '@/app/utils/auth'
+import React, { useState } from 'react'
 import DataField from './ui/DataField'
-import { titleCase, formatDate, getInitials } from '@/lib/utils'
-import { apiFetch } from '@/app/utils/apiFetch';
+import { titleCase, formatDate } from '@/lib/utils'
 import Skeleton from './ui/Skeleton';
+import { Alert } from './ui';
+import UserAvatar from './ui/UserAvatar';
+import AvatarUploader from './AvatarUploader';
+import { useCurrentUser } from './useCurrentUser';
 
-type user = {
-   id:number
-   name: string
-   email: string 
-   password: string
-   gsm: string
-   role: string
-   display_role?: string
-   address: string
-   faculty_college: string
-   dob: string
-   doa: string
-   poa : string
-   doc : string
-   post : string
-   dopp: string
-   level: string
-   image : string
-   org : string
- }
-
-export default function ProfileChunk(){
+/** `editable` adds the photo controls. The profile page passes it; the dashboard
+ *  shows the same details read-only. */
+export default function ProfileChunk({ editable = false }: { editable?: boolean } = {}){
    const [ expanded, setExpanded ] = useState(false)
-   const [user, setUser] = useState<user | null>(null)
-   const [loading, setLoading] = useState(true)
-   const [error, setError] = useState(false)
-   
+   // One shared record across the topbar, sidebar, dashboard and this block, so
+   // a new photo appears everywhere at once.
+   const { user, loading, error } = useCurrentUser()
+
    const TextFallback = () => (
-      <>
-         <Skeleton className="w-60 h-3 my-1 rounded-full" />
-         <Skeleton className="w-40 h-3 my-1 rounded-full" />
-      </>
+      <div className="my-2 flex flex-col">
+         <Skeleton className="w-24 h-3 my-1 rounded-full" />
+         <Skeleton className="w-40 h-4 my-1 rounded-full" />
+      </div>
    );
 
-   useEffect( () => {
-      const access_token = getAccessToken() as string
 
-      async function fetchUser(){
-         try {
-            const data = await apiFetch('/api/getUser', 
-               {
-                  method: "POST",
-                  headers: {
-                     "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({ token: access_token }) // Converting the data object to a JSON string
-               }
-            )
-            if (!data.ok) throw new Error("Failed");
-            const res = await data.json()
-            setUser(res)
-         } catch {
-            setError(true)
-         } finally {
-            setLoading(false)
-         }
-      }
-      fetchUser()
-   }, [])
+   // The error state existed but was never rendered, so a failed load looked
+   // identical to a record with every field empty.
+   if (!loading && error) {
+      return (
+         <Alert tone="danger">
+            Your details could not be loaded. Refresh the page, and if it keeps happening
+            sign out and back in.
+         </Alert>
+      );
+   }
 
+   const field = (label: string, value: string) =>
+      loading ? <TextFallback /> : <DataField label={label} value={value} />;
 
    return(
-      <div className="details my-2">
-         <div className='(initial) flex justify-between'>
-            <div className='flex justify-between max-sm:gap-4 max-sm:flex-col py-2'>
-               <div className='w-40 h-40 me-8 max-sm:w-full shrink-0'>
-                  {
-                     loading ? <Skeleton className="w-full h-full rounded-md" /> :
-                     user?.image ?
-                        <img src={ user.image } alt="profile-img" className='w-full h-full object-cover rounded-md'/>
-                     :
-                        <div className='w-full h-full rounded-md bg-gray-300 flex items-center justify-center text-body font-bold text-4xl'>
-                           {user?.name ? getInitials(user.name) : '?'}
-                        </div>
-                  }
-               </div>
-
-               <div className='flex flex-col gap-4 py-2'>
-                  {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Name" value={titleCase(user?.name || '')} />}
-                  {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Functional GSM" value={user?.gsm || ''} />}
-                  {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Current home address" value={titleCase(user?.address || '')} />}
-               </div>
+      <div className="details">
+         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+            <div className="shrink-0">
+               {loading ? (
+                  <Skeleton className="h-32 w-32 rounded-xl sm:h-40 sm:w-40" />
+               ) : editable ? (
+                  <AvatarUploader name={user?.name} image={user?.image} />
+               ) : (
+                  <UserAvatar name={user?.name} image={user?.image} size="xl" rounded="xl" />
+               )}
             </div>
 
-            <div className='flex flex-col gap-4 min-w-[30rem] py-2 px-4'>
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Email" value={user?.email?.toLowerCase() || ''} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Present role" value={titleCase(user?.display_role || user?.role || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Faculty/college" value={titleCase(user?.faculty_college || '')} />}
-
-               {/* <div className='my-2 flex flex-col'>
-                  <p className='text-muted'>Faculty/college:</p>
-                  <p className='font-semibold text-lg'>{}</p>
-               </div> */}
+            {/* Two columns on wide screens, one on narrow. The right column
+                previously carried a 30rem minimum, which forced the row wider
+                than the phone viewport. */}
+            <div className="grid min-w-0 flex-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+               {field('Name', titleCase(user?.name || ''))}
+               {field('Email', user?.email?.toLowerCase() || '')}
+               {field('Functional GSM', user?.gsm || '')}
+               {field('Present role', titleCase(user?.display_role || user?.role || ''))}
+               {field('Current home address', titleCase(user?.address || ''))}
+               {field('Faculty/college', titleCase(user?.faculty_college || ''))}
             </div>
          </div>
 
-         <div style={{ display: `${ expanded? '' : 'none' }` }}  className='(see more) flex flex-col justify-between mt-4 gap-6'>
-            <div className='flex justify-between w-9/12'>
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Date of Birth" value={formatDate(user?.dob || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Date of first Appointment" value={formatDate(user?.doa || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Post/grade of first appointment" value={titleCase(user?.poa || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Date of confirmation" value={formatDate(user?.doc || '')} />}
-            </div>
-
-            <div className='flex justify-between w-9/12'>
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Present Post" value={titleCase(user?.post || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Date appointed to present post" value={formatDate(user?.dopp || '')} />}
-               {loading ? <div className="my-2 flex flex-col"><TextFallback/></div> : <DataField label="Current Level/Step" value={user?.level || ''} />}
-            </div>
-            
-            <div className='flex justify-between w-9/12'>
-               <div className='my-2 flex flex-col'>
-                  <p className='text-muted'>Academic certification:</p>
-                  <div>
-                     {
-                        // TODO - render certification here
-                     }
-                  </div>
+         {expanded ? (
+            <div className='mt-6 border-t border-line pt-6'>
+               <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2 lg:grid-cols-4">
+                  {field('Date of birth', formatDate(user?.dob || ''))}
+                  {field('Date of first appointment', formatDate(user?.doa || ''))}
+                  {field('Post/grade of first appointment', titleCase(user?.poa || ''))}
+                  {field('Date of confirmation', formatDate(user?.doc || ''))}
+                  {field('Present post', titleCase(user?.post || ''))}
+                  {field('Date appointed to present post', formatDate(user?.dopp || ''))}
+                  {field('Current level/step', user?.level || '')}
                </div>
 
+               <div className="mt-4">
+                  <p className="text-muted">Academic certification:</p>
+                  <p className="font-semibold text-lg text-muted">Not recorded</p>
+               </div>
             </div>
-         </div>
+         ) : null}
 
-         <div className='flex justify-end'>
-            <p style={{ display: `${ expanded? 'none' : '' }` }} className={` text-blue-900 cursor-pointer hover:text-blue-950 underline text-md font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See more</p>
-            <p style={{ display: `${ expanded? '' : 'none' }` }} className={`${ expanded? '' : 'none' } text-blue-900 cursor-pointer hover:text-blue-950 underline text-md font-medium`} onClick={ () => setExpanded( prevState => !prevState ) }>See less</p>
+         <div className='mt-4 flex justify-end'>
+            <button
+               type="button"
+               onClick={() => setExpanded(prev => !prev)}
+               aria-expanded={expanded}
+               className="rounded-lg px-2 py-1 text-sm font-medium text-pes underline underline-offset-2 transition-colors hover:text-pes-800 focus:outline-none focus-visible:shadow-focus"
+            >
+               {expanded ? 'See less' : 'See more'}
+            </button>
          </div>
       </div>
    )
