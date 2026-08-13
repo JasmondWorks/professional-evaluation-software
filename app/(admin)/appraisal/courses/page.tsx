@@ -6,6 +6,10 @@ import { ArrowLeft2 } from 'iconsax-react';
 import { Alert, Empty, PageHeader } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import CourseRegistry from '../CourseRegistry';
+import IndicatorPicker from './IndicatorPicker';
+import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
+import { modelFor } from '@/app/lib/appraisal/instrument';
 
 /** The courses a member of staff teaches this period.
  *
@@ -14,8 +18,23 @@ import CourseRegistry from '../CourseRegistry';
  *  quantity, so this has to exist before teaching can be scored. */
 export default function CoursesPage() {
   const [periodId, setPeriodId] = useState<number | null>(null);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Academic staff in an academic institution get the four-category model; the
+  // indicator list follows from that.
+  const [model, setModel] = useState<'academic' | 'non_academic'>('non_academic');
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    try {
+      const c: any = jwtDecode(t);
+      setModel(modelFor(c?.productCategory ?? 'academic', c?.role === 'lecturer' ? 'academic' : 'non_academic'));
+    } catch {
+      /* leave the default */
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,6 +44,11 @@ export default function CoursesPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? 'Could not load the appraisal period.');
         if (!cancelled) setPeriodId(data.period?.id ?? null);
+        if (data.period?.id) {
+          const cRes = await apiFetch(`/api/appraisal-v2/courses?periodId=${data.period.id}`);
+          const cData = await cRes.json();
+          if (!cancelled && cRes.ok) setCourses(cData.courses ?? []);
+        }
       } catch (err: any) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -46,8 +70,8 @@ export default function CoursesPage() {
       </Link>
 
       <PageHeader
-        title="Your courses"
-        subtitle="Register the courses you teach this period. Their units count towards your teaching output."
+        title="Your courses and indicators"
+        subtitle="Register the courses you teach, then tick everything you should be appraised on this period."
       />
 
       {error ? <Alert tone="danger" className="mb-6">{error}</Alert> : null}
@@ -57,7 +81,10 @@ export default function CoursesPage() {
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-pes border-t-transparent" />
         </div>
       ) : periodId ? (
-        <CourseRegistry periodId={periodId} />
+        <div className="space-y-6">
+          <CourseRegistry periodId={periodId} />
+          <IndicatorPicker periodId={periodId} model={model} courses={courses} />
+        </div>
       ) : (
         <Empty
           title="No appraisal period is open"
