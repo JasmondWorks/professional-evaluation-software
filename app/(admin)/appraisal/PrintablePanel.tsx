@@ -45,9 +45,16 @@ export default function PrintablePanel() {
         </p>
       </div>
 
-      <div className="space-y-10">
-        {forms.map((form) => (
-          <section key={form.key} className="break-inside-avoid">
+      {/* One form per A4 sheet. They previously printed as a continuous stack,
+          so Form 8 and Form 9 ran into each other on the same page. */}
+      <style>{`@media print { @page { size: A4; margin: 15mm; } }`}</style>
+
+      <div className="space-y-10 print:space-y-0">
+        {forms.map((form, i) => (
+          <section
+            key={form.key}
+            className={`break-inside-avoid ${i < forms.length - 1 ? 'print:break-after-page' : ''}`}
+          >
             <header className="mb-3 border-b border-line pb-2">
               <h2 className="text-lg font-semibold text-strong">
                 Form {form.form}. {form.label}
@@ -62,7 +69,7 @@ export default function PrintablePanel() {
                 (label) => (
                   <div key={label} className="flex items-end gap-2">
                     <dt className="shrink-0 text-muted">{label}</dt>
-                    <dd className="min-w-0 flex-1 border-b border-dotted border-rule-hard">&nbsp;</dd>
+                    <dd className="min-w-0 flex-1 border-b border-dotted border-line">&nbsp;</dd>
                   </div>
                 ),
               )}
@@ -102,7 +109,7 @@ export default function PrintablePanel() {
                     <td className="px-2 py-2.5" />
                   </tr>
                 ))}
-                <tr className="border-t border-rule-hard font-semibold">
+                <tr className="border-t border-line font-semibold">
                   <td className="px-2 py-2.5" />
                   {form.items.some((it) => it.assessor) ? <td /> : null}
                   <td className="px-2 py-2.5 text-strong">Aggregate score</td>

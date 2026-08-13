@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft2 } from 'iconsax-react';
-import { PageHeader } from '@/app/components/ui';
+import { Button, PageHeader } from '@/app/components/ui';
 import EntriesPanel from '../EntriesPanel';
 
 /** The staff and head-of-department view of appraisal, reached from the Data
@@ -21,6 +21,11 @@ export default function MyAppraisalsPage() {
       <PageHeader
         title="Appraisal forms"
         subtitle="Enter your appraisal forms, and review anything waiting on you."
+        actions={
+          <Link href="/appraisal/print">
+            <Button variant="secondary">Print blank forms</Button>
+          </Link>
+        }
       />
 
       <EntriesPanel />

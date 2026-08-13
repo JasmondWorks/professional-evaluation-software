@@ -47,7 +47,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
-      "Appraisal",
+      "Staff Appraisal",
     ],
     premium: [
       "Personnel Utilization",
@@ -55,18 +55,18 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
-      "Appraisal",
+      "Staff Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
     ],
   },
   company: {
-    basic: ["Staff Number", "Stress", "Appraisal"],
+    basic: ["Staff Number", "Stress", "Staff Appraisal"],
     standard: [
       "Staff Number",
       "Stress",
-      "Appraisal",
+      "Staff Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
@@ -74,7 +74,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     premium: [
       "Staff Number",
       "Stress",
-      "Appraisal",
+      "Staff Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
@@ -133,7 +133,7 @@ const modelDefinitions: Record<
   Appraisal: {
     path: "/models/appraisal",
     description:
-      "Conduct staff academic appraisals and evaluate teaching quality.",
+      "Score staff against the target for their position, then release grades.",
     icon: Award,
     color: "text-warning-600 bg-warning-50",
   },
@@ -149,8 +149,15 @@ const modelDefinitions: Record<
     icon: Activity,
     color: "text-danger-600 bg-danger-50",
   },
+  "Staff Appraisal": {
+    path: "/models/appraisal",
+    description:
+      "Score staff against the target for their grade, then release grades.",
+    icon: Award,
+    color: "text-warning-600 bg-warning-50",
+  },
   "Non-Academic Appraisal": {
-    path: "/models/non-academic-appraisal",
+    path: "/models/appraisal",
     description: "Evaluate non-teaching staff performance and efficiency.",
     icon: Personalcard,
     color: "text-orange-500 bg-orange-50",
