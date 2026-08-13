@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
@@ -12,6 +12,79 @@ import {
 } from '@/app/lib/appraisal/instrument';
 
 type Evidence = { ruleKey: string; measure: string; scripts: string; evidenceUrl: string };
+
+/** Attach a file as proof for one piece of evidence. The model requires research
+ *  to be submitted "with evidence duly uploaded", so this is an upload rather
+ *  than a link field, though an already-hosted URL still works. */
+function EvidenceUpload({
+  url,
+  locked,
+  onChange,
+}: {
+  url: string;
+  locked: boolean;
+  onChange: (url: string) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function send(file: File) {
+    setBusy(true);
+    setProblem(null);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await apiFetch('/api/appraisal-v2/evidence', { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'The file could not be uploaded.');
+      onChange(data.url);
+    } catch (err: any) {
+      setProblem(err.message);
+    } finally {
+      setBusy(false);
+      if (ref.current) ref.current.value = '';
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        ref={ref}
+        type="file"
+        accept=".pdf,.doc,.docx,image/*"
+        className="sr-only"
+        aria-label="Upload evidence"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) send(f);
+        }}
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={locked}
+        loading={busy}
+        onClick={() => ref.current?.click()}
+      >
+        {url ? 'Replace file' : 'Upload file'}
+      </Button>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="truncate text-xs font-medium text-pes underline underline-offset-2"
+        >
+          View attached
+        </a>
+      ) : (
+        <span className="text-xs text-muted">PDF, Word or image, up to 10MB</span>
+      )}
+      {problem ? <span className="w-full text-xs text-danger-700">{problem}</span> : null}
+    </div>
+  );
+}
 
 const numberInput =
   'w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm tabular-nums outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus';
@@ -344,21 +417,18 @@ export default function FormCard({
                           />
                         </label>
                       ) : null}
-                      <label className="min-w-0 flex-1 text-xs">
-                        <span className="mb-0.5 block text-muted">Link to the evidence</span>
-                        <input
-                          type="url"
-                          value={row.evidenceUrl}
-                          disabled={locked}
-                          placeholder="https://"
-                          onChange={(e) =>
+                      <div className="min-w-0 flex-1 text-xs">
+                        <span className="mb-0.5 block text-muted">Evidence</span>
+                        <EvidenceUpload
+                          url={row.evidenceUrl}
+                          locked={locked}
+                          onChange={(url) =>
                             setEvidence((all) =>
-                              all.map((r, j) => (j === i ? { ...r, evidenceUrl: e.target.value } : r)),
+                              all.map((r, j) => (j === i ? { ...r, evidenceUrl: url } : r)),
                             )
                           }
-                          className="w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-sm outline-none focus:border-pes-400 focus-visible:shadow-focus"
                         />
-                      </label>
+                      </div>
                       <button
                         type="button"
                         disabled={locked}
