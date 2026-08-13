@@ -8,7 +8,6 @@ import AppraisalSetup from '@/app/(admin)/appraisal/AppraisalSetup';
 import EntriesPanel from '@/app/(admin)/appraisal/EntriesPanel';
 import ResultsPanel from '@/app/(admin)/appraisal/ResultsPanel';
 import SubmissionsPanel from '@/app/(admin)/appraisal/SubmissionsPanel';
-import PrintablePanel from '@/app/(admin)/appraisal/PrintablePanel';
 
 /** The appraisal model's home. Everything the organization admin does for
  *  appraisal lives here rather than as separate nav links, matching how the
@@ -18,7 +17,6 @@ const TABS = [
   { key: 'entries', label: 'Appraisals', hint: 'Who is being appraised' },
   { key: 'submissions', label: 'Submissions', hint: 'Who has not submitted' },
   { key: 'results', label: 'Results', hint: 'Evaluate and release' },
-  { key: 'forms', label: 'Printable forms', hint: 'Blank Forms 8 and 9' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -37,7 +35,7 @@ export default function AppraisalModelPage() {
 
       <PageHeader
         title="Staff appraisal"
-        subtitle="Score each member of staff against the target for their position, and release the grades when you are satisfied."
+        subtitle="Open the period, set the targets, then run and release the evaluation. Departments enter the scores."
       />
 
       <div
@@ -67,7 +65,6 @@ export default function AppraisalModelPage() {
       {tab === 'entries' ? <EntriesPanel /> : null}
       {tab === 'submissions' ? <SubmissionsPanel /> : null}
       {tab === 'results' ? <ResultsPanel /> : null}
-      {tab === 'forms' ? <PrintablePanel /> : null}
     </div>
   );
 }

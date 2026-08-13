@@ -96,7 +96,16 @@ async function main() {
     await recordCategoryScore(staff, { entryId: entry.id, category: 'student_evaluation' as const, lineItems: [] });
     console.log('      >>> UNEXPECTED: appraisee was allowed to enter Form 8');
   } catch (e: any) {
-    expect('refused', e.message.includes('entered by the departmental admin'), true);
+    expect('refused', e.message.includes('recorded by the departmental administrator'), true);
+  }
+
+  // -------------------------------------------------------------------------
+  say('Organization admin', 'Tries to enter a form. Should be refused: admins never input data.');
+  try {
+    await recordCategoryScore(admin, { entryId: entry.id, category: 'research' as const, lineItems: [5] });
+    console.log('      >>> UNEXPECTED: the organization admin was allowed to enter data');
+  } catch (e: any) {
+    expect('refused', e.message.includes('does not enter appraisal data'), true);
   }
 
   // -------------------------------------------------------------------------

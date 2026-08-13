@@ -59,6 +59,12 @@ export type Viewer = {
 
 const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
 
+// The departmental administrator records Forms 8 and 9 and prints the blanks.
+// The client describes this as a departmental role distinct from the HOD, who
+// scores and approves. No such role exists in the roster yet, so the
+// department-scoped roles stand in. Raised with them.
+const DEPARTMENT_ADMIN_ROLES = ['hod', 'unit-head'];
+
 // ---------------------------------------------------------------------------
 // Periods
 // ---------------------------------------------------------------------------
@@ -297,21 +303,35 @@ function assertEntryOpen(entry: { status: string }) {
 /** Who is allowed to enter which form. Confirmed: the departmental admin enters
  *  the student evaluation AND the external/peer scores; the appraisee enters
  *  research, administration and community. */
+/** Who may enter which form.
+ *
+ *  The organization admin enters NOTHING. The client was explicit on 11 Aug:
+ *  "the organisation admin or estab has no business inputting any data for any
+ *  model", their role being to set goals, open a model for data capture, run the
+ *  evaluation, and print and release results. Admin used to pass both branches
+ *  here, which let them fill in anyone's forms. */
 function assertMayEnter(viewer: Viewer, entry: { pesuser_name: string }, category: FormKey) {
   const form = ALL_FORMS.find((f) => f.key === category);
   if (!form) throw new AppraisalError(`Unknown category ${category}`, 400);
 
+  if (ORG_ADMIN_ROLES.includes(viewer.role)) {
+    throw new AppraisalError(
+      'The organization administrator does not enter appraisal data. Open the period, then run and release the evaluation once departments have submitted.',
+      403,
+    );
+  }
+
   if (form.enteredBy === 'department_admin') {
-    const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role) || viewer.role === 'hod' || viewer.role === 'unit-head';
-    if (!isAdmin) {
+    if (!DEPARTMENT_ADMIN_ROLES.includes(viewer.role)) {
       throw new AppraisalError(
-        `${form.label} is entered by the departmental admin, not by the appraisee.`,
+        `${form.label} is recorded by the departmental administrator, not by the appraisee.`,
         403,
       );
     }
     return;
   }
-  if (viewer.name !== entry.pesuser_name && !ORG_ADMIN_ROLES.includes(viewer.role)) {
+
+  if (viewer.name !== entry.pesuser_name) {
     throw new AppraisalError('You can only enter your own appraisal forms.', 403);
   }
 }
