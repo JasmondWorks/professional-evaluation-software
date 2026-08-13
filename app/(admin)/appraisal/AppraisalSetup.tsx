@@ -5,7 +5,6 @@ import { Alert, Empty } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import PeriodPanel, { Period } from './PeriodPanel';
 import TargetEditor from './TargetEditor';
-import CourseRegistry from './CourseRegistry';
 
 /** Appraisal setup. The period is the root of the whole flow, so it comes first
  *  and the target editor only appears once one is open. */
@@ -53,7 +52,6 @@ export default function AppraisalSetup() {
           {period ? (
             <>
               <TargetEditor periodId={period.id} />
-              <CourseRegistry periodId={period.id} />
             </>
           ) : (
             <Empty

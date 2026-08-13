@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { QUESTIONNAIRE_ITEMS, saveQuestionnaire } from '@/app/lib/appraisal/service';
+import { questionnaireFor, saveQuestionnaire } from '@/app/lib/appraisal/service';
 import { fail, viewerFrom } from '../_auth';
 
-export async function GET() {
-  return NextResponse.json({ items: QUESTIONNAIRE_ITEMS });
+export async function GET(req: Request) {
+  const model = new URL(req.url).searchParams.get('model');
+  return NextResponse.json({ items: questionnaireFor(model === 'academic' ? 'academic' : 'non_academic') });
 }
 
 export async function POST(req: Request) {

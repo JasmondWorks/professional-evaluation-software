@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Button, Card, CardBody, CardHeader, Textarea } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
-import { QUESTIONNAIRE_ITEMS } from '@/app/lib/appraisal/instrument';
+import { AppraisalModel, questionnaireFor } from '@/app/lib/appraisal/instrument';
 
 type Answer = { answer?: boolean | null; note?: string };
 
@@ -15,11 +15,15 @@ export default function Questionnaire({
   entryId,
   locked,
   initial,
+  model,
 }: {
   entryId: number;
   locked: boolean;
+  model: AppraisalModel;
   initial: Record<string, Answer> | null;
 }) {
+  // The two sets differ: non-academic runs (a) to (l), academic (a) to (i).
+  const items = questionnaireFor(model);
   const [answers, setAnswers] = useState<Record<string, Answer>>(initial ?? {});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +51,7 @@ export default function Questionnaire({
     }
   }
 
-  const answered = QUESTIONNAIRE_ITEMS.filter((i) => {
+  const answered = items.filter((i) => {
     const a = answers[i.key];
     return a && (a.note?.trim() || a.answer !== undefined);
   }).length;
@@ -58,27 +62,36 @@ export default function Questionnaire({
         <h3 className="text-base font-semibold text-strong">Supervisor questionnaire</h3>
         <p className="mt-0.5 text-sm text-muted">
           Context for your supervisor. It is recorded alongside the appraisal but does not
-          affect the score. {answered} of {QUESTIONNAIRE_ITEMS.length} answered.
+          affect the score. {answered} of {items.length} answered.
         </p>
       </CardHeader>
       <CardBody>
         {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
 
         <ol className="space-y-5">
-          {QUESTIONNAIRE_ITEMS.map((item) => {
+          {items.map((item) => {
             const a = answers[item.key] ?? {};
             return (
               <li key={item.key}>
                 <p className="mb-2 text-sm text-body">
                   <span className="font-semibold text-strong">({item.key})</span> {item.prompt}
                 </p>
+                {item.upload ? (
+                  <p className="mb-2 text-xs text-muted">
+                    Upload certificates with your research evidence until a dedicated
+                    upload is added here.
+                  </p>
+                ) : null}
 
-                {item.type === 'yes_no_text' ? (
+                {item.type === 'choice' || item.type === 'yes_no_text' ? (
                   <div className="mb-2 flex flex-wrap gap-2">
-                    {[
-                      { label: 'Yes', value: true },
-                      { label: 'No', value: false },
-                    ].map((opt) => (
+                    {(item.type === 'choice'
+                      ? (item.options ?? []).map((label, i) => ({ label, value: i === 0 }))
+                      : [
+                          { label: 'Yes', value: true },
+                          { label: 'No', value: false },
+                        ]
+                    ).map((opt) => (
                       <button
                         key={opt.label}
                         type="button"

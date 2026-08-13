@@ -522,13 +522,46 @@ export const MEASURE_LABEL: Record<QuantificationRule['per'], string> = {
 /** Items (a) to (h) from the non-academic appraisal. Free text and yes/no, kept
  *  as a record rather than scored: the client presents it as context for the
  *  supervisor, not as part of the calculation. */
-export const QUESTIONNAIRE_ITEMS = [
-  { key: 'a', prompt: 'State, in order of importance, the main duties you performed in your job during the period of report.', type: 'text' },
-  { key: 'b', prompt: 'Was there any joint discussion between you and your supervisor on how to accomplish the tasks, and when?', type: 'yes_no_text' },
-  { key: 'c', prompt: 'Were you properly equipped professionally, technically and administratively to perform the jobs allotted to you? If not, what were your difficulties or constraints?', type: 'yes_no_text' },
-  { key: 'd', prompt: 'State the difficulties you met in carrying out your duties, and the efforts you and your supervisor made to rectify them.', type: 'text' },
-  { key: 'e', prompt: 'What methods did your supervisor adopt to assist you in solving the difficult problems?', type: 'text' },
-  { key: 'f', prompt: 'Was there any periodic review (three or six monthly) of your methods by your supervisor to achieve the desired goals?', type: 'yes_no_text' },
-  { key: 'g', prompt: 'After the review, did your performance measure up to the standards set at the beginning of the year?', type: 'yes_no_text' },
-  { key: 'h', prompt: 'If the answer to (g) is no, what solution or admonition was given for the shortcomings?', type: 'text' },
-] as const;
+export type QuestionnaireItem = {
+  key: string;
+  prompt: string;
+  type: 'text' | 'yes_no_text' | 'choice';
+  options?: readonly string[];
+  /** Set where the document asks for supporting evidence. */
+  upload?: boolean;
+};
+
+/** The two questionnaires are DIFFERENT. The client corrected this on 11 Aug:
+ *  non-academic staff answer the set on pages 95 to 97, academic staff the set
+ *  on pages 98 to 99. An earlier version applied the non-academic set to both,
+ *  and stopped at item (h) when it actually runs to (l). */
+export const QUESTIONNAIRE_NON_ACADEMIC: QuestionnaireItem[] = [
+  { key: 'a', type: 'text', prompt: 'State, in order of importance, the main duties you performed in your job during the period of report.' },
+  { key: 'b', type: 'yes_no_text', prompt: 'Was there any joint discussion between you and your supervisor on how to accomplish the tasks, and when?' },
+  { key: 'c', type: 'yes_no_text', prompt: 'Were you properly equipped professionally, technically and administratively to perform the jobs allotted to you? If not, what were your difficulties or constraints?' },
+  { key: 'd', type: 'text', prompt: 'State the difficulties you met in carrying out your duties, and the efforts you and your supervisor made to rectify them.' },
+  { key: 'e', type: 'text', prompt: 'What methods did your supervisor adopt to assist you in solving the difficult problems?' },
+  { key: 'f', type: 'yes_no_text', prompt: 'Was there any periodic review (three or six monthly) of your methods by your supervisor to achieve the desired goals?' },
+  { key: 'g', type: 'yes_no_text', prompt: 'After the review, did your performance measure up to the standards set at the beginning of the year?' },
+  { key: 'h', type: 'text', prompt: 'If the answer to (g) is no, what solution or admonition was given for the shortcomings?' },
+  { key: 'i', type: 'text', prompt: 'How did your performance relate to the total accomplishment of the goals set for your faculty, college, department or unit, and to the vision of the institution?' },
+  { key: 'j', type: 'text', prompt: 'State any ad hoc duties performed during the period, if any.' },
+  { key: 'k', type: 'choice', options: ['Positively', 'Negatively'], prompt: 'How did the performance of ad hoc duties affect your real duties? If negatively, did you bring this to the attention of your supervisor?' },
+  { key: 'l', type: 'text', prompt: 'State the period you have been on the schedule of duty referred to in (a) above, from and to.' },
+];
+
+export const QUESTIONNAIRE_ACADEMIC: QuestionnaireItem[] = [
+  { key: 'a', type: 'text', prompt: 'Looking back on the past year, which jobs assigned to you do you think you have undertaken satisfactorily?' },
+  { key: 'b', type: 'text', prompt: 'What were the factors to which you ascribe your success, and which to your failure?' },
+  { key: 'c', type: 'text', prompt: 'Based on your answers to (a) and (b), give your observations on the current challenges facing the institution and your suggestions on the way forward. Two pages at most.' },
+  { key: 'd', type: 'yes_no_text', upload: true, prompt: 'Do you need more training or experience to do your job better, and if so what kind? Did you attend any training course this appraisal session, was an examination conducted afterwards, and if so upload the certificates awarded.' },
+  { key: 'e', type: 'text', prompt: 'Is the most effective use being made of your capabilities in your present job?' },
+  { key: 'f', type: 'text', prompt: 'Do you think your abilities could be better used in your present job, or in another kind of job?' },
+  { key: 'g', type: 'yes_no_text', prompt: 'During the period of this report did you have job satisfaction? If not, what were the reasons?' },
+  { key: 'h', type: 'text', prompt: 'Any other comment on issues not mentioned above?' },
+  { key: 'i', type: 'text', prompt: 'Date the report was submitted to the reporting officer.' },
+];
+
+export function questionnaireFor(model: AppraisalModel): QuestionnaireItem[] {
+  return model === 'academic' ? QUESTIONNAIRE_ACADEMIC : QUESTIONNAIRE_NON_ACADEMIC;
+}

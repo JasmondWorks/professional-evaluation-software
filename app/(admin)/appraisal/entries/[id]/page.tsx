@@ -66,7 +66,37 @@ export default function EntryPage() {
     load();
   }, [load]);
 
+  // While an appraisal is still a draft, leaving with forms unscored is more
+  // often an oversight than a decision. The browser prompt is deliberately the
+  // native one: it fires on tab close and back navigation, which a React modal
+  // cannot intercept.
+  useEffect(() => {
+    if (!entry || entry.status !== 'draft') return;
+    const total = formsFor(entry.model).length;
+    if (entry.categories.length >= total) return;
+
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [entry]);
+
   async function submit() {
+    // The client asked for a prompt before someone leaves a form unscored, in
+    // case it was an oversight rather than a choice.
+    const missing = forms.filter((f) => !scoreFor(f.key));
+    if (missing.length > 0) {
+      const names = missing.map((f) => `Form ${f.form}, ${f.label}`).join('\n');
+      const ok = window.confirm(
+        `${missing.length} form${missing.length === 1 ? ' has' : 's have'} no score recorded:\n\n${names}\n\n` +
+          'Categories with nothing entered are left out of the result. Submit anyway? ' +
+          'You will not be able to edit these forms afterwards.',
+      );
+      if (!ok) return;
+    }
+
     setBusy(true);
     try {
       const res = await apiFetch('/api/appraisal-v2/score', {
@@ -187,9 +217,13 @@ export default function EntryPage() {
           );
         })}
 
-        {entry.model === 'non_academic' ? (
-          <Questionnaire entryId={entryId} locked={locked} initial={entry.questionnaire} />
-        ) : null}
+        {/* Both models have a questionnaire, with different questions. */}
+        <Questionnaire
+          entryId={entryId}
+          locked={locked}
+          model={entry.model}
+          initial={entry.questionnaire}
+        />
       </div>
     </div>
   );

@@ -22,9 +22,14 @@ export default function MyAppraisalsPage() {
         title="Appraisal forms"
         subtitle="Enter your appraisal forms, and review anything waiting on you."
         actions={
-          <Link href="/appraisal/print">
-            <Button variant="secondary">Print blank forms</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/appraisal/courses">
+              <Button variant="secondary">My courses</Button>
+            </Link>
+            <Link href="/appraisal/print">
+              <Button variant="secondary">Print blank forms</Button>
+            </Link>
+          </div>
         }
       />
 
