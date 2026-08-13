@@ -35,7 +35,7 @@ import {
   MIN_STUDENT_EVALUATIONS,
   NON_ACADEMIC_FORMS,
   NON_ACADEMIC_TARGETS,
-  QUESTIONNAIRE_ITEMS,
+  questionnaireFor,
   PositionKey,
 } from './instrument';
 import {
@@ -712,7 +712,7 @@ async function loadEntry(viewer: Viewer, entryId: number) {
   return entry;
 }
 
-export { MIN_STUDENT_EVALUATIONS, QUESTIONNAIRE_ITEMS };
+export { MIN_STUDENT_EVALUATIONS, questionnaireFor };
 
 // ---------------------------------------------------------------------------
 // Forms 2 and 4: the course and indicator registries
@@ -725,10 +725,19 @@ export async function listCourses(viewer: Viewer, periodId: number) {
   });
 }
 
+/** Staff register the courses they teach. The client corrected this on 11 Aug:
+ *  "it is not the Admin who is to register the courses but the staff
+ *  themselves", which also follows from the admin entering no data at all. */
 export async function addCourse(
   viewer: Viewer,
   input: { periodId: number; title: string; code: string; unit: number; dept?: string },
 ) {
+  if (ORG_ADMIN_ROLES.includes(viewer.role)) {
+    throw new AppraisalError(
+      'Courses are registered by the staff who teach them, not by the organization administrator.',
+      403,
+    );
+  }
   if (!input.title?.trim() || !input.code?.trim()) {
     throw new AppraisalError('A course needs both a title and a code.', 400);
   }
@@ -752,6 +761,12 @@ export async function addCourse(
 }
 
 export async function removeCourse(viewer: Viewer, courseId: number) {
+  if (ORG_ADMIN_ROLES.includes(viewer.role)) {
+    throw new AppraisalError(
+      'Courses are managed by the staff who teach them.',
+      403,
+    );
+  }
   return prisma.appraisal_course.deleteMany({ where: { id: courseId, org: viewer.org } });
 }
 
@@ -799,9 +814,6 @@ export async function saveQuestionnaire(
   input: { entryId: number; answers: Record<string, { answer?: boolean | null; note?: string }> },
 ) {
   const entry = await loadEntry(viewer, input.entryId);
-  if (entry.model !== 'non_academic') {
-    throw new AppraisalError('The questionnaire applies to non-academic appraisals only.', 400);
-  }
   if (viewer.name !== entry.pesuser_name && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError('You can only complete your own questionnaire.', 403);
   }
