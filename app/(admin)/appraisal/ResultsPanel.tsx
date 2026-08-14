@@ -66,18 +66,26 @@ export default function ResultsPanel() {
     load();
   }, []);
 
-  async function evaluateAll() {
-    setBusy('evaluate');
+  /** Run the model over one department, or over everyone when no department is
+   *  given. The client asked to evaluate the departments that are ready rather
+   *  than waiting for the whole organization. */
+  async function evaluate(dept?: string) {
+    const targets = dept ? entries.filter((e) => (e.dept ?? 'Unassigned') === dept) : entries;
+    setBusy(dept ?? 'evaluate');
     setError(null);
     try {
-      for (const e of entries) {
+      for (const e of targets) {
         await apiFetch('/api/appraisal-v2/evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ entryId: e.id }),
         });
       }
-      notify.success(`Evaluated ${entries.length} appraisals.`);
+      notify.success(
+        dept
+          ? `Evaluated ${targets.length} in ${dept}.`
+          : `Evaluated ${targets.length} appraisals.`,
+      );
       load();
     } catch (err: any) {
       setError(err.message);
@@ -85,6 +93,17 @@ export default function ResultsPanel() {
       setBusy(null);
     }
   }
+
+  // A department is ready once everyone in it has submitted.
+  const departments = [...new Set(entries.map((e) => e.dept ?? 'Unassigned'))].sort().map((dept) => {
+    const rows = entries.filter((e) => (e.dept ?? 'Unassigned') === dept);
+    return {
+      dept,
+      total: rows.length,
+      evaluated: rows.filter((e) => e.rtp !== null).length,
+      ready: rows.every((e) => e.status !== 'draft'),
+    };
+  });
 
   async function release() {
     if (!period) return;
@@ -160,7 +179,7 @@ export default function ResultsPanel() {
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   variant="secondary"
-                  onClick={evaluateAll}
+                  onClick={() => evaluate()}
                   disabled={entries.length === 0}
                   loading={busy === 'evaluate'}
                 >
@@ -192,6 +211,61 @@ export default function ResultsPanel() {
               ) : null}
             </CardBody>
           </Card>
+
+          {departments.length > 0 ? (
+            <Card className="mb-6">
+              <CardHeader>
+                <h2 className="text-lg font-semibold text-strong">By department</h2>
+                <p className="mt-0.5 text-sm text-muted">
+                  Run the model for a department once everyone in it has submitted.
+                </p>
+              </CardHeader>
+              <CardBody className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-line bg-canvas">
+                        {['Department', 'Appraisals', 'Evaluated', ''].map((h) => (
+                          <th key={h} className="px-4 py-2.5 text-left text-xs uppercase tracking-wide text-muted">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {departments.map((d) => (
+                        <tr key={d.dept}>
+                          <td className="px-4 py-3 font-medium text-strong">{d.dept}</td>
+                          <td className="px-4 py-3 tabular-nums text-body">{d.total}</td>
+                          <td className="px-4 py-3 tabular-nums text-body">
+                            {d.evaluated} of {d.total}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={!d.ready}
+                                loading={busy === d.dept}
+                                onClick={() => evaluate(d.dept)}
+                              >
+                                Run evaluation
+                              </Button>
+                              {!d.ready ? (
+                                <span className="text-xs text-muted">
+                                  Not everyone has submitted
+                                </span>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardBody>
+            </Card>
+          ) : null}
 
           {entries.length === 0 ? (
             <Empty

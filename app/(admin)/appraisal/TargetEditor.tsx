@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
 import { notify } from '@/lib/toast';
 import {
   CATEGORY_KEYS,
@@ -45,6 +47,19 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  // A company or public-sector organization has no academic staff, so the
+  // academic positions and their targets have no meaning there.
+  const [isAcademicOrg, setIsAcademicOrg] = useState(true);
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    try {
+      setIsAcademicOrg(((jwtDecode(t) as any)?.productCategory ?? 'academic') === 'academic');
+    } catch {
+      /* leave as academic */
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,12 +180,15 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
           </Alert>
         ) : null}
 
-        <Tabs defaultValue="academic">
+        <Tabs defaultValue={isAcademicOrg ? 'academic' : 'non_academic'}>
           <TabsList>
-            <TabsTrigger value="academic">Academic</TabsTrigger>
-            <TabsTrigger value="non_academic">Non-academic</TabsTrigger>
+            {isAcademicOrg ? <TabsTrigger value="academic">Academic</TabsTrigger> : null}
+            <TabsTrigger value="non_academic">
+              {isAcademicOrg ? 'Non-academic' : 'Staff grades'}
+            </TabsTrigger>
           </TabsList>
 
+          {isAcademicOrg ? (
           <TabsContent value="academic">
             <p className="mb-3 text-sm text-body">
               Forms 8 and 9 both count towards Teaching, so they share one target.
@@ -229,6 +247,7 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
               </table>
             </div>
           </TabsContent>
+          ) : null}
 
           <TabsContent value="non_academic">
             <p className="mb-3 text-sm text-body">

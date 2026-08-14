@@ -20,6 +20,10 @@ type Dept = {
 export default function SubmissionsPanel() {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [depts, setDepts] = useState<Dept[]>([]);
+  // The client asked to see departments first and open one at a time, rather
+  // than every staff member across the organization at once.
+  const [openDept, setOpenDept] = useState<string | null>(null);
+  const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -38,6 +42,11 @@ export default function SubmissionsPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setDepts(data.departments);
+
+      // Staff rows for the drill-down, fetched once and filtered per department.
+      const eRes = await apiFetch(`/api/appraisal-v2/entry?periodId=${pData.period.id}`);
+      const eData = await eRes.json();
+      if (eRes.ok) setStaff(eData.entries ?? []);
     } catch (err: any) {
       setError(err.message ?? 'Could not load submissions.');
     } finally {
@@ -120,12 +129,20 @@ export default function SubmissionsPanel() {
                 <Card key={d.dept}>
                   <CardHeader>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h2 className="text-base font-semibold text-strong">{d.dept}</h2>
+                      <button
+                        type="button"
+                        aria-expanded={openDept === d.dept}
+                        onClick={() => setOpenDept(openDept === d.dept ? null : d.dept)}
+                        className="min-w-0 text-left focus:outline-none focus-visible:shadow-focus"
+                      >
+                        <h2 className="text-base font-semibold text-strong hover:text-pes">
+                          {d.dept}
+                        </h2>
                         <p className="mt-0.5 text-sm text-muted">
-                          {d.submitted} of {d.total} submitted
+                          {d.submitted} of {d.total} submitted ·{' '}
+                          {openDept === d.dept ? 'hide staff' : 'view staff'}
                         </p>
-                      </div>
+                      </button>
                       {approved ? (
                         <Badge tone="success">Approved by the Dean</Badge>
                       ) : (
@@ -136,6 +153,42 @@ export default function SubmissionsPanel() {
                     </div>
                   </CardHeader>
                   <CardBody>
+                    {openDept !== d.dept ? null : (
+                      <div className="mb-4 overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
+                          <thead>
+                            <tr className="border-b border-line bg-canvas">
+                              {['Staff member', 'Forms entered', 'Status'].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-3 py-2 text-left text-xs uppercase tracking-wide text-muted"
+                                >
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-line">
+                            {staff
+                              .filter((e) => (e.dept ?? 'Unassigned') === d.dept)
+                              .map((e) => (
+                                <tr key={e.id}>
+                                  <td className="px-3 py-2 font-medium text-strong">
+                                    {e.pesuser_name}
+                                  </td>
+                                  <td className="px-3 py-2 tabular-nums text-body">
+                                    {e.formsCompleted} of {e.model === 'academic' ? 5 : 3}
+                                  </td>
+                                  <td className="px-3 py-2 text-body">
+                                    {e.submitted_at ? 'Submitted' : 'Not submitted'}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
                     {d.waiting.length > 0 ? (
                       <div className="mb-4">
                         <p className="mb-1.5 text-xs uppercase tracking-wide text-muted">
