@@ -8,7 +8,11 @@ import {
 } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
-import { AppraisalModel, formsFor } from '@/app/lib/appraisal/instrument';
+import {
+  AppraisalModel, formsFor, mayEnterForm, ORG_ADMIN_ROLES,
+} from '@/app/lib/appraisal/instrument';
+import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
 import FormCard from './FormCard';
 import Questionnaire from './Questionnaire';
 
@@ -47,6 +51,20 @@ export default function EntryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Who is looking. The forms are rendered from this, so the screen can never
+  // offer an input the server would refuse.
+  const [viewer, setViewer] = useState<{ role: string; name: string }>({ role: '', name: '' });
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    try {
+      const c: any = jwtDecode(t);
+      setViewer({ role: c?.role ?? '', name: c?.name ?? '' });
+    } catch {
+      /* leave blank; nothing becomes editable */
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -133,6 +151,13 @@ export default function EntryPage() {
 
   const forms = formsFor(entry.model);
   const locked = entry.status !== 'draft';
+  const isOwnEntry = viewer.name === entry.pesuser_name;
+  const isOrgAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
+  // The organization administrator enters nothing, so the forms are not shown to
+  // them at all. Everyone else sees only the forms that are theirs to fill.
+  const visibleForms = isOrgAdmin
+    ? []
+    : forms.filter((f) => mayEnterForm({ role: viewer.role, formKey: f.key, isOwnEntry }));
   const scoreFor = (key: string) => entry.categories.find((c) => c.category === key) ?? null;
   const entered = entry.categories.length;
 
@@ -148,7 +173,7 @@ export default function EntryPage() {
           entry.dept ? ` · ${entry.dept}` : ''
         } · ${entered} of ${forms.length} forms entered`}
         actions={
-          !locked ? (
+          !locked && isOwnEntry && !isOrgAdmin ? (
             <Button onClick={submit} disabled={entered === 0} loading={busy}>
               Submit for review
             </Button>
@@ -198,8 +223,15 @@ export default function EntryPage() {
         </Card>
       ) : null}
 
+      {isOrgAdmin ? (
+        <Alert tone="brand" className="mb-6">
+          You do not enter appraisal data. Departments record the scores; your part is to
+          run the evaluation and release the results once they have submitted.
+        </Alert>
+      ) : null}
+
       <div className="space-y-5">
-        {forms.map((form) => {
+        {visibleForms.map((form) => {
           const score = scoreFor(form.key);
           return (
             <div key={form.key} className="space-y-3">
@@ -217,13 +249,16 @@ export default function EntryPage() {
           );
         })}
 
-        {/* Both models have a questionnaire, with different questions. */}
-        <Questionnaire
-          entryId={entryId}
-          locked={locked}
-          model={entry.model}
-          initial={entry.questionnaire}
-        />
+        {/* The questionnaire belongs to the appraisee. The organization
+            administrator has nothing to do with it. */}
+        {isOwnEntry && !isOrgAdmin ? (
+          <Questionnaire
+            entryId={entryId}
+            locked={locked}
+            model={entry.model}
+            initial={entry.questionnaire}
+          />
+        ) : null}
       </div>
     </div>
   );

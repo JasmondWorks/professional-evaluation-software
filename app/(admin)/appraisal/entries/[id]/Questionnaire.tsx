@@ -123,7 +123,7 @@ export default function Questionnaire({
         </ol>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button onClick={save} disabled={locked || answered === 0} loading={busy}>
+          <Button onClick={save} disabled={locked || answered < items.length} loading={busy}>
             Save questionnaire
           </Button>
           {/* AGENTS.md: a disabled control must say why on screen. */}
@@ -131,8 +131,10 @@ export default function Questionnaire({
             <p className="text-sm text-muted">
               This appraisal has been submitted, so the questionnaire can no longer be edited.
             </p>
-          ) : answered === 0 ? (
-            <p className="text-sm text-muted">Answer at least one item to save.</p>
+          ) : answered < items.length ? (
+            <p className="text-sm text-muted">
+              Answer every item to save. {items.length - answered} still to go.
+            </p>
           ) : null}
         </div>
       </CardBody>

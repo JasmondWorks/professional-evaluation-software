@@ -125,13 +125,19 @@ export default function FormCard({
     : Number(studentCount) || 0;
   const copiesShort = isStudentForm && copies.length < required;
 
+  // Every field, not just one. The client found the button going active after a
+  // single entry, which invites submitting a half-filled form.
+  const allLineItemsIn = lineItems.every((v) => v !== '');
+  const allCopiesComplete =
+    copies.length > 0 && copies.every((c) => c.every((v) => v !== ''));
+
   const ready = locked
     ? false
     : isStudentForm
-      ? !copiesShort && copies.length > 0 && studentCount !== ''
+      ? !copiesShort && allCopiesComplete && studentCount !== '' && basicUnits !== ''
       : form.directScore
         ? directScore !== ''
-        : lineItems.some((v) => v !== '');
+        : allLineItemsIn;
 
   async function save() {
     setBusy(true);
@@ -212,15 +218,21 @@ export default function FormCard({
               </label>
               <label className="text-sm">
                 <span className="mb-1 block font-medium text-body">Basic units for the course</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
+                {/* Course units are whole numbers, so this is a choice rather
+                    than a free decimal field. */}
+                <select
                   value={basicUnits}
                   onChange={(e) => setBasicUnits(e.target.value)}
                   disabled={locked}
                   className={numberInput}
-                />
+                >
+                  <option value="">Choose</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
@@ -461,8 +473,12 @@ export default function FormCard({
                   ? 'Add at least one completed copy.'
                   : studentCount === ''
                     ? 'Enter how many students are on the course.'
-                    : `${required} completed copies are needed, ${copies.length} added so far.`
-                : 'Enter at least one score to save.'}
+                    : basicUnits === ''
+                      ? 'Choose the basic units for the course.'
+                      : copiesShort
+                        ? `${required} completed copies are needed, ${copies.length} added so far.`
+                        : 'Every score on every copy must be filled in.'
+                : `Fill in every score to save. ${lineItems.filter((v) => v === '').length} still empty.`}
             </p>
           ) : null}
         </div>
