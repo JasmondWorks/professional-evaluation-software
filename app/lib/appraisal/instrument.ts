@@ -565,3 +565,34 @@ export const QUESTIONNAIRE_ACADEMIC: QuestionnaireItem[] = [
 export function questionnaireFor(model: AppraisalModel): QuestionnaireItem[] {
   return model === 'academic' ? QUESTIONNAIRE_ACADEMIC : QUESTIONNAIRE_NON_ACADEMIC;
 }
+
+// ---------------------------------------------------------------------------
+// Who may enter what
+// ---------------------------------------------------------------------------
+
+export const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
+
+/** Records Forms 8 and 9 and prints the blanks. The client describes this as a
+ *  departmental role distinct from the HOD; no such role exists in the roster
+ *  yet, so the department-scoped roles stand in. */
+export const DEPARTMENT_ADMIN_ROLES = ['hod', 'unit-head'];
+
+/** Whether this person may fill in this form.
+ *
+ *  Shared by the server and the screens so the interface can never offer an
+ *  input the server will refuse. The organization administrator enters nothing:
+ *  their part is to open the period, run the evaluation and release results. */
+export function mayEnterForm(opts: {
+  role: string;
+  formKey: FormKey;
+  isOwnEntry: boolean;
+}): boolean {
+  if (ORG_ADMIN_ROLES.includes(opts.role)) return false;
+
+  const form = ALL_FORMS.find((f) => f.key === opts.formKey);
+  if (!form) return false;
+
+  return form.enteredBy === 'department_admin'
+    ? DEPARTMENT_ADMIN_ROLES.includes(opts.role)
+    : opts.isOwnEntry;
+}

@@ -33,6 +33,7 @@ export const config = {
     // "/em-database/:path*",
     "/goals/:path*",
     "/data-entry/:path*",
+    "/appraisal/:path*",
     "/assessment/:path*",
     "/performance/:path*",
     "/profile/:path*",

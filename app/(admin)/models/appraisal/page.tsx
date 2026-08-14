@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { ArrowLeft2 } from 'iconsax-react';
 import { PageHeader } from '@/app/components/ui';
 import AppraisalSetup from '@/app/(admin)/appraisal/AppraisalSetup';
-import EntriesPanel from '@/app/(admin)/appraisal/EntriesPanel';
 import ResultsPanel from '@/app/(admin)/appraisal/ResultsPanel';
 import SubmissionsPanel from '@/app/(admin)/appraisal/SubmissionsPanel';
 
@@ -14,8 +13,7 @@ import SubmissionsPanel from '@/app/(admin)/appraisal/SubmissionsPanel';
  *  stress model is organised. */
 const TABS = [
   { key: 'setup', label: 'Setup', hint: 'Period, targets and courses' },
-  { key: 'entries', label: 'Appraisals', hint: 'Who is being appraised' },
-  { key: 'submissions', label: 'Submissions', hint: 'Who has not submitted' },
+  { key: 'submissions', label: 'Submissions', hint: 'Departments that have submitted' },
   { key: 'results', label: 'Results', hint: 'Evaluate and release' },
 ] as const;
 
@@ -62,7 +60,6 @@ export default function AppraisalModelPage() {
       </div>
 
       {tab === 'setup' ? <AppraisalSetup /> : null}
-      {tab === 'entries' ? <EntriesPanel /> : null}
       {tab === 'submissions' ? <SubmissionsPanel /> : null}
       {tab === 'results' ? <ResultsPanel /> : null}
     </div>
