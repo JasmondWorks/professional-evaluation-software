@@ -9,6 +9,7 @@ import Performance from "@/app/components/performance/performanceChunk";
 import ProfileChunk from "@/app/components/Profilechunk";
 import Quickstats from "./Quickstats";
 import StressCycleBanner from "@/app/components/StressCycleBanner";
+import AppraisalPeriodBanner from "@/app/components/AppraisalPeriodBanner";
 import ApprovalBanner from "@/app/components/ApprovalBanner";
 import MyStressResultsCard from "@/app/components/MyStressResultsCard";
 import { getAccessToken } from "@/app/utils/auth";
@@ -71,6 +72,7 @@ export default function Dashboard() {
   return (
     <main className="w-full flex flex-col">
       <StressCycleBanner />
+      <AppraisalPeriodBanner />
       <ApprovalBanner />
 
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
