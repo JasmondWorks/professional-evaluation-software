@@ -614,3 +614,82 @@ export function mayEnterForm(opts: {
     ? DEPARTMENT_ADMIN_ROLES.includes(opts.role)
     : opts.isOwnEntry;
 }
+
+// ---------------------------------------------------------------------------
+// Where an appraisal has got to
+// ---------------------------------------------------------------------------
+
+export type AppraisalStage =
+  | 'draft'
+  | 'submitted'
+  | 'verified'
+  | 'awaiting_staff'
+  | 'referred_to_auditor'
+  | 'hod_reviewed'
+  | 'approved';
+
+/** The stages in order, with who each one waits on.
+ *
+ *  One definition so the entry screen, the lists and the departmental views all
+ *  describe a session the same way. `waitingOn` is written for the person
+ *  reading it, which is why every stage names a role rather than a status. */
+export const APPRAISAL_STAGES: {
+  key: AppraisalStage;
+  label: string;
+  waitingOn: string;
+  /** Roles for whom this stage is their turn to act. */
+  actor: string[];
+}[] = [
+  {
+    key: 'draft',
+    label: 'Being filled in',
+    waitingOn: 'the member of staff and the departmental administrator',
+    actor: ['lecturer', 'employee-w', 'industrial-engineer', 'dept-admin'],
+  },
+  {
+    key: 'submitted',
+    label: 'Awaiting departmental verification',
+    waitingOn: 'the departmental administrator, who checks Forms 8 and 9 against the paper originals',
+    actor: ['dept-admin'],
+  },
+  {
+    key: 'verified',
+    label: 'Awaiting the head of department',
+    waitingOn: 'the head of department, who reviews each score',
+    actor: ['hod'],
+  },
+  {
+    key: 'awaiting_staff',
+    label: 'Awaiting the member of staff',
+    waitingOn: 'the member of staff, who accepts or contests the adjusted score',
+    actor: ['lecturer', 'employee-w', 'industrial-engineer'],
+  },
+  {
+    key: 'referred_to_auditor',
+    label: 'With the appraisal auditor',
+    waitingOn: 'the external auditor, whose decision is final',
+    actor: ['auditor'],
+  },
+  {
+    key: 'hod_reviewed',
+    label: 'Reviewed, awaiting approval',
+    waitingOn: 'the Dean, then Estab./Personnel to run the evaluation',
+    actor: ['unit-head', 'admin', 'super-admin'],
+  },
+  {
+    key: 'approved',
+    label: 'Approved',
+    waitingOn: 'Estab./Personnel to run the evaluation and release results',
+    actor: ['admin', 'super-admin'],
+  },
+];
+
+export function stageOf(status: string) {
+  return APPRAISAL_STAGES.find((s) => s.key === status) ?? APPRAISAL_STAGES[0];
+}
+
+/** True when the stage is this person's turn, so the screen can say "your turn"
+ *  rather than leaving them to work it out. */
+export function isMyTurn(status: string, role: string): boolean {
+  return stageOf(status).actor.includes(role);
+}

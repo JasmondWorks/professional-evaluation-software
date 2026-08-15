@@ -10,6 +10,7 @@ type Dept = {
   dept: string;
   total: number;
   submitted: number;
+  verified: number;
   deanApproved: number;
   waiting: string[];
 };
@@ -123,7 +124,9 @@ export default function SubmissionsPanel() {
 
           <div className="space-y-4">
             {depts.map((d) => {
-              const ready = d.waiting.length === 0;
+              // Ready means verified, not merely submitted: the departmental
+              // administrator checks Forms 8 and 9 before anything moves on.
+              const ready = d.waiting.length === 0 && d.verified === d.total;
               const approved = d.deanApproved === d.total && d.total > 0;
               return (
                 <Card key={d.dept}>
@@ -139,7 +142,7 @@ export default function SubmissionsPanel() {
                           {d.dept}
                         </h2>
                         <p className="mt-0.5 text-sm text-muted">
-                          {d.submitted} of {d.total} submitted ·{' '}
+                          {d.submitted} of {d.total} submitted, {d.verified} verified ·{' '}
                           {openDept === d.dept ? 'hide staff' : 'view staff'}
                         </p>
                       </button>
@@ -147,7 +150,11 @@ export default function SubmissionsPanel() {
                         <Badge tone="success">Approved by the Dean</Badge>
                       ) : (
                         <Badge tone={ready ? 'brand' : 'warning'}>
-                          {ready ? 'Ready for approval' : 'Waiting on staff'}
+                          {ready
+                            ? 'Ready for approval'
+                            : d.waiting.length > 0
+                              ? 'Waiting on staff'
+                              : 'Awaiting departmental verification'}
                         </Badge>
                       )}
                     </div>

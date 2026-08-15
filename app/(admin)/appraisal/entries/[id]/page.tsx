@@ -15,6 +15,8 @@ import { jwtDecode } from 'jwt-decode';
 import { getAccessToken } from '@/app/utils/auth';
 import FormCard from './FormCard';
 import Questionnaire from './Questionnaire';
+import StageBanner from '../../StageBanner';
+import { DEPARTMENT_ADMIN_ROLES } from '@/app/lib/appraisal/instrument';
 
 type CategoryScore = {
   category: string;
@@ -35,6 +37,8 @@ type Entry = {
   position: string | null;
   cadre: string | null;
   status: string;
+  verified_at: string | null;
+  verified_by: string | null;
   rtp: string | null;
   grade: string | null;
   partial_target: boolean;
@@ -110,6 +114,28 @@ export default function EntryPage() {
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [entry]);
+
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  async function verify() {
+    setBusy(true);
+    setVerifyError(null);
+    try {
+      const res = await apiFetch('/api/appraisal-v2/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      notify.success('Verified. The head of department can now review it.');
+      load();
+    } catch (err: any) {
+      setVerifyError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit() {
     // The client asked for a prompt before someone leaves a form unscored, in
@@ -192,6 +218,37 @@ export default function EntryPage() {
       />
 
       {error ? <Alert tone="danger" className="mb-6">{error}</Alert> : null}
+
+      <StageBanner
+        status={entry.status}
+        role={viewer.role}
+        verifiedBy={entry.verified_by}
+        verifiedAt={entry.verified_at}
+      />
+
+      {/* The departmental administrator's step: confirm the paper forms match
+          what was entered before the head of department sees any of it. */}
+      {DEPARTMENT_ADMIN_ROLES.includes(viewer.role) && entry.status === 'submitted' ? (
+        <Card className="mb-6">
+          <CardBody>
+            <h3 className="text-base font-semibold text-strong">Verify Forms 8 and 9</h3>
+            <p className="mt-1 text-sm text-body">
+              Check the entered scores against the paper originals. Once verified this goes
+              to the head of department and can no longer be edited.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button loading={busy} onClick={verify}>
+                Verify and send to the head of department
+              </Button>
+            </div>
+            {verifyError ? (
+              <Alert tone="danger" className="mt-3">
+                {verifyError}
+              </Alert>
+            ) : null}
+          </CardBody>
+        </Card>
+      ) : null}
 
       {deptAdmin && !deptAdmin.hasAdmin ? (
         <Alert tone="warning" className="mb-6">

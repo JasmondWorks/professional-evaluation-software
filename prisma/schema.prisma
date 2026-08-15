@@ -915,18 +915,23 @@ model appraisal_entry {
 
   // Workflow: 'draft' | 'submitted' | 'hod_reviewed' | 'awaiting_staff' |
   // 'referred_to_auditor' | 'approved'
-  status           String    @default("draft") @db.VarChar(30)
-  flagged          Boolean   @default(false)
-  submitted_at     DateTime? @db.Timestamp(6)
-  approved_at      DateTime? @db.Timestamp(6)
+  status            String    @default("draft") @db.VarChar(30)
+  flagged           Boolean   @default(false)
+  submitted_at      DateTime? @db.Timestamp(6)
+  approved_at       DateTime? @db.Timestamp(6)
   // The non-academic qualitative questionnaire, items (a) to (h).
-  questionnaire    Json?
+  questionnaire     Json?
+  // The departmental administrator checks Forms 8 and 9 against the paper
+  // originals before the HOD reviews anything (full document, page 21).
+  verified_at       DateTime? @db.Timestamp(6)
+  verified_by       String?   @db.VarChar(255)
+  verification_note String?
   // The Dean approves a department's submissions before Estab./Personnel run
   // the final evaluation. Deans do not score individual academics.
-  dean_approved_at DateTime? @db.Timestamp(6)
-  dean_approved_by String?   @db.VarChar(255)
-  created_at       DateTime? @default(now()) @db.Timestamp(6)
-  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+  dean_approved_at  DateTime? @db.Timestamp(6)
+  dean_approved_by  String?   @db.VarChar(255)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
 
   period     appraisal_period           @relation(fields: [period_id], references: [id], onDelete: Cascade)
   categories appraisal_category_score[]
