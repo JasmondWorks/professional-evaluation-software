@@ -39,6 +39,7 @@ import {
   NON_ACADEMIC_FORMS,
   NON_ACADEMIC_TARGETS,
   questionnaireFor,
+  stageOf,
   PositionKey,
 } from './instrument';
 import {
@@ -987,4 +988,204 @@ export async function departmentAdminStatus(viewer: Viewer, dept?: string | null
     select: { name: true },
   });
   return { dept: target, hasAdmin: admins.length > 0, names: admins.map((a) => a.name) };
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard notice
+// ---------------------------------------------------------------------------
+
+export type AppraisalNotice = {
+  active: boolean;
+  /** Something this person must act on, with a way to get there. */
+  cta?: { title: string; message: string; href: string; action: string } | null;
+  /** Worth knowing, but not their turn. */
+  notice?: { message: string } | null;
+};
+
+/** What this person needs to know about appraisal right now.
+ *
+ *  Written per role rather than as one generic "a period is open", because the
+ *  same period means five different things: forms to fill, forms to verify,
+ *  scores to review, a contested score to rule on, or departments to chase.
+ */
+export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> {
+  const period = await currentPeriod(viewer.org);
+  const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
+
+  // No open period. Only staff need to hear about released results.
+  if (!period) {
+    const latest = await prisma.appraisal_period.findFirst({
+      where: { org: viewer.org, released_at: { not: null } },
+      orderBy: { released_at: 'desc' },
+      select: { id: true },
+    });
+    if (latest && !isAdmin) {
+      const mine = await prisma.appraisal_entry.findFirst({
+        where: { period_id: latest.id, pesuser_name: viewer.name },
+        select: { id: true, grade: true },
+      });
+      if (mine?.grade) {
+        return {
+          active: false,
+          cta: {
+            title: 'Your appraisal result is ready',
+            message: `Your appraisal has been graded ${mine.grade}.`,
+            href: `/appraisal/entries/${mine.id}`,
+            action: 'View my result',
+          },
+        };
+      }
+    }
+    return { active: false, cta: null, notice: null };
+  }
+
+  const window = `${new Date(period.starts_on).toLocaleDateString()} to ${new Date(
+    period.ends_on,
+  ).toLocaleDateString()}`;
+
+  if (isAdmin) {
+    const [total, submitted, verified] = await Promise.all([
+      prisma.appraisal_entry.count({ where: { org: viewer.org, period_id: period.id } }),
+      prisma.appraisal_entry.count({
+        where: { org: viewer.org, period_id: period.id, submitted_at: { not: null } },
+      }),
+      prisma.appraisal_entry.count({
+        where: { org: viewer.org, period_id: period.id, verified_at: { not: null } },
+      }),
+    ]);
+    return {
+      active: true,
+      cta: {
+        title: 'Your appraisal period is open',
+        message:
+          total === 0
+            ? `Open for ${window}. Nobody has been added to it yet.`
+            : `${submitted} of ${total} submitted, ${verified} verified. Open for ${window}.`,
+        href: '/models/appraisal',
+        action: 'Open Staff appraisal',
+      },
+    };
+  }
+
+  if (DEPARTMENT_ADMIN_ROLES.includes(viewer.role)) {
+    const waiting = await prisma.appraisal_entry.count({
+      where: { org: viewer.org, period_id: period.id, dept: viewer.dept, status: 'submitted' },
+    });
+    if (waiting > 0) {
+      return {
+        active: true,
+        cta: {
+          title: 'Appraisals await your verification',
+          message: `${waiting} appraisal${waiting === 1 ? '' : 's'} in ${viewer.dept} need Forms 8 and 9 checked against the paper originals.`,
+          href: '/appraisal/entries',
+          action: 'Verify them',
+        },
+      };
+    }
+    return {
+      active: true,
+      notice: { message: `An appraisal period is open for ${window}. Nothing is waiting on you yet.` },
+    };
+  }
+
+  if (viewer.role === 'hod') {
+    const toReview = await prisma.appraisal_entry.count({
+      where: { org: viewer.org, period_id: period.id, dept: viewer.dept, status: 'verified' },
+    });
+    if (toReview > 0) {
+      return {
+        active: true,
+        cta: {
+          title: 'Appraisals await your review',
+          message: `${toReview} verified appraisal${toReview === 1 ? '' : 's'} in ${viewer.dept} are ready for your scores.`,
+          href: '/appraisal/entries',
+          action: 'Review them',
+        },
+      };
+    }
+  }
+
+  if (viewer.role === 'auditor') {
+    const referred = await prisma.appraisal_entry.count({
+      where: { org: viewer.org, period_id: period.id, status: 'referred_to_auditor' },
+    });
+    if (referred > 0) {
+      return {
+        active: true,
+        cta: {
+          title: 'Contested scores await your decision',
+          message: `${referred} appraisal${referred === 1 ? '' : 's'} were contested and need your final figure.`,
+          href: '/appraisal/auditor',
+          action: 'Review them',
+        },
+      };
+    }
+  }
+
+  // Everyone else: their own appraisal.
+  const mine = await prisma.appraisal_entry.findFirst({
+    where: { org: viewer.org, period_id: period.id, pesuser_name: viewer.name },
+    select: { id: true, status: true },
+  });
+
+  if (!mine) {
+    // A head of department reads this for their department first, so tell them
+    // where the department stands rather than only that they are not in it.
+    if (DEPARTMENT_SCOPED_ROLES.includes(viewer.role)) {
+      const [total, outstanding] = await Promise.all([
+        prisma.appraisal_entry.count({
+          where: { org: viewer.org, period_id: period.id, dept: viewer.dept },
+        }),
+        prisma.appraisal_entry.count({
+          where: { org: viewer.org, period_id: period.id, dept: viewer.dept, submitted_at: null },
+        }),
+      ]);
+      return {
+        active: true,
+        notice: {
+          message:
+            total === 0
+              ? `An appraisal period is open for ${window}. Nobody in ${viewer.dept ?? 'your department'} has been added to it yet.`
+              : `An appraisal period is open for ${window}. ${outstanding} of ${total} in ${viewer.dept} have yet to submit.`,
+        },
+      };
+    }
+    return {
+      active: true,
+      notice: {
+        message: `An appraisal period is open for ${window}. You have not been added to it yet.`,
+      },
+    };
+  }
+  if (mine.status === 'draft') {
+    return {
+      active: true,
+      cta: {
+        title: 'Your appraisal is open',
+        message: `Complete your forms before the period closes on ${new Date(period.ends_on).toLocaleDateString()}.`,
+        href: `/appraisal/entries/${mine.id}`,
+        action: 'Fill my forms',
+      },
+    };
+  }
+  if (mine.status === 'awaiting_staff') {
+    return {
+      active: true,
+      cta: {
+        title: 'Your head of department adjusted a score',
+        message: 'Accept it, or contest it and have the auditor decide.',
+        href: `/appraisal/entries/${mine.id}`,
+        action: 'Respond',
+      },
+    };
+  }
+
+  return {
+    active: true,
+    notice: { message: `Your appraisal is ${stageLabel(mine.status)}. Nothing is waiting on you.` },
+  };
+}
+
+function stageLabel(status: string) {
+  return stageOf(status).label.toLowerCase();
 }
