@@ -10,7 +10,7 @@ import { apiFetch } from '@/app/utils/apiFetch';
 import { jwtDecode } from 'jwt-decode';
 import { getAccessToken } from '@/app/utils/auth';
 import { notify } from '@/lib/toast';
-import { POSITIONS, NON_ACADEMIC_CADRES, modelFor } from '@/app/lib/appraisal/instrument';
+import { POSITIONS, NON_ACADEMIC_CADRES, modelFor, stageOf } from '@/app/lib/appraisal/instrument';
 
 type Entry = {
   id: number;
@@ -29,7 +29,8 @@ type Staff = { id: number; name: string; role: string; dept: string | null };
 
 const STATUS_TONE: Record<string, 'neutral' | 'brand' | 'success' | 'warning' | 'danger'> = {
   draft: 'neutral',
-  submitted: 'brand',
+  submitted: 'warning',
+  verified: 'brand',
   awaiting_staff: 'warning',
   referred_to_auditor: 'danger',
   hod_reviewed: 'brand',
@@ -190,7 +191,7 @@ export default function EntriesPanel() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge tone={STATUS_TONE[e.status] ?? 'neutral'}>
-                          {STATUS_LABEL[e.status] ?? e.status}
+                          {stageOf(e.status).label}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">

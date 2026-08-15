@@ -433,6 +433,46 @@ export async function submitEntry(viewer: Viewer, entryId: number) {
   });
 }
 
+/** The departmental administrator confirms Forms 8 and 9 match the paper
+ *  originals before the HOD reviews anything.
+ *
+ *  Page 21 of the full document: entries "will be [VERIFIED] w.r.t. FORM 8, and
+ *  FORM 9 by the none-academic staff in-charge of the software in the
+ *  department. The H.O.D/DEAN still needs to [APPROVE/SUBMIT] all entries." */
+export async function verifyEntry(
+  viewer: Viewer,
+  input: { entryId: number; note?: string },
+) {
+  if (!DEPARTMENT_ADMIN_ROLES.includes(viewer.role)) {
+    throw new AppraisalError(
+      'Only the departmental administrator verifies appraisal entries.',
+      403,
+    );
+  }
+  const entry = await loadEntry(viewer, input.entryId);
+  if (entry.dept && viewer.dept && entry.dept !== viewer.dept) {
+    throw new AppraisalError('That appraisal belongs to another department.', 403);
+  }
+  if (entry.status !== 'submitted') {
+    throw new AppraisalError(
+      entry.status === 'draft'
+        ? 'This appraisal has not been submitted yet.'
+        : 'This appraisal has already been verified.',
+      409,
+    );
+  }
+
+  return prisma.appraisal_entry.update({
+    where: { id: entry.id },
+    data: {
+      status: 'verified',
+      verified_at: new Date(),
+      verified_by: viewer.name,
+      verification_note: input.note ?? null,
+    },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Evaluation
 // ---------------------------------------------------------------------------
@@ -544,6 +584,12 @@ export async function recordHodScore(
     throw new AppraisalError('A written justification is required before a score can be changed.', 400);
   }
   const entry = await loadEntry(viewer, input.entryId);
+  if (entry.status === 'draft' || entry.status === 'submitted') {
+    throw new AppraisalError(
+      'The departmental administrator has not verified this appraisal yet.',
+      409,
+    );
+  }
   const row = await prisma.appraisal_category_score.findFirst({
     where: { entry_id: entry.id, category: input.category },
   });
@@ -842,17 +888,18 @@ export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
     },
     select: {
       pesuser_name: true, dept: true, status: true,
-      submitted_at: true, dean_approved_at: true,
+      submitted_at: true, verified_at: true, dean_approved_at: true,
     },
   });
 
-  const byDept = new Map<string, { dept: string; total: number; submitted: number; deanApproved: number; waiting: string[] }>();
+  const byDept = new Map<string, { dept: string; total: number; submitted: number; verified: number; deanApproved: number; waiting: string[] }>();
   for (const e of entries) {
     const dept = e.dept ?? 'Unassigned';
-    const row = byDept.get(dept) ?? { dept, total: 0, submitted: 0, deanApproved: 0, waiting: [] };
+    const row = byDept.get(dept) ?? { dept, total: 0, submitted: 0, verified: 0, deanApproved: 0, waiting: [] };
     row.total += 1;
     if (e.submitted_at) row.submitted += 1;
     else row.waiting.push(e.pesuser_name);
+    if (e.verified_at) row.verified += 1;
     if (e.dean_approved_at) row.deanApproved += 1;
     byDept.set(dept, row);
   }
@@ -874,6 +921,18 @@ export async function deanApproveDepartment(
   if (unsubmitted > 0) {
     throw new AppraisalError(
       `${unsubmitted} member${unsubmitted === 1 ? '' : 's'} of staff in ${input.dept} have not submitted yet.`,
+      409,
+    );
+  }
+
+  // Submitted is not enough: the departmental administrator has to have checked
+  // Forms 8 and 9 against the paper originals first.
+  const unverified = await prisma.appraisal_entry.count({
+    where: { org: viewer.org, period_id: input.periodId, dept: input.dept, verified_at: null },
+  });
+  if (unverified > 0) {
+    throw new AppraisalError(
+      `${unverified} appraisal${unverified === 1 ? '' : 's'} in ${input.dept} still await verification by the departmental administrator.`,
       409,
     );
   }

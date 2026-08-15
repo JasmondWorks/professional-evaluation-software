@@ -23,6 +23,7 @@ import {
   respondToHod,
   setTarget,
   submitEntry,
+  verifyEntry,
   listEntries,
   releaseResults,
   Viewer,
@@ -177,6 +178,33 @@ async function main() {
     console.log('      >>> UNEXPECTED: a locked entry accepted an edit');
   } catch (e: any) {
     expect('locked', e.message.includes('can no longer be edited'), true);
+  }
+
+  // -------------------------------------------------------------------------
+  say('HOD', 'Tries to review before the department has verified. Should be refused.');
+  try {
+    await recordHodScore(hod, {
+      entryId: entry.id, category: 'research' as const, hodScore: 55,
+      justification: 'Too early.',
+    });
+    console.log('      >>> UNEXPECTED: the HOD reviewed an unverified appraisal');
+  } catch (e: any) {
+    expect('refused', e.message.includes('not verified this appraisal yet'), true);
+  }
+
+  // -------------------------------------------------------------------------
+  say('Departmental administrator', 'Verifies Forms 8 and 9 against the paper originals.');
+  const verified = await verifyEntry(deptAdmin, { entryId: entry.id });
+  expect('status', verified.status, 'verified');
+  show('verified by', verified.verified_by);
+
+  // -------------------------------------------------------------------------
+  say('Departmental administrator', 'Tries to verify a second time.');
+  try {
+    await verifyEntry(deptAdmin, { entryId: entry.id });
+    console.log('      >>> UNEXPECTED: verified twice');
+  } catch (e: any) {
+    expect('refused', e.message.includes('already been verified'), true);
   }
 
   // -------------------------------------------------------------------------
