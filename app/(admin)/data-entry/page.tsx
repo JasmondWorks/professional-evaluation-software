@@ -130,6 +130,24 @@ export default function DataEntryPage() {
 
   // Role-specific entry surfaces.
   const roleCards: CardDef[] = [];
+  if (role === "dept-admin") {
+    roleCards.push(
+      {
+        title: "Record appraisal Forms 8 and 9",
+        description: "Enter the student and peer scores collected on paper for your department.",
+        href: "/appraisal/entries",
+        Icon: Award,
+        color: "bg-pes-50 text-pes-600",
+      },
+      {
+        title: "Print blank forms",
+        description: "Blank Forms 8 and 9, one per sheet, for hand completion.",
+        href: "/appraisal/print",
+        Icon: Book1,
+        color: "bg-warning-50 text-warning-600",
+      },
+    );
+  }
   if (role === "hod") {
     roleCards.push(
       { title: "Staff data entries", description: "Enter data on behalf of your department's staff.", href: "/data-entry/employee", Icon: People, color: "bg-pes-50 text-pes-600" },
