@@ -588,6 +588,13 @@ export const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
  *  contest step and the auditor referral would all be hollow. */
 export const DEPARTMENT_ADMIN_ROLES = ['dept-admin'];
 
+/** Roles whose view is their whole department rather than just themselves.
+ *
+ *  The departmental administrator belongs here: they record Forms 8 and 9 for
+ *  everyone in the department, so a list scoped to their own entry would make
+ *  the role unusable. */
+export const DEPARTMENT_SCOPED_ROLES = ['hod', 'unit-head', ...DEPARTMENT_ADMIN_ROLES];
+
 /** Whether this person may fill in this form.
  *
  *  Shared by the server and the screens so the interface can never offer an

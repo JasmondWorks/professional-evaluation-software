@@ -120,6 +120,11 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
+  say('Departmental administrator', 'Can see the department, not just themselves.');
+  const visible = await listEntries(deptAdmin, period.id);
+  expect('sees the staff whose forms they record', visible.some(e => e.pesuser_name === staff.name), true);
+
+  // -------------------------------------------------------------------------
   say('Departmental administrator', 'Submits only 8 student evaluation copies for a 40-student course.');
   const form8 = ACADEMIC_FORMS.find(f => f.key === 'student_evaluation')!;
   const goodCopy = form8.items.map(i => Math.round(i.max * 0.7));   // ~70%

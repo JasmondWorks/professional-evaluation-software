@@ -35,6 +35,7 @@ import {
   MIN_STUDENT_EVALUATIONS,
   ORG_ADMIN_ROLES,
   DEPARTMENT_ADMIN_ROLES,
+  DEPARTMENT_SCOPED_ROLES,
   NON_ACADEMIC_FORMS,
   NON_ACADEMIC_TARGETS,
   questionnaireFor,
@@ -142,7 +143,9 @@ export async function releaseResults(viewer: Viewer, periodId: number) {
  *  Grades stay hidden from staff and heads until results are released. */
 export async function listEntries(viewer: Viewer, periodId: number) {
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
-  const isHead = viewer.role === 'hod' || viewer.role === 'unit-head';
+  // Includes the departmental administrator, who records Forms 8 and 9 for the
+  // whole department and so must be able to see it.
+  const isHead = DEPARTMENT_SCOPED_ROLES.includes(viewer.role);
 
   const entries = await prisma.appraisal_entry.findMany({
     where: {
