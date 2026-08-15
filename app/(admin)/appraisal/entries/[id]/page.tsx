@@ -48,6 +48,10 @@ export default function EntryPage() {
 
   const [entry, setEntry] = useState<Entry | null>(null);
   const [sealed, setSealed] = useState(false);
+  // Academic Forms 8 and 9 are recorded by the departmental administrator. If the
+  // department has none, say so up front rather than letting people find out when
+  // a save is refused.
+  const [deptAdmin, setDeptAdmin] = useState<{ hasAdmin: boolean; names: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,6 +77,12 @@ export default function EntryPage() {
       if (!res.ok) throw new Error(data.error ?? 'Could not load this appraisal.');
       setEntry(data.entry);
       setSealed(data.sealed);
+      if (data.entry?.model === 'academic' && data.entry?.dept) {
+        const aRes = await apiFetch(
+          `/api/appraisal-v2/dept-admin?dept=${encodeURIComponent(data.entry.dept)}`,
+        );
+        if (aRes.ok) setDeptAdmin(await aRes.json());
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -182,6 +192,14 @@ export default function EntryPage() {
       />
 
       {error ? <Alert tone="danger" className="mb-6">{error}</Alert> : null}
+
+      {deptAdmin && !deptAdmin.hasAdmin ? (
+        <Alert tone="warning" className="mb-6">
+          {entry.dept} has no departmental administrator, so Forms 8 and 9 cannot be
+          recorded and this appraisal cannot be completed. Ask your organization
+          administrator to assign one from the employee database.
+        </Alert>
+      ) : null}
 
       {!locked && entered === 0 ? (
         <p className="mb-6 text-sm text-muted">

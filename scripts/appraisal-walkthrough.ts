@@ -35,7 +35,7 @@ const ORG = '__walkthrough__';
 const admin: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering' };
 const hod: Viewer = { org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
 // Records Forms 8 and 9 from paper. A different person from the HOD, who scores.
-const deptAdmin: Viewer = { org: ORG, name: 'Dept Officer', role: 'departmental-admin', dept: 'Mechanical Engineering' };
+const deptAdmin: Viewer = { org: ORG, name: 'Dept Officer', role: 'dept-admin', dept: 'Mechanical Engineering' };
 const staff: Viewer = { org: ORG, name: 'Dr. Adeolla', role: 'lecturer', dept: 'Mechanical Engineering' };
 const auditor: Viewer = { org: ORG, name: 'External Auditor', role: 'auditor' };
 

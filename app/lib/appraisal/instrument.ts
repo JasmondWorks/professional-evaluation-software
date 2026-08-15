@@ -586,7 +586,7 @@ export const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
  *  independent of the appraisee's. If the HOD also recorded the student and peer
  *  scores they would control both sides, and the tolerance band, the accept or
  *  contest step and the auditor referral would all be hollow. */
-export const DEPARTMENT_ADMIN_ROLES = ['departmental-admin'];
+export const DEPARTMENT_ADMIN_ROLES = ['dept-admin'];
 
 /** Whether this person may fill in this form.
  *

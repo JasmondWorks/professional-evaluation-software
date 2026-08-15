@@ -12,10 +12,15 @@
 export const PRESET_ROLES = [
   'admin',
   'hod',
-  // The departmental administrator: the non-academic officer in a department who
-  // records Forms 8 and 9 and prints the blanks. Confirmed by the client on
-  // 13 Aug as a different person from the HOD, who scores and approves.
-  'departmental-admin',
+  // The departmental administrator: the officer in a department who records
+  // Forms 8 and 9 and prints the blanks. Confirmed by the client on 13 Aug as a
+  // different person from the HOD, who scores and approves.
+  //
+  // The string matches what /api/assign-admin has always written. Listing it
+  // here also fixes a standing bug: it was never a preset, so
+  // resolveEffectiveRole fell back to 'employee-w' and anyone assigned as a
+  // departmental administrator silently got baseline access instead.
+  'dept-admin',
   'unit-head',
   'lecturer',
   'industrial-engineer',
@@ -29,7 +34,7 @@ export type PresetRole = (typeof PRESET_ROLES)[number];
 export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   admin: 'Admin',
   hod: 'Department Lead (HOD)',
-  'departmental-admin': 'Departmental Administrator',
+  'dept-admin': 'Departmental Administrator',
   'unit-head': 'Faculty / Division Head',
   lecturer: 'Employee — Academic',
   'industrial-engineer': 'Employee — Non-Academic',
@@ -159,7 +164,7 @@ export const PRESET_PERMISSION_DEFAULTS: Record<PresetRole, PermissionKey[]> = {
   // Faculty/Division head — oversees several departments in their unit.
   // Records Forms 8 and 9 for their department. They handle appraisal paperwork
   // rather than staff records, so no administrative capabilities by default.
-  'departmental-admin': [],
+  'dept-admin': [],
   'unit-head': [
     'can_access_employee_data',
     'access_employee_all',
