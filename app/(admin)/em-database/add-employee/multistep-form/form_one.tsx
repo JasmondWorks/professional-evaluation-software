@@ -418,6 +418,10 @@ export default function FormOne({
               },
               { value: 'hod', label: 'Department Lead (HOD)' },
               {
+                value: 'dept-admin',
+                label: 'Departmental Administrator (records appraisal Forms 8 and 9)',
+              },
+              {
                 value: 'unit-head',
                 label: isAcademic ? 'Faculty Head (Dean)' : 'Division Head (Manager)',
               },

@@ -909,3 +909,20 @@ export async function auditorQueue(viewer: Viewer) {
     categories: e.categories,
   }));
 }
+
+/** Whether a department has someone able to record Forms 8 and 9.
+ *
+ *  Academic Forms 8 and 9 are collected on paper by the departmental
+ *  administrator. If nobody in the department holds that role the appraisal
+ *  cannot be completed, and the screens say so rather than leaving people to
+ *  discover it when a save is refused. */
+export async function departmentAdminStatus(viewer: Viewer, dept?: string | null) {
+  const target = dept ?? viewer.dept ?? null;
+  if (!target) return { dept: null, hasAdmin: false, names: [] as string[] };
+
+  const admins = await prisma.pesuser.findMany({
+    where: { org: viewer.org, dept: target, role: { in: DEPARTMENT_ADMIN_ROLES } },
+    select: { name: true },
+  });
+  return { dept: target, hasAdmin: admins.length > 0, names: admins.map((a) => a.name) };
+}
