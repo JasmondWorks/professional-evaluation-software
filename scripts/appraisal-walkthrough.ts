@@ -34,6 +34,8 @@ const ORG = '__walkthrough__';
 
 const admin: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering' };
 const hod: Viewer = { org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
+// Records Forms 8 and 9 from paper. A different person from the HOD, who scores.
+const deptAdmin: Viewer = { org: ORG, name: 'Dept Officer', role: 'departmental-admin', dept: 'Mechanical Engineering' };
 const staff: Viewer = { org: ORG, name: 'Dr. Adeolla', role: 'lecturer', dept: 'Mechanical Engineering' };
 const auditor: Viewer = { org: ORG, name: 'External Auditor', role: 'auditor' };
 
@@ -100,6 +102,15 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
+  say('HOD', 'Tries to record Form 8. Should be refused: that is the departmental administrator.');
+  try {
+    await recordCategoryScore(hod, { entryId: entry.id, category: 'student_evaluation' as const, lineItems: [] });
+    console.log('      >>> UNEXPECTED: the HOD recorded a departmental form');
+  } catch (e: any) {
+    expect('refused', e.message.includes('recorded by the departmental administrator'), true);
+  }
+
+  // -------------------------------------------------------------------------
   say('Organization admin', 'Tries to enter a form. Should be refused: admins never input data.');
   try {
     await recordCategoryScore(admin, { entryId: entry.id, category: 'research' as const, lineItems: [5] });
@@ -109,11 +120,11 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  say('Dept admin', 'Submits only 8 student evaluation copies for a 40-student course.');
+  say('Departmental administrator', 'Submits only 8 student evaluation copies for a 40-student course.');
   const form8 = ACADEMIC_FORMS.find(f => f.key === 'student_evaluation')!;
   const goodCopy = form8.items.map(i => Math.round(i.max * 0.7));   // ~70%
   try {
-    await recordCategoryScore(hod, {
+    await recordCategoryScore(deptAdmin, {
       entryId: entry.id, category: 'student_evaluation' as const, lineItems: [],
       copies: Array(8).fill(goodCopy), studentCount: 40, basicUnits: 3,
     });
@@ -124,8 +135,8 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  say('Dept admin', 'Submits 10 copies. Recorded result is their mean.');
-  const s8 = await recordCategoryScore(hod, {
+  say('Departmental administrator', 'Submits 10 copies. Recorded result is their mean.');
+  const s8 = await recordCategoryScore(deptAdmin, {
     entryId: entry.id, category: 'student_evaluation' as const, lineItems: [],
     copies: Array(10).fill(goodCopy), studentCount: 40, basicUnits: 3,
   });
@@ -134,9 +145,9 @@ async function main() {
   expect('quantity withheld from response', 'quantity' in s8, false);
 
   // -------------------------------------------------------------------------
-  say('Dept admin', 'Enters the teaching quality form (Form 9). Adds into the same Teaching category as Form 8.');
+  say('Departmental administrator', 'Enters the teaching quality form (Form 9). Adds into the same Teaching category as Form 8.');
   const form9 = ACADEMIC_FORMS.find(f => f.key === 'teaching_quality')!;
-  await recordCategoryScore(hod, {
+  await recordCategoryScore(deptAdmin, {
     entryId: entry.id, category: 'teaching_quality' as const,
     lineItems: form9.items.map(i => Math.round(i.max * 0.75)),
     evidence: [{ ruleKey: 'theoretical_teaching', measure: 45, scripts: 40 }],

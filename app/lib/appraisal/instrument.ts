@@ -161,15 +161,18 @@ export const ACADEMIC_FORMS: CategoryForm[] = [
  *  follows the academic method (each form yields quantity x worth, summed), but
  *  measured against a single total target for the staff member's grade.
  *
- *  Forms 8 and 9 are adapted from their academic counterparts. Form 10 reuses
- *  the research rubric unchanged, as "fault solving quality". */
+ *  Numbered 1 to 3 rather than 8 to 10. The client asked for this on 13 Aug: the
+ *  8, 9, 10 numbering belongs to the academic scheme and meant nothing here.
+ *
+ *  All three are filled by the individual member of staff, unlike the academic
+ *  Forms 8 and 9 which the departmental administrator records from paper. */
 export const NON_ACADEMIC_FORMS: CategoryForm[] = [
   {
     key: 'activity',
     category: 'activity',
-    form: 8,
+    form: 1,
     label: 'Activity form',
-    enteredBy: 'department_admin',
+    enteredBy: 'appraisee',
     directScore: false,
     items: [
       { label: 'Attendance', max: 8 },
@@ -186,9 +189,9 @@ export const NON_ACADEMIC_FORMS: CategoryForm[] = [
   {
     key: 'training_quality',
     category: 'training',
-    form: 9,
+    form: 2,
     label: 'Training quality evaluation',
-    enteredBy: 'department_admin',
+    enteredBy: 'appraisee',
     directScore: false,
     items: [
       { label: 'Activities plan', max: 8, assessor: 'External or peer' },
@@ -205,7 +208,7 @@ export const NON_ACADEMIC_FORMS: CategoryForm[] = [
   {
     key: 'fault_solving',
     category: 'fault_solving',
-    form: 10,
+    form: 3,
     label: 'Fault solving quality attribute',
     enteredBy: 'appraisee',
     directScore: false,
@@ -572,10 +575,18 @@ export function questionnaireFor(model: AppraisalModel): QuestionnaireItem[] {
 
 export const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
 
-/** Records Forms 8 and 9 and prints the blanks. The client describes this as a
- *  departmental role distinct from the HOD; no such role exists in the roster
- *  yet, so the department-scoped roles stand in. */
-export const DEPARTMENT_ADMIN_ROLES = ['hod', 'unit-head'];
+/** Records Forms 8 and 9 for academic staff, and prints the blanks.
+ *
+ *  Confirmed by the client on 13 Aug 2026: the departmental administrator is a
+ *  DIFFERENT person from the HOD. The document says as much on pages 20 to 21,
+ *  where the "none-academic staff in-charge of the software in the department"
+ *  verifies Forms 8 and 9 and a "superior GROUP HEAD/H.O.D" then approves.
+ *
+ *  Keeping them apart matters: the HOD's counter-score is meant to be
+ *  independent of the appraisee's. If the HOD also recorded the student and peer
+ *  scores they would control both sides, and the tolerance band, the accept or
+ *  contest step and the auditor referral would all be hollow. */
+export const DEPARTMENT_ADMIN_ROLES = ['departmental-admin'];
 
 /** Whether this person may fill in this form.
  *
