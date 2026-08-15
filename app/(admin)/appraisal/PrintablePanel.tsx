@@ -2,19 +2,18 @@
 
 import { useState } from 'react';
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui';
-import { ACADEMIC_FORMS, AppraisalModel, NON_ACADEMIC_FORMS } from '@/app/lib/appraisal/instrument';
+import { ACADEMIC_FORMS } from '@/app/lib/appraisal/instrument';
 
 /** Blank forms for hand completion.
  *
- *  Only Forms 8 and 9 may be printed. The model is explicit that Forms 10 to 12
- *  are filled online by the appraisee and must not be printable, so they are not
- *  offered here. */
+ *  Academic Forms 8 and 9 only. Forms 10 to 12 are filled online by the appraisee
+ *  and the document says they must not be printable. The non-academic forms are
+ *  also filled online by the staff themselves (client, 13 Aug), so there is
+ *  nothing to print for them either. */
 const PRINTABLE_FORM_NUMBERS = [8, 9];
 
 export default function PrintablePanel() {
-  const [model, setModel] = useState<AppraisalModel>('academic');
-  const source = model === 'academic' ? ACADEMIC_FORMS : NON_ACADEMIC_FORMS;
-  const forms = source.filter((f) => PRINTABLE_FORM_NUMBERS.includes(f.form));
+  const forms = ACADEMIC_FORMS.filter((f) => PRINTABLE_FORM_NUMBERS.includes(f.form));
 
   return (
     <>
@@ -23,25 +22,12 @@ export default function PrintablePanel() {
           <Button onClick={() => window.print()}>Print</Button>
         </div>
 
-        <div className="mb-6 max-w-xs">
-          <label className="mb-1 block text-sm font-medium text-body" htmlFor="model">
-            Staff type
-          </label>
-          <Select value={model} onValueChange={(v) => setModel(v as AppraisalModel)}>
-            <SelectTrigger id="model">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="academic">Academic staff</SelectItem>
-              <SelectItem value="non_academic">Non-academic staff</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <p className="mb-6 max-w-2xl text-sm text-muted">
-          Forms 10 to 12 are completed online by the appraisee and are deliberately not
-          printable. A minimum of ten completed copies of Form 8 is needed for each course
-          taught before that course can be scored.
+          These are the two forms collected on paper. Everything else, including all
+          three non-academic forms, is completed online by the member of staff. A minimum
+          of ten completed copies of Form 8 is needed for each course taught before that
+          course can be scored.
         </p>
       </div>
 
@@ -60,7 +46,7 @@ export default function PrintablePanel() {
                 Form {form.form}. {form.label}
               </h2>
               <p className="mt-1 text-sm text-muted">
-                {model === 'academic' ? 'Academic staff' : 'Non-academic staff'}
+                Academic staff
               </p>
             </header>
 

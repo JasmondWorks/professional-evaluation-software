@@ -33,6 +33,8 @@ import {
   CategoryKey,
   FormKey,
   MIN_STUDENT_EVALUATIONS,
+  ORG_ADMIN_ROLES,
+  DEPARTMENT_ADMIN_ROLES,
   NON_ACADEMIC_FORMS,
   NON_ACADEMIC_TARGETS,
   questionnaireFor,
@@ -57,13 +59,9 @@ export type Viewer = {
   dept?: string | null;
 };
 
-const ORG_ADMIN_ROLES = ['super-admin', 'admin'];
-
-// The departmental administrator records Forms 8 and 9 and prints the blanks.
-// The client describes this as a departmental role distinct from the HOD, who
-// scores and approves. No such role exists in the roster yet, so the
-// department-scoped roles stand in. Raised with them.
-const DEPARTMENT_ADMIN_ROLES = ['hod', 'unit-head'];
+// Both lists live in ./instrument so the server and the screens can never
+// disagree about who may enter what. See DEPARTMENT_ADMIN_ROLES there for the
+// open question on whether the departmental administrator is the HOD.
 
 // ---------------------------------------------------------------------------
 // Periods

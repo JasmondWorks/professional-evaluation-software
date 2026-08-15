@@ -12,6 +12,10 @@
 export const PRESET_ROLES = [
   'admin',
   'hod',
+  // The departmental administrator: the non-academic officer in a department who
+  // records Forms 8 and 9 and prints the blanks. Confirmed by the client on
+  // 13 Aug as a different person from the HOD, who scores and approves.
+  'departmental-admin',
   'unit-head',
   'lecturer',
   'industrial-engineer',
@@ -25,6 +29,7 @@ export type PresetRole = (typeof PRESET_ROLES)[number];
 export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   admin: 'Admin',
   hod: 'Department Lead (HOD)',
+  'departmental-admin': 'Departmental Administrator',
   'unit-head': 'Faculty / Division Head',
   lecturer: 'Employee — Academic',
   'industrial-engineer': 'Employee — Non-Academic',
@@ -152,6 +157,9 @@ export const PRESET_PERMISSION_DEFAULTS: Record<PresetRole, PermissionKey[]> = {
     'manage_reviews_subordinates',
   ],
   // Faculty/Division head — oversees several departments in their unit.
+  // Records Forms 8 and 9 for their department. They handle appraisal paperwork
+  // rather than staff records, so no administrative capabilities by default.
+  'departmental-admin': [],
   'unit-head': [
     'can_access_employee_data',
     'access_employee_all',
