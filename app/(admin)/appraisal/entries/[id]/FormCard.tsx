@@ -97,23 +97,50 @@ export default function FormCard({
   form,
   entryId,
   locked,
+  lockedReason,
   savedQuality,
+  savedLineItems,
+  savedCopies,
+  savedStudentCount,
+  savedBasicUnits,
   onSaved,
 }: {
   form: CategoryForm;
   entryId: number;
   locked: boolean;
+  /** Why this form is read-only for this viewer, when it is not simply submitted. */
+  lockedReason?: string;
   savedQuality: number | null;
-  onSaved: () => void;
+  /** What was actually saved, so a submitted form shows its scores instead of
+   *  rendering empty and looking as though the data was lost. */
+  savedLineItems?: unknown;
+  savedCopies?: number | null;
+  savedStudentCount?: number | null;
+  savedBasicUnits?: string | number | null;
+  onSaved?: () => void;
 }) {
   const rules = rulesForForm(form.key);
   const isStudentForm = form.key === 'student_evaluation';
 
-  const [lineItems, setLineItems] = useState<string[]>(() => form.items.map(() => ''));
-  const [directScore, setDirectScore] = useState('');
-  const [copies, setCopies] = useState<string[][]>([]);
-  const [studentCount, setStudentCount] = useState('');
-  const [basicUnits, setBasicUnits] = useState('');
+  // Student evaluation stores an array of copies; every other form stores one
+  // array of line-item scores.
+  const savedRows = Array.isArray(savedLineItems) ? (savedLineItems as any[]) : null;
+  const savedFlat =
+    savedRows && savedRows.length > 0 && !Array.isArray(savedRows[0]) ? (savedRows as any[]) : null;
+  const savedCopyRows =
+    savedRows && savedRows.length > 0 && Array.isArray(savedRows[0]) ? (savedRows as any[][]) : null;
+
+  const [lineItems, setLineItems] = useState<string[]>(() =>
+    form.items.map((_, i) => (savedFlat?.[i] !== undefined ? String(savedFlat[i]) : '')),
+  );
+  const [directScore, setDirectScore] = useState(() =>
+    form.directScore && savedFlat?.[0] !== undefined ? String(savedFlat[0]) : '',
+  );
+  const [copies, setCopies] = useState<string[][]>(() =>
+    savedCopyRows ? savedCopyRows.map((r) => r.map((v) => String(v))) : [],
+  );
+  const [studentCount, setStudentCount] = useState(() => (savedStudentCount != null ? String(savedStudentCount) : ''));
+  const [basicUnits, setBasicUnits] = useState(() => (savedBasicUnits != null ? String(Number(savedBasicUnits)) : ''));
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +204,7 @@ export default function FormCard({
       if (!res.ok) throw new Error(data.error ?? 'Could not save this form.');
       notify.success(`${form.label} saved.`);
       setClean(true);
-      onSaved();
+      onSaved?.();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -224,7 +251,9 @@ export default function FormCard({
 
         {isStudentForm ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-4">
+            {/* Course details share the form's surface rather than floating above
+                it, so the whole card reads as one thing to fill in. */}
+            <div className="flex flex-wrap gap-4 rounded-lg border border-line bg-canvas p-4">
               <label className="text-sm">
                 <span className="mb-1 block font-medium text-body">Students on the course</span>
                 <input
@@ -262,14 +291,15 @@ export default function FormCard({
                   Completed copies: {copies.length}
                   {required > 0 ? ` of ${required} needed` : ''}
                 </p>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={locked}
-                  onClick={() => (touch(), setCopies((c) => [...c, form.items.map(() => '')]))}
-                >
-                  Add a copy
-                </Button>
+                {!locked ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => (touch(), setCopies((c) => [...c, form.items.map(() => '')]))}
+                  >
+                    Add a copy
+                  </Button>
+                ) : null}
               </div>
 
               {copies.length === 0 ? (
@@ -285,14 +315,15 @@ export default function FormCard({
                         <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                           Copy {ci + 1}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => { touch(); setCopies((c) => c.filter((_, i) => i !== ci)); }}
-                          disabled={locked}
-                          className="text-xs font-medium text-danger-700 hover:underline disabled:opacity-50"
-                        >
-                          Remove
-                        </button>
+                        {!locked ? (
+                          <button
+                            type="button"
+                            onClick={() => { touch(); setCopies((c) => c.filter((_, i) => i !== ci)); }}
+                            className="text-xs font-medium text-danger-700 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
                       </div>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {form.items.map((item, ii) => (
@@ -375,7 +406,7 @@ export default function FormCard({
         )}
 
         {rules.length > 0 ? (
-          <div className="mt-5 border-t border-line pt-4">
+          <div className="mt-5 rounded-lg border border-line bg-canvas p-4">
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <p className="text-sm font-medium text-body">Evidence of output</p>
               <Button
@@ -485,7 +516,7 @@ export default function FormCard({
         <div className="mt-5 flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-line pt-4">
           {locked ? (
             <p className="mr-auto text-sm text-muted">
-              This appraisal has been submitted, so its forms can no longer be edited.
+              {lockedReason ?? 'This appraisal has been submitted, so its forms can no longer be edited.'}
             </p>
           ) : showErrors && !ready ? (
             <p className="mr-auto text-sm text-danger-700">{missingHint}</p>
@@ -502,14 +533,16 @@ export default function FormCard({
 
           {/* AGENTS.md: looks unavailable, still takes the click so pressing it
               says which field is missing. */}
-          <Button
-            onClick={() => (ready ? save() : setShowErrors(true))}
-            aria-disabled={!ready || settled}
-            loading={busy}
-            className={!ready || settled ? 'opacity-50' : undefined}
-          >
-            {settled ? 'Form saved' : 'Save form'}
-          </Button>
+          {!locked ? (
+            <Button
+              onClick={() => (ready ? save() : setShowErrors(true))}
+              aria-disabled={!ready || settled}
+              loading={busy}
+              className={!ready || settled ? 'opacity-50' : undefined}
+            >
+              {settled ? 'Form saved' : 'Save form'}
+            </Button>
+          ) : null}
         </div>
       </CardBody>
     </Card>
