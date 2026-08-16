@@ -163,7 +163,20 @@ export default function PeriodPanel({
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button onClick={open} disabled={!datesValid} loading={busy}>
+          <Button
+            onClick={() =>
+              datesValid
+                ? open()
+                : setError(
+                    startsOn === "" || endsOn === ""
+                      ? "Set both dates to continue."
+                      : "The end date must fall after the start date.",
+                  )
+            }
+            aria-disabled={!datesValid}
+            className={!datesValid ? "opacity-50" : undefined}
+            loading={busy}
+          >
             Open period
           </Button>
           {/* AGENTS.md: a disabled control must say why on screen. */}

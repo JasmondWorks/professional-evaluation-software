@@ -110,7 +110,12 @@ export default function CourseRegistry({ periodId }: { periodId: number }) {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button onClick={add} disabled={!ready} loading={busy}>
+          <Button
+            onClick={() => (ready ? add() : setError("A course needs a title, a code, and units above zero."))}
+            aria-disabled={!ready}
+            className={!ready ? "opacity-50" : undefined}
+            loading={busy}
+          >
             Add course
           </Button>
           {/* AGENTS.md: a disabled control must say why on screen. */}
