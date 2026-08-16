@@ -23,6 +23,10 @@ type CategoryScore = {
   quality: string | null;
   hod_score: string | null;
   hod_justification: string | null;
+  line_items: unknown;
+  copies_submitted: number | null;
+  student_count: number | null;
+  basic_units: string | null;
   staff_accepted: boolean | null;
   reconciliation: string | null;
   recorded_score: string | null;
@@ -201,9 +205,14 @@ export default function EntryPage() {
   const isOrgAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
   // The organization administrator enters nothing, so the forms are not shown to
   // them at all. Everyone else sees only the forms that are theirs to fill.
-  const visibleForms = isOrgAdmin
-    ? []
-    : forms.filter((f) => mayEnterForm({ role: viewer.role, formKey: f.key, isOwnEntry }));
+  // Seeing a form and filling one in are different rights.
+  //   organization admin   nothing, they never touch the data
+  //   head of department   every form, read-only, since they score all of them
+  //   everyone else        only the forms they fill in themselves
+  const canEnter = (key: (typeof forms)[number]['key']) =>
+    mayEnterForm({ role: viewer.role, formKey: key, isOwnEntry });
+  const isHead = viewer.role === 'hod' || viewer.role === 'unit-head';
+  const visibleForms = isOrgAdmin ? [] : isHead ? forms : forms.filter((f) => canEnter(f.key));
   const scoreFor = (key: string) => entry.categories.find((c) => c.category === key) ?? null;
   const entered = entry.categories.length;
 
@@ -337,12 +346,28 @@ export default function EntryPage() {
               <FormCard
                 form={form}
                 entryId={entryId}
-                locked={locked}
+                locked={locked || !canEnter(form.key)}
+                lockedReason={
+                  !canEnter(form.key)
+                    ? `Recorded by ${form.enteredBy === 'department_admin' ? 'the departmental administrator' : 'the member of staff'}.`
+                    : undefined
+                }
                 savedQuality={score?.quality ? Number(score.quality) : null}
+                savedLineItems={score?.line_items ?? null}
+                savedCopies={score?.copies_submitted ?? null}
+                savedStudentCount={score?.student_count ?? null}
+                savedBasicUnits={score?.basic_units ?? null}
                 onSaved={load}
               />
-              {score ? (
-                <ReviewPanel entryId={entryId} formKey={form.key} score={score} onChange={load} />
+              {score && (viewer.role === 'hod' || isOrgAdmin || isOwnEntry) ? (
+                <ReviewPanel
+                  entryId={entryId}
+                  formKey={form.key}
+                  score={score}
+                  onChange={load}
+                  canScore={viewer.role === 'hod'}
+                  isAppraisee={isOwnEntry}
+                />
               ) : null}
             </div>
           );
@@ -371,11 +396,17 @@ function ReviewPanel({
   formKey,
   score,
   onChange,
+  canScore,
+  isAppraisee,
 }: {
   entryId: number;
   formKey: string;
   score: CategoryScore;
   onChange: () => void;
+  /** Only the head of department records a counter-score. */
+  canScore: boolean;
+  /** The appraisee answers an adjustment but never scores. */
+  isAppraisee: boolean;
 }) {
   const [hodScore, setHodScore] = useState('');
   const [justification, setJustification] = useState('');
@@ -481,6 +512,12 @@ function ReviewPanel({
             {referred
               ? 'The appraisal auditor will review both scores and record a final figure.'
               : 'No further action is needed on this form.'}
+          </p>
+        ) : !canScore ? (
+          <p className="text-sm text-muted">
+            {isAppraisee
+              ? 'Your head of department has not reviewed this form yet.'
+              : 'Awaiting the head of department.'}
           </p>
         ) : (
           <div className="space-y-3">

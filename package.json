@@ -90,6 +90,7 @@
     "autoprefixer": "^10",
     "eslint": "^8",
     "eslint-config-next": "^14.0.0",
+    "playwright": "^1.62.1",
     "postcss": "^8",
     "prisma": "^5.22.0",
     "react-redux": "^8.1.3",

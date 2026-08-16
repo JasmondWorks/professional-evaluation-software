@@ -394,6 +394,8 @@ export async function recordCategoryScore(
     quantity,
     appraisal_score: quality,
     copies_submitted: copiesSubmitted,
+    student_count: input.studentCount ?? null,
+    basic_units: input.basicUnits ?? null,
   };
 
   const saved = existing

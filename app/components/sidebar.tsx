@@ -65,15 +65,15 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
     // Definition of all tabs
    const tabs = [
-      { key: 1, name: 'Dashboard', icon: Home3, href: '/dashboard', group: '', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 1, name: 'Dashboard', icon: Home3, href: '/dashboard', group: '', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 4, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: [ 'admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
       { key: 41, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: [ 'super-admin' ] },
       { key: 5, name: 'Goals', icon: Setting4, href: '/goals', group: 'Organization', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
-      { key: 3, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 3, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 6, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['super-admin', 'admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
       { key: 11, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['super-admin', 'admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
       { key: 7, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
-      { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['super-admin', 'admin'] },
       { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'super-admin', 'admin'] }
    ]

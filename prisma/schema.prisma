@@ -977,6 +977,10 @@ model appraisal_category_score {
   // recorded quality is their mean, and the course cannot be scored below the
   // minimum.
   copies_submitted Int?
+  // Kept so a saved form can be shown back as it was entered. Quantity alone
+  // cannot be decomposed into these two.
+  student_count    Int?
+  basic_units      Decimal? @db.Decimal(6, 2)
 
   entry appraisal_entry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
 
