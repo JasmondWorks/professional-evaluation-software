@@ -159,11 +159,21 @@ export default function EntryPage() {
         body: JSON.stringify({ entryId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      notify.success('Submitted for review. The forms are now locked.');
+      if (!res.ok) throw new Error(data.error ?? 'Failed to submit.');
+      notify.success('Submitted successfully. Your forms are now with the departmental administrator.');
+      setError(null);
       load();
     } catch (err: any) {
-      setError(err.message);
+      // A network failure surfaces as "Failed to fetch", which tells the user
+      // nothing about what they were doing. The submission may also have landed
+      // before the connection dropped, so say so rather than invite a blind retry.
+      const network = err?.message === 'Failed to fetch' || err?.name === 'TypeError';
+      setError(
+        network
+          ? 'Failed to submit. Check your connection and reload the page before trying again, in case it went through.'
+          : err.message ?? 'Failed to submit.',
+      );
+      load();
     } finally {
       setBusy(false);
     }
@@ -199,7 +209,7 @@ export default function EntryPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-      <Link href="/appraisal/entries" className="mb-3 inline-block text-sm text-muted hover:text-pes">
+      <Link href="/appraisal/entries" className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800">
         Back to appraisals
       </Link>
 
@@ -210,9 +220,23 @@ export default function EntryPage() {
         } · ${entered} of ${forms.length} forms entered`}
         actions={
           !locked && isOwnEntry && !isOrgAdmin ? (
-            <Button onClick={submit} disabled={entered === 0} loading={busy}>
-              Submit for review
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {/* Courses feed the teaching quantity, so this belongs beside the
+                  action it gates rather than a page away. Academic only. */}
+              {entry.model === 'academic' ? (
+                <Link href="/appraisal/courses">
+                  <Button variant="secondary">My courses</Button>
+                </Link>
+              ) : null}
+              <Button
+                onClick={() => (entered === 0 ? setError('Fill in at least one form before submitting.') : submit())}
+                aria-disabled={entered === 0}
+                className={entered === 0 ? 'opacity-50' : undefined}
+                loading={busy}
+              >
+                Submit for review
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -415,9 +439,19 @@ function ReviewPanel({
               .
             </p>
             {score.hod_justification ? (
-              <p className="rounded-lg bg-canvas px-3 py-2 text-body">
-                {score.hod_justification}
-              </p>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Their reason
+                </p>
+                {/* Read-only on purpose: this is the head of department's own
+                    words, and the appraisee answers it rather than edits it. */}
+                <p
+                  aria-readonly="true"
+                  className="rounded-lg border border-line bg-canvas px-3 py-2 text-body"
+                >
+                  {score.hod_justification}
+                </p>
+              </div>
             ) : null}
           </div>
         ) : null}

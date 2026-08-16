@@ -31,7 +31,7 @@ export default function MyAppraisalsPage() {
       {!isOrgAdmin ? (
         <Link
           href="/data-entry"
-          className="mb-3 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-pes"
+          className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
         >
           <ArrowLeft2 size={16} /> Back to data entry
         </Link>
@@ -41,14 +41,9 @@ export default function MyAppraisalsPage() {
         title="Appraisal forms"
         subtitle="Enter your appraisal forms, and review anything waiting on you."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Link href="/appraisal/courses">
-              <Button variant="secondary">My courses</Button>
-            </Link>
-            <Link href="/appraisal/print">
-              <Button variant="secondary">Print blank forms</Button>
-            </Link>
-          </div>
+          <Link href="/appraisal/print">
+            <Button variant="secondary">Print blank forms</Button>
+          </Link>
         }
       />
 

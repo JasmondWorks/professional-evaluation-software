@@ -15,6 +15,7 @@ import UserAvatar from "@/app/components/ui/UserAvatar";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
 import LoadingButton from "./ui/LoadingButton";
 import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
+import { clearCurrentUser } from "@/app/components/useCurrentUser";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { formatRelativeTime } from "@/lib/utils";
 import {
@@ -83,6 +84,7 @@ export default function Navbar({
 
   async function handleLogout() {
     removeAccessToken();
+    clearCurrentUser();
     try {
       await apiFetch("/api/logout", { method: "POST" });
     } catch (e) {

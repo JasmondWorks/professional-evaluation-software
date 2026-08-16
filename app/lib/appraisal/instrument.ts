@@ -501,12 +501,16 @@ export function rulesForForm(formKey: FormKey): QuantificationRule[] {
     case 'teaching_quality':
       return QUANTIFICATION_SCHEME.filter((r) => r.type === 'teaching');
     case 'research':
-    case 'fault_solving':
       return QUANTIFICATION_SCHEME.filter((r) => r.type === 'research');
-    case 'administration':
-    case 'community':
+    // Non-academic forms carry no evidence of output. The client removed it on
+    // 17 Aug: those three forms are a self-assessment, not a claim to be backed
+    // with pages and certified works.
+    case 'fault_solving':
     case 'activity':
     case 'training_quality':
+      return [];
+    case 'administration':
+    case 'community':
       return QUANTIFICATION_SCHEME.filter((r) => r.type === 'admin_community');
     case 'student_evaluation':
       // Student evaluation has its own rule (basic units plus 0.02 per student),

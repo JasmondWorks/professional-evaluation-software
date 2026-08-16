@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ArrowDown2, ArrowRight2 } from 'iconsax-react';
 import Link from 'next/link';
 import {
   Alert, Badge, Button, Card, CardBody, CardHeader, Empty, Field, Modal,
@@ -23,6 +24,7 @@ type Entry = {
   grade: string | null;
   rtp: string | null;
   formsCompleted: number;
+  submitted_at: string | null;
 };
 
 type Staff = { id: number; name: string; role: string; dept: string | null };
@@ -59,6 +61,9 @@ export default function EntriesPanel() {
   const [position, setPosition] = useState('lecturer_i');
   const [cadre, setCadre] = useState('grade_8');
   const [busy, setBusy] = useState(false);
+  // Departments collapse by default. A flat list of every member of staff is the
+  // thing the client found unwelcoming, so this opens one department at a time.
+  const [openDept, setOpenDept] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -162,60 +167,90 @@ export default function EntriesPanel() {
           action={<Button onClick={() => setAdding(true)}>Start an appraisal</Button>}
         />
       ) : (
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold text-strong">{entries.length} in this period</h2>
-          </CardHeader>
-          <CardBody className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-line bg-canvas">
-                    {['Staff member', 'Model', 'Department', 'Forms entered', 'Status', 'Grade', ''].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-left text-xs uppercase tracking-wide text-muted">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {entries.map((e) => (
-                    <tr key={e.id} className="hover:bg-canvas/60">
-                      <td className="px-4 py-3 font-medium text-strong">{e.pesuser_name}</td>
-                      <td className="px-4 py-3 text-body">
-                        {e.model === 'academic' ? 'Academic' : 'Non-academic'}
-                      </td>
-                      <td className="px-4 py-3 text-muted">{e.dept ?? '—'}</td>
-                      <td className="px-4 py-3 tabular-nums text-body">
-                        {e.formsCompleted} of {e.model === 'academic' ? 5 : 3}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge tone={STATUS_TONE[e.status] ?? 'neutral'}>
-                          {stageOf(e.status).label}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        {e.grade ? (
-                          <span className="font-medium text-strong">{e.grade}</span>
-                        ) : (
-                          <span className="text-muted">not released</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/appraisal/entries/${e.id}`}
-                          className="text-sm font-medium text-pes hover:underline"
-                        >
-                          Open
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
+        <div className="space-y-3">
+          {[...new Set(entries.map((e) => e.dept ?? 'Unassigned'))].sort().map((dept) => {
+            const rows = entries.filter((e) => (e.dept ?? 'Unassigned') === dept);
+            const submitted = rows.filter((e) => e.submitted_at).length;
+            const open = openDept === dept;
+            return (
+              <Card key={dept}>
+                <CardHeader>
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => setOpenDept(open ? null : dept)}
+                    className="flex w-full items-center gap-2 text-left focus:outline-none focus-visible:shadow-focus"
+                  >
+                    {open ? (
+                      <ArrowDown2 size={18} className="shrink-0 text-muted" />
+                    ) : (
+                      <ArrowRight2 size={18} className="shrink-0 text-muted" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold text-strong">{dept}</span>
+                      <span className="block text-sm text-muted">
+                        {submitted} of {rows.length} submitted
+                      </span>
+                    </span>
+                  </button>
+                </CardHeader>
+
+                {open ? (
+                  <CardBody className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b border-line bg-canvas">
+                            {['Staff member', 'Forms entered', 'Submitted on', 'Status', 'Grade', ''].map((h) => (
+                              <th key={h} className="px-4 py-2.5 text-left text-xs uppercase tracking-wide text-muted">
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {rows.map((e) => (
+                            <tr key={e.id} className="hover:bg-canvas/60">
+                              <td className="px-4 py-3 font-medium text-strong">{e.pesuser_name}</td>
+                              <td className="px-4 py-3 tabular-nums text-body">
+                                {e.formsCompleted} of {e.model === 'academic' ? 5 : 3}
+                              </td>
+                              <td className="px-4 py-3 tabular-nums text-body">
+                                {e.submitted_at
+                                  ? new Date(e.submitted_at).toLocaleDateString()
+                                  : <span className="text-muted">not yet</span>}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge tone={STATUS_TONE[e.status] ?? 'neutral'}>
+                                  {stageOf(e.status).label}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3">
+                                {e.grade ? (
+                                  <span className="font-medium text-strong">{e.grade}</span>
+                                ) : (
+                                  <span className="text-muted">not released</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Link
+                                  href={`/appraisal/entries/${e.id}`}
+                                  className="text-sm font-medium text-pes underline underline-offset-4 hover:text-pes-800"
+                                >
+                                  Open
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardBody>
+                ) : null}
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       <Modal

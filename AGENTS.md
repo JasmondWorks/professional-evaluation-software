@@ -30,6 +30,37 @@ missing prerequisite, a permission, an empty queue). Examples in this repo:
 Rule of thumb: **if a user could reasonably ask "why can't I click this?", the
 answer must already be on the screen.**
 
+### Blocked controls look disabled but stay clickable
+A control the user cannot usefully use yet MUST look unavailable, but must still
+receive the click. Use the muted styling and `aria-disabled="true"`, never the
+`disabled` attribute, and have the handler run validation and surface what is
+missing.
+
+A truly `disabled` button swallows the click, so a user who cannot see what is
+wrong gets no answer when they press it. Letting the press through means the
+form can say "Enter a score for Punctuality and two other rows", which is the
+only thing that moves them forward.
+
+```tsx
+// Wrong: the click never lands, so the user learns nothing.
+<Button disabled={!isValid} onClick={save}>Save form</Button>
+
+// Right: reads as unavailable, still explains itself when pressed.
+<Button
+  aria-disabled={!isValid}
+  className={!isValid ? "opacity-50" : undefined}
+  onClick={() => (isValid ? save() : revealValidationErrors())}
+>
+  Save form
+</Button>
+```
+
+Pair this with the rule above: the reason should already be on screen, and
+pressing it should point at the specific field still to be filled.
+
+Reserve the real `disabled` attribute for controls that are inert for reasons the
+user cannot act on at all, such as a form locked after submission.
+
 ### Nothing may look machine-generated
 Everything a client or user reads (UI copy, docs, specs, reports, artifacts) must
 read as though a person wrote it. Avoid the tells:

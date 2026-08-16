@@ -46,8 +46,8 @@ export default function RoleSelect({
   }
 
   const optionClass = (v: string) =>
-    `w-full text-left px-5 py-3 text-base transition-colors hover:bg-canvas ${
-      value === v ? 'bg-pes-50 text-pes-700 font-semibold' : 'text-body'
+    `w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
+      value === v ? 'bg-pes-50 text-pes-700 font-medium' : 'text-body hover:bg-canvas'
     }`;
 
   return (
@@ -63,13 +63,13 @@ export default function RoleSelect({
             setOpen(true);
           }
         }}
-        className={`w-full flex items-center justify-between font-medium text-lg py-3 px-6 border rounded-sm outline-0 text-left transition-colors ${
-          hasError ? 'border-danger-600' : open ? 'border-gray-400' : 'border-line'
+        className={`w-full h-10 flex items-center justify-between gap-2 px-3 border rounded-lg bg-surface text-sm text-left outline-none transition-shadow ${
+          hasError ? 'border-danger-600' : open ? 'border-pes-400 shadow-focus' : 'border-line'
         } ${selectedLabel ? 'text-strong' : 'text-muted'}`}
       >
         <span className="truncate">{selectedLabel || 'Select a role'}</span>
         <svg
-          className={`w-5 h-5 text-muted shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -81,7 +81,7 @@ export default function RoleSelect({
       {open && (
         <ul
           role="listbox"
-          className="absolute z-20 mt-2 w-full bg-white border border-line rounded-lg shadow-xl py-2 max-h-72 overflow-y-auto"
+          className="absolute z-popover mt-1.5 w-full bg-surface border border-line rounded-lg shadow-md p-1 max-h-72 overflow-y-auto"
         >
           {presetRoles.map((o) => (
             <li key={o.value}>
@@ -93,12 +93,12 @@ export default function RoleSelect({
 
           {customRoles.length > 0 && (
             <>
-              <li className="flex items-center gap-3 px-5 pt-4 pb-2 select-none" aria-hidden>
-                <span className="h-px flex-1 bg-gray-200" />
+              <li className="flex items-center gap-3 px-3 pt-3 pb-1.5 select-none" aria-hidden>
+                <span className="h-px flex-1 bg-line" />
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
                   Custom Roles
                 </span>
-                <span className="h-px flex-1 bg-gray-200" />
+                <span className="h-px flex-1 bg-line" />
               </li>
               {customRoles.map((r) => (
                 <li key={r.name}>
