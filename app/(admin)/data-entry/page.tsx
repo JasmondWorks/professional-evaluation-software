@@ -157,6 +157,13 @@ export default function DataEntryPage() {
   }
   if (role === "unit-head") {
     roleCards.push({
+      title: "Approve appraisals",
+      description: "Approve each department once its staff have submitted and been verified.",
+      href: "/appraisal/approvals",
+      Icon: Verify,
+      color: "bg-pes-50 text-pes-600",
+    });
+    roleCards.push({
       title: `Approve ${terms.unit.toLowerCase()} stress`,
       description: `Sign off the departments in your ${terms.unit.toLowerCase()} for the current cycle.`,
       href: "/data-entry/stress/faculty-approvals",
