@@ -17,7 +17,7 @@ export default function PrintFormsPage() {
       <div className="print:hidden">
         <Link
           href="/appraisal/entries"
-          className="mb-3 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-pes"
+          className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
         >
           <ArrowLeft2 size={16} /> Back to appraisals
         </Link>

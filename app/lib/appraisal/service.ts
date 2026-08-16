@@ -172,6 +172,7 @@ export async function listEntries(viewer: Viewer, periodId: number) {
       grade: maySeeGrade ? shaped.grade : null,
       categories: e.categories.map((c) => ({ category: c.category, quality: c.quality })),
       formsCompleted: e.categories.length,
+      submitted_at: e.submitted_at,
     };
   });
 }

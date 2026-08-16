@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { TickCircle } from 'iconsax-react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
@@ -116,6 +117,11 @@ export default function FormCard({
   const [evidence, setEvidence] = useState<Evidence[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Nothing has been touched since the last save. Drives the button settling to
+  // "Form saved" and waking up again on the next edit.
+  const [clean, setClean] = useState(savedQuality !== null);
+  const [showErrors, setShowErrors] = useState(false);
+  const touch = () => { setClean(false); setShowErrors(false); };
 
   const maxTotal = form.items.reduce((s, i) => s + i.max, 0);
   const runningTotal = lineItems.reduce((s, v) => s + (Number(v) || 0), 0);
@@ -170,6 +176,7 @@ export default function FormCard({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Could not save this form.');
       notify.success(`${form.label} saved.`);
+      setClean(true);
       onSaved();
     } catch (err: any) {
       setError(err.message);
@@ -177,6 +184,23 @@ export default function FormCard({
       setBusy(false);
     }
   }
+
+  const saved = savedQuality !== null;
+  // Settled means saved with nothing touched since, so the button reads back the
+  // state rather than inviting a pointless second save.
+  const settled = saved && clean && !locked;
+
+  const missingHint = isStudentForm
+    ? copies.length === 0
+      ? 'Add at least one completed copy.'
+      : studentCount === ''
+        ? 'Enter how many students are on the course.'
+        : basicUnits === ''
+          ? 'Choose the basic units for the course.'
+          : copiesShort
+            ? `${required} completed copies are needed, ${copies.length} added so far.`
+            : 'Every score on every copy must be filled in.'
+    : `Fill in every score to save. ${lineItems.filter((v) => v === '').length} still empty.`;
 
   return (
     <Card>
@@ -191,11 +215,7 @@ export default function FormCard({
               {maxTotal > 0 ? `, scored out of ${maxTotal}` : ''}
             </p>
           </div>
-          {savedQuality !== null ? (
-            <Badge tone="success">Saved at {Number(savedQuality).toFixed(1)}%</Badge>
-          ) : (
-            <Badge tone="neutral">Not entered</Badge>
-          )}
+          {savedQuality === null ? <Badge tone="danger">Not filled in</Badge> : null}
         </div>
       </CardHeader>
 
@@ -211,7 +231,7 @@ export default function FormCard({
                   type="number"
                   min={0}
                   value={studentCount}
-                  onChange={(e) => setStudentCount(e.target.value)}
+                  onChange={(e) => { touch(); setStudentCount(e.target.value); }}
                   disabled={locked}
                   className={numberInput}
                 />
@@ -246,7 +266,7 @@ export default function FormCard({
                   size="sm"
                   variant="secondary"
                   disabled={locked}
-                  onClick={() => setCopies((c) => [...c, form.items.map(() => '')])}
+                  onClick={() => (touch(), setCopies((c) => [...c, form.items.map(() => '')]))}
                 >
                   Add a copy
                 </Button>
@@ -267,7 +287,7 @@ export default function FormCard({
                         </span>
                         <button
                           type="button"
-                          onClick={() => setCopies((c) => c.filter((_, i) => i !== ci))}
+                          onClick={() => { touch(); setCopies((c) => c.filter((_, i) => i !== ci)); }}
                           disabled={locked}
                           className="text-xs font-medium text-danger-700 hover:underline disabled:opacity-50"
                         >
@@ -286,13 +306,14 @@ export default function FormCard({
                               max={item.max}
                               value={copy[ii]}
                               disabled={locked}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                touch();
                                 setCopies((all) =>
                                   all.map((c, i) =>
                                     i === ci ? c.map((v, j) => (j === ii ? e.target.value : v)) : c,
                                   ),
-                                )
-                              }
+                                );
+                              }}
                               className="w-full rounded-lg border border-line bg-surface px-2 py-1 text-sm tabular-nums outline-none focus:border-pes-400 focus-visible:shadow-focus"
                             />
                           </label>
@@ -313,7 +334,7 @@ export default function FormCard({
               max={100}
               value={directScore}
               disabled={locked}
-              onChange={(e) => setDirectScore(e.target.value)}
+              onChange={(e) => { touch(); setDirectScore(e.target.value); }}
               className={numberInput}
             />
             <span className="ml-2 text-muted">out of 100</span>
@@ -335,9 +356,10 @@ export default function FormCard({
                     max={item.max}
                     value={lineItems[i]}
                     disabled={locked}
-                    onChange={(e) =>
-                      setLineItems((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
-                    }
+                    onChange={(e) => {
+                      touch();
+                      setLineItems((prev) => prev.map((v, j) => (j === i ? e.target.value : v)));
+                    }}
                     aria-label={item.label}
                     className={numberInput}
                   />
@@ -457,30 +479,37 @@ export default function FormCard({
           </div>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button onClick={save} disabled={!ready} loading={busy}>
-            Save form
-          </Button>
-          {/* AGENTS.md: a disabled control must say why on screen. */}
+        {/* State and action sit together at the bottom right, where the eye
+            finishes the form, rather than in the header where a save confirmation
+            is easily missed. */}
+        <div className="mt-5 flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-line pt-4">
           {locked ? (
-            <p className="text-sm text-muted">
+            <p className="mr-auto text-sm text-muted">
               This appraisal has been submitted, so its forms can no longer be edited.
             </p>
+          ) : showErrors && !ready ? (
+            <p className="mr-auto text-sm text-danger-700">{missingHint}</p>
           ) : !ready ? (
-            <p className="text-sm text-muted">
-              {isStudentForm
-                ? copies.length === 0
-                  ? 'Add at least one completed copy.'
-                  : studentCount === ''
-                    ? 'Enter how many students are on the course.'
-                    : basicUnits === ''
-                      ? 'Choose the basic units for the course.'
-                      : copiesShort
-                        ? `${required} completed copies are needed, ${copies.length} added so far.`
-                        : 'Every score on every copy must be filled in.'
-                : `Fill in every score to save. ${lineItems.filter((v) => v === '').length} still empty.`}
-            </p>
+            <p className="mr-auto text-sm text-muted">{missingHint}</p>
           ) : null}
+
+          {saved ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success-700">
+              <TickCircle size={18} variant="Bold" />
+              Saved at {Number(savedQuality).toFixed(1)}%
+            </span>
+          ) : null}
+
+          {/* AGENTS.md: looks unavailable, still takes the click so pressing it
+              says which field is missing. */}
+          <Button
+            onClick={() => (ready ? save() : setShowErrors(true))}
+            aria-disabled={!ready || settled}
+            loading={busy}
+            className={!ready || settled ? 'opacity-50' : undefined}
+          >
+            {settled ? 'Form saved' : 'Save form'}
+          </Button>
         </div>
       </CardBody>
     </Card>

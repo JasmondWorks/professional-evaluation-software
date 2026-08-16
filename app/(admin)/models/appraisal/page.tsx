@@ -26,7 +26,7 @@ export default function AppraisalModelPage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
       <Link
         href="/models"
-        className="mb-3 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-pes"
+        className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
       >
         <ArrowLeft2 size={16} /> Back to models
       </Link>

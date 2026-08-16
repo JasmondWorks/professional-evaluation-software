@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { getAccessToken } from '@/app/utils/auth';
 
 export type CurrentUser = {
   id: number;
@@ -43,6 +44,10 @@ type State = {
 
 let cache: State = { user: null, loading: true, error: false };
 let inFlight: Promise<void> | null = null;
+// Which token the cached record belongs to. Without this the cache outlives a
+// logout, so the next person to sign in on the same tab sees the previous user,
+// or nothing at all.
+let cachedFor: string | null = null;
 const subscribers = new Set<(s: State) => void>();
 
 function publish(next: State) {
@@ -51,6 +56,7 @@ function publish(next: State) {
 }
 
 async function load(): Promise<void> {
+  cachedFor = typeof window === 'undefined' ? null : getAccessToken();
   try {
     const res = await apiFetch('/api/getUser', {
       method: 'POST',
@@ -65,6 +71,14 @@ async function load(): Promise<void> {
   } finally {
     inFlight = null;
   }
+}
+
+/** Forget the cached record. Call on logout, so the next sign-in on this tab
+ *  starts clean rather than inheriting the previous person's details. */
+export function clearCurrentUser() {
+  cachedFor = null;
+  inFlight = null;
+  publish({ user: null, loading: true, error: false });
 }
 
 /** Re-read the record and update every surface showing it. Call after any change
@@ -86,8 +100,14 @@ export function useCurrentUser(): State {
 
   useEffect(() => {
     subscribers.add(setState);
-    // First mount anywhere in the tree triggers the single shared fetch.
-    if (!cache.user && !cache.error && !inFlight) inFlight = load();
+
+    const token = typeof window === 'undefined' ? null : getAccessToken();
+    // Refetch when there is no record yet, when the last attempt failed, or when
+    // the signed-in user has changed. The previous guard also skipped on `error`,
+    // which meant a single failed request (one fired before the token had landed,
+    // say) latched for the rest of the session and the details never appeared.
+    const stale = !cache.user || cache.error || cachedFor !== token;
+    if (stale && !inFlight) inFlight = load();
     else setState(cache);
 
     return () => {
