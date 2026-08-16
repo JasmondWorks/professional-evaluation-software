@@ -173,7 +173,13 @@ function AuditCase({
         placeholder="Note on how you reached this figure"
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button size="sm" onClick={submit} disabled={score === ''} loading={busy}>
+        <Button
+          size="sm"
+          onClick={() => (score === "" ? setError("Enter your final score first.") : submit())}
+          aria-disabled={score === ''}
+          className={score === '' ? "opacity-50" : undefined}
+          loading={busy}
+        >
           Record final score
         </Button>
         {score === '' ? (

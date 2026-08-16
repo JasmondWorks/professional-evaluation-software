@@ -123,7 +123,16 @@ export default function Questionnaire({
         </ol>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button onClick={save} disabled={locked || answered < items.length} loading={busy}>
+          <Button
+            onClick={() =>
+              answered < items.length
+                ? setError(`Answer every question to save. ${items.length - answered} still to go.`)
+                : save()
+            }
+            aria-disabled={locked || answered < items.length}
+            className={locked || answered < items.length ? "opacity-50" : undefined}
+            loading={busy}
+          >
             Save questionnaire
           </Button>
           {/* AGENTS.md: a disabled control must say why on screen. */}

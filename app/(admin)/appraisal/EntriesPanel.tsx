@@ -259,7 +259,12 @@ export default function EntriesPanel() {
         title="Start an appraisal"
         footer={
           <div className="flex items-center gap-3">
-            <Button onClick={create} disabled={!who} loading={busy}>
+            <Button
+              onClick={() => (who ? create() : setError("Choose a member of staff first."))}
+              aria-disabled={!who}
+              className={!who ? "opacity-50" : undefined}
+              loading={busy}
+            >
               Start
             </Button>
             <Button variant="ghost" onClick={() => setAdding(false)}>
