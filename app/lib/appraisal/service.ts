@@ -884,11 +884,30 @@ export async function saveQuestionnaire(
  *  department, and Estab./Personnel to see which departments are outstanding. */
 export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
+
+  // A Dean or Division head oversees a faculty, which is several departments,
+  // so scoping them to a single `dept` would show almost nothing.
+  let scope: any = { dept: viewer.dept };
+  if (isAdmin) {
+    scope = {};
+  } else if (viewer.role === 'unit-head') {
+    const me = await prisma.pesuser.findFirst({
+      where: { org: viewer.org, name: viewer.name },
+      select: { faculty_college: true },
+    });
+    const peers = await prisma.pesuser.findMany({
+      where: { org: viewer.org, faculty_college: me?.faculty_college ?? undefined },
+      select: { dept: true },
+    });
+    const depts = [...new Set(peers.map((p) => p.dept).filter(Boolean))] as string[];
+    scope = depts.length ? { dept: { in: depts } } : { dept: viewer.dept };
+  }
+
   const entries = await prisma.appraisal_entry.findMany({
     where: {
       org: viewer.org,
       period_id: periodId,
-      ...(isAdmin ? {} : { dept: viewer.dept }),
+      ...scope,
     },
     select: {
       pesuser_name: true, dept: true, status: true,
