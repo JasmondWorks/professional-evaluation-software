@@ -13,11 +13,13 @@ export default function Quickstats({
   // Goals still open for data entry (computed on the dashboard from the goals list).
   openEvaluations?: number;
 } = {}) {
-  const [quickStats, setQuickStats] = useState<(number | null)[]>([
-    null,
-    null,
-    null,
-  ]);
+  type Stats = {
+    employees: number;
+    assessable: number;
+    completedAppraisals: number;
+    pendingAppraisals: number;
+  };
+  const [quickStats, setQuickStats] = useState<Stats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function Quickstats({
         });
 
         const res = await req.json();
-        setQuickStats(res);
+        if (res && typeof res.employees === "number") setQuickStats(res);
       } catch (error) {
         console.error(error);
       } finally {
@@ -45,16 +47,32 @@ export default function Quickstats({
     getStatData();
   }, []);
 
+  // The employee tile carries both numbers. The assessment page works from the
+  // assessable subset (administrators evaluate rather than being assessed), so
+  // showing only the total made the two pages look like they disagreed.
+  const employees = quickStats?.employees ?? 0;
+  const assessable = quickStats?.assessable ?? 0;
+
   const cards = [
-    { label: "Employees", value: quickStats[0], href: "/em-database", icon: People, accent: true },
-    { label: "Completed appraisals", value: quickStats[1], href: "/completed-appraisals", icon: Award, accent: false },
-    { label: "Pending appraisals", value: quickStats[2], href: "/assessment", icon: Timer, accent: false },
+    {
+      label: "Employees",
+      value: quickStats?.employees,
+      href: "/em-database",
+      icon: People,
+      accent: true,
+      note:
+        employees === assessable
+          ? undefined
+          : `${assessable} to assess`,
+    },
+    { label: "Completed appraisals", value: quickStats?.completedAppraisals, href: "/completed-appraisals", icon: Award, accent: false },
+    { label: "Pending appraisals", value: quickStats?.pendingAppraisals, href: "/assessment", icon: Timer, accent: false },
     { label: "Pending assessments", value: openEvaluations ?? 0, href: "/goals", icon: TaskSquare, accent: false, ready: true },
   ];
 
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map(({ label, value, href, icon: Icon, accent, ready }) => {
+      {cards.map(({ label, value, href, icon: Icon, accent, ready, note }) => {
         const showValue = ready || !isLoadingStats;
         return (
           <Link
@@ -74,6 +92,11 @@ export default function Quickstats({
                   <Skeleton className={`h-9 w-14 ${accent ? "bg-white/25" : ""}`} />
                 )}
               </div>
+              {note && showValue ? (
+                <p className={`mt-1 text-xs ${accent ? "text-white/70" : "text-muted"}`}>
+                  {note}
+                </p>
+              ) : null}
               <span className={`mt-2 inline-block text-xs font-medium ${accent ? "text-white/80 group-hover:text-white" : "text-pes-600 group-hover:text-pes-700"}`}>
                 View all →
               </span>
