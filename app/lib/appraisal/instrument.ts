@@ -57,6 +57,22 @@ export function modelFor(
     : 'non_academic';
 }
 
+/** Which appraisal a staff member belongs in, from the post the organization
+ *  admin gave them.
+ *
+ *  "Employee Non-Academic (industrial/production engineer)" is the only post on
+ *  the employee form that marks somebody as non-academic staff. Everyone else in
+ *  an academic organization — lecturers, heads of department, deans — is
+ *  academic staff. In a company or public-sector organization the product
+ *  category settles it regardless, since neither has an academic appraisal. */
+export const NON_ACADEMIC_STAFF_ROLES = ['industrial-engineer'] as const;
+
+export function staffTypeForRole(role: string | null | undefined): 'academic' | 'non_academic' {
+  return (NON_ACADEMIC_STAFF_ROLES as readonly string[]).includes(String(role ?? ''))
+    ? 'non_academic'
+    : 'academic';
+}
+
 export type FormItem = { label: string; max: number; assessor?: string };
 
 export type CategoryForm = {

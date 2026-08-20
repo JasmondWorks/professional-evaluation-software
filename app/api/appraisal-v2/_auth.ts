@@ -21,7 +21,13 @@ export function viewerFrom(req: Request): Viewer {
   }
   if (!claims?.org) throw new AppraisalError('This account is not attached to an organization.', 403);
 
-  return { org: claims.org, name: claims.name, role: claims.role, dept: claims.dept ?? null };
+  return {
+    org: claims.org,
+    name: claims.name,
+    role: claims.role,
+    dept: claims.dept ?? null,
+    productCategory: claims.productCategory ?? claims.category ?? null,
+  };
 }
 
 export function fail(err: unknown) {
