@@ -51,10 +51,28 @@ const expect = (label: string, got: unknown, want: unknown) => {
 async function cleanup() {
   const periods = await prisma.appraisal_period.findMany({ where: { org: ORG }, select: { id: true } });
   for (const p of periods) await prisma.appraisal_period.delete({ where: { id: p.id } });
+  await prisma.pesuser.deleteMany({ where: { org: ORG } });
+}
+
+/** The appraisee has to exist on the roster: which appraisal they belong in is
+ *  read from their post, not taken from the request. */
+async function seedStaff() {
+  await prisma.pesuser.create({
+    data: {
+      name: staff.name,
+      email: `walkthrough.${Date.now()}@pes.test`,
+      password: 'not-a-real-login',
+      role: 'lecturer',
+      org: ORG,
+      dept: staff.dept ?? null,
+      category: 'academic',
+    },
+  });
 }
 
 async function main() {
   await cleanup();
+  await seedStaff();
 
   // -------------------------------------------------------------------------
   say('Estab./Personnel', 'Opens the appraisal period. This is the root of everything.');
@@ -92,6 +110,48 @@ async function main() {
   });
   show('entry id', entry.id);
   expect('status', entry.status, 'draft');
+  expect('model read from the staff member\'s post, not the request', entry.model, 'academic');
+
+  // -------------------------------------------------------------------------
+  say('Appraisee', 'Tries to open the NON-ACADEMIC appraisal as academic staff.');
+  {
+    await prisma.appraisal_entry.deleteMany({ where: { id: entry.id, org: '__never__' } });
+    let refused = false;
+    let message = '';
+    try {
+      // A second staff member so the existing entry does not short-circuit it.
+      await prisma.pesuser.create({
+        data: {
+          name: 'Dr. Crossover', email: `crossover.${Date.now()}@pes.test`,
+          password: 'x', role: 'lecturer', org: ORG, dept: staff.dept ?? null, category: 'academic',
+        },
+      });
+      await ensureEntry(admin, { pesuserName: 'Dr. Crossover', model: 'non_academic' as any });
+    } catch (err: any) {
+      refused = true;
+      message = err.message;
+    }
+    expect('refused', refused, true);
+    if (refused) console.log(`      message: ${message}`);
+  }
+
+  // -------------------------------------------------------------------------
+  say('Appraisee', 'Tries to score a Form 10 cell above its maximum.');
+  {
+    let refused = false;
+    let message = '';
+    try {
+      // Research quality: the first cell is scored out of 5.
+      await recordCategoryScore(staff, {
+        entryId: entry.id, category: 'research', lineItems: [99, 0, 0, 0, 0, 0, 0, 0, 0],
+      });
+    } catch (err: any) {
+      refused = true;
+      message = err.message;
+    }
+    expect('refused', refused, true);
+    if (refused) console.log(`      message: ${message}`);
+  }
 
   // -------------------------------------------------------------------------
   say('Appraisee', 'Tries to enter the student evaluation form. Should be refused.');

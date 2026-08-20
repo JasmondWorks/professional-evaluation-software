@@ -26,6 +26,8 @@ import {
   ACADEMIC_TARGETS,
   ADMINISTRATIVE_POST_TARGETS,
   ALL_FORMS,
+  modelFor,
+  staffTypeForRole,
   formsFor,
   AppraisalModel,
   AppraisalPeriodFrequency,
@@ -59,6 +61,8 @@ export type Viewer = {
   name: string;
   role: string;
   dept?: string | null;
+  /** academic | company | public — the org's product category, from the token. */
+  productCategory?: string | null;
 };
 
 // Both lists live in ./instrument so the server and the screens can never
@@ -258,6 +262,27 @@ async function targetsFor(org: string, periodId: number, model: AppraisalModel) 
 // Entries and data capture
 // ---------------------------------------------------------------------------
 
+/** The appraisal a named staff member belongs in, read from their own record.
+ *
+ *  Company and public-sector organizations have no academic appraisal at all, so
+ *  the product category settles it there. Inside an academic organization the
+ *  post decides: only the industrial/production engineer is non-academic staff. */
+async function modelForStaff(viewer: Viewer, pesuserName: string): Promise<AppraisalModel> {
+  const staff = await prisma.pesuser.findFirst({
+    where: { org: viewer.org, name: pesuserName },
+    select: { role: true, category: true },
+  });
+  if (!staff) {
+    throw new AppraisalError(`${pesuserName} is not on this organization's staff list.`, 404);
+  }
+
+  const productCategory = String(
+    viewer.productCategory ?? staff.category ?? '',
+  ).toLowerCase();
+
+  return modelFor(productCategory, staffTypeForRole(staff.role));
+}
+
 export async function ensureEntry(
   viewer: Viewer,
   input: {
@@ -277,13 +302,26 @@ export async function ensureEntry(
   });
   if (existing) return existing;
 
+  // The model is decided by the appraisee's own post, never by the request.
+  // It used to be taken straight from the body, so an academic staff member
+  // could open the non-academic appraisal simply by asking for it.
+  const model = await modelForStaff(viewer, input.pesuserName);
+  if (input.model && input.model !== model) {
+    throw new AppraisalError(
+      model === 'academic'
+        ? 'This staff member is academic staff and belongs in the academic appraisal.'
+        : 'This staff member is non-academic staff and belongs in the non-academic appraisal.',
+      403,
+    );
+  }
+
   return prisma.appraisal_entry.create({
     data: {
       org: viewer.org,
       dept: input.dept ?? viewer.dept ?? null,
       period_id: period.id,
       pesuser_name: input.pesuserName,
-      model: input.model,
+      model,
       position: input.position ?? null,
       post: input.post ?? null,
       cadre: input.cadre ?? null,
@@ -341,6 +379,38 @@ function assertMayEnter(viewer: Viewer, entry: { pesuser_name: string }, categor
 
 /** Record one category's quality score. `lineItems` are the per-row scores for
  *  Forms 8, 9 and 10; Forms 11 and 12 pass a single direct score. */
+/** Refuse any line item above the maximum printed beside it.
+ *
+ *  The UI clamps as you type, but the UI can be bypassed by posting straight to
+ *  the API, and the client specifically asked that the maxima cannot be
+ *  exceeded. Applies to every scored form in both models, academic and
+ *  non-academic alike, since all of them carry per-item maxima. */
+function assertWithinMaxima(formKey: FormKey, scores: number[]) {
+  const form = ALL_FORMS.find((f) => f.key === formKey);
+  if (!form || form.directScore) {
+    // Forms 11 and 12 hold a single score out of 100.
+    const raw = Number(scores[0] ?? 0);
+    if (raw > 100 || raw < 0) {
+      throw new AppraisalError('The quality score must be between 0 and 100.', 400);
+    }
+    return;
+  }
+
+  form.items.forEach((item, i) => {
+    const raw = Number(scores[i] ?? 0);
+    if (!Number.isFinite(raw)) return;
+    if (raw < 0) {
+      throw new AppraisalError(`"${item.label}" cannot be negative.`, 400);
+    }
+    if (raw > item.max) {
+      throw new AppraisalError(
+        `"${item.label}" is scored out of ${item.max}, but ${raw} was entered.`,
+        400,
+      );
+    }
+  });
+}
+
 export async function recordCategoryScore(
   viewer: Viewer,
   input: {
@@ -363,6 +433,7 @@ export async function recordCategoryScore(
 
   if (input.category === 'student_evaluation') {
     const copies = input.copies ?? [];
+    for (const copy of copies) assertWithinMaxima(input.category, copy);
     const result = studentEvaluationQuality(copies, input.studentCount ?? 0);
     if (!result.sufficient || result.quality === null) {
       throw new AppraisalError(
@@ -373,6 +444,10 @@ export async function recordCategoryScore(
     quality = result.quality;
     copiesSubmitted = copies.length;
   } else {
+    // formQuality() clamps when it computes, so an over-max entry never inflated
+    // a score. It did persist and display though, so Form 10's nine cells could
+    // read as more than the 100 they are scored out of. Refuse it instead.
+    assertWithinMaxima(input.category, input.lineItems);
     quality = formQuality(input.category, input.lineItems);
   }
 

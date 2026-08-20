@@ -93,6 +93,22 @@ const numberInput =
 /** One appraisal form. Handles the three shapes the model uses: line items
  *  scored out of a maximum, a single direct score (Forms 11 and 12), and the
  *  student evaluation, which is the mean of at least ten submitted copies. */
+
+/** Keep a typed score inside its cell's maximum.
+ *
+ *  `max` on a number input does not stop anyone typing a larger number; it only
+ *  marks the field invalid for native form validation, which these forms do not
+ *  use. Without this, Form 10's nine cells could total well above the 100 they
+ *  are scored out of. Empty stays empty so a field can be cleared. */
+function clampScore(raw: string, max: number): string {
+  if (raw.trim() === '') return '';
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return '';
+  if (n < 0) return '0';
+  if (n > max) return String(max);
+  return raw;
+}
+
 export default function FormCard({
   form,
   entryId,
@@ -339,9 +355,10 @@ export default function FormCard({
                               disabled={locked}
                               onChange={(e) => {
                                 touch();
+                                const next = clampScore(e.target.value, item.max);
                                 setCopies((all) =>
                                   all.map((c, i) =>
-                                    i === ci ? c.map((v, j) => (j === ii ? e.target.value : v)) : c,
+                                    i === ci ? c.map((v, j) => (j === ii ? next : v)) : c,
                                   ),
                                 );
                               }}
@@ -365,7 +382,7 @@ export default function FormCard({
               max={100}
               value={directScore}
               disabled={locked}
-              onChange={(e) => { touch(); setDirectScore(e.target.value); }}
+              onChange={(e) => { touch(); setDirectScore(clampScore(e.target.value, 100)); }}
               className={numberInput}
             />
             <span className="ml-2 text-muted">out of 100</span>
@@ -389,7 +406,8 @@ export default function FormCard({
                     disabled={locked}
                     onChange={(e) => {
                       touch();
-                      setLineItems((prev) => prev.map((v, j) => (j === i ? e.target.value : v)));
+                      const next = clampScore(e.target.value, item.max);
+                      setLineItems((prev) => prev.map((v, j) => (j === i ? next : v)));
                     }}
                     aria-label={item.label}
                     className={numberInput}
