@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/app/api/prisma.dev';
-import { ensureEntry, listEntries, redactCategory, redactEntry, redactFlag } from '@/app/lib/appraisal/service';
+import { assertModelMatches, ensureEntry, expectedModelFor, listEntries, redactCategory, redactEntry, redactFlag } from '@/app/lib/appraisal/service';
 import { fail, viewerFrom } from '../_auth';
 
 export async function GET(req: Request) {
@@ -21,6 +21,10 @@ export async function GET(req: Request) {
       include: { categories: true },
     });
     if (!entry) return NextResponse.json({ error: 'Appraisal not found.' }, { status: 404 });
+
+    // Opening an entry by id bypassed ensureEntry entirely, so a wrongly
+    // modelled row stayed reachable by direct link.
+    assertModelMatches(entry, await expectedModelFor(viewer, entry.pesuser_name ?? ''));
 
     // Staff see nothing until the period closes: with forms 11 and 12 being
     // self-entered, live results would let an appraisee probe the worth table.
