@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken'
 import prisma from '../prisma.dev'
 import { randomUUID } from "crypto";
 import bcrypt from 'bcryptjs';
+import { findPlan, normalizeInstitution, normalizePlan, type InstitutionType, type PlanType } from '@/app/lib/billing/catalog';
+import { addInterval, verifySubscription, type VerifiedPayment } from '@/app/lib/billing/verify';
 
 type reqInfo = {
   name: string
@@ -12,39 +14,32 @@ type reqInfo = {
   password: string
   type: string
   plan: string
-  planCode: string
   category: string
   logo: string
+  payment: VerifiedPayment
 }
-
-const amounts = {
-  PLN_eowlq7d4cp4r0dp: {code: 'basic', amount: 100},
-  PLN_cle5ip7jtxfpj5k: {code:'standard', amount: 200},
-  PLN_paglu0ly0z641mm: {code:'premium', amount: 300}
-}
-
-type planCodes = keyof typeof amounts
 
 async function addToDb(info: reqInfo) {
-  const { name, email, password, type, category, plan, planCode, org, logo } = info;
+  const { name, email, password, type, category, plan, org, logo, payment } = info;
 
   // Hash the password before storing — critical for security.
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const planDetails = amounts[planCode as keyof typeof amounts] || amounts['PLN_eowlq7d4cp4r0dp'];
-  const amount = planDetails.amount;
-
-  // Unique per signup — must not be shared across requests (reference is @unique).
-  const reference = `PES_${randomUUID()}`;
+  // The reference is PayPal's own subscription id, and the column is @unique.
+  // That is what stops the same payment being used to create two organizations.
+  const reference = payment.reference;
 
   // A transaction keeps org + user + subscription creation atomic.
   return await prisma.$transaction(async (tx) => {
-    // Create the org, or return the existing one (matches ON CONFLICT DO NOTHING).
-    const orgRecord = await tx.org.upsert({
-      where: { name: org },
-      update: {},
-      create: {
+    // A plain create, not an upsert. The previous upsert silently returned an
+    // existing organization when the name matched, and the caller then created
+    // the new user as its admin — handing a stranger control of somebody else's
+    // staff, departments and appraisal data. Failing on the unique constraint is
+    // the correct behaviour, and it also closes the race between two signups
+    // claiming the same name at once.
+    const orgRecord = await tx.org.create({
+      data: {
         name: org,
         category,
         plan,
@@ -70,13 +65,17 @@ async function addToDb(info: reqInfo) {
         pesuser_email: email,
         pesuser_name: name,
         org,
-        plan_code: planCode,
+        plan_code: payment.plan,
         plan_name: plan,
         reference,
         status: 'success',
-        amount,
-        paid_at: new Date(),
-        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        // Amounts are held in cents in the catalogue; this column is a decimal
+        // of whole currency units.
+        amount: payment.amount / 100,
+        // The clock starts the day PayPal took the money, not the day the admin
+        // got round to signing up.
+        paid_at: payment.paidAt,
+        expires_at: payment.expiresAt,
       },
     });
 
@@ -91,6 +90,45 @@ export async function GET() {
 
 import { validateData, signupSchema, formatZodErrors } from '@/app/lib/validation'
 
+
+/** Turn a checkout reference into a verified payment, or an error to show the
+ *  buyer.
+ *
+ *  PES has no live PayPal credentials yet and the client is still testing the
+ *  appraisal flow, so BILLING_ENFORCED=false lets signup proceed on trust. The
+ *  moment that variable is unset or true, an unverifiable reference is refused.
+ *  Set it to true in production before launch. */
+async function confirmPayment(
+  reference: unknown,
+  institutionType: InstitutionType,
+  planName: PlanType,
+): Promise<VerifiedPayment | { error: string }> {
+  const enforced = process.env.BILLING_ENFORCED !== 'false';
+  const ref = typeof reference === 'string' ? reference.trim() : '';
+
+  if (ref) {
+    const result = await verifySubscription(ref, { institutionType, plan: planName });
+    if (result.ok) return result.payment;
+    if (enforced) return { error: result.reason };
+  } else if (enforced) {
+    return { error: 'Missing payment plan details.' };
+  }
+
+  // Unenforced fallback, testing only. Marked with a PES_ reference so these
+  // rows are trivially distinguishable from real PayPal ones.
+  const plan = findPlan(institutionType, planName)!;
+  const paidAt = new Date();
+  return {
+    reference: ref || `PES_${randomUUID()}`,
+    institutionType,
+    plan: planName,
+    amount: plan.price,
+    paidAt,
+    expiresAt: addInterval(paidAt, plan.interval, plan.intervalCount),
+    payerEmail: null,
+  };
+}
+
 export async function POST(req: Request) {
   const body = await req.json()
   
@@ -102,13 +140,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, org, email, password, type, category, plan, planCode, logo } = body
+  const { name, org, email, password, type, category, plan, logo, reference } = body
 
-  // A plan/category must be selected (they come from the pricing page as query
-  // params). Guard here so we return a clear 400 instead of a raw NOT NULL crash.
-  if (!category || !plan) {
+  // The institution type and tier must both name something the catalogue
+  // actually sells. Previously these were taken from the URL unchecked, so a
+  // hand-typed query string could invent a plan.
+  const institutionType = normalizeInstitution(category);
+  const planName = normalizePlan(plan);
+  if (!institutionType || !planName || !findPlan(institutionType, planName)) {
     return NextResponse.json(
-      { message: 'Please select a plan before signing up.' },
+      { message: 'Missing payment plan details.' },
       { status: 400 },
     );
   }
@@ -123,8 +164,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
 
+    // org.name is globally unique today because 37 tables key off the name
+    // rather than org.id, so two organizations sharing one would share their
+    // data. Until that is fixed, refuse the duplicate with something the buyer
+    // can act on. See docs/subscription-payment-flow.md section 11.
+    const existingOrg = await prisma.org.findUnique({
+      where: { name: org },
+      select: { id: true },
+    });
+    if (existingOrg) {
+      return NextResponse.json(
+        {
+          message:
+            'An organization by that name is already registered. If this is your organization, ask its administrator to add you. Otherwise choose a different name.',
+        },
+        { status: 409 },
+      );
+    }
+
+    const payment = await confirmPayment(reference, institutionType, planName);
+    if ('error' in payment) {
+      return NextResponse.json({ message: payment.error }, { status: 402 });
+    }
+
+    // One payment buys one organization. The reference column is @unique, but
+    // checking here returns a message the buyer can act on rather than a raw
+    // constraint violation.
+    const alreadyUsed = await prisma.subscriptions_info.findUnique({
+      where: { reference: payment.reference },
+      select: { org: true },
+    });
+    if (alreadyUsed) {
+      return NextResponse.json(
+        { message: `That payment has already been used to register ${alreadyUsed.org}.` },
+        { status: 409 },
+      );
+    }
+
     const { user, maintenance_model } = await addToDb({
-      name, email, password, type, category, plan, planCode, org, logo,
+      name, email, password, type, category, plan, org, logo, payment,
     });
 
     // Seed the system preset roles for the new org so they exist as real roles.
@@ -152,6 +230,20 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: 'Login successful!', token, status: 200 });
   } catch (err: any) {
+    // The pre-check above catches the ordinary case; this catches two signups
+    // claiming the same name in the same instant, where only the constraint can
+    // decide the winner.
+    if (err?.code === 'P2002') {
+      const target = Array.isArray(err.meta?.target) ? err.meta.target.join(',') : String(err.meta?.target ?? '');
+      return NextResponse.json(
+        {
+          message: target.includes('email')
+            ? 'That email address is already registered.'
+            : 'An organization by that name is already registered. If this is your organization, ask its administrator to add you. Otherwise choose a different name.',
+        },
+        { status: 409 },
+      );
+    }
     console.error(err)
     return NextResponse.json({ message: err.message || 'Server Error' }, { status: 500 })
   }

@@ -116,16 +116,25 @@ export default function Assesment() {
           ))}
         </div>
       ) : assessmentData.length === 0 ? (
-        <Empty
-          icon={<Users size={22} />}
-          title="No data submitted yet"
-          description="Assessment starts once staff submit their data. Notify your employees and set a deadline so everyone contributes."
-          action={
-            <Button onClick={() => dispatch(setNotificationView())}>
-              Send notifications
-            </Button>
-          }
-        />
+        (stats?.staffCount ?? 0) === 0 ? (
+          <Empty
+            icon={<Users size={22} />}
+            title="Nobody to assess yet"
+            description="Your organization has only its administrator, who assesses rather than being assessed. Add employees, then their submitted data will appear here."
+            action={<Button href="/em-database/add-employee">Add an employee</Button>}
+          />
+        ) : (
+          <Empty
+            icon={<Users size={22} />}
+            title="No data submitted yet"
+            description="Assessment starts once staff submit their data. Notify your employees and set a deadline so everyone contributes."
+            action={
+              <Button onClick={() => dispatch(setNotificationView())}>
+                Send notifications
+              </Button>
+            }
+          />
+        )
       ) : (
         <>
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-6">

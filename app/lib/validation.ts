@@ -18,7 +18,9 @@ export const signupSchema = z.object({
   confirmPassword: z.string(),
   category: z.string().min(1, 'Category required'),
   plan: z.string().min(1, 'Plan required'),
-  planCode: z.string().min(1, 'Plan code required'),
+  // The PayPal subscription id returned from checkout. Proof of payment, so it
+  // replaces the old hardcoded Paystack planCode.
+  reference: z.string().optional(),
   logo: z.string().url('Invalid logo URL').optional(),
   agree: z.boolean().refine(val => val === true, 'You must agree to terms'),
 }).refine(data => data.password === data.confirmPassword, {

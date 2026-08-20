@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rosterWhere } from '../_lib/roster'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     // across appraisal/stress/userperformance), so counts are consistent
     // everywhere and never double-count across models or past cycles (#12).
     const roster = await prisma.pesuser.findMany({
-      where: { org: userOrg },
+      where: rosterWhere(userOrg),
       select: { name: true, dept: true },
     });
 

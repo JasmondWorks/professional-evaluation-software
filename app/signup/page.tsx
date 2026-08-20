@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { notify } from "@/lib/toast";
-import { apiFetch } from '@/app/utils/apiFetch';
+import { apiFetch } from "@/app/utils/apiFetch";
+import { normalizeInstitution, normalizePlan } from "@/app/lib/billing/catalog";
 
 const slides = [
   {
@@ -32,17 +33,9 @@ const slides = [
   },
 ];
 
-const PLAN_CODES = {
-  basic: "PLN_eowlq7d4cp4r0dp",
-  standard: "PLN_cle5ip7jtxfpj5k",
-  premium: "PLN_paglu0ly0z641mm",
-};
-
-type PlanType = keyof typeof PLAN_CODES;
-
-// Utility for safely resolving plan codes
-const resolvePlanCode = (plan: string) =>
-  PLAN_CODES[plan as PlanType] ?? PLAN_CODES.basic;
+// The Paystack plan codes that used to live here were hardcoded, disagreed with
+// the amounts in /api/signup and knew nothing about institution type. The
+// catalogue in app/lib/billing/catalog.ts replaces them.
 
 export default function Home() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
@@ -50,6 +43,10 @@ export default function Home() {
   const searchParams = useSearchParams();
   const productCategory = searchParams.get("product_category") as string;
   const planType = searchParams.get("product_plan") as string;
+  // PayPal appends its subscription id on return from checkout. It is the proof
+  // of payment the server verifies before creating anything.
+  const paymentReference =
+    searchParams.get("subscription_id") ?? searchParams.get("reference");
 
   // --- React state ---
   // Inline error state for the specific network/server error message.
@@ -63,25 +60,33 @@ export default function Home() {
     confirmPassword: "", // Added for proper binding
     category: productCategory, // Will update in useEffect
     plan: planType, // Will update in useEffect
-    planCode: "", // Will update in useEffect
+    reference: "",
     logo: "",
     agree: false, // Added for proper binding
   });
 
-  // Sync params to state when they become available
+  // Signup is only reachable by following a paid checkout, which appends the
+  // institution type, the plan and the PayPal reference. Reaching this page by
+  // hand means there is no payment to attach the organization to, so there is
+  // nothing to sign up for. Send them to login rather than showing a form that
+  // cannot succeed.
   useEffect(() => {
-    if (productCategory && planType) {
-      setFormData((prev) => ({
-        ...prev,
-        category: productCategory,
-        plan: planType,
-        planCode: resolvePlanCode(planType),
-      }));
-    } else {
-      // Optional: Redirect if params are strictly required
-      // router.replace("/forbidden");
-    }
-  }, [productCategory, planType]);
+    const institution = normalizeInstitution(productCategory);
+    const plan = normalizePlan(planType);
+
+    // if (!institution || !plan) {
+    //   notify.error("Missing payment plan details");
+    //   router.replace("/login");
+    //   return;
+    // }
+
+    setFormData((prev) => ({
+      ...prev,
+      category: productCategory,
+      plan: planType,
+      reference: paymentReference ?? "",
+    }));
+  }, [productCategory, planType, paymentReference, router]);
 
   const allFieldsFilled =
     formData.name.trim() !== "" &&
@@ -116,8 +121,7 @@ export default function Home() {
         ...prev,
         logo: uploaded.secure_url,
       }));
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   const switchSlide = () => {
@@ -263,7 +267,7 @@ export default function Home() {
 
         <div className="input flex flex-col justify-center mb-4">
           <label htmlFor="name" className="mb-1 font-bold text-sm">
-            Admin Name:
+            Your Name:
           </label>
           <input
             required
@@ -273,7 +277,7 @@ export default function Home() {
             type="text"
             name="name"
             id="name"
-            placeholder="Enter your Institution or company name"
+            placeholder="Enter your full name"
           />
         </div>
 
@@ -295,7 +299,7 @@ export default function Home() {
 
         <div className="input flex flex-col justify-center mb-4">
           <label htmlFor="email" className="mb-1 font-bold text-sm">
-            Email Address:
+            Your Email Address:
           </label>
           <input
             required
@@ -305,8 +309,15 @@ export default function Home() {
             type="email"
             name="email"
             id="email"
-            placeholder="Enter your Institution or company email"
+            placeholder="Enter your work email address"
           />
+          {/* The organization has no address of its own, deliberately. This one
+              is a credential: it signs you in and receives password resets, so
+              it must belong to a person rather than a shared mailbox. */}
+          <p className="mt-1 text-xs text-muted">
+            This is your own address, not a shared organization mailbox. You will
+            sign in with it.
+          </p>
         </div>
 
         <div className="input flex flex-col justify-center mb-4">

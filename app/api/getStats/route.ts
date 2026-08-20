@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rosterWhere } from '../_lib/roster'
 
 /**
  * API route to get statistics for the dashboard.
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
         // consistent across the whole app (#12). "submitted" is how many of those
         // staff have entered any evaluation.
         const roster = await prisma.pesuser.findMany({
-            where: { org: userOrg },
+            where: rosterWhere(userOrg),
             select: { name: true, dept: true },
         });
         const staffCount = roster.length;
