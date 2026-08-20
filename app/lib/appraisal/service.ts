@@ -262,6 +262,30 @@ async function targetsFor(org: string, periodId: number, model: AppraisalModel) 
 // Entries and data capture
 // ---------------------------------------------------------------------------
 
+/** Refuse an entry that sits in the wrong appraisal for its staff member.
+ *
+ *  Guarding only entry creation would leave any already-created mismatch
+ *  reachable forever, which is how an academic lecturer kept a non-academic
+ *  appraisal open. */
+export function assertModelMatches(
+  entry: { model: string; pesuser_name: string | null },
+  expected: AppraisalModel,
+) {
+  if (entry.model === expected) return;
+  throw new AppraisalError(
+    expected === 'academic'
+      ? `${entry.pesuser_name ?? 'This staff member'} is academic staff, so this non-academic appraisal does not apply to them.`
+      : `${entry.pesuser_name ?? 'This staff member'} is non-academic staff, so this academic appraisal does not apply to them.`,
+    403,
+  );
+}
+
+/** The appraisal model a named staff member belongs in. Exported so routes that
+ *  load an entry directly can check it too. */
+export async function expectedModelFor(viewer: Viewer, pesuserName: string) {
+  return modelForStaff(viewer, pesuserName);
+}
+
 /** The appraisal a named staff member belongs in, read from their own record.
  *
  *  Company and public-sector organizations have no academic appraisal at all, so
@@ -297,15 +321,22 @@ export async function ensureEntry(
   const period = await currentPeriod(viewer.org);
   if (!period) throw new AppraisalError('No appraisal period is open.', 409);
 
-  const existing = await prisma.appraisal_entry.findFirst({
-    where: { period_id: period.id, pesuser_name: input.pesuserName },
-  });
-  if (existing) return existing;
-
   // The model is decided by the appraisee's own post, never by the request.
   // It used to be taken straight from the body, so an academic staff member
   // could open the non-academic appraisal simply by asking for it.
   const model = await modelForStaff(viewer, input.pesuserName);
+
+  const existing = await prisma.appraisal_entry.findFirst({
+    where: { period_id: period.id, pesuser_name: input.pesuserName },
+  });
+  if (existing) {
+    // An entry created before the model was derived server-side can be in the
+    // wrong appraisal entirely. Returning it would keep that door open for as
+    // long as the row survives, so refuse it rather than serve it.
+    assertModelMatches(existing, model);
+    return existing;
+  }
+
   if (input.model && input.model !== model) {
     throw new AppraisalError(
       model === 'academic'
