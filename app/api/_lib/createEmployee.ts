@@ -73,18 +73,34 @@ export function generateUniquePassword(length = 8) {
   return password;
 }
 
-/** Does this role exist for the org?
+/** The canonical name for a role written by a human, or null if there is no such
+ *  role in this organization.
  *
- *  Bulk upload refuses unknown roles rather than inventing them: creating roles
- *  as a side effect of a spreadsheet upload is a surprise nobody asked for, and
- *  a typo would otherwise become a permanent role. */
-export async function roleExists(org: string, role: string): Promise<boolean> {
-  if ((PRESET_ROLES as readonly string[]).includes(role)) return true;
+ *  Somebody filling a spreadsheet writes "HOD", not "hod", and both mean the
+ *  same post. Matching is case-insensitive and ignores surrounding whitespace,
+ *  and the stored name is always the canonical one so `pesuser.role` stays a
+ *  predictable value for the role-based UI.
+ *
+ *  Unknown roles still resolve to null: bulk upload refuses them rather than
+ *  inventing them, since a typo would otherwise become a permanent role. */
+export async function resolveRoleName(org: string, role: string): Promise<string | null> {
+  const wanted = String(role ?? '').trim().toLowerCase();
+  if (wanted === '') return null;
+
+  const preset = (PRESET_ROLES as readonly string[]).find((p) => p.toLowerCase() === wanted);
+  if (preset) return preset;
+
+  // Custom roles are per-org and stored with the casing their creator chose,
+  // so compare case-insensitively and return what is actually in the table.
   const row = await prisma.roles.findFirst({
-    where: { name: role, org },
-    select: { id: true },
+    where: { org, name: { equals: role.trim(), mode: 'insensitive' } },
+    select: { name: true },
   });
-  return Boolean(row);
+  return row?.name ?? null;
+}
+
+export async function roleExists(org: string, role: string): Promise<boolean> {
+  return (await resolveRoleName(org, role)) !== null;
 }
 
 export async function createEmployee(

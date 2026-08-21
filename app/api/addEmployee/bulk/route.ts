@@ -6,7 +6,7 @@ import {
   createEmployee,
   generateUniquePassword,
   orgAdminEmail,
-  roleExists,
+  resolveRoleName,
   sendLoginEmail,
   type EmployeeInput,
 } from '../../_lib/createEmployee';
@@ -35,11 +35,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Could not read the request.' }, { status: 400 });
   }
 
-  // Roles are looked up once per distinct name rather than per row.
-  const roleCache = new Map<string, boolean>();
-  const knownRole = async (role: string) => {
-    if (!roleCache.has(role)) roleCache.set(role, await roleExists(org, role));
-    return roleCache.get(role)!;
+  // Roles are resolved once per distinct spelling rather than per row. The cache
+  // is keyed on the lower-cased value so "HOD", "Hod" and "hod" share one lookup.
+  const roleCache = new Map<string, string | null>();
+  const canonicalRole = async (role: string) => {
+    const key = String(role ?? '').trim().toLowerCase();
+    if (!roleCache.has(key)) roleCache.set(key, await resolveRoleName(org, role));
+    return roleCache.get(key)!;
   };
 
   // Passwords are held until every row is decided, so the emails can go out in
@@ -55,10 +57,17 @@ export async function POST(req: Request) {
     dedupeKey: employeeUploadSpec.dedupeKey,
     maxRows: employeeUploadSpec.maxRows,
 
-    precheck: async (row) =>
-      (await knownRole(String(row.role)))
-        ? null
-        : `The role "${row.role}" does not exist in this organization. Create it on the Roles page first.`,
+    precheck: async (row) => {
+      const canonical = await canonicalRole(String(row.role));
+      if (!canonical) {
+        return `The role "${row.role}" does not exist in this organization. Create it on the Roles page first.`;
+      }
+      // Write back the canonical spelling so the stored role is always the same
+      // value regardless of how the spreadsheet capitalised it. The runner hands
+      // this same object to create().
+      row.role = canonical;
+      return null;
+    },
 
     create: async (row): Promise<RowOutcome> => {
       const password = generateUniquePassword();

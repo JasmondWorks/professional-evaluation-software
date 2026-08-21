@@ -137,7 +137,14 @@ export default function BulkUploadModal({
         );
         for (const check of spec.referenceChecks ?? []) {
           const values = d.reference?.[check.referenceKey];
-          if (Array.isArray(values)) reference[check.referenceKey] = new Set(values);
+          // Lower-cased, because the server matches these case-insensitively.
+          // A preview that rejects "HOD" while the server accepts it is worse
+          // than no preview at all.
+          if (Array.isArray(values)) {
+            reference[check.referenceKey] = new Set(
+              values.map((v: string) => String(v).trim().toLowerCase()),
+            );
+          }
         }
       }
     } catch {
@@ -192,7 +199,12 @@ export default function BulkUploadModal({
           for (const rc of spec.referenceChecks ?? []) {
             const allowed = reference[rc.referenceKey];
             const value = mapped[rc.column];
-            if (value && allowed && allowed.size > 0 && !allowed.has(value)) {
+            if (
+              value &&
+              allowed &&
+              allowed.size > 0 &&
+              !allowed.has(value.trim().toLowerCase())
+            ) {
               errors.push(`${labelFor(spec.columns, rc.column)}: ${rc.message(value)}`);
             }
           }

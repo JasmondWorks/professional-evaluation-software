@@ -144,6 +144,13 @@ both read `spec.schema`, the preview cannot promise something the server refuses
 file. "Date of birth is invalid" means the uploader must change something. They
 read differently in the result, so classify them correctly.
 
+**Match reference values the way a person writes them.** Somebody filling a
+spreadsheet types `HOD`, not `hod`. The employee upload resolves roles
+case-insensitively and stores the canonical name, and `precheck` rewrites the row
+so what lands in the database is always the same value. Whatever you do
+server-side, do the same in the preview — a preview that rejects `HOD` while the
+server accepts it is worse than no preview.
+
 **Row numbers are spreadsheet row numbers.** The header is row 1, so the first
 data row is row 2. `runBulkUpload` already does this; do not renumber.
 
