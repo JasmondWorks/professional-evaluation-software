@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
+import { sendMail } from "@/app/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -22,23 +22,12 @@ export async function POST(request: Request) {
       origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const secureLink = `${BASE_URL}/auditor/${token}`;
 
-    // Simulate sending an email (replace this with your email-sending logic)
-
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    // This built its own transport with smtp.gmail.com:465 hardcoded, ignoring
+    // EMAIL_HOST, EMAIL_PORT and the Resend path that every other email in the
+    // app goes through. sendMail() is the one mailer.
+    const { success, error } = await sendMail({
       to: email,
       subject: "Invitation: External Auditor for PES",
-      text: `You have been invited to serve as an External Auditor for PES. Please copy and paste this link into your browser to accept the invitation: ${secureLink}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
           <h2 style="color: #4F46E5; text-align: center;">You've been invited!</h2>
@@ -63,9 +52,18 @@ export async function POST(request: Request) {
         </div>
       `,
     });
-    // Example: Use a service like Nodemailer, SendGrid, or AWS SES to send the email
-    // await sendEmailFunction(email, secureLink);
 
+    // Only claim it was sent if the mailer says so. Reporting success for a send
+    // that failed is how an invitation goes missing with nobody any the wiser.
+    if (!success) {
+      console.error("Auditor invite failed to send:", email, error);
+      return NextResponse.json(
+        { message: error || "The invitation could not be sent." },
+        { status: 502 },
+      );
+    }
+
+    console.log("Auditor invite accepted by the mail provider:", email);
     return NextResponse.json(
       { message: "Email sent successfully" },
       { status: 200 },

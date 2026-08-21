@@ -48,11 +48,17 @@ export function DataTable<T extends Record<string, any>>({
     if (!searchable || !query.trim()) return data;
     const q = query.toLowerCase();
     return data.filter((row) =>
-      keys.some((k) => String(row[k] ?? "").toLowerCase().includes(q)),
+      keys.some((k) =>
+        String(row[k] ?? "")
+          .toLowerCase()
+          .includes(q),
+      ),
     );
   }, [data, query, searchable, keys]);
 
-  const pageCount = pageSize ? Math.max(1, Math.ceil(filtered.length / pageSize)) : 1;
+  const pageCount = pageSize
+    ? Math.max(1, Math.ceil(filtered.length / pageSize))
+    : 1;
   const current = Math.min(page, pageCount);
   const paged = pageSize
     ? filtered.slice((current - 1) * pageSize, current * pageSize)
@@ -87,7 +93,9 @@ export function DataTable<T extends Record<string, any>>({
           ) : (
             <span />
           )}
-          {toolbar && <div className="flex items-center gap-2 shrink-0">{toolbar}</div>}
+          {toolbar && (
+            <div className="flex items-center gap-2 shrink-0">{toolbar}</div>
+          )}
         </div>
       )}
 
@@ -99,16 +107,29 @@ export function DataTable<T extends Record<string, any>>({
         onRowClick={onRowClick}
       />
 
-      {pageSize && filtered.length > pageSize && (
-        <div className="flex items-center justify-between gap-4">
+      {/* Shown whenever this table owns its paging, even on a single page: a
+          footer that appears and disappears as rows are filtered makes the
+          layout jump and leaves the reader unsure whether more rows exist. */}
+      {pageSize && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-muted">
             Showing{" "}
             <span className="font-medium text-body tabular-nums">
-              {(current - 1) * pageSize + 1}–{Math.min(current * pageSize, filtered.length)}
+              {filtered.length === 0
+                ? 0
+                : `${(current - 1) * pageSize + 1}–${Math.min(current * pageSize, filtered.length)}`}
             </span>{" "}
-            of <span className="font-medium text-body tabular-nums">{filtered.length}</span>
+            of{" "}
+            <span className="font-medium text-body tabular-nums">
+              {filtered.length}
+            </span>{" "}
+            {filtered.length === 1 ? "item" : "items"}
           </p>
-          <Pagination page={current} pageCount={pageCount} onPageChange={setPage} />
+          <Pagination
+            page={current}
+            pageCount={pageCount}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

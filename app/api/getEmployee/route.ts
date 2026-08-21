@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import { authorize } from '../_lib/authGuard'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
 async function getUser(user: string | null) {
@@ -72,11 +72,10 @@ async function getUser(user: string | null) {
  */
 export async function POST(request: NextRequest) {
 
-  const { token } = await request.json()
-
-  // Employee database is visible to admins, HODs, or anyone granted access_em.
-  // Uses the verified token's org, so the list is always scoped to the caller.
-  const auth = authorize(token, { roles: ['hod'], anyOf: ['can_access_employee_data'] })
+  // The token comes from the Authorization header, which apiFetch sets on every
+  // request. It used to be read from the JSON body, which meant callers had to
+  // pass it manually on top of the header apiFetch had already attached.
+  const auth = authorize(tokenFromRequest(request), { roles: ['hod'], anyOf: ['can_access_employee_data'] })
   if (!auth.ok) return auth.response
 
   try {
