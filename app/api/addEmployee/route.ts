@@ -3,6 +3,7 @@ import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { validateData, addEmployeeSchema, formatZodErrors } from '@/app/lib/validation'
 import {
   createEmployee,
+  resolveRoleName,
   generateUniquePassword,
   orgAdminEmail,
   sendLoginEmail,
@@ -35,6 +36,24 @@ export async function POST(req: Request) {
   }
 
   try {
+    // The form hides roles that do not apply to this institution type, but that
+    // is presentation only: a direct post could still name one.
+    const productCategory = auth.user.productCategory ?? auth.user.category ?? null
+    const canonicalRole = await resolveRoleName(body.org, String(body.role), productCategory)
+    if (!canonicalRole) {
+      return NextResponse.json(
+        {
+          message:
+            String(body.role).trim().toLowerCase() === 'lecturer'
+              ? `The role "${body.role}" applies to academic institutions only.`
+              : `The role "${body.role}" does not exist in this organization.`,
+          status: 400,
+        },
+        { status: 200 },
+      )
+    }
+    body.role = canonicalRole
+
     const password = generateUniquePassword()
     const result = await createEmployee(body as EmployeeInput, password)
 
