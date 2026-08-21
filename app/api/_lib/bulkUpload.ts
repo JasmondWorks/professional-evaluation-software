@@ -35,7 +35,8 @@ export type BulkRunOptions<T> = {
   dedupeKey?: string;
   maxRows?: number;
   /** Cheap checks that do not need a write, e.g. "does this role exist".
-   *  Results are cached per distinct value across the whole file. */
+   *  May normalise the row in place; the same object is passed to `create`.
+   *  Cache expensive lookups yourself, keyed on the field you care about. */
   precheck?: (row: T) => Promise<string | null>;
   /** Creates one record. Must not throw: return a failed outcome instead. */
   create: (row: T) => Promise<RowOutcome>;
@@ -68,7 +69,6 @@ export async function runBulkUpload<T extends Record<string, any>>(
   const results: RowResult[] = [];
   const seen = new Set<string>();
   const created: { row: number; record: T }[] = [];
-  const precheckCache = new Map<string, string | null>();
 
   for (let i = 0; i < rows.length; i++) {
     // Row numbers are the ones the uploader sees in their spreadsheet: the
@@ -103,14 +103,7 @@ export async function runBulkUpload<T extends Record<string, any>>(
     }
 
     if (precheck) {
-      const cacheKey = JSON.stringify(raw);
-      let problem: string | null;
-      if (precheckCache.has(cacheKey)) {
-        problem = precheckCache.get(cacheKey)!;
-      } else {
-        problem = await precheck(raw as T);
-        precheckCache.set(cacheKey, problem);
-      }
+      const problem = await precheck(raw as T);
       if (problem) {
         results.push({ row, key, status: 'failed', reason: problem });
         continue;
