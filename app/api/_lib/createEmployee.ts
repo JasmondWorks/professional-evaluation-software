@@ -73,6 +73,30 @@ export function generateUniquePassword(length = 8) {
   return password;
 }
 
+/** Preset roles that only make sense in an academic institution.
+ *
+ *  "Employee Academic" is a lecturer, which a company or a public-sector body
+ *  does not have. The add-employee form already hides it for those institution
+ *  types, but that is presentation: a spreadsheet naming the role reached the
+ *  database unchallenged. Every other preset is universal — a company has heads
+ *  of department and division heads too, they are just labelled differently on
+ *  screen. */
+export const ACADEMIC_ONLY_ROLES = ['lecturer'] as const;
+
+export function roleAllowedForCategory(role: string, productCategory?: string | null): boolean {
+  const academicOnly = (ACADEMIC_ONLY_ROLES as readonly string[]).includes(role);
+  if (!academicOnly) return true;
+  return String(productCategory ?? '').trim().toLowerCase() === 'academic';
+}
+
+/** The preset roles an organization of this institution type may assign. Used by
+ *  the bulk preview so it offers the same list the server will accept. */
+export function presetRolesForCategory(productCategory?: string | null): string[] {
+  return (PRESET_ROLES as readonly string[]).filter((r) =>
+    roleAllowedForCategory(r, productCategory),
+  );
+}
+
 /** The canonical name for a role written by a human, or null if there is no such
  *  role in this organization.
  *
@@ -83,12 +107,18 @@ export function generateUniquePassword(length = 8) {
  *
  *  Unknown roles still resolve to null: bulk upload refuses them rather than
  *  inventing them, since a typo would otherwise become a permanent role. */
-export async function resolveRoleName(org: string, role: string): Promise<string | null> {
+export async function resolveRoleName(
+  org: string,
+  role: string,
+  productCategory?: string | null,
+): Promise<string | null> {
   const wanted = String(role ?? '').trim().toLowerCase();
   if (wanted === '') return null;
 
   const preset = (PRESET_ROLES as readonly string[]).find((p) => p.toLowerCase() === wanted);
-  if (preset) return preset;
+  if (preset) {
+    return roleAllowedForCategory(preset, productCategory) ? preset : null;
+  }
 
   // Custom roles are per-org and stored with the casing their creator chose,
   // so compare case-insensitively and return what is actually in the table.
@@ -99,8 +129,12 @@ export async function resolveRoleName(org: string, role: string): Promise<string
   return row?.name ?? null;
 }
 
-export async function roleExists(org: string, role: string): Promise<boolean> {
-  return (await resolveRoleName(org, role)) !== null;
+export async function roleExists(
+  org: string,
+  role: string,
+  productCategory?: string | null,
+): Promise<boolean> {
+  return (await resolveRoleName(org, role, productCategory)) !== null;
 }
 
 export async function createEmployee(

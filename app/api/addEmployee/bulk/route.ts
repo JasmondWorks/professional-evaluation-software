@@ -6,6 +6,7 @@ import {
   createEmployee,
   generateUniquePassword,
   orgAdminEmail,
+  presetRolesForCategory,
   resolveRoleName,
   sendLoginEmail,
   type EmployeeInput,
@@ -28,6 +29,10 @@ export async function POST(req: Request) {
     );
   }
 
+  // Which roles exist depends on the institution type: a company has no
+  // lecturers. Read from the verified token, never from the file.
+  const productCategory = auth.user.productCategory ?? auth.user.category ?? null;
+
   let body: any;
   try {
     body = await req.json();
@@ -40,7 +45,9 @@ export async function POST(req: Request) {
   const roleCache = new Map<string, string | null>();
   const canonicalRole = async (role: string) => {
     const key = String(role ?? '').trim().toLowerCase();
-    if (!roleCache.has(key)) roleCache.set(key, await resolveRoleName(org, role));
+    if (!roleCache.has(key)) {
+      roleCache.set(key, await resolveRoleName(org, role, productCategory));
+    }
     return roleCache.get(key)!;
   };
 
@@ -60,7 +67,12 @@ export async function POST(req: Request) {
     precheck: async (row) => {
       const canonical = await canonicalRole(String(row.role));
       if (!canonical) {
-        return `The role "${row.role}" does not exist in this organization. Create it on the Roles page first.`;
+        // Name the reason. "Does not exist" is misleading when the role exists
+        // but belongs to a different kind of institution.
+        const academicOnly = String(row.role).trim().toLowerCase() === 'lecturer';
+        return academicOnly
+          ? `The role "${row.role}" applies to academic institutions only, and this organization is registered as ${productCategory ?? 'non-academic'}.`
+          : `The role "${row.role}" does not exist in this organization. Create it on the Roles page first.`;
       }
       // Write back the canonical spelling so the stored role is always the same
       // value regardless of how the spreadsheet capitalised it. The runner hands
@@ -120,17 +132,21 @@ export async function GET(req: Request) {
   const org = auth.user.org ? String(auth.user.org) : null;
   if (!org) return NextResponse.json({ existing: [], reference: { roles: [] } });
 
+  const productCategory = auth.user.productCategory ?? auth.user.category ?? null;
+
   const [staff, roles] = await Promise.all([
     prisma.pesuser.findMany({ where: { org }, select: { email: true } }),
     prisma.roles.findMany({ where: { org }, select: { name: true } }),
   ]);
 
-  const { PRESET_ROLES } = await import('@/app/components/utils/roles');
-
   return NextResponse.json({
     existing: staff.map((s) => s.email.toLowerCase()),
     reference: {
-      roles: Array.from(new Set([...PRESET_ROLES, ...roles.map((r) => r.name)])),
+      // Only the presets this institution type may assign, so the preview
+      // offers exactly what the server will accept.
+      roles: Array.from(
+        new Set([...presetRolesForCategory(productCategory), ...roles.map((r) => r.name)]),
+      ),
     },
   });
 }

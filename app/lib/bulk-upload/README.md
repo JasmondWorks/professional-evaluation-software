@@ -7,6 +7,19 @@ validation and the result report.
 The employee upload is the reference implementation. Read
 `specs/employees.ts` and `app/api/addEmployee/bulk/route.ts` alongside this.
 
+Two sample files exist, and which one to use depends on the institution type of
+the organization you are signed in as:
+
+- `scripts/mock-employees.csv` — academic; uses `lecturer` roles and Faculty headers
+- `scripts/mock-employees-company.csv` — company or public sector; uses
+  `industrial-engineer` and Division headers
+
+Both deliberately include mixed-case roles, a duplicate row, an under-age date of
+birth, a role the institution type cannot use, and a malformed phone number, so
+the preview can be seen doing its job. Each yields 8 ready, 1 duplicate and 3
+with errors against its matching institution type. Uploading the academic file to
+a company organization is itself a useful test: every `lecturer` row is refused.
+
 ## The pieces
 
 | File | What it does |
@@ -150,6 +163,13 @@ case-insensitively and stores the canonical name, and `precheck` rewrites the ro
 so what lands in the database is always the same value. Whatever you do
 server-side, do the same in the preview — a preview that rejects `HOD` while the
 server accepts it is worse than no preview.
+
+**Scope reference lists to the tenant, not just the table.** Which roles exist
+depends on the institution type: `lecturer` is academic-only, so a company or
+public-sector organization must not be able to assign it. The GET returns only
+what that organization may use, and the server refuses the rest with a message
+saying *why* — "applies to academic institutions only" rather than "does not
+exist", which would be misleading.
 
 **Row numbers are spreadsheet row numbers.** The header is row 1, so the first
 data row is row 2. `runBulkUpload` already does this; do not renumber.

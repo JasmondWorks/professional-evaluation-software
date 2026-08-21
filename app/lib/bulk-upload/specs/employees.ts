@@ -35,7 +35,7 @@ export const EMPLOYEE_COLUMNS: ColumnSpec[] = [
     aliases: ['present post', 'position', 'job title', 'designation'] },
   { key: 'role', label: 'Role', required: true, example: 'lecturer',
     aliases: ['system role', 'access role', 'user role'],
-    hint: 'Must already exist in the organization. Decides the permissions.' },
+    hint: 'Must exist for this institution type. Decides the permissions. Case does not matter.' },
 
   { key: 'doc', label: 'Date of confirmation', required: false, example: '2017-09-01',
     aliases: ['date of confirmation', 'confirmation date'] },
@@ -60,7 +60,9 @@ export const employeeUploadSpec: BulkUploadSpec = {
       referenceKey: 'roles',
       column: 'role',
       message: (value) =>
-        `"${value}" does not exist in this organization. Create it on the Roles page first.`,
+        String(value).trim().toLowerCase() === 'lecturer'
+          ? `"${value}" applies to academic institutions only.`
+          : `"${value}" does not exist in this organization. Create it on the Roles page first.`,
     },
   ],
   // addEmployeeSchema requires org, which the server always sets from the token.
