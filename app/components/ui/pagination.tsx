@@ -1,12 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * Controlled pagination. Renders first/last, a windowed page range with
- * ellipses, and prev/next. `page` is 1-indexed.
+ * ellipses, and worded Previous/Next. `page` is 1-indexed.
+ *
+ * It renders even for a single page. A control that disappears when the data is
+ * short makes the table's footer jump as rows are filtered, and leaves the
+ * reader unsure whether there is more to see.
  */
 export function Pagination({
   page,
@@ -21,8 +25,6 @@ export function Pagination({
   siblingCount?: number;
   className?: string;
 }) {
-  if (pageCount <= 1) return null;
-
   const range = (start: number, end: number) =>
     Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
@@ -40,8 +42,12 @@ export function Pagination({
 
   return (
     <nav aria-label="Pagination" className={cn("flex items-center gap-1.5", className)}>
-      <button className={btn} onClick={() => onPageChange(page - 1)} disabled={page <= 1} aria-label="Previous page">
-        <ChevronLeft className="h-4 w-4" />
+      <button
+        className={cn(btn, "px-3")}
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+      >
+        Previous
       </button>
       {pages.map((p, i) =>
         p === "ellipsis" ? (
@@ -59,8 +65,12 @@ export function Pagination({
           </button>
         ),
       )}
-      <button className={btn} onClick={() => onPageChange(page + 1)} disabled={page >= pageCount} aria-label="Next page">
-        <ChevronRight className="h-4 w-4" />
+      <button
+        className={cn(btn, "px-3")}
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= pageCount}
+      >
+        Next
       </button>
     </nav>
   );

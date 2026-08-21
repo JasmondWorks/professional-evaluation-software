@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction } from 'react';
+import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import RoleSelect from '@/app/components/ui/RoleSelect';
 import { PRESET_ROLES } from '@/app/components/utils/roles';
@@ -350,110 +350,128 @@ export default function FormOne({
   const inputProps = { formdata, errors, updateFields, validateField };
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex flex-col gap-8 w-full">
 
-      {/* Row 1 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
-        <div>
-          <Input {...inputProps} name="name" label="Employee's Full Name:" placeholder="Enter full name" tabIndex={1} />
-          <Input {...inputProps} name="address" label="Current Home Address:" placeholder="Home address" tabIndex={3} />
-          <Input {...inputProps} name="faculty_college" label="Faculty/College:" placeholder="Enter faculty" tabIndex={5} />
-        </div>
-        <div>
-          <Input {...inputProps} name="email" label="Employee's Email Address:" placeholder="Enter email" tabIndex={2} />
-          {(() => {
-            const suggestion = formdata.email ? suggestEmail(formdata.email) : null;
-            if (!suggestion) return null;
-            return (
-              <p className="text-xs text-warning-600 mt-1">
-                Did you mean{" "}
-                <button
-                  type="button"
-                  className="underline font-medium"
-                  onClick={() => {
-                    updateFields({ email: suggestion });
-                    validateField("email", suggestion);
-                  }}
-                >
-                  {suggestion}
-                </button>
-                ?
-              </p>
-            );
-          })()}
+      {/* Who they are. Contact details sit beside the name because that is the
+          block an administrator copies from a personnel file in one go. */}
+      <Section title="Personal details">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 items-start">
+          <Input {...inputProps} name="name" label="Full name" placeholder="Enter full name" tabIndex={1} />
+
+          <div>
+            <Input {...inputProps} name="email" label="Email address" placeholder="Enter email" tabIndex={2} />
+            {(() => {
+              const suggestion = formdata.email ? suggestEmail(formdata.email) : null;
+              if (!suggestion) return null;
+              return (
+                <p className="text-xs text-warning-700 mt-1">
+                  Did you mean{" "}
+                  <button
+                    type="button"
+                    className="underline font-medium"
+                    onClick={() => {
+                      updateFields({ email: suggestion });
+                      validateField("email", suggestion);
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                  ?
+                </p>
+              );
+            })()}
+          </div>
+
           <PhoneInput
             name="gsm"
-            label="Phone Number:"
+            label="Phone number"
             placeholder="Enter phone number"
             value={formdata.gsm || ''}
             onChange={(v) => {
               updateFields({ gsm: v });
               validateField('gsm', v);
             }}
-            tabIndex={4}
+            tabIndex={3}
           />
-          <Input {...inputProps} name="dept" label="Department:" placeholder="Enter department" tabIndex={6} />
+          <Input {...inputProps} name="dob" label="Date of birth" type="date" tabIndex={4} />
+
+          <div className="sm:col-span-2">
+            <Input {...inputProps} name="address" label="Home address" placeholder="Home address" tabIndex={5} />
+          </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Row 2 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-5">
-        <Input {...inputProps} name="dob" label="Date of birth:" type="date" tabIndex={7} />
-        <Input {...inputProps} name="doa" label="Date of first appointment:" type="date" tabIndex={8} />
-        <Input {...inputProps} name="post" label="Post/grade of first appointment:" placeholder="Enter post" tabIndex={9} />
-        <Input {...inputProps} name="doc" label="Date of confirmation:" type="date" tabIndex={10} />
-      </div>
-
-      {/* Row 3 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-2 w-full">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-body">Present post:</label>
-          <RoleSelect
-            value={formdata.role || ''}
-            presetRoles={[
-              ...(isAcademic ? [{ value: 'lecturer', label: 'Employee Academic' }] : []),
-              {
-                value: 'industrial-engineer',
-                label: 'Employee Non-Academic (industrial/production engineer)',
-              },
-              { value: 'hod', label: 'Department Lead (HOD)' },
-              {
-                value: 'dept-admin',
-                label: 'Departmental Administrator (records appraisal Forms 8 and 9)',
-              },
-              {
-                value: 'unit-head',
-                label: isAcademic ? 'Faculty Head (Dean)' : 'Division Head (Manager)',
-              },
-            ]}
-            customRoles={customRoles}
-            onSelect={(v) => {
-              updateFields({ role: v });
-              validateField('role', v);
-              applyRolePermissions(v);
-            }}
-            tabIndex={11}
-            hasError={!!errors.role}
-          />
-          {errors.role && <p className="text-danger-600 text-xs mt-1">{errors.role}</p>}
-          {headConflict && (
-            <p className="text-danger-700 text-xs mt-2 bg-danger-50 border border-danger-100 rounded-md px-2.5 py-1.5">
-              {headConflict}
-            </p>
-          )}
+      {/* Where they sit in the organization. Two fields, one relationship. */}
+      <Section title="Placement">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 items-start">
+          <Input {...inputProps} name="faculty_college" label="Faculty or college" placeholder="Enter faculty" tabIndex={6} />
+          <Input {...inputProps} name="dept" label="Department" placeholder="Enter department" tabIndex={7} />
         </div>
-        <Input {...inputProps} name="dopp" label="Date appointed to present post:" type="date" tabIndex={12} />
-        <Input {...inputProps} name="level" label="Current level:" placeholder="Current level" tabIndex={13} />
-      </div>
+      </Section>
 
-      {/* Qualifications */}
-      <div className="w-full flex flex-col gap-3">
-        <p className="text-sm font-medium text-strong">
-          Academic &amp; Professional Qualifications held
-          <span className="font-normal text-muted"> — certificates must be attached</span>
-        </p>
+      {/* The three fields that describe how they joined. Grouping them at three
+          columns rather than four keeps every label on one line, which is what
+          was throwing the inputs out of alignment. */}
+      <Section title="First appointment">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4 items-start">
+          <Input {...inputProps} name="doa" label="Date appointed" type="date" tabIndex={8} />
+          <Input {...inputProps} name="post" label="Post or grade" placeholder="Enter post" tabIndex={9} />
+          <Input {...inputProps} name="doc" label="Date confirmed" type="date" tabIndex={10} />
+        </div>
+      </Section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 rounded-lg border border-line bg-canvas p-4">
+      {/* What they do now. The role drives their permissions, so it leads. */}
+      <Section
+        title="Present position"
+        hint="The role decides what this employee can see and do in PES."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4 items-start">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-body">Present post</label>
+            <RoleSelect
+              value={formdata.role || ''}
+              presetRoles={[
+                ...(isAcademic ? [{ value: 'lecturer', label: 'Employee Academic' }] : []),
+                {
+                  value: 'industrial-engineer',
+                  label: 'Employee Non-Academic (industrial/production engineer)',
+                },
+                { value: 'hod', label: 'Department Lead (HOD)' },
+                {
+                  value: 'dept-admin',
+                  label: 'Departmental Administrator (records appraisal Forms 8 and 9)',
+                },
+                {
+                  value: 'unit-head',
+                  label: isAcademic ? 'Faculty Head (Dean)' : 'Division Head (Manager)',
+                },
+              ]}
+              customRoles={customRoles}
+              onSelect={(v) => {
+                updateFields({ role: v });
+                validateField('role', v);
+                applyRolePermissions(v);
+              }}
+              tabIndex={11}
+              hasError={!!errors.role}
+            />
+            {errors.role && <p className="text-danger-700 text-xs mt-1">{errors.role}</p>}
+            {headConflict && (
+              <p className="text-danger-700 text-xs mt-2 bg-danger-50 border border-danger-100 rounded-md px-2.5 py-1.5">
+                {headConflict}
+              </p>
+            )}
+          </div>
+          <Input {...inputProps} name="dopp" label="Date appointed" type="date" tabIndex={12} />
+          <Input {...inputProps} name="level" label="Current level" placeholder="Current level" tabIndex={13} />
+        </div>
+      </Section>
+
+      <Section
+        title="Qualifications"
+        hint="Attach the certificate for the qualification given."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 items-start">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-body">Title or qualification</label>
             <input
@@ -482,7 +500,38 @@ export default function FormOne({
             </label>
           </div>
         </div>
-      </div>
+      </Section>
     </div>
+  );
+}
+
+/** A labelled group of fields.
+ *
+ *  The form was one undifferentiated run of inputs, so nothing signalled that
+ *  "Date appointed" under First appointment and "Date appointed" under Present
+ *  position mean different things. The heading carries that, which also lets the
+ *  labels stay short enough to sit on one line — the actual cause of the inputs
+ *  landing at different heights across a row. */
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  // Named for assistive technology: two groups both carry a "Date appointed"
+  // field, and the group name is what tells them apart when the heading is not
+  // on screen.
+  const id = `section-${title.toLowerCase().replace(/[^a-z]+/g, '-')}`;
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-0.5 border-b border-line pb-2">
+        <h2 id={id} className="text-sm font-semibold text-strong">{title}</h2>
+        {hint ? <p className="text-xs text-muted">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
   );
 }

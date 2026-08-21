@@ -158,7 +158,7 @@ export default function MainForm() {
   const pct = ((currentStepIndex + 1) / totalSteps) * 100;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+    <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6">
       <Link href="/em-database" className="inline-flex items-center gap-1.5 w-fit text-sm font-medium text-muted hover:text-pes transition-colors mb-4 group">
         <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-0.5" />
         Back to database
@@ -190,12 +190,12 @@ export default function MainForm() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-surface border border-line rounded-xl shadow-card p-5 sm:p-6">
-        <Progress value={pct} className="mb-6" />
+      <form onSubmit={handleSubmit}>
+        <Progress value={pct} className="mb-8" />
 
         {step}
 
-        <div className="mt-6 flex items-center justify-between gap-3">
+        <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5">
           {!isFirstStep ? (
             <Button type="button" variant="secondary" onClick={back}>
               Previous
