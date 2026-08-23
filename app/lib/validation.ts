@@ -106,18 +106,8 @@ export const addEmployeeSchema = z.object({
 });
 
 // Performance Schemas
-export const savePerformanceSchema = z.object({
-  pesuser_name: z.string().min(1),
-  org: z.union([z.string(), z.number()]),
-  dept: z.union([z.string(), z.number()]).optional(),
-  isCounter: z.boolean().optional(),
-  payload: z.object({
-    competence: z.union([z.string(), z.number()]),
-    integrity: z.union([z.string(), z.number()]),
-    compatibility: z.union([z.string(), z.number()]),
-    use_of_resources: z.union([z.string(), z.number()]),
-  }),
-});
+// savePerformanceSchema was removed with /api/savePerformance: performance
+// scores are no longer posted as finished figures. See app/lib/performance.
 
 // Appraisal Schemas
 export const saveAppraisalSchema = z.object({

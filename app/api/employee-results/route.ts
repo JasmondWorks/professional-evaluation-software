@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { onePerformance } from '@/app/lib/performance/results';
 
 const num = (v: any): number | null =>
   v === null || v === undefined ? null : Number(v);
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
 
     const [appraisal, performance, stress, stressScores] = await Promise.all([
       prisma.appraisal.findFirst({ where: byName, orderBy: { id: 'desc' } }),
-      prisma.userperformance.findFirst({ where: byName, orderBy: { id: 'desc' } }),
+      onePerformance(org, staff.name),
       prisma.stress.findFirst({ where: byName, orderBy: { id: 'desc' } }),
       prisma.stress_scores.findFirst({
         where: { user_name: staff.name, org },
@@ -68,14 +69,22 @@ export async function POST(req: Request) {
             pending: appraisal.pending === true,
           }
         : null,
+      // The four criteria as settled, plus the fifth result and its grading.
+      // Previously the raw `userperformance` row, which had no overall at all.
       performance: performance
         ? {
-            competence: num(performance.competence),
-            integrity: num(performance.integrity),
-            compatibility: num(performance.compatibility),
-            use_of_resources: num(performance.use_of_resources),
+            competence: performance.competence,
+            integrity: performance.integrity,
+            compatibility: performance.compatibility,
+            use_of_resources: performance.use_of_resources,
+            overall: performance.overall,
+            rtp: performance.rtp,
+            grade: performance.grade,
+            class_rank: performance.class_rank,
+            descriptive: performance.descriptive,
+            partial: performance.partial,
             dept: performance.dept,
-            pending: performance.pending === true,
+            pending: performance.status === 'awaiting_staff',
           }
         : null,
       stress: stress

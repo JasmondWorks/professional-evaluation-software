@@ -24,10 +24,12 @@ interface GroupData {
 
 interface Data {
   userperformance: {
-    competence: number;
-    integrity: number;
-    compatibility: number;
-    use_of_resources: number;
+    // Null while a criterion is still with the staff member or the auditor —
+    // held out of the analysis rather than charted as a zero.
+    competence: number | null;
+    integrity: number | null;
+    compatibility: number | null;
+    use_of_resources: number | null;
     pesuser_name: string;
   }[];
   appraisal: {
@@ -228,12 +230,11 @@ export default function StatisticalAnalysisPage() {
         },
       ]);
 
-      const performance = (data.userperformance ?? []).flatMap((u) => [
-        { department: dept, user: u.pesuser_name, value: u.competence },
-        { department: dept, user: u.pesuser_name, value: u.integrity },
-        { department: dept, user: u.pesuser_name, value: u.compatibility },
-        { department: dept, user: u.pesuser_name, value: u.use_of_resources },
-      ]);
+      const performance = (data.userperformance ?? []).flatMap((u) =>
+        [u.competence, u.integrity, u.compatibility, u.use_of_resources]
+          .filter((v): v is number => v !== null && v !== undefined)
+          .map((value) => ({ department: dept, user: u.pesuser_name, value })),
+      );
 
       runAnalysis(appraisal, "appraisal");
       runAnalysis(performance, "performance");

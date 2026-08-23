@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { performanceSubmitters } from '@/app/lib/performance/results';
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { rosterWhere } from '../_lib/roster'
 
@@ -35,11 +36,14 @@ export async function POST(req: NextRequest) {
         const submitterRows: { pesuser_name: string | null }[] = await prisma.$queryRaw`
             SELECT DISTINCT pesuser_name FROM appraisal WHERE org = ${userOrg}
             UNION SELECT DISTINCT pesuser_name FROM stress WHERE org = ${userOrg}
-            UNION SELECT DISTINCT pesuser_name FROM userperformance WHERE org = ${userOrg}
-        `;
-        const submitterSet = new Set(
-            submitterRows.map((r) => r.pesuser_name).filter((n): n is string => !!n),
-        );
+            `;
+        // Performance submitters come from the performance model, which has a
+        // period and a draft state — a half-filled form is not a submission.
+        const performanceSubmitterNames = await performanceSubmitters(userOrg);
+        const submitterSet = new Set([
+            ...submitterRows.map((r) => r.pesuser_name).filter((n): n is string => !!n),
+            ...performanceSubmitterNames,
+        ]);
         const submittedCount = roster.filter((u) => u.name && submitterSet.has(u.name)).length;
 
         return NextResponse.json({

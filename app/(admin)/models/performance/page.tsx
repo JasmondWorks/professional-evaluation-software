@@ -1,327 +1,507 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ArrowLeft2, Calculator, Save2, Star, DocumentText } from "iconsax-react";
-import { useEffect, useState } from "react";
-import InfoPopover from "@/app/components/ui/InfoPopover";
-import { getAccessToken } from '@/app/utils/auth';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowLeft2 } from 'iconsax-react';
+import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from '@/app/components/ui/Button';
+import PageHeader from '@/app/components/ui/PageHeader';
+import Badge from '@/app/components/ui/Badge';
+import { CRITERIA, CriterionKey, PERFORMANCE_TARGET } from '@/app/lib/performance/instrument';
 
-export default function AchievementCriteriaPage() {
+// The organization admin's performance console: open a period, close it (which
+// also draws the staff who will score each head), run the evaluation, and
+// release results.
+//
+// This page used to let the admin type their own weights and then averaged every
+// staff member in the org into a single score. That was neither the model the
+// client described nor a per-staff result. The four criteria are fixed by the
+// document, the overall is their mean, and each staff member gets their own five
+// results — so there is nothing here to weight.
+
+type Period = {
+  id: number;
+  frequency: string;
+  starts_on: string;
+  ends_on: string;
+  status: string;
+  released_at: string | null;
+  target: string | number;
+  rater_sample: number;
+  rater_minimum: number;
+};
+
+type Entry = {
+  id: number;
+  pesuser_name: string;
+  dept: string | null;
+  status: string;
+  flagged?: boolean;
+  overall: string | number | null;
+  rtp: string | number | null;
+  grade: string | null;
+  class_rank: string | null;
+  descriptive: string | null;
+  partial: boolean;
+  criteria: { criterion: CriterionKey; recorded_score: string | number | null; staff_score: string | number | null }[];
+};
+
+type HodResult = {
+  hod_name: string;
+  dept: string;
+  management?: string | number | null;
+  productivity?: string | number | null;
+  overall?: string | number | null;
+  rtp?: string | number | null;
+  grade?: string | null;
+  raters?: number;
+  belowMinimum?: boolean;
+  note?: string;
+};
+
+export default function PerformanceConsole() {
+  const [period, setPeriod] = useState<Period | null>(null);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [hods, setHods] = useState<HodResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const [criteria, setCriteria] = useState<{ name: string; weight: number; scores: number[]; open: boolean }[]>([]);
-
-  const [thresholds, setThresholds] = useState({
-    excellent: 80,
-    good: 65,
-    average: 50,
+  const [form, setForm] = useState({
+    frequency: 'annual',
+    startsOn: '',
+    endsOn: '',
+    target: String(PERFORMANCE_TARGET),
+    raterSample: '5',
+    raterMinimum: '3',
   });
 
-  const [result, setResult] = useState<{
-    score: number;
-    rating: string;
-    color: string;
-  } | null>(null);
-
-  // Fetch user performance data from backend
-  useEffect(() => {
-    async function fetchPerformance() {
-      const token = getAccessToken();
-
-      try {
-        const res = await apiFetch("/api/getPerformance", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-        });
-        const data = await res.json();
-
-        const loaded = [
-          { name: "Competence", weight: 0.25, scores: data.competence || [], open: true },
-          { name: "Integrity", weight: 0.25, scores: data.integrity || [], open: true },
-          { name: "Compatibility", weight: 0.25, scores: data.compatibility || [], open: true },
-          { name: "Use of Resources", weight: 0.25, scores: data.useOfResources || [], open: true },
-        ];
-
-        setCriteria(loaded);
-      } catch (err) {
-        console.error("Error fetching performance:", err);
-        setErrorMsg("Failed to load performance data from the database.");
-      } finally {
-        setLoading(false);
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/performance-v2/period');
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Could not load the performance period.');
+        return;
       }
+      setPeriod(data.period);
+      setError('');
+
+      if (data.period) {
+        await loadResults(data.period.id);
+      } else {
+        setEntries([]);
+        setHods([]);
+      }
+    } catch {
+      setError('Could not reach the server.');
+    } finally {
+      setLoading(false);
     }
-    fetchPerformance();
   }, []);
 
-  const toggleCriterion = (index: number) => {
-    setCriteria((prev) => prev.map((c, i) => (i === index ? { ...c, open: !c.open } : c)));
+  const loadResults = async (periodId: number) => {
+    const [entryRes, hodRes] = await Promise.all([
+      apiFetch(`/api/performance-v2/entry?periodId=${periodId}`),
+      apiFetch(`/api/performance-v2/hod-results?periodId=${periodId}`),
+    ]);
+    const entryData = await entryRes.json();
+    const hodData = await hodRes.json();
+    setEntries(entryRes.ok ? entryData.entries ?? [] : []);
+    setHods(hodRes.ok ? hodData.results ?? [] : []);
   };
 
-  const updateWeight = (index: number, weight: number) => {
-    setCriteria((prev) => prev.map((c, i) => (i === index ? { ...c, weight } : c)));
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const post = async (body: any, success: string) => {
+    setBusy(true);
+    try {
+      const res = await apiFetch('/api/performance-v2/period', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        notify.error(data.error ?? 'That did not work.');
+        return null;
+      }
+      notify.success(success);
+      await load();
+      return data;
+    } catch {
+      notify.error('Could not reach the server.');
+      return null;
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const calculateScore = async () => {
-    setSuccessMsg("");
-    setErrorMsg("");
-
-    // Validate weights sum to 1.0
-    const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0);
-    if (Math.abs(totalWeight - 1.0) > 0.01) {
-      setErrorMsg("Weights must sum up to exactly 1.0");
+  const open = async () => {
+    if (!form.startsOn || !form.endsOn) {
+      notify.error('Set the start and end dates.');
       return;
     }
+    await post(
+      {
+        frequency: form.frequency,
+        startsOn: form.startsOn,
+        endsOn: form.endsOn,
+        target: Number(form.target),
+        raterSample: Number(form.raterSample),
+        raterMinimum: Number(form.raterMinimum),
+      },
+      'Performance period opened.',
+    );
+  };
 
-    let total = 0;
-    criteria.forEach((criterion) => {
-      const subtotal = criterion.scores.length > 0
-        ? criterion.scores.reduce((a, b) => a + b, 0) / criterion.scores.length
-        : 0;
-      total += subtotal * criterion.weight;
-    });
-
-    let rating = "";
-    let color = "";
-
-    if (total >= thresholds.excellent) {
-      rating = "Excellent";
-      color = "bg-green-50 border-green-200 text-green-700";
-    } else if (total >= thresholds.good) {
-      rating = "Good";
-      color = "bg-pes-50 border-blue-200 text-pes-700";
-    } else if (total >= thresholds.average) {
-      rating = "Average";
-      color = "bg-yellow-50 border-yellow-200 text-yellow-700";
-    } else {
-      rating = "Needs Improvement";
-      color = "bg-danger-50 border-danger-100 text-danger-700";
+  const close = async () => {
+    if (!period) return;
+    const result = await post({ action: 'close', periodId: period.id }, 'Period closed.');
+    if (result?.warnings?.length) {
+      // Departments too small to produce a head's result are worth saying out
+      // loud rather than discovering as a blank row later.
+      notify.error(
+        `${result.warnings.length} department(s) could not be given a full selection. See the heads panel.`,
+      );
+    } else if (result) {
+      notify.success(`${result.raters} staff drawn to score ${result.heads} head(s).`);
     }
+  };
 
-    setResult({ score: total, rating, color });
+  const release = async () => {
+    if (!period) return;
+    await post({ action: 'release', periodId: period.id }, 'Results released to staff.');
+  };
 
-    // Save to backend
-    setSaving(true);
+  const evaluate = async () => {
+    if (!period) return;
+    setBusy(true);
     try {
-      const token = getAccessToken();
-      const res = await apiFetch("/api/savePerformanceResult", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          total_score: total,
-          rating,
-          thresholds,
-          criteria
-        })
+      const res = await apiFetch('/api/performance-v2/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodId: period.id }),
       });
-      
       const data = await res.json();
-      if (res.ok) {
-        setSuccessMsg("Performance result calculated and saved!");
-      } else {
-        setErrorMsg(data.error || "Failed to save results.");
+      if (!res.ok) {
+        notify.error(data.error ?? 'Could not run the evaluation.');
+        return;
       }
-    } catch (e) {
-      setErrorMsg("Network error when saving results.");
+      notify.success(`Evaluated ${data.evaluated} staff and ${data.heads?.length ?? 0} head(s).`);
+      await loadResults(period.id);
+    } catch {
+      notify.error('Could not reach the server.');
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="w-full p-12 flex justify-center items-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-pes border-t-transparent mx-auto"></div>
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-pes border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-8 w-full mx-auto max-w-7xl">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-4">
         <Link href="/models" className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors">
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
+          <ArrowLeft2 size="16" className="mr-1" /> Back to models
         </Link>
       </div>
 
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Performance Measurement</h1>
-          <p className="text-body mb-6 max-w-2xl">
-            Evaluate staff achievement criteria based on competence, integrity, compatibility, and use of resources. Data is automatically populated from the user's latest performance assessments.
+      <PageHeader
+        title="Performance measurement"
+        subtitle="Competence, integrity, compatibility and use of resources — each normalised to 100, with the overall as their mean, graded against a target of 55."
+      />
+
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-danger-50 border border-danger-100 text-danger-700 text-sm" role="alert">
+          {error}
+        </div>
+      )}
+
+      {!period ? (
+        <section className="bg-surface border border-line rounded-xl shadow-card p-6 mb-8">
+          <h2 className="font-semibold text-strong mb-1">Open a performance period</h2>
+          <p className="text-sm text-muted mb-5">
+            Staff enter their four criteria while the period is open. Closing it draws the staff who
+            will score each head of department.
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/models/performance/history"
-            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
-          >
-            <DocumentText size="16" />
-            View History
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
-        {/* Left Column - Criteria */}
-        <div className="xl:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-sm">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-line bg-canvas">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
-                  <Star size="16" variant="Bold" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-strong">Achievement Criteria</h2>
-                </div>
-              </div>
-              <Link
-                href="/downloadables/performance_table.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-pes hover:text-pes-800 transition-colors bg-white px-3 py-1.5 rounded-md border border-line shadow-sm flex items-center gap-2"
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Frequency">
+              <select
+                value={form.frequency}
+                onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
               >
-                <DocumentText size="16" />
-                Reference Table
-              </Link>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {criteria.map((criterion, index) => {
-                const subtotal = criterion.scores.length > 0
-                  ? criterion.scores.reduce((a, b) => a + b, 0) / criterion.scores.length
-                  : 0;
-                const weighted = subtotal * criterion.weight;
-
-                return (
-                  <div key={index} className="border border-line rounded-lg overflow-hidden">
-                    <div 
-                      className="w-full text-left px-5 py-3 bg-canvas flex justify-between items-center cursor-pointer hover:bg-line/50 transition-colors"
-                      onClick={() => toggleCriterion(index)}
-                    >
-                      <span className="font-semibold text-strong">{criterion.name}</span>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-sm" onClick={(e) => e.stopPropagation()}>
-                          <span className="font-medium text-body">Weight:</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={criterion.weight}
-                            onChange={(e) => updateWeight(index, Number(e.target.value))}
-                            className="w-20 rounded border border-line px-2 py-1 text-sm outline-none focus:border-pes bg-white"
-                          />
-                        </div>
-                        <svg className={`w-5 h-5 text-muted transition-transform ${criterion.open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                      </div>
-                    </div>
-
-                    {criterion.open && (
-                      <div className="p-5 bg-white border-t border-line">
-                        {criterion.scores.length === 0 ? (
-                          <p className="text-sm text-muted italic">No scores recorded for this criterion.</p>
-                        ) : (
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {criterion.scores.map((s, i) => (
-                              <div key={i} className="px-3 py-1.5 bg-canvas border border-line rounded-md text-sm font-medium text-body">
-                                Score {i + 1}: <span className="text-pes ml-1">{s}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between pt-4 border-t border-line bg-canvas -mx-5 -mb-5 px-5 py-3">
-                          <span className="text-sm font-medium text-body">Average Subtotal: {subtotal.toFixed(2)}</span>
-                          <span className="text-sm font-bold text-strong">Weighted: {weighted.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="biannual">Biannual</option>
+                <option value="annual">Annual</option>
+              </select>
+            </Field>
+            <Field label="Starts">
+              <input
+                type="date"
+                value={form.startsOn}
+                onChange={(e) => setForm({ ...form, startsOn: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
+              />
+            </Field>
+            <Field label="Ends">
+              <input
+                type="date"
+                value={form.endsOn}
+                onChange={(e) => setForm({ ...form, endsOn: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
+              />
+            </Field>
+            <Field label="RTP target" hint="55 unless your institution has set its own.">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={form.target}
+                onChange={(e) => setForm({ ...form, target: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
+              />
+            </Field>
+            <Field label="Staff drawn per head">
+              <input
+                type="number"
+                min={1}
+                value={form.raterSample}
+                onChange={(e) => setForm({ ...form, raterSample: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
+              />
+            </Field>
+            <Field label="Returns needed" hint="Below this, a head's result is withheld.">
+              <input
+                type="number"
+                min={1}
+                value={form.raterMinimum}
+                onChange={(e) => setForm({ ...form, raterMinimum: e.target.value })}
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
+              />
+            </Field>
           </div>
-        </div>
-
-        {/* Right Column - Thresholds & Result */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-strong mb-1">Rating Thresholds</h2>
-            <p className="text-xs text-muted mb-6">Define the minimum score for each rating tier</p>
-            
-            <div className="space-y-4">
-              <div className="block">
-                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
-                  <span className="truncate">Excellent (≥)</span>
-                  <InfoPopover text="Minimum score for Excellent rating." />
-                </div>
-                <input
-                  type="number"
-                  value={thresholds.excellent}
-                  onChange={(e) => setThresholds({ ...thresholds, excellent: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
-                />
-              </div>
-              <div className="block">
-                <span className="block text-sm font-semibold text-body mb-1.5">Good (≥)</span>
-                <input
-                  type="number"
-                  value={thresholds.good}
-                  onChange={(e) => setThresholds({ ...thresholds, good: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
-                />
-              </div>
-              <div className="block">
-                <span className="block text-sm font-semibold text-body mb-1.5">Average (≥)</span>
-                <input
-                  type="number"
-                  value={thresholds.average}
-                  onChange={(e) => setThresholds({ ...thresholds, average: Number(e.target.value) })}
-                  className="block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
-                />
-              </div>
-            </div>
+          <div className="pt-5">
+            <Button disabled={busy} onClick={open}>
+              Open period
+            </Button>
           </div>
-
-          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
-            
-            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
-            {successMsg && <p className="text-green-600 font-medium text-sm mb-4">{successMsg}</p>}
-
-            <button
-              onClick={calculateScore}
-              disabled={saving}
-              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
-            >
-              {saving ? "Saving..." : (
-                <>
-                  <Calculator size="18" />
-                  Evaluate Performance
-                </>
+        </section>
+      ) : (
+        <section className="bg-surface border border-line rounded-xl shadow-card p-6 mb-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="font-semibold text-strong capitalize">{period.frequency} period</h2>
+                <Badge tone={period.status === 'open' ? 'success' : 'neutral'}>{period.status}</Badge>
+                {period.released_at && <Badge tone="brand">Released</Badge>}
+              </div>
+              <p className="text-sm text-muted">
+                {period.starts_on?.slice(0, 10)} to {period.ends_on?.slice(0, 10)} · target{' '}
+                {Number(period.target)} · {period.rater_sample} staff drawn per head,{' '}
+                {period.rater_minimum} returns needed
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {period.status === 'open' && (
+                <Button variant="secondary" disabled={busy} onClick={close}>
+                  Close and draw raters
+                </Button>
               )}
-            </button>
-
-            {result && (
-              <div className={`mt-6 p-4 rounded-lg border text-center ${result.color}`}>
-                <p className="text-sm font-medium mb-1">Total Score</p>
-                <p className="text-3xl font-bold mb-1">{result.score.toFixed(2)}</p>
-                <p className="text-sm font-semibold">{result.rating}</p>
-              </div>
-            )}
+              {period.status === 'closed' && (
+                <Button variant="secondary" disabled={busy} onClick={evaluate}>
+                  Run evaluation
+                </Button>
+              )}
+              {period.status === 'closed' && !period.released_at && (
+                <Button disabled={busy} onClick={release}>
+                  Release results
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
+      )}
 
-      </div>
+      {period && (
+        <>
+          <section className="mb-10">
+            <h2 className="font-semibold text-strong mb-3">Staff results</h2>
+            <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-canvas text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                      <th className="px-4 py-3">Staff</th>
+                      <th className="px-4 py-3">Department</th>
+                      {CRITERIA.map((c) => (
+                        <th key={c.key} className="px-4 py-3 text-right whitespace-nowrap">
+                          {c.label}
+                        </th>
+                      ))}
+                      <th className="px-4 py-3 text-right">Overall</th>
+                      <th className="px-4 py-3 text-right">RTP</th>
+                      <th className="px-4 py-3">Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {entries.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-4 py-10 text-center text-muted">
+                          Nobody has submitted yet.
+                        </td>
+                      </tr>
+                    )}
+                    {entries.map((e) => (
+                      <tr key={e.id} className="hover:bg-canvas/60">
+                        <td className="px-4 py-3 font-medium text-strong whitespace-nowrap">
+                          <span className="flex items-center gap-2">
+                            {e.pesuser_name}
+                            {e.flagged && <Badge tone="danger">Flagged</Badge>}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted">{e.dept ?? '—'}</td>
+                        {CRITERIA.map((c) => {
+                          const row = e.criteria?.find((r) => r.criterion === c.key);
+                          return (
+                            <td key={c.key} className="px-4 py-3 text-right tabular-nums text-body">
+                              {fmt(row?.recorded_score ?? row?.staff_score)}
+                            </td>
+                          );
+                        })}
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold text-strong">
+                          {fmt(e.overall)}
+                          {e.partial && <span className="text-warning-700" title="Not all four criteria are settled"> *</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums text-body">
+                          {e.rtp === null || e.rtp === undefined
+                            ? '—'
+                            : `${Number(e.rtp) >= 0 ? '+' : ''}${Number(e.rtp).toFixed(1)}%`}
+                        </td>
+                        <td className="px-4 py-3">
+                          {e.grade ? <Badge tone={gradeTone(e.grade)}>{e.grade}</Badge> : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {entries.some((e) => e.partial) && (
+              <p className="text-xs text-muted mt-2">
+                * The overall covers only the criteria that have been settled. Criteria still awaiting
+                a response or an auditor&rsquo;s decision are left out rather than counted as zero.
+              </p>
+            )}
+          </section>
+
+          <section>
+            <h2 className="font-semibold text-strong mb-1">Heads of department</h2>
+            <p className="text-sm text-muted mb-3">
+              Scored by staff drawn at random from their own department, on management and
+              productivity (full document, pages 102&ndash;103).
+            </p>
+            <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-canvas text-left text-xs font-semibold text-muted uppercase tracking-wide">
+                      <th className="px-4 py-3">Head</th>
+                      <th className="px-4 py-3">Department</th>
+                      <th className="px-4 py-3 text-right">Management</th>
+                      <th className="px-4 py-3 text-right">Productivity</th>
+                      <th className="px-4 py-3 text-right">Overall</th>
+                      <th className="px-4 py-3 text-right">RTP</th>
+                      <th className="px-4 py-3">Grade</th>
+                      <th className="px-4 py-3 text-right">Returns</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {hods.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-10 text-center text-muted">
+                          No head results yet. Close the period to draw raters, then run the evaluation.
+                        </td>
+                      </tr>
+                    )}
+                    {hods.map((h) => (
+                      <tr key={h.hod_name} className="hover:bg-canvas/60">
+                        <td className="px-4 py-3 font-medium text-strong">{h.hod_name}</td>
+                        <td className="px-4 py-3 text-muted">{h.dept}</td>
+                        {h.belowMinimum ? (
+                          <td colSpan={5} className="px-4 py-3 text-warning-700">
+                            {h.note}
+                          </td>
+                        ) : (
+                          <>
+                            <td className="px-4 py-3 text-right tabular-nums text-body">{fmt(h.management)}</td>
+                            <td className="px-4 py-3 text-right tabular-nums text-body">{fmt(h.productivity)}</td>
+                            <td className="px-4 py-3 text-right tabular-nums font-semibold text-strong">
+                              {fmt(h.overall)}
+                            </td>
+                            <td className="px-4 py-3 text-right tabular-nums text-body">
+                              {h.rtp === null || h.rtp === undefined
+                                ? '—'
+                                : `${Number(h.rtp) >= 0 ? '+' : ''}${Number(h.rtp).toFixed(1)}%`}
+                            </td>
+                            <td className="px-4 py-3">
+                              {h.grade ? <Badge tone={gradeTone(h.grade)}>{h.grade}</Badge> : '—'}
+                            </td>
+                          </>
+                        )}
+                        <td className="px-4 py-3 text-right tabular-nums text-muted">{h.raters ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-medium text-muted mb-1">{label}</span>
+      {children}
+      {hint && <span className="block text-xs text-muted mt-1">{hint}</span>}
+    </label>
+  );
+}
+
+function gradeTone(grade: string) {
+  if (grade === 'Excellent') return 'success' as const;
+  if (grade === 'Very Good') return 'brand' as const;
+  if (grade === 'Good') return 'info' as const;
+  if (grade === 'Fair') return 'warning' as const;
+  return 'danger' as const;
+}
+
+function fmt(value: string | number | null | undefined) {
+  if (value === null || value === undefined) return '—';
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(1) : '—';
 }

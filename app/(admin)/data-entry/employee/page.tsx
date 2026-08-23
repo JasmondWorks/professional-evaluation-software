@@ -21,7 +21,12 @@ interface EmployeeScores {
   stress?: Record<string, number>;
 }
 
-type GroupKey = "appraisal" | "performance" ;
+// Performance counter-scores are no longer entered here. The performance model
+// requires a written reason with every objection, and this screen has nowhere to
+// put one — a head could silently overwrite a score. Heads use
+// /performance/review instead, which enforces the reason and runs the staff
+// member's accept/reject step.
+type GroupKey = "appraisal";
 
 export default function EmployeeScoresPage() {
   const [scores, setScores] = useState<EmployeeScores[]>([]);
@@ -94,7 +99,6 @@ export default function EmployeeScoresPage() {
 
     const apiEndpoints: Record<GroupKey, string> = {
       appraisal: `/api/saveAppraisal`,
-      performance: `/api/savePerformance`,
     };
 
     const endpoint = apiEndpoints[selectedGroup];
@@ -171,7 +175,16 @@ export default function EmployeeScoresPage() {
       {/* Step 1: Select Group */}
       {!selectedGroup && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(["appraisal", "performance"] as GroupKey[]).map((g) => (
+          <a
+            href="/performance/review"
+            className="p-6 bg-surface border border-line hover:border-pes-200 hover:shadow-md rounded-xl shadow-card text-lg font-semibold text-strong text-left transition-[box-shadow,border-color] focus-visible:shadow-focus"
+          >
+            Performance
+            <span className="block mt-1 text-sm font-normal text-muted">
+              Review and object to performance scores, with a reason
+            </span>
+          </a>
+          {(["appraisal"] as GroupKey[]).map((g) => (
             <button
               key={g}
               onClick={() => setSelectedGroup(g)}

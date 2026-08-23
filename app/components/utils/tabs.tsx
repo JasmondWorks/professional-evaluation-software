@@ -13,5 +13,11 @@ export const tabs = [
   // Appraisal data entry belongs to staff and departments, never to the
   // organization admin, whose part is in Models > Staff appraisal.
   { key: 31, name: "Appraisal forms", icon: <Home3 />, href: "/appraisal", role_access: ["lecturer", "industrial-engineer", "hod", "dept-admin", "unit-head", "employee-w", "auditor"] },
+  // The performance model's three role-specific screens. Data entry itself sits
+  // under Data Entry; these are the review, the random head-scoring task and the
+  // auditor's queue.
+  { key: 32, name: "Performance review", icon: <Teacher />, href: "/performance/review", role_access: ["hod", "unit-head"] },
+  { key: 33, name: "Score your head", icon: <Award />, href: "/performance/score-head", role_access: ["lecturer", "industrial-engineer", "dept-admin", "employee-w"] },
+  { key: 34, name: "Performance auditing", icon: <Award />, href: "/performance/auditor", role_access: ["auditor"] },
   { key: 9, name: "Maintenance Model", icon: <Setting3 />, href: "/maintenance", role_access: ["lecturer", "industrial-engineer", "hod", "unit-head", "employee-w", "super-admin", "admin"] },
 ];

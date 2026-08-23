@@ -13,8 +13,14 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if the route exists in your tabs list
-  const tab = tabs.find(t => pathname === t.href || pathname.startsWith(t.href + "/"));
+  // Check if the route exists in your tabs list.
+  //
+  // Longest href wins. A plain `find` returned whichever entry came first in the
+  // array, so /performance/auditor matched the /performance tab and the auditor
+  // — who is not on that tab's list — was redirected away from their own queue.
+  const tab = tabs
+    .filter(t => pathname === t.href || pathname.startsWith(t.href + "/"))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 
   // Gate on the EFFECTIVE role so custom roles (which appear in no allow-list)
   // aren't blanket-redirected to /unauthorized — they map to the baseline

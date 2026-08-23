@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { jwtDecode } from 'jwt-decode';
+import { hodCounterScores, staffPerformance } from '@/app/lib/performance/results';
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -27,13 +28,6 @@ export async function GET(req: Request) {
       community_quality_evaluation: true,
       pesuser_name: true,
     } as const;
-    const performanceSelect = {
-      competence: true,
-      integrity: true,
-      compatibility: true,
-      use_of_resources: true,
-      pesuser_name: true,
-    } as const;
 
     // appraisal values
     const appraisal = await prisma.appraisal.findMany({
@@ -47,17 +41,10 @@ export async function GET(req: Request) {
       select: appraisalSelect,
     });
 
-    // userperformance values
-    const userperformance = await prisma.userperformance.findMany({
-      where: { org },
-      select: performanceSelect,
-    });
-
-    // counter userperformance values
-    const counterUserperformance = await prisma.counter_userperformance.findMany({
-      where: { org },
-      select: performanceSelect,
-    });
+    // Performance now comes from the model rather than the old flat tables:
+    // the four criteria as settled, and the heads' objections beside them.
+    const userperformance = await staffPerformance({ org });
+    const counterUserperformance = await hodCounterScores({ org });
 
     // stress values
     const stress = await prisma.stress.findMany({
