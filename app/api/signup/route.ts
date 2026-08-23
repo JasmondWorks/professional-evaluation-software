@@ -208,7 +208,8 @@ export async function POST(req: Request) {
     // Seed the system preset roles for the new org so they exist as real roles.
     try {
       const { seedPresetRoles } = await import('../_lib/seedRoles');
-      await seedPresetRoles(org);
+      // Category-scoped: a company should never be seeded a "lecturer" role.
+      await seedPresetRoles(org, category);
     } catch (seedErr) {
       console.error('preset role seeding failed (non-fatal):', seedErr);
     }

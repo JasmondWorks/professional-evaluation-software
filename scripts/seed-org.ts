@@ -121,7 +121,7 @@ async function seed(spec: Spec) {
 
   // Same preset roles a real signup would create, so the org can add staff.
   const { seedPresetRoles } = await import('../app/api/_lib/seedRoles');
-  await seedPresetRoles(spec.org);
+  await seedPresetRoles(spec.org, spec.category);
 
   return { ...spec, password, expiresAt: addInterval(paidAt, plan.interval, plan.intervalCount) };
 }

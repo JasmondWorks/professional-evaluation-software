@@ -7,6 +7,7 @@ import {
   generateUniquePassword,
   orgAdminEmail,
   presetRolesForCategory,
+  roleAllowedForCategory,
   resolveRoleName,
   sendLoginEmail,
   type EmployeeInput,
@@ -139,14 +140,16 @@ export async function GET(req: Request) {
     prisma.roles.findMany({ where: { org }, select: { name: true } }),
   ]);
 
+  // The filter goes on the union, not just the preset half. seedPresetRoles()
+  // writes every preset into the roles table when an organization is created,
+  // so "lecturer" comes back out of that table and would otherwise be re-added
+  // to a company's list after being filtered out of the presets.
+  const offered = Array.from(
+    new Set([...presetRolesForCategory(productCategory), ...roles.map((r) => r.name)]),
+  ).filter((role) => roleAllowedForCategory(role, productCategory));
+
   return NextResponse.json({
     existing: staff.map((s) => s.email.toLowerCase()),
-    reference: {
-      // Only the presets this institution type may assign, so the preview
-      // offers exactly what the server will accept.
-      roles: Array.from(
-        new Set([...presetRolesForCategory(productCategory), ...roles.map((r) => r.name)]),
-      ),
-    },
+    reference: { roles: offered },
   });
 }
