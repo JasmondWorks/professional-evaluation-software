@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { hodCounterScores, staffPerformance } from "@/app/lib/performance/results";
 import { jwtDecode } from "jwt-decode";
 
 export async function POST(req: NextRequest) {
@@ -49,9 +50,11 @@ export async function POST(req: NextRequest) {
     ];
 
     // --- Performance (main + counter) ---
+    // From the performance model rather than the old flat tables. `where` is
+    // the org (and department, where the caller scoped it).
     const [mainPerformances, counterPerformances] = await Promise.all([
-      prisma.userperformance.findMany({ where, select: performanceSelect }),
-      prisma.counter_userperformance.findMany({ where, select: performanceSelect }),
+      staffPerformance({ org: where.org as string, dept: (where as any).dept ?? null }),
+      hodCounterScores({ org: where.org as string, dept: (where as any).dept ?? null }),
     ]);
     const performances = [
       ...withSource(mainPerformances, "main"),

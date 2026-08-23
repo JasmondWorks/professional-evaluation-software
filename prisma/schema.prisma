@@ -223,19 +223,6 @@ model counter_stress {
   stress_feeling_frequency_form Int?
 }
 
-model counter_userperformance {
-  id               Int       @id @default(autoincrement())
-  pesuser_name     String    @db.VarChar(255)
-  org              String?   @db.VarChar(255)
-  dept             String?   @db.VarChar(255)
-  competence       Decimal?  @db.Decimal(5, 2)
-  integrity        Decimal?  @db.Decimal(5, 2)
-  compatibility    Decimal?  @db.Decimal(5, 2)
-  use_of_resources Decimal?  @db.Decimal(5, 2)
-  created_at       DateTime? @default(now()) @db.Timestamp(6)
-  pending          Boolean?  @default(false)
-}
-
 model facilities {
   id                      Int       @id @default(autoincrement())
   identification_symbol   String?   @db.VarChar(100)
@@ -715,21 +702,6 @@ model unit_head_overloading {
   created_at        DateTime? @default(now()) @db.Timestamp(6)
 }
 
-model userperformance {
-  id               Int      @id @default(autoincrement())
-  pesuser_name     String   @db.VarChar(255)
-  org              String?  @db.VarChar(255)
-  competence       Decimal? @db.Decimal
-  integrity        Decimal? @db.Decimal
-  compatibility    Decimal? @db.Decimal
-  use_of_resources Decimal? @db.Decimal
-  dept             String?  @default("mechanical engineering") @db.VarChar(255)
-  pending          Boolean? @default(false)
-  resolve          Boolean? @default(false)
-
-  @@unique([pesuser_name, org, dept], map: "userperformance_unique")
-}
-
 model student_teacher_ratio {
   id               Int       @id @default(autoincrement())
   org              String?   @db.VarChar(255)
@@ -1041,4 +1013,170 @@ model appraisal_indicator {
   period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
   @@index([org, period_id, pesuser_name])
+}
+
+// ---------------------------------------------------------------------------
+// Performance model (client instruction, 22 Aug 2026)
+// ---------------------------------------------------------------------------
+//
+// Four criteria collected per staff member, each normalised to 100, plus the
+// overall as their mean — five results in all — then RTP-graded against a target
+// of 55. The head counter-scores with a written reason; the staff member accepts
+// or rejects; a rejection goes to the external auditor, whose figure is final.
+//
+// These tables replace the flat `userperformance` / `counter_userperformance`
+// pair, which held one overwritten row per staff member with no period, no
+// per-criterion result, no overall, no grade and nowhere to put the head's
+// reason or the auditor's ruling.
+
+model performance_period {
+  id            Int       @id @default(autoincrement())
+  org           String    @db.VarChar(255)
+  frequency     String    @db.VarChar(20)
+  starts_on     DateTime  @db.Date
+  ends_on       DateTime  @db.Date
+  // 'open' while entries are accepted, 'closed' once the org admin has run the
+  // final evaluation, then released separately.
+  status        String    @default("open") @db.VarChar(20)
+  opened_by     String?   @db.VarChar(255)
+  released_at   DateTime? @db.Timestamp(6)
+  released_by   String?   @db.VarChar(255)
+  // Per-period overrides of the defaults in the instrument, so an organization
+  // can adjust without a code change.
+  target        Decimal   @default(55.00) @db.Decimal(6, 2)
+  rater_sample  Int       @default(5)
+  rater_minimum Int       @default(3)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  entries     performance_entry[]
+  hod_results hod_performance_result[]
+  assignments hod_performance_rater[]
+
+  @@index([org, status])
+}
+
+// One staff member's performance within a period: the fifth result, its RTP and
+// grade, and the workflow state. `flagged` is visible only to the org admin.
+model performance_entry {
+  id           Int     @id @default(autoincrement())
+  org          String  @db.VarChar(255)
+  dept         String? @db.VarChar(255)
+  period_id    Int
+  pesuser_name String  @db.VarChar(255)
+
+  // The fifth result: the mean of the four criteria, on a 0-100 scale.
+  overall     Decimal? @db.Decimal(6, 2)
+  target      Decimal? @db.Decimal(6, 2)
+  rtp         Decimal? @db.Decimal(10, 3)
+  grade       String?  @db.VarChar(20)
+  // The document's own seven-class scheme (page 101), kept because the
+  // motivation model's winning criteria are written in that vocabulary.
+  class_rank  String?  @db.VarChar(20)
+  descriptive String?  @db.VarChar(30)
+  // True when fewer than four criteria were settled, so the overall covers only
+  // part of the assessment.
+  partial     Boolean  @default(false)
+
+  // 'draft' | 'submitted' | 'awaiting_staff' | 'referred_to_auditor' |
+  // 'evaluated'
+  status       String    @default("draft") @db.VarChar(30)
+  flagged      Boolean   @default(false)
+  submitted_at DateTime? @db.Timestamp(6)
+  evaluated_at DateTime? @db.Timestamp(6)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  period   performance_period            @relation(fields: [period_id], references: [id], onDelete: Cascade)
+  criteria performance_criterion_score[]
+
+  @@unique([period_id, pesuser_name], map: "performance_entry_unique")
+  @@index([org, status])
+  @@index([org, flagged])
+}
+
+// One criterion's result within an entry, holding the staff member's own figure,
+// the head's counter-score with its mandatory reason, and the auditor's ruling.
+model performance_criterion_score {
+  id        Int    @id @default(autoincrement())
+  entry_id  Int
+  // 'competence' | 'integrity' | 'compatibility' | 'use_of_resources'
+  criterion String @db.VarChar(40)
+
+  // Ratings as entered, one per work parameter, kept so a result can be audited
+  // back to source.
+  ratings     Json?
+  // The criterion normalised to 100.
+  staff_score Decimal? @db.Decimal(6, 2)
+
+  hod_score         Decimal? @db.Decimal(6, 2)
+  hod_justification String?
+  staff_accepted    Boolean?
+  // 'accepted' | 'accepted_by_staff' | 'referred_to_auditor' |
+  // 'awaiting_staff_response'
+  reconciliation    String?  @db.VarChar(40)
+  // The figure that counts towards the overall. Null while a disagreement is
+  // unresolved: held out of the results, not discarded.
+  recorded_score    Decimal? @db.Decimal(6, 2)
+  auditor_score     Decimal? @db.Decimal(6, 2)
+  auditor_note      String?
+
+  entry performance_entry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@unique([entry_id, criterion], map: "performance_criterion_unique")
+}
+
+// A staff member drawn at random to score their head. One row per (period, head,
+// rater). The draw happens once, when the org admin closes data collection.
+model hod_performance_rater {
+  id         Int    @id @default(autoincrement())
+  org        String @db.VarChar(255)
+  period_id  Int
+  dept       String @db.VarChar(255)
+  hod_name   String @db.VarChar(255)
+  // The selected staff member. Their identity is never shown to the head.
+  rater_name String @db.VarChar(255)
+
+  // Their two returns, each normalised to 100, plus the ratings behind them.
+  management_ratings   Json?
+  productivity_ratings Json?
+  management           Decimal?  @db.Decimal(6, 2)
+  productivity         Decimal?  @db.Decimal(6, 2)
+  submitted_at         DateTime? @db.Timestamp(6)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+
+  period performance_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
+
+  @@unique([period_id, hod_name, rater_name], map: "hod_performance_rater_unique")
+  @@index([org, period_id, hod_name])
+  @@index([rater_name])
+}
+
+// A head's own performance result for the period, aggregated from the returns of
+// the staff drawn to score them.
+model hod_performance_result {
+  id        Int    @id @default(autoincrement())
+  org       String @db.VarChar(255)
+  period_id Int
+  dept      String @db.VarChar(255)
+  hod_name  String @db.VarChar(255)
+
+  management    Decimal?  @db.Decimal(6, 2)
+  productivity  Decimal?  @db.Decimal(6, 2)
+  overall       Decimal?  @db.Decimal(6, 2)
+  target        Decimal?  @db.Decimal(6, 2)
+  rtp           Decimal?  @db.Decimal(10, 3)
+  grade         String?   @db.VarChar(20)
+  class_rank    String?   @db.VarChar(20)
+  descriptive   String?   @db.VarChar(30)
+  // How many of the selected staff returned a score, and whether that was too
+  // few for the result to stand.
+  raters        Int       @default(0)
+  below_minimum Boolean   @default(false)
+  evaluated_at  DateTime? @db.Timestamp(6)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  period performance_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
+
+  @@unique([period_id, hod_name], map: "hod_performance_result_unique")
+  @@index([org, period_id])
 }
