@@ -25,7 +25,6 @@ import {
 
 const goalTypes = [
   "appraisal",
-  "non-academic appraisal",
   "motivation",
   "performance",
   "stress",

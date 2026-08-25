@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Goalchunk from "@/app/components/goals/goalChunk";
-import Performance from "@/app/components/performance/performanceChunk";
+import PerformanceInsights from "@/app/components/performance/PerformanceInsights";
 import ProfileChunk from "@/app/components/Profilechunk";
 import Quickstats from "./Quickstats";
 import StressCycleBanner from "@/app/components/StressCycleBanner";
@@ -17,7 +17,6 @@ import Button from "@/app/components/ui/Button";
 import Card from "@/app/components/ui/Card";
 
 export default function Dashboard() {
-  const [performanceView, setPerformanceView] = useState("employee");
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [goals, setGoals] = useState<any[]>([]);
   const router = useRouter();
@@ -145,29 +144,7 @@ export default function Dashboard() {
               </div>
 
               <div className="p-5">
-                <div
-                  role="tablist"
-                  aria-label="Performance view"
-                  className="inline-flex items-center gap-1 rounded-lg bg-line/50 p-1 mb-4"
-                >
-                  {(["employee", "team"] as const).map((v) => (
-                    <button
-                      key={v}
-                      role="tab"
-                      aria-selected={performanceView === v}
-                      onClick={() => setPerformanceView(v)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-                        performanceView === v
-                          ? "bg-surface text-pes-700 shadow-xs"
-                          : "text-muted hover:text-strong"
-                      }`}
-                    >
-                      {v === "employee" ? "Employees" : "Teams"}
-                    </button>
-                  ))}
-                </div>
-
-                <Performance view={performanceView} />
+                <PerformanceInsights />
               </div>
             </Card>
           )}

@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
-import { jwtDecode } from 'jwt-decode';
-import { getAccessToken } from '@/app/utils/auth';
 import { notify } from '@/lib/toast';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 import {
   CATEGORY_KEYS,
   CategoryKey,
@@ -50,16 +49,7 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
 
   // A company or public-sector organization has no academic staff, so the
   // academic positions and their targets have no meaning there.
-  const [isAcademicOrg, setIsAcademicOrg] = useState(true);
-  useEffect(() => {
-    const t = getAccessToken();
-    if (!t) return;
-    try {
-      setIsAcademicOrg(((jwtDecode(t) as any)?.productCategory ?? 'academic') === 'academic');
-    } catch {
-      /* leave as academic */
-    }
-  }, []);
+  const isAcademicOrg = useIsAcademicOrg();
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +154,109 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
     );
   }
 
+  const academicPanel = (
+    <>
+        <p className="mb-3 text-sm text-body">
+          Forms 8 and 9 both count towards Teaching, so they share one target.
+          Administration is set by the post a person holds rather than by position, so
+          it is left blank here.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm tabular-nums">
+            <thead>
+              <tr className="border-b border-line bg-canvas">
+                <th className="px-3 py-2 text-left text-xs uppercase tracking-wide text-muted">
+                  Position
+                </th>
+                {ACADEMIC_CATEGORIES.map((c) => (
+                  <th
+                    key={c}
+                    className="px-3 py-2 text-left text-xs uppercase tracking-wide text-muted"
+                  >
+                    {CATEGORY_LABELS[c]}
+                  </th>
+                ))}
+                <th className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {POSITIONS.map((p) => {
+                const total = ACADEMIC_CATEGORIES.reduce(
+                  (sum, c) => sum + (academic.get(`${p.key}:${c}`) ?? 0),
+                  0,
+                );
+                return (
+                  <tr key={p.key}>
+                    <td className="px-3 py-2 font-medium text-strong">{p.label}</td>
+                    {ACADEMIC_CATEGORIES.map((c) => (
+                      <td key={c} className="px-3 py-2">
+                        {c === 'administration' ? (
+                          <span className="text-muted">by post</span>
+                        ) : (
+                          cell(`${p.key}:${c}`, academic.get(`${p.key}:${c}`), {
+                            model: 'academic',
+                            position: p.key,
+                            category: c,
+                          })
+                        )}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 text-right font-semibold text-strong">
+                      {total || <span className="font-normal text-muted">not set</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+    </>
+  );
+
+  const gradePanel = (
+    <>
+        <p className="mb-3 text-sm text-body">
+          One total target per grade, covering all three categories together.
+        </p>
+        <div className="space-y-5">
+          {NON_ACADEMIC_CADRES.map((band) => (
+            <div key={band.group}>
+              <div className="mb-2 flex flex-wrap items-baseline gap-2">
+                <h3 className="text-sm font-semibold text-strong">{band.group}</h3>
+                {band.roles ? (
+                  <span className="text-xs text-muted">{band.roles}</span>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {band.grades.map((g) => (
+                  <div
+                    key={g}
+                    className="flex items-center gap-2 rounded-lg border border-line px-3 py-2"
+                  >
+                    <span className="text-sm text-body">{GRADE_LABEL(g)}</span>
+                    {cell(g, nonAcademic.get(g), { model: 'non_academic', cadre: g })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {nonAcademic.size === 0 ? (
+          <Alert tone="warning" className="mt-4">
+            No {isAcademicOrg ? 'non-academic ' : ''}targets are set for this period
+            yet. Until a grade has a target, staff on that grade can be scored but
+            cannot receive an RTP or a grade.
+          </Alert>
+        ) : (
+          <p className="mt-4 text-sm text-muted">
+            <Badge tone="success">{nonAcademic.size} of 17</Badge> grades configured.
+          </p>
+        )}
+    </>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -180,115 +273,22 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
           </Alert>
         ) : null}
 
-        <Tabs defaultValue={isAcademicOrg ? 'academic' : 'non_academic'}>
-          <TabsList>
-            {isAcademicOrg ? <TabsTrigger value="academic">Academic</TabsTrigger> : null}
-            <TabsTrigger value="non_academic">
-              {isAcademicOrg ? 'Non-academic' : 'Staff grades'}
-            </TabsTrigger>
-          </TabsList>
+        {isAcademicOrg ? (
+          <Tabs defaultValue="academic">
+            <TabsList>
+              <TabsTrigger value="academic">Academic</TabsTrigger>
+              <TabsTrigger value="non_academic">Non-academic</TabsTrigger>
+            </TabsList>
 
-          {isAcademicOrg ? (
-          <TabsContent value="academic">
-            <p className="mb-3 text-sm text-body">
-              Forms 8 and 9 both count towards Teaching, so they share one target.
-              Administration is set by the post a person holds rather than by position, so
-              it is left blank here.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm tabular-nums">
-                <thead>
-                  <tr className="border-b border-line bg-canvas">
-                    <th className="px-3 py-2 text-left text-xs uppercase tracking-wide text-muted">
-                      Position
-                    </th>
-                    {ACADEMIC_CATEGORIES.map((c) => (
-                      <th
-                        key={c}
-                        className="px-3 py-2 text-left text-xs uppercase tracking-wide text-muted"
-                      >
-                        {CATEGORY_LABELS[c]}
-                      </th>
-                    ))}
-                    <th className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {POSITIONS.map((p) => {
-                    const total = ACADEMIC_CATEGORIES.reduce(
-                      (sum, c) => sum + (academic.get(`${p.key}:${c}`) ?? 0),
-                      0,
-                    );
-                    return (
-                      <tr key={p.key}>
-                        <td className="px-3 py-2 font-medium text-strong">{p.label}</td>
-                        {ACADEMIC_CATEGORIES.map((c) => (
-                          <td key={c} className="px-3 py-2">
-                            {c === 'administration' ? (
-                              <span className="text-muted">by post</span>
-                            ) : (
-                              cell(`${p.key}:${c}`, academic.get(`${p.key}:${c}`), {
-                                model: 'academic',
-                                position: p.key,
-                                category: c,
-                              })
-                            )}
-                          </td>
-                        ))}
-                        <td className="px-3 py-2 text-right font-semibold text-strong">
-                          {total || <span className="font-normal text-muted">not set</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-          ) : null}
-
-          <TabsContent value="non_academic">
-            <p className="mb-3 text-sm text-body">
-              One total target per grade, covering all three categories together.
-            </p>
-            <div className="space-y-5">
-              {NON_ACADEMIC_CADRES.map((band) => (
-                <div key={band.group}>
-                  <div className="mb-2 flex flex-wrap items-baseline gap-2">
-                    <h3 className="text-sm font-semibold text-strong">{band.group}</h3>
-                    {band.roles ? (
-                      <span className="text-xs text-muted">{band.roles}</span>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    {band.grades.map((g) => (
-                      <div
-                        key={g}
-                        className="flex items-center gap-2 rounded-lg border border-line px-3 py-2"
-                      >
-                        <span className="text-sm text-body">{GRADE_LABEL(g)}</span>
-                        {cell(g, nonAcademic.get(g), { model: 'non_academic', cadre: g })}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {nonAcademic.size === 0 ? (
-              <Alert tone="warning" className="mt-4">
-                No non-academic targets are set for this period yet. Until a grade has a
-                target, staff on that grade can be scored but cannot receive an RTP or a
-                grade.
-              </Alert>
-            ) : (
-              <p className="mt-4 text-sm text-muted">
-                <Badge tone="success">{nonAcademic.size} of 17</Badge> grades configured.
-              </p>
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="academic">{academicPanel}</TabsContent>
+            <TabsContent value="non_academic">{gradePanel}</TabsContent>
+          </Tabs>
+        ) : (
+          // No academic staff exist here, so there is nothing to switch between:
+          // the grade targets are the whole of it and tabs would be one control
+          // with one option.
+          gradePanel
+        )}
       </CardBody>
     </Card>
   );

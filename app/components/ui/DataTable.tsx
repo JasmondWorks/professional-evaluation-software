@@ -21,7 +21,7 @@ export function DataTable<T extends Record<string, any>>({
   searchable = false,
   searchKeys,
   searchPlaceholder = "Search…",
-  pageSize,
+  pageSize = 10,
   toolbar,
   className,
 }: {
@@ -34,7 +34,7 @@ export function DataTable<T extends Record<string, any>>({
   /** Keys to match against when searching. Defaults to all column keys. */
   searchKeys?: string[];
   searchPlaceholder?: string;
-  /** Enables client-side pagination at this page size. */
+  /** Rows per page. Pagination is always on — pass a different size, not none. */
   pageSize?: number;
   toolbar?: React.ReactNode;
   className?: string;
@@ -56,13 +56,9 @@ export function DataTable<T extends Record<string, any>>({
     );
   }, [data, query, searchable, keys]);
 
-  const pageCount = pageSize
-    ? Math.max(1, Math.ceil(filtered.length / pageSize))
-    : 1;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = Math.min(page, pageCount);
-  const paged = pageSize
-    ? filtered.slice((current - 1) * pageSize, current * pageSize)
-    : filtered;
+  const paged = filtered.slice((current - 1) * pageSize, current * pageSize);
 
   // Reset to page 1 whenever the query changes the result set size.
   React.useEffect(() => {
@@ -107,31 +103,29 @@ export function DataTable<T extends Record<string, any>>({
         onRowClick={onRowClick}
       />
 
-      {/* Shown whenever this table owns its paging, even on a single page: a
-          footer that appears and disappears as rows are filtered makes the
-          layout jump and leaves the reader unsure whether more rows exist. */}
-      {pageSize && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-muted">
-            Showing{" "}
-            <span className="font-medium text-body tabular-nums">
-              {filtered.length === 0
-                ? 0
-                : `${(current - 1) * pageSize + 1}–${Math.min(current * pageSize, filtered.length)}`}
-            </span>{" "}
-            of{" "}
-            <span className="font-medium text-body tabular-nums">
-              {filtered.length}
-            </span>{" "}
-            {filtered.length === 1 ? "item" : "items"}
-          </p>
-          <Pagination
-            page={current}
-            pageCount={pageCount}
-            onPageChange={setPage}
-          />
-        </div>
-      )}
+      {/* Always shown, even for a single page of rows. A footer that appears and
+          disappears as rows are filtered makes the layout jump, and leaves the
+          reader unsure whether there are more rows they cannot see. */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-muted">
+          Showing{" "}
+          <span className="font-medium text-body tabular-nums">
+            {filtered.length === 0
+              ? 0
+              : `${(current - 1) * pageSize + 1}–${Math.min(current * pageSize, filtered.length)}`}
+          </span>{" "}
+          of{" "}
+          <span className="font-medium text-body tabular-nums">
+            {filtered.length}
+          </span>{" "}
+          {filtered.length === 1 ? "item" : "items"}
+        </p>
+        <Pagination
+          page={current}
+          pageCount={pageCount}
+          onPageChange={setPage}
+        />
+      </div>
     </div>
   );
 }

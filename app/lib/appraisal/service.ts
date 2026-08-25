@@ -22,6 +22,7 @@
 //      sealed until the period closes.
 
 import prisma from '@/app/api/prisma.dev';
+import { IntegrityReport, IntegritySubject, runIntegrityTest } from '@/app/lib/integrity';
 import {
   ACADEMIC_TARGETS,
   ADMINISTRATIVE_POST_TARGETS,
@@ -1316,4 +1317,46 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
 function stageLabel(status: string) {
   return stageOf(status).label.toLowerCase();
+}
+
+/** The data integrity test for the appraisal model, across every department.
+ *
+ *  The subject of the test is what staff actually entered: the sum of a person's
+ *  recorded category scores. An entry still in draft has nothing to test, so it
+ *  is left out rather than counted as a zero — which would otherwise drag the
+ *  quartiles down and manufacture outliers at the top.
+ *
+ *  Only the organization admin may run it: it names individuals whose figures sit
+ *  outside their department's band, which is not something a colleague should see. */
+export async function runAppraisalIntegrity(viewer: Viewer, periodId: number): Promise<IntegrityReport> {
+  if (!ORG_ADMIN_ROLES.includes(viewer.role)) {
+    throw new AppraisalError('Only the organization administrator can run the data integrity test.', 403);
+  }
+
+  const period = await prisma.appraisal_period.findFirst({
+    where: { id: periodId, org: viewer.org },
+  });
+  if (!period) throw new AppraisalError('Appraisal period not found.', 404);
+
+  const entries = await prisma.appraisal_entry.findMany({
+    where: { org: viewer.org, period_id: periodId, status: { not: 'draft' } },
+    include: { categories: { select: { recorded_score: true, appraisal_score: true } } },
+  });
+
+  const subjects: IntegritySubject[] = [];
+  for (const e of entries) {
+    const scores = e.categories
+      .map((c) => c.recorded_score ?? c.appraisal_score)
+      .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
+      .map(Number)
+      .filter((n) => Number.isFinite(n));
+    if (scores.length === 0) continue;
+    subjects.push({
+      name: e.pesuser_name,
+      dept: e.dept,
+      score: scores.reduce((sum, n) => sum + n, 0),
+    });
+  }
+
+  return runIntegrityTest('appraisal', periodId, subjects);
 }

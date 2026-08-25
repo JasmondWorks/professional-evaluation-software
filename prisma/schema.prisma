@@ -1180,3 +1180,23 @@ model hod_performance_result {
   @@unique([period_id, hod_name], map: "hod_performance_result_unique")
   @@index([org, period_id])
 }
+
+// Which models a non-admin role may reach, per organization.
+//
+// The client's rule: only the organization admin runs the models, and the
+// industrial/production engineer may enter data into the ones the admin has
+// switched on for them. Absence of a row means "not enabled" — access is opt-in,
+// so a model added later is closed until somebody opens it.
+model model_access {
+  id         Int      @id @default(autoincrement())
+  org        String   @db.VarChar(255)
+  role       String   @db.VarChar(60)
+  // A key from MODEL_CATALOG in app/lib/models/catalog.ts.
+  model_key  String   @db.VarChar(60)
+  enabled    Boolean  @default(false)
+  updated_by String?  @db.VarChar(255)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([org, role, model_key], map: "model_access_unique")
+  @@index([org, role])
+}

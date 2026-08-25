@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft2 } from 'iconsax-react';
 import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -9,6 +9,7 @@ import Button from '@/app/components/ui/Button';
 import PageHeader from '@/app/components/ui/PageHeader';
 import Badge from '@/app/components/ui/Badge';
 import { CRITERIA, CriterionKey, PERFORMANCE_TARGET } from '@/app/lib/performance/instrument';
+import DataIntegrityPanel, { DataIntegrityHandle } from '@/app/components/DataIntegrityPanel';
 
 // The organization admin's performance console: open a period, close it (which
 // also draws the staff who will score each head), run the evaluation, and
@@ -67,6 +68,7 @@ export default function PerformanceConsole() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const integrity = useRef<DataIntegrityHandle>(null);
 
   const [form, setForm] = useState({
     frequency: 'annual',
@@ -193,6 +195,9 @@ export default function PerformanceConsole() {
       }
       notify.success(`Evaluated ${data.evaluated} staff and ${data.heads?.length ?? 0} head(s).`);
       await loadResults(period.id);
+      // The client asked for the integrity test to follow an evaluation without
+      // being asked for, so a bad submission surfaces before results go out.
+      integrity.current?.run();
     } catch {
       notify.error('Could not reach the server.');
     } finally {
@@ -336,6 +341,8 @@ export default function PerformanceConsole() {
 
       {period && (
         <>
+          <DataIntegrityPanel ref={integrity} model="performance" periodId={period.id} />
+
           <section className="mb-10">
             <h2 className="font-semibold text-strong mb-3">Staff results</h2>
             <div className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">

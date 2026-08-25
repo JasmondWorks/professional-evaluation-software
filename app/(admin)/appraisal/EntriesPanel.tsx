@@ -312,8 +312,8 @@ export default function EntriesPanel() {
           </Field>
           ) : (
             <p className="text-sm text-muted">
-              This organization is not an academic institution, so everyone is appraised
-              on the non-academic model of three forms.
+              Everyone here is appraised the same way, on three forms covering
+              activity, training quality and fault solving.
             </p>
           )}
 

@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "./components/useAuth";
 import { Toaster } from "sonner";
 import Logger from "./components/Logger";
@@ -15,6 +15,12 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-plus-jakarta-sans",
+});
+
 export const metadata: Metadata = {
   title: "PES",
   description: "Performance Appraisal Software",
@@ -26,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={plusJakartaSans.variable}>
       <body className="font-sans bg-canvas text-body flex flex-row relative justify-center max-w-[100vw] min-h-screen antialiased">
         {/* impeccable:direction-contract seed=canon:c2236011
             THESIS: A refined institutional dashboard for HR/performance evaluation,

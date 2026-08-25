@@ -17,6 +17,7 @@ import FormCard from './FormCard';
 import Questionnaire from './Questionnaire';
 import StageBanner from '../../StageBanner';
 import { DEPARTMENT_ADMIN_ROLES } from '@/app/lib/appraisal/instrument';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 
 type CategoryScore = {
   category: string;
@@ -55,6 +56,8 @@ export default function EntryPage() {
   const entryId = Number(params.id);
 
   const [entry, setEntry] = useState<Entry | null>(null);
+  // Naming the model only tells a reader something where both kinds exist.
+  const isAcademicOrg = useIsAcademicOrg();
   const [sealed, setSealed] = useState(false);
   // Academic Forms 8 and 9 are recorded by the departmental administrator. If the
   // department has none, say so up front rather than letting people find out when
@@ -224,7 +227,7 @@ export default function EntryPage() {
 
       <PageHeader
         title={entry.pesuser_name}
-        subtitle={`${entry.model === 'academic' ? 'Academic' : 'Non-academic'} appraisal${
+        subtitle={`${isAcademicOrg ? (entry.model === 'academic' ? 'Academic' : 'Non-academic') + ' appraisal' : 'Appraisal'}${
           entry.dept ? ` · ${entry.dept}` : ''
         } · ${entered} of ${forms.length} forms entered`}
         actions={

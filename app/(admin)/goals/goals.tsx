@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { newGoal, viewGoal } from "@/app/state/goals/goalSlice";
-import { CalendarClock, LayoutGrid, List, Target } from "lucide-react";
+import { CalendarClock, Target } from "lucide-react";
 import jwt from "jsonwebtoken";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
@@ -76,7 +76,6 @@ const EVAL_HINTS: Record<EvaluationType, string> = {
 };
 
 export default function Goals() {
-  const [grid, setGrid] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(true);
   const dispatch = useDispatch();
@@ -211,39 +210,7 @@ export default function Goals() {
       <PageHeader
         title="Goals"
         subtitle="Evaluation targets for this organization, and the deadline each one runs to."
-        actions={
-          <>
-            <div
-              role="group"
-              aria-label="Goal layout"
-              className="flex items-center rounded-lg border border-line bg-surface p-0.5"
-            >
-              {(
-                [
-                  { key: false, label: "List view", Icon: List },
-                  { key: true, label: "Grid view", Icon: LayoutGrid },
-                ] as const
-              ).map(({ key, label, Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => setGrid(key)}
-                  aria-label={label}
-                  aria-pressed={grid === key}
-                  className={`p-2 rounded-md transition-colors focus-visible:outline-none focus-visible:shadow-focus ${
-                    grid === key
-                      ? "bg-pes-50 text-pes-700"
-                      : "text-muted hover:text-strong hover:bg-line/50"
-                  }`}
-                >
-                  <Icon size={16} />
-                </button>
-              ))}
-            </div>
-
-            {isAdmin && <Button onClick={() => dispatch(newGoal())}>Set new goal</Button>}
-          </>
-        }
+        actions={isAdmin ? <Button onClick={() => dispatch(newGoal())}>Set new goal</Button> : undefined}
       />
 
       {overdueGoals.length > 0 && (
@@ -382,13 +349,7 @@ export default function Goals() {
           }
         />
       ) : (
-        <div
-          className={
-            grid
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-              : "flex flex-col gap-2"
-          }
-        >
+        <div className="flex flex-col gap-2">
           {goals.map((goal, key) => {
             const tone = dueTone(goal.due_date);
             const status = goal.status;
@@ -400,20 +361,10 @@ export default function Goals() {
                 as="button"
                 interactive
                 onClick={() => dispatch(viewGoal({ payload: goal, type: "view" }))}
-                className={`text-left w-full focus-visible:outline-none focus-visible:shadow-focus ${
-                  grid ? "p-5 flex flex-col gap-4" : "px-5 py-4"
-                }`}
+                className="text-left w-full px-5 py-4 focus-visible:outline-none focus-visible:shadow-focus"
               >
-                <div
-                  className={
-                    grid
-                      ? "flex flex-col gap-4"
-                      : "grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_auto_auto] items-center gap-x-6 gap-y-2"
-                  }
-                >
-                  <h3
-                    className={`font-semibold text-strong capitalize ${grid ? "text-lg" : "text-sm"}`}
-                  >
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_auto_auto] items-center gap-x-6 gap-y-2">
+                  <h3 className="text-sm font-semibold text-strong capitalize">
                     {goal.name}
                   </h3>
 

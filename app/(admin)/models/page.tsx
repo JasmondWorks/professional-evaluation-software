@@ -20,17 +20,25 @@ import {
   ArrowRight2,
 } from "iconsax-react";
 import Link from "next/link";
+import { useModelAccess } from "@/app/components/useModelAccess";
+import { MODEL_CATALOG } from "@/app/lib/models/catalog";
 
 interface UserToken {
   productCategory: string;
   productPlan: string;
+  maintenance_model?: boolean;
   [key: string]: any;
 }
 
 type ProductDetails = {
   productCategory: string;
   productPlan: string;
+  maintenance: boolean;
 };
+
+// The maintenance model ships with the company product. Every other sector buys
+// it separately from the pricing page, so it appears here only once they have.
+const MAINTENANCE_BY_DEFAULT = ["company"];
 
 const planConfigs: Record<string, Record<string, string[]>> = {
   public: {
@@ -47,7 +55,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
-      "Staff Appraisal",
+      "Appraisal",
     ],
     premium: [
       "Personnel Utilization",
@@ -55,18 +63,18 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
-      "Staff Appraisal",
+      "Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
     ],
   },
   company: {
-    basic: ["Staff Number", "Stress", "Staff Appraisal"],
+    basic: ["Staff Number", "Stress", "Appraisal"],
     standard: [
       "Staff Number",
       "Stress",
-      "Staff Appraisal",
+      "Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
@@ -74,7 +82,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     premium: [
       "Staff Number",
       "Stress",
-      "Staff Appraisal",
+      "Appraisal",
       "Organization Structure",
       "Performance",
       "Motivation",
@@ -87,28 +95,22 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     basic: [
       "Student Teacher",
       "Stress",
-      "Appraisal",
-      "Non-Academic Appraisal",
+      "Institution of Learning Appraisal",
       "Motivation",
-      "Maintenance model",
     ],
     standard: [
       "Student Teacher",
       "Stress",
-      "Appraisal",
-      "Non-Academic Appraisal",
+      "Institution of Learning Appraisal",
       "Motivation",
-      "Maintenance model",
       "Organization Structure",
       "Performance",
     ],
     premium: [
       "Student Teacher",
       "Stress",
-      "Appraisal",
-      "Non-Academic Appraisal",
+      "Institution of Learning Appraisal",
       "Motivation",
-      "Maintenance model",
       "Organization Structure",
       "Performance",
       "Personnel Utilization",
@@ -133,7 +135,7 @@ const modelDefinitions: Record<
   Appraisal: {
     path: "/models/appraisal",
     description:
-      "Score staff against the target for their position, then release grades.",
+      "Score staff against the target for their grade, then release grades.",
     icon: Award,
     color: "text-warning-600 bg-warning-50",
   },
@@ -149,16 +151,10 @@ const modelDefinitions: Record<
     icon: Activity,
     color: "text-danger-600 bg-danger-50",
   },
-  "Staff Appraisal": {
+  "Institution of Learning Appraisal": {
     path: "/models/appraisal",
     description:
-      "Score staff against the target for their grade, then release grades.",
-    icon: Award,
-    color: "text-warning-600 bg-warning-50",
-  },
-  "Non-Academic Appraisal": {
-    path: "/models/appraisal",
-    description: "Evaluate non-teaching staff performance and efficiency.",
+      "Appraise academic and non-academic staff against the target for their position or grade, then release grades.",
     icon: Personalcard,
     color: "text-orange-500 bg-orange-50",
   },
@@ -234,6 +230,9 @@ export default function ModelsPage() {
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
+  // What the server will actually allow. The plan says which models the
+  // organization bought; this says who in it may open one.
+  const access = useModelAccess();
 
   useEffect(() => {
     const access_token = getAccessToken();
@@ -248,6 +247,7 @@ export default function ModelsPage() {
       setProductDetails({
         productCategory: decoded_token?.productCategory,
         productPlan: decoded_token?.productPlan,
+        maintenance: !!decoded_token?.maintenance_model,
       });
     } catch (error) {
       router.push("/login");
@@ -262,13 +262,29 @@ export default function ModelsPage() {
     const categoryConfig = planConfigs[productDetails.productCategory];
     if (!categoryConfig) return [];
 
-    const planRoutes = categoryConfig[productDetails.productPlan];
-    return planRoutes || [];
+    const planRoutes = categoryConfig[productDetails.productPlan] ?? [];
+
+    const hasMaintenance =
+      MAINTENANCE_BY_DEFAULT.includes(productDetails.productCategory) ||
+      productDetails.maintenance;
+
+    return hasMaintenance ? [...planRoutes, "Maintenance model"] : planRoutes;
   };
 
-  const filteredRoutes = getRoutes();
+  // A card the server would refuse is worse than no card, so the plan's list is
+  // narrowed to what this person may reach. The admin may reach everything; the
+  // industrial/production engineer only what has been switched on for them.
+  const allowedPaths = new Set(
+    MODEL_CATALOG.filter((m) => access.models.includes(m.key)).map((m) => m.path),
+  );
+  const filteredRoutes = access.canRunModels
+    ? getRoutes()
+    : getRoutes().filter((route) => {
+        const def = modelDefinitions[route];
+        return def ? allowedPaths.has(def.path) : false;
+      });
 
-  if (isLoading) {
+  if (isLoading || access.loading) {
     return (
       <div className="w-full h-[60vh] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-pes border-t-transparent rounded-full animate-spin" />
@@ -298,8 +314,9 @@ export default function ModelsPage() {
             No Models Available
           </h3>
           <p className="text-muted">
-            Your current plan ({productDetails?.productPlan}) does not include
-            access to these mathematical models.
+            {access.canRunModels
+              ? `Your current plan (${productDetails?.productPlan}) does not include access to these mathematical models.`
+              : "Your organization administrator has not given your role access to any model yet."}
           </p>
         </div>
       ) : (

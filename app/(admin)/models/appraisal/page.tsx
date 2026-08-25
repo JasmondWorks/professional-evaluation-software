@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft2 } from 'iconsax-react';
 import { PageHeader } from '@/app/components/ui';
+import { appraisalTitle, useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 import AppraisalSetup from '@/app/(admin)/appraisal/AppraisalSetup';
 import ResultsPanel from '@/app/(admin)/appraisal/ResultsPanel';
 import SubmissionsPanel from '@/app/(admin)/appraisal/SubmissionsPanel';
@@ -21,6 +22,9 @@ type TabKey = (typeof TABS)[number]['key'];
 
 export default function AppraisalModelPage() {
   const [tab, setTab] = useState<TabKey>('setup');
+  // An institution of learning appraises academic and non-academic staff under
+  // one model. Everyone else has one kind of staff, so it is just the appraisal.
+  const isAcademicOrg = useIsAcademicOrg();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
@@ -32,7 +36,7 @@ export default function AppraisalModelPage() {
       </Link>
 
       <PageHeader
-        title="Staff appraisal"
+        title={appraisalTitle(isAcademicOrg)}
         subtitle="Open the period, set the targets, then run and release the evaluation. Departments enter the scores."
       />
 
@@ -60,8 +64,8 @@ export default function AppraisalModelPage() {
       </div>
 
       {tab === 'setup' ? <AppraisalSetup /> : null}
-      {tab === 'submissions' ? <SubmissionsPanel /> : null}
-      {tab === 'results' ? <ResultsPanel /> : null}
+      {tab === 'submissions' ? <SubmissionsPanel onGoToSetup={() => setTab('setup')} /> : null}
+      {tab === 'results' ? <ResultsPanel onGoToSetup={() => setTab('setup')} /> : null}
     </div>
   );
 }

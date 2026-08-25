@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Empty } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
@@ -18,7 +17,10 @@ type Dept = {
 /** Who has not yet submitted. The model requires the HOD to see this for their
  *  own department, and Estab./Personnel to see which departments are still
  *  outstanding before the final evaluation runs. */
-export default function SubmissionsPanel() {
+/** `onGoToSetup` moves to the Setup tab. These empty states used to link to
+ *  /appraisal — the staff and departmental forms area, which the organization
+ *  admin cannot open — so the button led to the unauthorized page. */
+export default function SubmissionsPanel({ onGoToSetup }: { onGoToSetup?: () => void } = {}) {
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [depts, setDepts] = useState<Dept[]>([]);
   // The client asked to see departments first and open one at a time, rather
@@ -93,22 +95,19 @@ export default function SubmissionsPanel() {
       ) : !periodId ? (
         <Empty
           title="No appraisal period is open"
-          description="Submissions belong to a period. Open one in Appraisal Setup to begin."
+          description="Submissions belong to a period. Open one in Setup to begin."
           action={
-            <Link href="/appraisal">
-              <Button variant="secondary">Go to Appraisal Setup</Button>
-            </Link>
+            onGoToSetup ? (
+              <Button variant="secondary" onClick={onGoToSetup}>
+                Go to Setup
+              </Button>
+            ) : undefined
           }
         />
       ) : depts.length === 0 ? (
         <Empty
           title="Nobody is being appraised yet"
-          description="Start an appraisal and its department will appear here."
-          action={
-            <Link href="/appraisal/entries">
-              <Button variant="secondary">Go to appraisals</Button>
-            </Link>
-          }
+          description="A department appears here as soon as its staff begin entering scores."
         />
       ) : (
         <>

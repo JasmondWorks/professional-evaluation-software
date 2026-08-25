@@ -63,7 +63,7 @@
 
   /* ----- Typography ---------------------------------------------------- */
   /* next/font exposes Inter as --font-inter (see app/layout.tsx). */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plusJakartaSans), ui-sans-serif, system-ui, sans-serif;
 
   /* ----- Depth: offset + soft blur (never a zero-offset halo) ---------- */
   --shadow-xs:   0 1px 2px 0 rgb(16 17 53 / 0.05);

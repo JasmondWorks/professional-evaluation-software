@@ -34,3 +34,5 @@ export { default as Badge } from "./Badge";
 export { default as Input, inputBase } from "./Input";
 export { default as PageHeader } from "./PageHeader";
 export { default as Skeleton } from "./Skeleton";
+export { default as Table } from "./Table";
+export * from "./DataTable";
