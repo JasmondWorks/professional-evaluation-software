@@ -14,6 +14,7 @@
 // where the band sits, so an entry accepts edits only while it is a draft.
 
 import prisma from '@/app/api/prisma.dev';
+import { IntegrityReport, IntegritySubject, runIntegrityTest } from '@/app/lib/integrity';
 import {
   CRITERION_KEYS,
   CriterionKey,
@@ -1028,3 +1029,44 @@ async function loadEntry(viewer: Viewer, entryId: number) {
 }
 
 export { CRITERION_KEYS, HOD_CRITERION_KEYS, PERFORMANCE_TARGET };
+
+/** The data integrity test for the performance model, across every department.
+ *
+ *  Same method as the appraisal one, over a different body of data: the sum of a
+ *  staff member's four criteria as they stand. A criterion still under
+ *  reconciliation has no recorded score yet, so the score as entered is used —
+ *  the test is about the inputs, not about the settled result.
+ *
+ *  Admin only: it names individuals against their department's band. */
+export async function runPerformanceIntegrity(viewer: Viewer, periodId: number): Promise<IntegrityReport> {
+  if (!ORG_ADMIN_ROLES.includes(viewer.role)) {
+    throw new PerformanceError('Only the organization administrator can run the data integrity test.', 403);
+  }
+
+  const period = await prisma.performance_period.findFirst({
+    where: { id: periodId, org: viewer.org },
+  });
+  if (!period) throw new PerformanceError('Performance period not found.', 404);
+
+  const entries = await prisma.performance_entry.findMany({
+    where: { org: viewer.org, period_id: periodId, status: { not: 'draft' } },
+    include: { criteria: { select: { recorded_score: true, staff_score: true } } },
+  });
+
+  const subjects: IntegritySubject[] = [];
+  for (const e of entries) {
+    const scores = e.criteria
+      .map((c) => c.recorded_score ?? c.staff_score)
+      .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined)
+      .map(Number)
+      .filter((n) => Number.isFinite(n));
+    if (scores.length === 0) continue;
+    subjects.push({
+      name: e.pesuser_name,
+      dept: e.dept,
+      score: scores.reduce((sum, n) => sum + n, 0),
+    });
+  }
+
+  return runIntegrityTest('performance', periodId, subjects);
+}

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
 import { getAccessToken } from "@/app/utils/auth";
-import Table, { TableColumn } from "@/app/components/ui/Table";
+import { TableColumn } from "@/app/components/ui/Table";
+import { DataTable } from "@/app/components/ui";
 import { apiFetch } from '@/app/utils/apiFetch';
 
 type HistoryRecord = {
@@ -102,7 +103,7 @@ export default function PersonnelUtilizationHistory() {
 
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-line p-6">
-          <Table 
+          <DataTable 
             columns={columns} 
             data={data} 
             loading={loading} 

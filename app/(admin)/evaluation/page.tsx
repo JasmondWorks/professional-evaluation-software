@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Upload, BarChart3, FileText } from "lucide-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Card, CardHeader, CardBody, Badge, DataTable } from "@/app/components/ui";
 
 /* ----------------- Types ----------------- */
 interface DataPoint {
@@ -126,54 +127,84 @@ const ResultsView: React.FC<{
   results: StatisticalResults;
   dept: string;
   type: string;
-}> = ({ results, dept, type }) => (
-  <div className="mb-8">
-    <h2 className="text-xl font-bold mb-2">
-      <BarChart3 className="inline mr-2" /> {type} Results for {dept}
-    </h2>
-    <p
-      className={`font-semibold mb-4 ${
-        results.passedCount >= 15 &&
-        results.iqrOutliers.length === 0 &&
-        results.zScoreOutliers.length === 0
-          ? "text-green-600"
-          : "text-danger-600"
-      }`}
-    >
-      {results.passedCount} users passed data integrity test
-    </p>
+}> = ({ results, dept, type }) => {
+  const isHealthy =
+    results.passedCount >= 15 &&
+    results.iqrOutliers.length === 0 &&
+    results.zScoreOutliers.length === 0;
 
-    {results.iqrOutliers.length > 0 && (
-      <div className="mb-4">
-        <h3 className="font-semibold text-danger-600">
-          IQR Outliers ({results.iqrOutliers.length})
-        </h3>
-        <ul className="list-disc pl-6">
-          {results.iqrOutliers.map((o, i) => (
-            <li key={i}>
-              {o.user} – {o.value}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
+  const outlierColumns = [
+    { key: "user", label: "User", width: "50%" },
+    { key: "value", label: "Value", width: "25%" },
+    { 
+      key: "zScore", 
+      label: "Z-Score", 
+      width: "25%", 
+      render: (o: Outlier) => o.zScore != null ? o.zScore.toFixed(2) : "-" 
+    },
+  ];
 
-    {results.zScoreOutliers.length > 0 && (
-      <div className="mb-4">
-        <h3 className="font-semibold text-danger-600">
-          Z-Score Outliers ({results.zScoreOutliers.length})
-        </h3>
-        <ul className="list-disc pl-6">
-          {results.zScoreOutliers.map((o, i) => (
-            <li key={i}>
-              {o.user} – {o.value} (z={o.zScore?.toFixed(2)})
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-  </div>
-);
+  return (
+    <Card className="mb-8 overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between bg-surface border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-pes-50 text-pes-600 rounded-lg">
+            <BarChart3 size={20} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-strong">
+              {type} Results for {dept}
+            </h2>
+            <p className="text-sm text-muted">
+              Statistical analysis of evaluation data
+            </p>
+          </div>
+        </div>
+        <Badge tone={isHealthy ? "success" : "warning"} dot>
+          {results.passedCount} users passed
+        </Badge>
+      </CardHeader>
+
+      <CardBody className="space-y-6 bg-canvas p-6">
+        {results.iqrOutliers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-strong flex items-center gap-2">
+                <FileText size={16} className="text-muted" /> IQR Outliers
+              </h3>
+              <Badge tone="danger">{results.iqrOutliers.length} detected</Badge>
+            </div>
+            <DataTable
+              columns={outlierColumns}
+              data={results.iqrOutliers}
+            />
+          </div>
+        )}
+
+        {results.zScoreOutliers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-strong flex items-center gap-2">
+                <FileText size={16} className="text-muted" /> Z-Score Outliers
+              </h3>
+              <Badge tone="danger">{results.zScoreOutliers.length} detected</Badge>
+            </div>
+            <DataTable
+              columns={outlierColumns}
+              data={results.zScoreOutliers}
+            />
+          </div>
+        )}
+        
+        {results.iqrOutliers.length === 0 && results.zScoreOutliers.length === 0 && (
+          <div className="py-8 text-center bg-surface border border-line rounded-xl border-dashed">
+            <p className="text-muted font-medium">No outliers detected in the data.</p>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
 
 /* ----------------- Main Component ----------------- */
 export default function StatisticalAnalysisPage() {

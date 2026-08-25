@@ -45,5 +45,7 @@ export const config = {
     "/profile/:path*",
     "/pricing/:path*",
     "/maintenance/:path*",
+    "/models/:path*",
+    "/model-access/:path*",
   ],
 };

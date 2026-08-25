@@ -19,5 +19,11 @@ export const tabs = [
   { key: 32, name: "Performance review", icon: <Teacher />, href: "/performance/review", role_access: ["hod", "unit-head"] },
   { key: 33, name: "Score your head", icon: <Award />, href: "/performance/score-head", role_access: ["lecturer", "industrial-engineer", "dept-admin", "employee-w"] },
   { key: 34, name: "Performance auditing", icon: <Award />, href: "/performance/auditor", role_access: ["auditor"] },
+  // The models are the organization admin's to run. The industrial/production
+  // engineer reaches them only for data entry, and only where the admin has
+  // switched a model on — which is a database setting, so the per-model half of
+  // the check happens in the model routes rather than here.
+  { key: 10, name: "Models", icon: <Setting3 />, href: "/models", role_access: ["super-admin", "admin", "industrial-engineer"] },
+  { key: 12, name: "Model Access", icon: <Setting3 />, href: "/model-access", role_access: ["super-admin", "admin"] },
   { key: 9, name: "Maintenance Model", icon: <Setting3 />, href: "/maintenance", role_access: ["lecturer", "industrial-engineer", "hod", "unit-head", "employee-w", "super-admin", "admin"] },
 ];

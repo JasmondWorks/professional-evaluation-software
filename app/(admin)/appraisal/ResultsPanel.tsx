@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Alert, Badge, Button, Card, CardBody, CardHeader, Empty,
 } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
+import DataIntegrityPanel, { DataIntegrityHandle } from '@/app/components/DataIntegrityPanel';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 
 type Period = {
   id: number;
@@ -37,12 +39,20 @@ const GRADE_TONE: Record<string, 'success' | 'brand' | 'neutral' | 'warning' | '
   Poor: 'danger',
 };
 
-export default function ResultsPanel() {
+/** `onGoToSetup` moves to the Setup tab of the same page. The empty states used
+ *  to link to /appraisal, which is the staff and departmental forms area — the
+ *  organization admin has no access to it, so the button sent them straight to
+ *  the unauthorized page. */
+export default function ResultsPanel({ onGoToSetup }: { onGoToSetup?: () => void } = {}) {
   const [period, setPeriod] = useState<Period | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const integrity = useRef<DataIntegrityHandle>(null);
+  // Which appraisal a person sat only distinguishes anything where both kinds of
+  // staff exist. Elsewhere the column would read "Non-academic" on every row.
+  const isAcademicOrg = useIsAcademicOrg();
 
   async function load() {
     try {
@@ -87,6 +97,9 @@ export default function ResultsPanel() {
           : `Evaluated ${targets.length} appraisals.`,
       );
       load();
+      // The client asked for the integrity test to follow an evaluation without
+      // being asked for, so a bad submission surfaces before results go out.
+      integrity.current?.run();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -146,11 +159,13 @@ export default function ResultsPanel() {
       {!period ? (
         <Empty
           title="No appraisal period"
-          description="Results belong to a period. Open one in Appraisal Setup to begin."
+          description="Results belong to a period. Open one in Setup to begin."
           action={
-            <Link href="/appraisal">
-              <Button variant="secondary">Go to Appraisal Setup</Button>
-            </Link>
+            onGoToSetup ? (
+              <Button variant="secondary" onClick={onGoToSetup}>
+                Go to Setup
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -212,6 +227,8 @@ export default function ResultsPanel() {
             </CardBody>
           </Card>
 
+          <DataIntegrityPanel ref={integrity} model="appraisal" periodId={period.id} />
+
           {departments.length > 0 ? (
             <Card className="mb-6">
               <CardHeader>
@@ -270,12 +287,7 @@ export default function ResultsPanel() {
           {entries.length === 0 ? (
             <Empty
               title="Nothing to evaluate"
-              description="Start an appraisal for a member of staff and it will appear here."
-              action={
-                <Link href="/appraisal/entries">
-                  <Button variant="secondary">Go to appraisals</Button>
-                </Link>
-              }
+              description="Appraisals appear here once departments start entering scores. Check who is outstanding under Submissions."
             />
           ) : (
             <Card>
@@ -284,7 +296,14 @@ export default function ResultsPanel() {
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-line bg-canvas">
-                        {['Staff member', 'Model', 'Department', 'RTP', 'Grade', ''].map((h) => (
+                        {[
+                          'Staff member',
+                          ...(isAcademicOrg ? ['Model'] : []),
+                          'Department',
+                          'RTP',
+                          'Grade',
+                          '',
+                        ].map((h) => (
                           <th key={h} className="px-4 py-2.5 text-left text-xs uppercase tracking-wide text-muted">
                             {h}
                           </th>
@@ -302,9 +321,11 @@ export default function ResultsPanel() {
                               </Badge>
                             ) : null}
                           </td>
-                          <td className="px-4 py-3 text-body">
-                            {e.model === 'academic' ? 'Academic' : 'Non-academic'}
-                          </td>
+                          {isAcademicOrg ? (
+                            <td className="px-4 py-3 text-body">
+                              {e.model === 'academic' ? 'Academic' : 'Non-academic'}
+                            </td>
+                          ) : null}
                           <td className="px-4 py-3 text-muted">{e.dept ?? '—'}</td>
                           <td className="px-4 py-3 tabular-nums text-body">
                             {e.rtp === null ? (

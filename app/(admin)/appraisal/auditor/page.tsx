@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Card, CardBody, CardHeader, Empty, PageHeader, Textarea } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 
 type Referred = {
   id: number;
@@ -23,6 +24,7 @@ type Referred = {
 /** The appraisal auditor's queue. The client confirmed the auditor sees both
  *  scores and the reason for referral, and never the tolerance band. */
 export default function AuditorPage() {
+  const isAcademicOrg = useIsAcademicOrg();
   const [queue, setQueue] = useState<Referred[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,11 @@ export default function AuditorPage() {
               <CardHeader>
                 <h2 className="text-base font-semibold text-strong">{entry.pesuser_name}</h2>
                 <p className="mt-0.5 text-sm text-muted">
-                  {entry.model === 'academic' ? 'Academic' : 'Non-academic'}
+                  {isAcademicOrg
+                    ? entry.model === 'academic'
+                      ? 'Academic'
+                      : 'Non-academic'
+                    : 'Appraisal'}
                   {entry.dept ? ` · ${entry.dept}` : ''}
                 </p>
               </CardHeader>

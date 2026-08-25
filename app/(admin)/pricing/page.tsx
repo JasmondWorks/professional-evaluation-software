@@ -11,10 +11,14 @@ import { jwtDecode } from "jwt-decode";
 import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
 
+// Sectors whose product already includes the maintenance model.
+const MAINTENANCE_BY_DEFAULT = ["company"];
+
 export default function Home() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [maintenance, setMaintenance] = useState(false);
+  const [category, setCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -24,6 +28,7 @@ export default function Home() {
       const decoded: any = jwtDecode(token);
       setEmail(decoded?.email);
       setMaintenance(decoded?.maintenance_model);
+      setCategory(decoded?.productCategory ?? decoded?.category ?? null);
     } catch (err) {
       console.error("Invalid token:", err);
     }
@@ -195,8 +200,12 @@ export default function Home() {
           {renderPlan("premium", "bg-my")}
         </div>
 
-        {/* Other Packages */}
-        {!maintenance ? (
+        {/* Other Packages.
+            The maintenance model comes with the company product, so those
+            organizations have it already and are not asked to request it. Every
+            other sector — an institution of learning, a public or civil body —
+            asks for it here. */}
+        {!maintenance && !MAINTENANCE_BY_DEFAULT.includes((category ?? "").toLowerCase()) ? (
           <div className="flex flex-col px-12 p-12 ms-6 mb-6 me-6 bg-white">
             <h1 className="text-xl my-3 font-bold">Other Available Packages</h1>
             <div className="border border-line rounded-lg px-6 pb-6 flex flex-col">
@@ -212,7 +221,8 @@ export default function Home() {
               <p className="text-sm">
                 This maintenance model helps by providing predictive maintenance
                 intervals for your equipment(s) to optimize efficiency and
-                reduce wastage.
+                reduce wastage. It is included with the company product; request
+                it here to add it to your plan.
               </p>
             </div>
           </div>

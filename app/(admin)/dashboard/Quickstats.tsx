@@ -71,7 +71,7 @@ export default function Quickstats({
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map(({ label, value, href, icon: Icon, accent, ready, note }) => {
         const showValue = ready || !isLoadingStats;
         return (

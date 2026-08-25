@@ -232,3 +232,79 @@ export async function flaggedPerformance(org: string) {
 function round2(x: number): number {
   return Math.round(x * 100) / 100;
 }
+
+export type PerformanceOverview = {
+  period: {
+    id: number;
+    frequency: string;
+    starts_on: string;
+    ends_on: string;
+    status: string;
+    released: boolean;
+  } | null;
+  target: number;
+  /** Everyone with an entry in the reporting period. */
+  expected: number;
+  /** Those with at least one settled criterion, i.e. an overall to report. */
+  evaluated: number;
+  meanOverall: number | null;
+  atOrAboveTarget: number;
+  belowTarget: number;
+  /** The mean of each criterion across everyone who has one, 0-100. */
+  criteria: Record<CriterionKey, number | null>;
+  topDepartment: { dept: string; mean: number } | null;
+};
+
+/** The organization-wide performance picture, for the dashboard.
+ *
+ *  The dashboard used to read `userperformance` through /api/getUserData and split
+ *  the result into "employees" and "teams" tabs. Those two views belong to the
+ *  maintenance model, not this one — performance is measured per staff member
+ *  against a target — so this returns one untabbed set of figures. */
+export async function performanceOverview(org: string): Promise<PerformanceOverview> {
+  const period = await reportingPeriod(org);
+  const rows = await staffPerformance({ org });
+  const target = Number(period?.target ?? PERFORMANCE_TARGET);
+
+  const scored = rows.filter((r) => r.overall !== null);
+  const mean = (values: number[]) =>
+    values.length === 0 ? null : round2(values.reduce((s, v) => s + v, 0) / values.length);
+
+  const criteria = {} as Record<CriterionKey, number | null>;
+  for (const key of CRITERION_KEYS) {
+    criteria[key] = mean(
+      rows.map((r) => r[key]).filter((v): v is number => typeof v === 'number'),
+    );
+  }
+
+  // Best department by mean overall, so the admin has somewhere to look first.
+  const byDept = new Map<string, number[]>();
+  for (const r of scored) {
+    const dept = r.dept?.trim() || 'Unassigned';
+    byDept.set(dept, [...(byDept.get(dept) ?? []), r.overall as number]);
+  }
+  const deptMeans = [...byDept.entries()]
+    .map(([dept, values]) => ({ dept, mean: mean(values) as number }))
+    .sort((a, b) => b.mean - a.mean);
+
+  return {
+    period: period
+      ? {
+          id: period.id,
+          frequency: period.frequency,
+          starts_on: period.starts_on.toISOString().slice(0, 10),
+          ends_on: period.ends_on.toISOString().slice(0, 10),
+          status: period.status,
+          released: !!period.released_at,
+        }
+      : null,
+    target,
+    expected: rows.length,
+    evaluated: scored.length,
+    meanOverall: mean(scored.map((r) => r.overall as number)),
+    atOrAboveTarget: scored.filter((r) => (r.overall as number) >= target).length,
+    belowTarget: scored.filter((r) => (r.overall as number) < target).length,
+    criteria,
+    topDepartment: deptMeans[0] ?? null,
+  };
+}

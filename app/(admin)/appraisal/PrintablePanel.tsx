@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui';
+import { Button, Empty, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui';
 import { ACADEMIC_FORMS } from '@/app/lib/appraisal/instrument';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 
 /** Blank forms for hand completion.
  *
@@ -14,6 +15,18 @@ const PRINTABLE_FORM_NUMBERS = [8, 9];
 
 export default function PrintablePanel() {
   const forms = ACADEMIC_FORMS.filter((f) => PRINTABLE_FORM_NUMBERS.includes(f.form));
+  const isAcademicOrg = useIsAcademicOrg();
+
+  // Forms 8 and 9 are the academic teaching and research forms. An organization
+  // with no academic staff has nothing collected on paper at all.
+  if (!isAcademicOrg) {
+    return (
+      <Empty
+        title="Nothing to print"
+        description="Every appraisal form for this organization is completed online by the member of staff, so there are no blanks to hand out."
+      />
+    );
+  }
 
   return (
     <>

@@ -5,7 +5,8 @@ import { Add, SearchNormal1, CloseCircle, Edit2, Trash } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import { jwtDecode } from "jwt-decode";
-import Table, { TableColumn } from "@/app/components/ui/Table";
+import { TableColumn } from "@/app/components/ui/Table";
+import { DataTable } from "@/app/components/ui";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import {
   PRESET_ROLES,
@@ -343,7 +344,7 @@ export default function Roles() {
         </div>
 
         <div className="flex flex-col justify-between">
-          <Table
+          <DataTable
             columns={columns}
             data={orderedRoles}
             loading={loading}
