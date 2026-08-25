@@ -15,6 +15,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
+    // Org Structure is downstream of Personnel Utilisation: the structure is
+    // derived from the optimal span of control K*, so there is nothing to
+    // compute until that model has been run at least once for this org.
+    // Client-side gating alone is bypassable by posting here directly.
+    const utilisation = await prisma.personnel_utilization.findFirst({
+      where: { org },
+      select: { id: true },
+    });
+    if (!utilisation) {
+      return NextResponse.json(
+        {
+          error:
+            "Run the Personnel Utilisation model first — the organisation structure is derived from its optimal span of control (K*).",
+          code: "PERSONNEL_UTILIZATION_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const {
       section,

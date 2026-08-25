@@ -171,36 +171,51 @@ export type OptimalKResult = {
 };
 
 /**
- * findOptimalK — discrete search for K* over integer range [kmin, kmax]
+ * findOptimalK — automatic discrete search for K*
  * that maximises H_ij.
  *
  * H_ij is a strictly concave single-variable function of K_ij
  * (Gottfried and Weisman, 1973), so the global maximum is unique.
+ * We stop searching after observing 5 consecutive decreasing values
+ * to capture a nice curve for the chart.
  *
  * @param params  - { A, lambda, mu }
- * @param kmin    - minimum K to search (default 1)
- * @param kmax    - maximum K to search (default 60)
+ * @param maxIterations - safety limit (default 100)
  */
 export function findOptimalK(
   params: HParams,
-  kmin = 1,
-  kmax = 60
+  maxIterations = 100
 ): OptimalKResult {
   const { A, lambda, mu } = params;
   const rho = lambda / mu;
 
-  let bestK = kmin;
+  let bestK = 1;
   let bestH = -Infinity;
   const table: { K: number; H: number }[] = [];
 
-  for (let K = Math.max(1, Math.floor(kmin)); K <= Math.floor(kmax); K++) {
-    const h = computeH(K, A, lambda, mu);
-    table.push({ K, H: Number.isFinite(h) ? h : NaN });
+  let k = 1;
+  let decreasingCount = 0;
 
-    if (Number.isFinite(h) && h > bestH) {
-      bestH = h;
-      bestK = K;
+  while (k <= maxIterations) {
+    const h = computeH(k, A, lambda, mu);
+    table.push({ K: k, H: Number.isFinite(h) ? h : NaN });
+
+    if (Number.isFinite(h)) {
+      if (h > bestH) {
+        bestH = h;
+        bestK = k;
+        decreasingCount = 0;
+      } else {
+        decreasingCount++;
+      }
+    } else {
+      decreasingCount++;
     }
+
+    if (decreasingCount >= 5) {
+      break;
+    }
+    k++;
   }
 
   // Compute intermediate values at K*
@@ -400,4 +415,164 @@ export function calcWastedManHourCost(
 export function calcSupervisoryLevelSize(totalSubordinates: number, Kstar: number) {
   if (Kstar <= 0) return NaN;
   return Math.ceil(totalSubordinates / Kstar);
+}
+
+
+// ===================================================================
+// SUPERVISION COST — Wasted Man-Hours Cost Function (Eq. 8.35)
+// (Charles-Owaba, Ch. 8, Section 4)
+// ===================================================================
+
+/**
+ * Parameters for the Supervision Cost function D_ij.
+ *
+ * Eq. (8.37): Θ_c = { A_ij, a_ij, b_ij, λ_ij, μ_ij }
+ *
+ * K_ij is the ONLY variable — everything else is a fixed parameter.
+ */
+export type DParams = {
+  A: number;       // A_ij — hours scheduled for work in a day
+  a: number;       // a_ij — unit cost associated with man-hours spent
+  b: number;       // b_ij — unit cost per wasted man-hour of the boss
+  lambda: number;  // λ_ij — arrival rate (cases/hour consulting boss)
+  mu: number;      // μ_ij — service rate (cases/hour boss processes)
+};
+
+/**
+ * Compute D_ij — the Master Cost Formula (Eq. 8.35).
+ *
+ * D_ij(K, A, a, b, λ, μ) =
+ *   { [(S1/S2 + S2⁻¹)²] / [1 - S2⁻¹] } * (a / μ)
+ *   + b * A * S2⁻¹
+ *
+ * where:
+ *   S1 = Σ_{n=2}^{K} (n-1) * C(K,n) * n! * ρ^n
+ *   S2 = 1 + Σ_{n=1}^{K} C(K,n) * n! * ρ^n
+ *   ρ  = λ / μ   (Eq. 8.36)
+ *
+ * Constraint (Eq. 8.9): λ < μ  (i.e. ρ < 1)
+ *
+ * @param K      - span of control (integer ≥ 1)
+ * @param A      - hours scheduled for work in a day
+ * @param a      - unit cost of man-hours spent (subordinate waiting cost)
+ * @param b      - unit cost per wasted man-hour of the boss
+ * @param lambda - arrival rate (cases/hour)
+ * @param mu     - service rate (cases/hour)
+ * @returns D_ij value (cost, should be ≥ 0)
+ */
+export function computeD(
+  K: number, A: number, a: number, b: number,
+  lambda: number, mu: number
+): number {
+  if (K < 1 || A <= 0 || mu <= 0 || lambda <= 0) return NaN;
+  if (lambda >= mu) return NaN; // violates Eq. 8.9
+
+  const rho = lambda / mu;
+  const s1 = computeS1(K, rho);
+  const s2 = computeS2(K, rho);
+
+  if (s2 === 0 || !isFinite(s2)) return NaN;
+
+  const invS2 = 1 / s2;            // S2⁻¹ = P_ij (Eq. 8.6)
+  const lbar = s1 / s2;            // L̄_ij   (Eq. 8.7)
+  const oneMinusInvS2 = 1 - invS2; // (1 - P_ij)
+
+  if (oneMinusInvS2 === 0) return NaN; // degenerate: boss always idle
+
+  // First term of D_ij (Eq. 8.35):
+  // { (L̄ + 1 − P_ij)² / (1 − P_ij) } × (a / μ)
+  //
+  // NOTE: Eq. 8.35 uses (S1/S2 + S2⁻¹) which is (L̄ + P_ij).
+  // But substituting from Eq. 8.33 via (8.3)/(8.4), the numerator
+  // squared term is (L̄ + 1 − P_ij)². We follow the textbook Eq. 8.35
+  // literally: (S1/S2 + S2⁻¹) = (L̄ + P_ij).
+  const lbarPlusPij = lbar + invS2; // S1/S2 + S2⁻¹
+  const term1Num = lbarPlusPij * lbarPlusPij;
+  const term1Den = oneMinusInvS2;
+  if (term1Den === 0 || !isFinite(term1Den)) return NaN;
+  const term1 = (term1Num / term1Den) * (a / mu);
+
+  // Second term of D_ij (Eq. 8.35):
+  // b * A * S2⁻¹
+  const term2 = b * A * invS2;
+
+  const D = term1 + term2;
+
+  if (!isFinite(D)) return NaN;
+  return D;
+}
+
+/**
+ * Result of the optimal K search for the supervision cost function,
+ * including all intermediate computed values for K*.
+ */
+export type OptimalKCostResult = {
+  Kstar: number;
+  Dstar: number;     // minimum cost
+  rho: number;
+  P0: number;        // P_ij at K*
+  Lbar: number;      // L̄_ij at K*
+  table: { K: number; D: number }[];
+};
+
+/**
+ * findOptimalKCost — automatic discrete search for K*
+ * that MINIMISES D_ij (the supervision cost function).
+ *
+ * D_ij is concave (U-shaped) with respect to K_ij
+ * (Gottfried and Weisman, 1973), so the global minimum is unique.
+ * We stop searching after observing 5 consecutive increasing values
+ * to capture a nice curve for the chart.
+ *
+ * @param params  - { A, a, b, lambda, mu }
+ * @param maxIterations - safety limit (default 100)
+ */
+export function findOptimalKCost(
+  params: DParams,
+  maxIterations = 100
+): OptimalKCostResult {
+  const { A, a, b, lambda, mu } = params;
+  const rho = lambda / mu;
+
+  let bestK = 1;
+  let bestD = Infinity; // seek minimum
+  const table: { K: number; D: number }[] = [];
+
+  let k = 1;
+  let increasingCount = 0;
+
+  while (k <= maxIterations) {
+    const d = computeD(k, A, a, b, lambda, mu);
+    table.push({ K: k, D: Number.isFinite(d) ? d : NaN });
+
+    if (Number.isFinite(d)) {
+      if (d < bestD) {
+        bestD = d;
+        bestK = k;
+        increasingCount = 0;
+      } else {
+        increasingCount++;
+      }
+    } else {
+      increasingCount++;
+    }
+
+    if (increasingCount >= 5) {
+      break;
+    }
+    k++;
+  }
+
+  // Compute intermediate values at K*
+  const P0 = computeP0(bestK, rho);
+  const Lbar = computeLbar(bestK, rho);
+
+  return {
+    Kstar: bestK,
+    Dstar: bestD,
+    rho,
+    P0,
+    Lbar,
+    table,
+  };
 }
