@@ -5,9 +5,10 @@ import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
-import { ArrowLeft2 } from "iconsax-react";
+
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 type JWTPayload = {
   org?: string;
@@ -112,12 +113,7 @@ export default function UnitHeadOverloadingPage() {
   return (
     <div className="p-8 w-full mx-auto">
       <div className="mb-4 flex gap-4">
-        <Link
-          href="/models"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
-        </Link>
+        <BackLink href="/models">Back to Models</BackLink>
       </div>
       <div className="flex justify-between items-start mb-8">
         <div>

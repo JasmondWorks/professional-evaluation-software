@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "iconsax-react";
+
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
 import { DataTable } from "@/app/components/ui/DataTable";
-import { PageHeader } from "@/app/components/ui";
+import { BackLink, PageHeader } from "@/app/components/ui";
 import type { TableColumn } from "@/app/components/ui/Table";
 
 type Appraisal = {
@@ -88,13 +87,7 @@ export default function CompletedAppraisalsPage() {
 
   return (
     <main className="w-full min-h-screen bg-canvas px-4 sm:px-6 lg:px-8 py-6">
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-4"
-      >
-        <ArrowLeft size={18} />
-        Back to dashboard
-      </Link>
+      <BackLink href="/dashboard" className="mb-4">Back to dashboard</BackLink>
 
       <PageHeader
         title="Completed appraisals"

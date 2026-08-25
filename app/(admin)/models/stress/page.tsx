@@ -19,8 +19,10 @@ import {
   ReferenceLine,
 } from "recharts";
 import Link from "next/link";
-import { ArrowLeft2, Calculator, Chart2, Save2, DocumentText, Warning2 } from "iconsax-react";
+import { Calculator, Chart2, Save2, DocumentText, Warning2 } from 'iconsax-react';
 import { getAccessToken } from '@/app/utils/auth';
+import { BackLink } from '@/app/components/ui';
+import { Tabs, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/app/components/ui/dialog";
 
@@ -574,12 +576,7 @@ export default function StressAnalysisTool() {
   return (
     <div className="p-8 w-full mx-auto max-w-7xl">
       <div className="mb-4">
-        <Link
-          href="/models"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
-        </Link>
+        <BackLink href="/models">Back to models</BackLink>
       </div>
 
       <div className="flex justify-between items-start mb-8">
@@ -618,30 +615,19 @@ export default function StressAnalysisTool() {
         </div>
       )}
 
-      {/* TABS */}
-      <div className="flex gap-2 mb-6 border-b border-line print:hidden">
-        <button
-          onClick={() => setActiveTab("analysis")}
-          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === "analysis"
-              ? "border-pes text-pes"
-              : "border-transparent text-muted hover:text-body hover:border-line"
-          }`}
-        >
-          Analysis Configuration
-        </button>
-        <button
-          onClick={() => setActiveTab("results")}
-          disabled={!summary}
-          className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === "results"
-              ? "border-pes text-pes"
-              : "border-transparent text-muted hover:text-body hover:border-line disabled:opacity-50 disabled:cursor-not-allowed"
-          }`}
-        >
-          Evaluation Results
-        </button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "analysis" | "results")}
+        syncParam="tab"
+        defaultValue="analysis"
+      >
+        <TabsList aria-label="Stress sections" className="mb-6 print:hidden">
+          <TabsTrigger value="analysis">Analysis configuration</TabsTrigger>
+          <TabsTrigger value="results" disabled={!summary}>
+            Evaluation results
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* NO ACTIVE CYCLE notice */}
       {activeTab === "analysis" && isAdmin && !inSession && (

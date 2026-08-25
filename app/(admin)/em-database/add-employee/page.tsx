@@ -3,7 +3,6 @@
 import { useState, useEffect, ReactElement } from "react";
 import { useMultistepForm } from "./useMultistep";
 import { jwtDecode } from "jwt-decode";
-import Link from "next/link";
 import { notify } from "@/lib/toast";
 
 import Formone from "./multistep-form/form_one";
@@ -11,12 +10,13 @@ import Formtwo from "./multistep-form/form_two";
 import Formthree from "./multistep-form/form_three";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
-import { ArrowLeft } from "iconsax-react";
+
 import Button from "@/app/components/ui/Button";
 import PageHeader from "@/app/components/ui/PageHeader";
 import { Progress } from "@/app/components/ui/progress";
 import { Alert } from "@/app/components/ui/alert";
 import { Modal } from "@/app/components/ui/modal";
+import { BackLink } from '@/app/components/ui';
 
 export default function MainForm() {
   const [formdata, setFormdata] = useState({ org: "" });
@@ -159,10 +159,7 @@ export default function MainForm() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6">
-      <Link href="/em-database" className="inline-flex items-center gap-1.5 w-fit text-sm font-medium text-muted hover:text-pes transition-colors mb-4 group">
-        <ArrowLeft size={18} className="transition-transform group-hover:-translate-x-0.5" />
-        Back to database
-      </Link>
+      <BackLink href="/em-database" className="w-fit mb-4">Back to database</BackLink>
 
       <PageHeader
         title="Add an employee"

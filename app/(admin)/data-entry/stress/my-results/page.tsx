@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft2 } from "iconsax-react";
+
 import { apiFetch } from "@/app/utils/apiFetch";
+import { BackLink } from '@/app/components/ui';
 
 type Level = { name: string; stress: number | null } | null;
 
@@ -38,9 +38,7 @@ export default function MyStressResults() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto w-full">
-      <Link href="/data-entry" className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-3">
-        <ArrowLeft2 size="16" className="mr-1" /> Back to Data Entry
-      </Link>
+      <BackLink href="/data-entry" className="mb-3">Back to Data Entry</BackLink>
       <h1 className="text-2xl font-bold text-strong">My Stress Results</h1>
       <p className="text-sm text-muted mb-6">
         The stress results your organization has granted you access to. Results are shown by group, never individually.

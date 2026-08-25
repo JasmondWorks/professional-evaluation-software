@@ -15,7 +15,8 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(echo \"exit: $?\")",
-      "Bash(open -a Docker)"
+      "Bash(open -a Docker)",
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate status)"
     ]
   }
 }

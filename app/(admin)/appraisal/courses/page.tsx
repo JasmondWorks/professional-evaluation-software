@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft2 } from 'iconsax-react';
-import { Alert, Empty, PageHeader } from '@/app/components/ui';
+
+import { BackLink, Alert, Empty, PageHeader } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import CourseRegistry from '../CourseRegistry';
 import IndicatorPicker from './IndicatorPicker';
@@ -62,12 +61,7 @@ export default function CoursesPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-      <Link
-        href="/appraisal/entries"
-        className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
-      >
-        <ArrowLeft2 size={16} /> Back to appraisals
-      </Link>
+      <BackLink href="/appraisal/entries" className="mb-3">Back to appraisals</BackLink>
 
       <PageHeader
         title="Your courses and indicators"

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import jwt from "jsonwebtoken";
-import { ArrowLeft } from "iconsax-react";
+
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
 import { DataTable } from "@/app/components/ui/DataTable";
-import { PageHeader } from "@/app/components/ui";
+import { BackLink, PageHeader } from "@/app/components/ui";
 import type { TableColumn } from "@/app/components/ui/Table";
 
 type InventoryItem = {
@@ -70,13 +70,7 @@ export default function MaintenanceInventory() {
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <Link
-        href="/maintenance"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-4"
-      >
-        <ArrowLeft size={18} />
-        Back to maintenance
-      </Link>
+      <BackLink href="/maintenance" className="mb-4">Back to maintenance</BackLink>
 
       <PageHeader title="Inventory sheet" />
 

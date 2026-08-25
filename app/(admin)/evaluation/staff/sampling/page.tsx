@@ -31,6 +31,7 @@ import { getCurrentUser, getAccessToken } from "@/app/utils/auth";
 import { useAuth } from "@/app/components/useAuth";
 import Link from "next/link";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Tabs, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 
 const CONFIDENCE_ACCURACY_MAP: Record<
   number,
@@ -1185,66 +1186,33 @@ const WorkSamplingPageInner: React.FC = () => {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap mb-6 bg-surface rounded-lg shadow p-1 gap-1">
-              {[
-                {
-                  key: "positions" as const,
-                  label: "Positions",
-                  icon: Users,
-                  done: positions.length > 0,
-                },
-                {
-                  key: "parameters" as const,
-                  label: "Study Parameters",
-                  icon: Calculator,
-                  done: paramsSaved,
-                },
-                {
-                  key: "observations" as const,
-                  label: "Observations",
-                  icon: Clock,
-                  done: observations.length > 0,
-                },
-                {
-                  key: "analysis" as const,
-                  label: "Analysis",
-                  icon: BarChart3,
-                  done: analysisResults.some((r) => r.totalObservations > 0),
-                },
-              ].map(({ key, label, icon: Icon, done }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                    activeTab === key
-                      ? "text-white shadow"
-                      : "text-body hover:bg-canvas"
-                  }`}
-                  style={{
-                    backgroundColor:
-                      activeTab === key ? "var(--color-pes-700)" : "transparent",
-                  }}
-                >
-                  <Icon size={16} />
-                  {label}
-                  {done ? (
-                    <CheckCircle2
-                      size={14}
-                      className={
-                        activeTab === key ? "text-white" : "text-success-600"
-                      }
-                    />
-                  ) : (
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${
-                        activeTab === key ? "bg-surface" : "bg-warning-600"
-                      }`}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
+            {/* Tabs. Each carries a done marker, so the reader can see how far
+                through the study they are without opening every one. */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as typeof activeTab)}
+              syncParam="step"
+              defaultValue="positions"
+            >
+              <TabsList aria-label="Study steps" className="mb-6 flex-wrap">
+                {[
+                  { key: "positions" as const, label: "Positions", icon: Users, done: positions.length > 0 },
+                  { key: "parameters" as const, label: "Study parameters", icon: Calculator, done: paramsSaved },
+                  { key: "observations" as const, label: "Observations", icon: Clock, done: observations.length > 0 },
+                  { key: "analysis" as const, label: "Analysis", icon: BarChart3, done: analysisResults.some((r) => r.totalObservations > 0) },
+                ].map(({ key, label, icon: Icon, done }) => (
+                  <TabsTrigger key={key} value={key} className="gap-2">
+                    <Icon size={16} />
+                    {label}
+                    {done ? (
+                      <CheckCircle2 size={14} className="text-success-600" />
+                    ) : (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-warning-600" />
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
 
             <div className="bg-surface border border-line rounded-xl shadow-card p-6 sm:p-8">
               {/* ── POSITIONS TAB ── */}

@@ -1,37 +1,21 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { RouteTabs } from '@/app/components/ui/tabs';
 
+// Another one-off tab bar — yellow on grey, matching nothing else. Now the
+// shared control, on the shared surface.
 export default function Nav({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
-  const navItems = [
-    { name: 'Appraisal', href: '/book-of-record' },
-    { name: 'Performance', href: '/book-of-record/performance' },
-  ];
-
   return (
-    <div className="min-h-screen w-screen overflow-hidden bg-[#b0b0af] px-4 flex flex-col items-left justify-start">
-      <nav className="flex justify-center w-full bg-white shadow-md">
-        <ul className="flex items-center space-x-6">
-          {navItems.map((item) => (
-            <li key={item.name}>
-              <Link
-                href={item.href}
-                className={`flex items-center p-4 font-semibold transition-colors duration-200 ${
-                  pathname === item.href
-                    ? 'text-yellow-600 border-b-2 border-yellow-600'
-                    : 'text-strong hover:text-yellow-600'
-                }`}
-              >
-                {item.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+    <div className="flex min-h-screen w-full flex-col bg-canvas">
+      <nav className="flex w-full justify-center border-b border-line bg-surface px-4 py-3">
+        <RouteTabs
+          items={[
+            { href: '/book-of-record', label: 'Appraisal' },
+            { href: '/book-of-record/performance', label: 'Performance' },
+          ]}
+        />
       </nav>
-      <div className="flex-1 w-full">{children}</div>
+      <div className="w-full flex-1">{children}</div>
     </div>
   );
 }

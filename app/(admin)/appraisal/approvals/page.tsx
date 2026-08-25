@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowLeft2 } from 'iconsax-react';
-import { PageHeader } from '@/app/components/ui';
+
+import { BackLink, PageHeader } from '@/app/components/ui';
 import SubmissionsPanel from '../SubmissionsPanel';
 
 /** The Dean's approval page.
@@ -17,12 +16,7 @@ import SubmissionsPanel from '../SubmissionsPanel';
 export default function DeanApprovalsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-      <Link
-        href="/data-entry"
-        className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
-      >
-        <ArrowLeft2 size={16} /> Back to data entry
-      </Link>
+      <BackLink href="/data-entry" className="mb-3">Back to data entry</BackLink>
 
       <PageHeader
         title="Departments awaiting your approval"

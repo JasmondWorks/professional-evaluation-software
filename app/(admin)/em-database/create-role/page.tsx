@@ -1,15 +1,15 @@
 "use client";
 
-import { ArrowLeft } from "iconsax-react";
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import jwt from "jsonwebtoken";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
-import Link from "next/link";
 import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function CreateRole() {
   // base_role defaults to the baseline preset so the role is always mappable.
@@ -67,13 +67,7 @@ export default function CreateRole() {
         <h1 className="my-auto mx-6 font-semibold text-xl text-body">
           Create a role
         </h1>
-        <Link
-          href="/em-database"
-          className="my-auto mx-6 text-pes-700 text-sm flex"
-        >
-          <ArrowLeft size={20} className="my-auto mx-1" />
-          Back to Roles & Permissions
-        </Link>
+        <BackLink href="/em-database">Back to Roles & Permissions</BackLink>
       </div>
 
       <form onSubmit={handleSubmit}>

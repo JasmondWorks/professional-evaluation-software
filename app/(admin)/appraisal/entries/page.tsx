@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft2 } from 'iconsax-react';
+
 import { useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { Button, PageHeader } from '@/app/components/ui';
+import { BackLink, Button, PageHeader } from '@/app/components/ui';
 import { getAccessToken } from '@/app/utils/auth';
 import { ORG_ADMIN_ROLES } from '@/app/lib/appraisal/instrument';
 import EntriesPanel from '../EntriesPanel';
@@ -29,12 +29,7 @@ export default function MyAppraisalsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
       {!isOrgAdmin ? (
-        <Link
-          href="/data-entry"
-          className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
-        >
-          <ArrowLeft2 size={16} /> Back to data entry
-        </Link>
+        <BackLink href="/data-entry" className="mb-3">Back to data entry</BackLink>
       ) : null}
 
       <PageHeader
