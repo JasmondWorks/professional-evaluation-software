@@ -57,8 +57,6 @@ export default function PersonnelUtilizationPage() {
     mu: 0.5,
     J: 5,
   });
-  const [kmin, setKmin] = useState(1);
-  const [kmax, setKmax] = useState(60);
   const [usePdfConstraints, setUsePdfConstraints] = useState(true);
   const [result, setResult] = useState<OptimalKResult | null>(null);
   const [violations, setViolations] = useState<string[] | null>(null);
@@ -106,18 +104,11 @@ export default function PersonnelUtilizationPage() {
       const val = (params as any)[f];
       if (val === undefined || val === null || Number.isNaN(val)) return false;
     }
-    if (
-      !Number.isFinite(kmin) ||
-      !Number.isFinite(kmax) ||
-      kmin < 1 ||
-      kmax < kmin
-    )
-      return false;
     return true;
   };
 
   const calculate = () => {
-    const r = findOptimalK({ ...params, A: params.A ?? 8 } as any, kmin, kmax);
+    const r = findOptimalK({ ...params, A: params.A ?? 8 } as any);
     const fails: string[] = [];
     if (usePdfConstraints) {
       const { t3 = 1, t4 = 0, D = 0, Y, alpha, W, lambda, mu, J, G } = params;
@@ -170,8 +161,8 @@ export default function PersonnelUtilizationPage() {
           rho: result.rho,
           p0: result.P0,
           lbar: result.Lbar,
-          kmin,
-          kmax,
+          kmin: 1,
+          kmax: result.table.length,
           kstar: result.Kstar,
           hstar: result.Hstar,
         }),

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from 'iconsax-react';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -13,7 +13,44 @@ export default function OrgStructurePage() {
   const [message, setMessage] = useState("");
   const [msgType, setMsgType] = useState<"success" | "error" | "">("");
 
+  // This model is derived from the optimal span of control K*, so it stays
+  // locked until Personnel Utilisation has been run for the org. The same
+  // check is enforced in /api/orgStructure — this one only saves the user
+  // from filling six sections of a form that cannot be saved.
+  const [utilizationRun, setUtilizationRun] = useState<boolean | null>(null);
+
   const token = typeof window !== "undefined" ? getAccessToken() : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkPrerequisite() {
+      if (!token) {
+        setUtilizationRun(false);
+        return;
+      }
+      try {
+        const res = await apiFetch("/api/getPersonnelUtilization", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          setUtilizationRun(res.ok && Array.isArray(data?.data) && data.data.length > 0);
+        }
+      } catch {
+        if (!cancelled) setUtilizationRun(false);
+      }
+    }
+
+    checkPrerequisite();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   async function saveResult(
     section: number,
@@ -244,6 +281,42 @@ export default function OrgStructurePage() {
       )}
     </div>
   );
+
+  if (utilizationRun === null) {
+    return (
+      <div className="p-8 w-full mx-auto">
+        <div className="mb-4">
+          <BackLink href="/models">Back to Models</BackLink>
+        </div>
+        <p className="text-muted text-sm">Checking prerequisites…</p>
+      </div>
+    );
+  }
+
+  if (!utilizationRun) {
+    return (
+      <div className="p-8 w-full mx-auto">
+        <div className="mb-4">
+          <BackLink href="/models">Back to Models</BackLink>
+        </div>
+
+        <div className="bg-white rounded-xl border border-line p-8 shadow-sm max-w-2xl">
+          <h1 className="text-2xl font-bold mb-2">Organization Structure</h1>
+          <p className="text-body mb-6">
+            This model is derived from the optimal span of control (K*) produced
+            by the Personnel Utilisation model. Run Personnel Utilisation for
+            your organisation first, then return here.
+          </p>
+          <Link
+            href="/models/personnel-utilization"
+            className="inline-block bg-pes text-white rounded px-6 py-2 hover:opacity-90"
+          >
+            Go to Personnel Utilisation
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 w-full mx-auto">
