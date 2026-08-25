@@ -1,50 +1,25 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { BackLink } from "@/app/components/ui";
+import { RouteTabs } from "@/app/components/ui/tabs";
 
+// This was a dark bar with yellow accents — the only one in the product, and
+// nothing to do with the rest of the models. It is now the shared header shape.
 export default function NavBar() {
-  const pathname = usePathname();
-
-  const links = [
-    { href: "/models/student-teacher/ordinary", label: "Ordinary Optimization" },
-    { href: "/models/student-teacher/robust", label: "Robust Optimization" },
-  ];
-
   return (
-    <nav className="bg-gray-900 text-white shadow-md mb-8">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-        <div className="flex flex-col">
-          <Link
-            href="/models"
-            className="text-xs text-muted hover:text-white transition w-fit"
-          >
-            &larr; Back to Models
-          </Link>
-          <h1 className="text-lg font-semibold tracking-wide">
-            Student–Teacher Optimization
-          </h1>
-        </div>
-
-        <div className="flex space-x-6">
-          {links.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium transition ${
-                  isActive
-                    ? "text-yellow-400 border-b-2 border-yellow-400 pb-1"
-                    : "text-gray-300 hover:text-white"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </div>
+    <div className="mb-8 border-b border-line bg-surface px-4 pt-6 sm:px-6">
+      <BackLink href="/models">Back to models</BackLink>
+      <h1 className="text-xl font-semibold tracking-tight text-strong sm:text-2xl">
+        Student–teacher optimization
+      </h1>
+      <div className="mt-3 pb-3">
+        <RouteTabs
+          items={[
+            { href: "/models/student-teacher/ordinary", label: "Ordinary optimization" },
+            { href: "/models/student-teacher/robust", label: "Robust optimization" },
+          ]}
+        />
       </div>
-    </nav>
+    </div>
   );
 }

@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { getAccessToken } from '@/app/utils/auth';
 import Link from "next/link";
-import { ArrowLeft2 } from "iconsax-react";
+
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function RedundancyIndex() {
   const [wasted, setWasted] = useState<number | "">("");
@@ -69,12 +70,7 @@ export default function RedundancyIndex() {
   return (
     <div className="p-8 w-full mx-auto">
       <div className="mb-4">
-        <Link
-          href="/models"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
-        </Link>
+        <BackLink href="/models">Back to Models</BackLink>
       </div>
 
       <div className="flex justify-between items-start mb-8">

@@ -1,51 +1,29 @@
-'use client'
-import Link from "next/link";
-import { ArrowLeft } from "iconsax-react";
-import { usePathname } from "next/navigation";
+'use client';
 
-export default function Layout({ children, }: { children: React.ReactNode }){
-   const pathname = usePathname()
+import { BackLink } from '@/app/components/ui';
+import { RouteTabs } from '@/app/components/ui/tabs';
 
-    return (
-        <main className="w-full">
-            <div className="bg-white pt-6 px-4">
-                <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes transition-colors mb-3"
-                >
-                    <ArrowLeft size={18} />
-                    Back to Dashboard
-                </Link>
-                <h1 className="text-2xl font-bold text-strong">
-                    Determination of Supervisory / staff
-                </h1>
-            </div>
-            {/* This is the evaluations page */}
-            <ul className="w-full bg-surface flex flex-start border-b border-line px-4">
-                <Link
-                    href="/evaluation"
-                    className={`px-4 py-4 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                        pathname === `/evaluation`
-                            ? 'border-pes text-pes-700'
-                            : 'border-transparent text-muted hover:text-strong'
-                    }`}
-                >
-                    Data fitting
-                </Link>
-                <Link
-                    href="/evaluation/staff"
-                    className={`px-4 py-4 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                        pathname.includes(`/evaluation/staff`)
-                            ? 'border-pes text-pes-700'
-                            : 'border-transparent text-muted hover:text-strong'
-                    }`}
-                >
-                    Staff determination
-                </Link>
-            </ul>
-            {
-                children
-            }
-        </main>
-    )
+// Data fitting and staff determination are separate routes, so these are
+// RouteTabs rather than panels. "Staff determination" matches on prefix because
+// /evaluation/staff/sampling sits underneath it and should keep the tab lit.
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="w-full">
+      <div className="border-b border-line bg-surface px-4 pt-6 sm:px-6">
+        <BackLink href="/dashboard">Back to dashboard</BackLink>
+        <h1 className="text-xl font-semibold tracking-tight text-strong sm:text-2xl">
+          Determination of Supervisory / staff
+        </h1>
+        <div className="mt-3 pb-3">
+          <RouteTabs
+            items={[
+              { href: '/evaluation', label: 'Data fitting' },
+              { href: '/evaluation/staff', label: 'Staff determination', match: 'prefix' },
+            ]}
+          />
+        </div>
+      </div>
+      {children}
+    </main>
+  );
 }

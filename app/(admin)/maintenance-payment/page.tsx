@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft } from 'iconsax-react';
+
 import { PayPalButtons } from '@paypal/react-paypal-js';
 import { notify } from '@/lib/toast';
 import { getAccessToken, setAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
-import { Alert, Card, CardBody } from '@/app/components/ui';
+import { BackLink, Alert, Card, CardBody } from '@/app/components/ui';
 import PayPalOrderProvider from '@/app/components/subscription/paypalOrderWrapper';
 
 // Buying the maintenance model add-on.
@@ -69,13 +68,7 @@ function MaintenancePayment() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
-      <Link
-        href="/pricing"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-pes"
-      >
-        <ArrowLeft size={18} />
-        Back to pricing
-      </Link>
+      <BackLink href="/pricing" className="mb-4">Back to pricing</BackLink>
 
       <Card>
         <CardBody className="p-6 sm:p-8">

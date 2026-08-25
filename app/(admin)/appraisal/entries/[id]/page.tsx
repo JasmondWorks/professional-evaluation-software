@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import {
+import { BackLink,
   Alert, Badge, Button, Card, CardBody, CardHeader, PageHeader, Textarea,
 } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -221,9 +221,7 @@ export default function EntryPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
-      <Link href="/appraisal/entries" className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800">
-        Back to appraisals
-      </Link>
+      <BackLink href="/appraisal/entries">Back to appraisals</BackLink>
 
       <PageHeader
         title={entry.pesuser_name}

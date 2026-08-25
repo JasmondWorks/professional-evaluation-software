@@ -4,10 +4,9 @@
 // assessment list runs — here with the per-employee detail behind it.
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AlertTriangle, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { apiFetch } from "@/app/utils/apiFetch";
-import {
+import { BackLink,
   Alert,
   Badge,
   Card,
@@ -171,13 +170,7 @@ export default function Page({ params }: { params: { dept: string } }) {
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-      <Link
-        href="/assessment"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-pes-700 transition-colors mb-3"
-      >
-        <ArrowLeft size={16} />
-        Back to assessment
-      </Link>
+      <BackLink href="/assessment" className="mb-3">Back to assessment</BackLink>
 
       <PageHeader
         title={dept}

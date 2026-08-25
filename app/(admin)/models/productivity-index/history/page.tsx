@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { getAccessToken } from "@/app/utils/auth";
-import Link from "next/link";
 import dayjs from "dayjs";
-import { ArrowLeft2 } from "iconsax-react";
+
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 interface IndexRun {
   id: number;
@@ -58,12 +58,7 @@ export default function ProductivityHistoryPage() {
   return (
     <div className="p-8 w-full mx-auto">
       <div className="mb-8">
-        <Link
-          href="/models/productivity-index"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-4"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Model
-        </Link>
+        <BackLink href="/models/productivity-index" className="mb-4">Back to Model</BackLink>
         <h1 className="text-2xl font-bold mb-2">Productivity Index History</h1>
         <p className="text-body">
           Historical records of your productivity index calculations.

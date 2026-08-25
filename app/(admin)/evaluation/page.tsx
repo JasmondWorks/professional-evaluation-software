@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Upload, BarChart3, FileText } from "lucide-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { Card, CardHeader, CardBody, Badge, DataTable } from "@/app/components/ui";
+import { Alert, Card, CardHeader, CardBody, Badge, DataTable, Empty, Skeleton } from "@/app/components/ui";
 
 /* ----------------- Types ----------------- */
 interface DataPoint {
@@ -215,6 +215,11 @@ export default function StatisticalAnalysisPage() {
     useState<StatisticalResults | null>(null);
   const [performanceResults, setPerformanceResults] =
     useState<StatisticalResults | null>(null);
+  // Without these the page rendered nothing at all while loading, nothing when
+  // the fetch failed, and nothing when there was simply no data yet — three very
+  // different situations that all looked like a blank screen.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDataset = async () => {
@@ -228,11 +233,9 @@ export default function StatisticalAnalysisPage() {
       );
 
       if (!res.ok) {
-        console.error(
-          "Failed to fetch data scores:",
-          res.status,
-          res.statusText,
-        );
+        console.error("Failed to fetch data scores:", res.status, res.statusText);
+        setError("The evaluation data could not be loaded. Try again.");
+        setLoading(false);
         return;
       }
 
@@ -269,8 +272,13 @@ export default function StatisticalAnalysisPage() {
 
       runAnalysis(appraisal, "appraisal");
       runAnalysis(performance, "performance");
+      setLoading(false);
     };
-    fetchDataset();
+    fetchDataset().catch((err) => {
+      console.error("Failed to fetch data scores:", err);
+      setError("The evaluation data could not be loaded. Try again.");
+      setLoading(false);
+    });
   }, [dept]);
 
   const runAnalysis = (
@@ -335,17 +343,39 @@ export default function StatisticalAnalysisPage() {
     else setPerformanceResults(results);
   };
 
+  const hasResults = Boolean(appraisalResults || performanceResults);
+
   return (
-    <div className="container mx-auto py-10 px-5">
-      {appraisalResults && (
-        <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />
-      )}
-      {performanceResults && (
-        <ResultsView
-          results={performanceResults}
-          dept={dept}
-          type="Performance"
+    <div className="container mx-auto px-5 py-10">
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-64" />
+        </div>
+      ) : error ? (
+        <Alert tone="danger">{error}</Alert>
+      ) : !hasResults ? (
+        <Empty
+          title="No scores to analyse yet"
+          description={
+            dept === "Unknown Department"
+              ? "Open this page from a department in the assessment list — the analysis is run over one department's scores at a time."
+              : `Nobody in ${dept} has submitted an appraisal or performance score yet. The distribution and its outliers appear here once they do.`
+          }
         />
+      ) : (
+        <>
+          {appraisalResults && (
+            <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />
+          )}
+          {performanceResults && (
+            <ResultsView
+              results={performanceResults}
+              dept={dept}
+              type="Performance"
+            />
+          )}
+        </>
       )}
     </div>
   );

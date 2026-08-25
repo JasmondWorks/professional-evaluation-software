@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getAccessToken } from "@/app/utils/auth";
-import Link from "next/link";
 import dayjs from "dayjs";
-import { ArrowLeft2 } from "iconsax-react";
+
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 interface OrgStructureRun {
   id: number;
@@ -77,12 +77,7 @@ export default function OrgStructureHistory() {
     <div className="p-8 w-full max-w-6xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <Link
-            href="/models/org-structure"
-            className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-2"
-          >
-            <ArrowLeft2 size="16" className="mr-1" /> Back to Org Structure Models
-          </Link>
+          <BackLink href="/models/org-structure" className="mb-2">Back to Org Structure Models</BackLink>
           <h1 className="text-2xl font-bold text-strong">Org Structure History</h1>
           <p className="text-muted text-sm mt-1">
             Review past calculations for organizational design and structure models.

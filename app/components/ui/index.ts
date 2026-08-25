@@ -36,3 +36,4 @@ export { default as PageHeader } from "./PageHeader";
 export { default as Skeleton } from "./Skeleton";
 export { default as Table } from "./Table";
 export * from "./DataTable";
+export { default as BackLink } from "./BackLink";

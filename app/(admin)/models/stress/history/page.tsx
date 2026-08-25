@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getAccessToken } from "@/app/utils/auth";
-import Link from "next/link";
 import dayjs from "dayjs";
-import { ArrowLeft2 } from "iconsax-react";
+
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 interface StressEvaluationRun {
   id: number;
@@ -59,13 +59,8 @@ export default function StressEvaluationHistory() {
     <div className="p-8 w-full max-w-7xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <Link
-            href="/models/stress"
-            className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-2"
-          >
-            <ArrowLeft2 size="16" className="mr-1" /> Back to Stress Evaluation
-            Model
-          </Link>
+          <BackLink href="/models/stress" className="mb-2">Back to Stress Evaluation
+            Model</BackLink>
           <h1 className="text-2xl font-bold text-strong">
             Stress Evaluation History
           </h1>

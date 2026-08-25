@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft2 } from 'iconsax-react';
-import { PageHeader } from '@/app/components/ui';
+import { BackLink, PageHeader } from '@/app/components/ui';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { appraisalTitle, useIsAcademicOrg } from '@/app/lib/useOrgCategory';
 import AppraisalSetup from '@/app/(admin)/appraisal/AppraisalSetup';
 import ResultsPanel from '@/app/(admin)/appraisal/ResultsPanel';
@@ -28,44 +27,32 @@ export default function AppraisalModelPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-      <Link
-        href="/models"
-        className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-pes underline underline-offset-4 transition-colors hover:text-pes-800"
-      >
-        <ArrowLeft2 size={16} /> Back to models
-      </Link>
+      <BackLink href="/models">Back to models</BackLink>
 
       <PageHeader
         title={appraisalTitle(isAcademicOrg)}
         subtitle="Open the period, set the targets, then run and release the evaluation. Departments enter the scores."
       />
 
-      <div
-        role="tablist"
-        aria-label="Appraisal sections"
-        className="mb-6 flex flex-wrap gap-1 border-b border-line"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            title={t.hint}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:shadow-focus ${
-              tab === t.key
-                ? 'border-pes text-pes-700'
-                : 'border-transparent text-muted hover:text-strong'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} syncParam="tab" defaultValue="setup">
+        <TabsList aria-label="Appraisal sections" className="mb-6">
+          {TABS.map((t) => (
+            <TabsTrigger key={t.key} value={t.key} title={t.hint}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {tab === 'setup' ? <AppraisalSetup /> : null}
-      {tab === 'submissions' ? <SubmissionsPanel onGoToSetup={() => setTab('setup')} /> : null}
-      {tab === 'results' ? <ResultsPanel onGoToSetup={() => setTab('setup')} /> : null}
+        <TabsContent value="setup" className="mt-0">
+          <AppraisalSetup />
+        </TabsContent>
+        <TabsContent value="submissions" className="mt-0">
+          <SubmissionsPanel onGoToSetup={() => setTab('setup')} />
+        </TabsContent>
+        <TabsContent value="results" className="mt-0">
+          <ResultsPanel onGoToSetup={() => setTab('setup')} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

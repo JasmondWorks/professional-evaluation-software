@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function AddAuditorPage() {
   const [email, setEmail] = useState("");
@@ -45,12 +45,7 @@ export default function AddAuditorPage() {
 
   return (
     <div className="w-1/2 mx-auto mt-10 p-6 rounded-2xl shadow-md bg-white">
-      <Link href="/em-database" className="inline-flex items-center text-sm font-medium text-muted hover:text-pes transition-colors mb-6 group">
-        <svg className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Database
-      </Link>
+      <BackLink href="/em-database" className="mb-6">Back to Database</BackLink>
       
       <h1 className="text-2xl font-semibold mb-6">Add External Auditor</h1>
 

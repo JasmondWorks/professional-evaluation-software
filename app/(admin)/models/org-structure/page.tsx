@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft2, Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from "iconsax-react";
+import { Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from 'iconsax-react';
 import { useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function OrgStructurePage() {
   const [loading, setLoading] = useState(false);
@@ -247,12 +248,7 @@ export default function OrgStructurePage() {
   return (
     <div className="p-8 w-full mx-auto">
       <div className="mb-4">
-        <Link
-          href="/models"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
-        </Link>
+        <BackLink href="/models">Back to Models</BackLink>
       </div>
 
       <div className="flex justify-between items-start mb-8">

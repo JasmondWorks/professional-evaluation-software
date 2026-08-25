@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
-import { SearchNormal1, Add, DocumentText, Setting2, CloseCircle, Buildings2, ClipboardText, ArrowLeft2 } from "iconsax-react";
+import { SearchNormal1, Add, DocumentText, Setting2, CloseCircle, Buildings2, ClipboardText } from 'iconsax-react';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function MaintenancePage() {
   const [toolView, setToolView] = useState(false);
@@ -117,12 +118,7 @@ export default function MaintenancePage() {
 
       {/* HEADER SECTION */}
       <div className="mb-4">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Dashboard
-        </Link>
+        <BackLink href="/dashboard">Back to Dashboard</BackLink>
       </div>
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-strong mb-2">Maintenance Management</h1>

@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft2 } from 'iconsax-react';
+
 import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from '@/app/components/ui/Button';
@@ -10,6 +9,7 @@ import PageHeader from '@/app/components/ui/PageHeader';
 import Badge from '@/app/components/ui/Badge';
 import { CRITERIA, CriterionKey, PERFORMANCE_TARGET } from '@/app/lib/performance/instrument';
 import DataIntegrityPanel, { DataIntegrityHandle } from '@/app/components/DataIntegrityPanel';
+import { BackLink } from '@/app/components/ui';
 
 // The organization admin's performance console: open a period, close it (which
 // also draws the staff who will score each head), run the evaluation, and
@@ -216,9 +216,7 @@ export default function PerformanceConsole() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
       <div className="mb-4">
-        <Link href="/models" className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors">
-          <ArrowLeft2 size="16" className="mr-1" /> Back to models
-        </Link>
+        <BackLink href="/models">Back to models</BackLink>
       </div>
 
       <PageHeader

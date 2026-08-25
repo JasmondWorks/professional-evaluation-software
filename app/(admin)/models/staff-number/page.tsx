@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import { saveResult } from "./util/sharedPost";
 import Link from "next/link";
-import { ArrowLeft2 } from "iconsax-react";
+
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { BackLink } from '@/app/components/ui';
 
 export default function Method1Page() {
   const [basicTime, setBasicTime] = useState<number | "">("");
@@ -75,12 +76,7 @@ export default function Method1Page() {
   return (
     <div className="p-8 w-full mx-auto">
       <div className="mb-4">
-        <Link
-          href="/models"
-          className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors"
-        >
-          <ArrowLeft2 size="16" className="mr-1" /> Back to Models
-        </Link>
+        <BackLink href="/models">Back to Models</BackLink>
       </div>
 
       <div className="flex justify-between items-start mb-8">

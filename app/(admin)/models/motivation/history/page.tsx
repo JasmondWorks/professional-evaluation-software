@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getAccessToken } from "@/app/utils/auth";
-import Link from "next/link";
 import dayjs from "dayjs";
-import { ArrowLeft2 } from "iconsax-react";
+
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 interface MotivationRun {
   id: number;
@@ -47,12 +47,7 @@ export default function MotivationHistory() {
     <div className="p-8 w-full max-w-6xl mx-auto">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <Link
-            href="/models/motivation"
-            className="inline-flex items-center text-sm text-muted hover:text-pes transition-colors mb-2"
-          >
-            <ArrowLeft2 size="16" className="mr-1" /> Back to Motivation Model
-          </Link>
+          <BackLink href="/models/motivation" className="mb-2">Back to Motivation Model</BackLink>
           <h1 className="text-2xl font-bold text-strong">Motivation History</h1>
           <p className="text-muted text-sm mt-1">
             Review past motivation evaluations.
