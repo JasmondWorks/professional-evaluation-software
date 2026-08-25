@@ -1,0 +1,162 @@
+[
+  {
+    "id": "1195efd1-b875-4d73-969b-7305ff73412b",
+    "checksum": "089b36a33e8c0aeebe696161fbd4f454b1efb391bb4e0e53fd03b50b8824582e",
+    "finished_at": "2026-03-21T11:48:14.984Z",
+    "migration_name": "20260321114813_add_expires_at",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-03-21T11:48:14.813Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "3b570c5c-30bb-41b6-b9c2-324d66d2ac17",
+    "checksum": "9522f39bc4066ffe39782fef92b4b54e72b0c47169638bb6cc21f923b5ba0330",
+    "finished_at": null,
+    "migration_name": "20260327204854_add_maintenance_model",
+    "logs": "A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve\n\nMigration name: 20260327204854_add_maintenance_model\n\nDatabase error code: 42P07\n\nDatabase error:\nERROR: relation \"OptimizationResult\" already exists\n\nDbError { severity: \"ERROR\", parsed_severity: Some(Error), code: SqlState(E42P07), message: \"relation \\\"OptimizationResult\\\" already exists\", detail: None, hint: None, position: None, where_: None, schema: None, table: None, column: None, datatype: None, constraint: None, file: Some(\"heap.c\"), line: Some(1164), routine: Some(\"heap_create_with_catalog\") }\n\n   0: sql_schema_connector::apply_migration::apply_script\n           with migration_name=\"20260327204854_add_maintenance_model\"\n             at schema-engine/connectors/sql-schema-connector/src/apply_migration.rs:106\n   1: schema_core::commands::apply_migrations::Applying migration\n           with migration_name=\"20260327204854_add_maintenance_model\"\n             at schema-engine/core/src/commands/apply_migrations.rs:91\n   2: schema_core::state::ApplyMigrations\n             at schema-engine/core/src/state.rs:226",
+    "rolled_back_at": "2026-08-07T12:53:45.634Z",
+    "started_at": "2026-08-03T20:41:27.551Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "a0ea1b86-317a-463e-878b-3706e16d0554",
+    "checksum": "9522f39bc4066ffe39782fef92b4b54e72b0c47169638bb6cc21f923b5ba0330",
+    "finished_at": "2026-08-07T12:53:45.659Z",
+    "migration_name": "20260327204854_add_maintenance_model",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:53:45.659Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "da1b6435-bdfb-49d3-a750-579e59d53266",
+    "checksum": "9a750ebb6ce32b2c0b38f62c7ff637f0e76259ed743468e5d7211b977637d5d2",
+    "finished_at": "2026-08-07T12:53:56.691Z",
+    "migration_name": "20260602101932_add_work_sampling_tables",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:53:56.691Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "7c2221b9-7676-4fcb-aa3d-8ea0b1238dba",
+    "checksum": "dfac5446d7c7438cec7d85586a54222d815a4032e2286f1982c8ef01b77874e6",
+    "finished_at": "2026-08-07T12:54:19.323Z",
+    "migration_name": "20260608134700_add_locked_schedule_fields",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:54:19.323Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "871ea587-ecf7-42d9-8145-4e5265fa38d6",
+    "checksum": "1b8d4f3f372eb78d7346151a9a0844ae76f0ed4bd3034b4635acddba0e5f2e32",
+    "finished_at": "2026-08-07T12:54:31.973Z",
+    "migration_name": "20260707_fix_personnel_utilization",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:54:31.973Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "3bc8c11e-9768-46f9-ac85-83a4ac319507",
+    "checksum": "5ab4ca9a9385b9b1b4d43377cf5d64a636eb29bfa9e7ea246955b3468c81f8fa",
+    "finished_at": "2026-08-07T12:54:33.075Z",
+    "migration_name": "20260802120000_add_wellbeing_sessions",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:54:33.075Z",
+    "applied_steps_count": 0
+  },
+  {
+    "id": "a593e4d2-60a1-4027-a707-8d7b308ad217",
+    "checksum": "21577f1f05eb8695a2a168885832d5b0ed3d489eb0c31e50551048efc501ce62",
+    "finished_at": "2026-08-07T12:54:57.916Z",
+    "migration_name": "20260807090000_add_appraisal_model",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-07T12:54:57.828Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "86cc233d-5b0f-4de4-9944-d89d93c3cbe1",
+    "checksum": "33753ed38367a6e2e49bc240bd751edb817b14abb70cd16bc6ffca6f18b0ddac",
+    "finished_at": "2026-08-10T20:57:57.329Z",
+    "migration_name": "20260810120000_add_appraisal_release",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-10T20:57:57.299Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "d0081d35-164e-4df5-967c-d607a7e1bf80",
+    "checksum": "5ece5ded3d51ec71c660858e6de7029dc2cb61702dcee658a65befd4c4396dd9",
+    "finished_at": "2026-08-10T22:57:16.724Z",
+    "migration_name": "20260810140000_appraisal_forms_1_to_4",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-10T22:57:16.557Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "b7d35c6f-df2c-46b1-9648-7ddd79794ae1",
+    "checksum": "a8b7ed5a61d9000d0b2bf23c35b70ab144da7490729200551c4e055e77dfe084",
+    "finished_at": "2026-08-15T15:38:03.730Z",
+    "migration_name": "20260813120000_add_appraisal_verification",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-15T15:38:03.720Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "8b644c3a-9730-4f3f-91dc-1b537532c498",
+    "checksum": "22665e8430f8efd8dba2592e6067caa8a275bed9289c51602bb428e1660f8653",
+    "finished_at": "2026-08-16T15:11:59.019Z",
+    "migration_name": "20260816120000_store_student_form_inputs",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-16T15:11:58.792Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "07b555c4-46aa-492b-8f0b-af226e3300c9",
+    "checksum": "f3dac557eaee067a138b2b2119e393b66964585f0efe739e80e4f2a9eae507f9",
+    "finished_at": "2026-08-23T00:30:50.731Z",
+    "migration_name": "20260823120000_add_performance_model",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-23T00:30:50.541Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "73f7e6c4-a51c-4a27-81b6-2f043ebae300",
+    "checksum": "b2534a9a315b7f628c52e141faa8df7d391ff82d1a34cb56919c80832a79e007",
+    "finished_at": "2026-08-23T14:23:14.297Z",
+    "migration_name": "20260823130000_drop_legacy_performance_tables",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-23T14:23:14.217Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "8c8fafd0-492f-443a-bf71-0c4a41b6cdb1",
+    "checksum": "cc0cf18b4ab5c6e31a77d11d7550a2054070f678b87090075cf2a983fd75c3a8",
+    "finished_at": "2026-08-25T09:48:34.736Z",
+    "migration_name": "20260825120000_add_model_access",
+    "logs": null,
+    "rolled_back_at": null,
+    "started_at": "2026-08-25T09:48:34.650Z",
+    "applied_steps_count": 1
+  },
+  {
+    "id": "f2ec4493-e9ad-4276-aad0-f0c76943a8b6",
+    "checksum": "8ba73ef3d6d09f369b4f99f54733e9d4691bfab39ca0a24714e9beb5e3c92695",
+    "finished_at": "2026-08-25T15:21:00.817Z",
+    "migration_name": "20260825130000_add_supervision_cost",
+    "logs": "",
+    "rolled_back_at": null,
+    "started_at": "2026-08-25T15:21:00.817Z",
+    "applied_steps_count": 0
+  }
+]
