@@ -16,7 +16,11 @@
       "Bash(npx tsc *)",
       "Bash(echo \"exit: $?\")",
       "Bash(open -a Docker)",
-      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate status)"
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate status)",
+      "Bash(git push jasmond dev)",
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate deploy)",
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma db execute *)",
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate resolve *)"
     ]
   }
 }

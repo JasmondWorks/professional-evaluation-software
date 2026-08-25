@@ -90,30 +90,41 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const latest = await prisma.supervision_cost.findFirst({
-      where: { org },
-      orderBy: { created_at: "desc" },
-    });
-
-    if (!latest) {
-      return NextResponse.json({ message: "No records found" }, { status: 404 });
-    }
-
     const num = (v: unknown) => (v == null ? null : Number(v));
 
-    return NextResponse.json({
-      Kstar: latest.kstar,
-      Dstar: num(latest.dstar),
-      a_ij: num(latest.a_ij),
-      a_cost: num(latest.a_cost),
-      b_cost: num(latest.b_cost),
-      lambda: num(latest.lambda),
-      mu: num(latest.mu),
-      rho: num(latest.rho),
-      p0: num(latest.p0),
-      lbar: num(latest.lbar),
-      created_at: latest.created_at,
+    // ?latest=1 returns the single most recent run (for pre-filling the form);
+    // the default is the full run history, which is what the history page shows.
+    const latestOnly = req.nextUrl.searchParams.get("latest") === "1";
+
+    const rows = await prisma.supervision_cost.findMany({
+      where: { org },
+      orderBy: { created_at: "desc" },
+      ...(latestOnly ? { take: 1 } : {}),
     });
+
+    const shaped = rows.map((r) => ({
+      id: r.id,
+      Kstar: r.kstar,
+      Dstar: num(r.dstar),
+      a_ij: num(r.a_ij),
+      a_cost: num(r.a_cost),
+      b_cost: num(r.b_cost),
+      lambda: num(r.lambda),
+      mu: num(r.mu),
+      rho: num(r.rho),
+      p0: num(r.p0),
+      lbar: num(r.lbar),
+      created_at: r.created_at,
+    }));
+
+    if (latestOnly) {
+      if (shaped.length === 0) {
+        return NextResponse.json({ message: "No records found" }, { status: 404 });
+      }
+      return NextResponse.json(shaped[0]);
+    }
+
+    return NextResponse.json(shaped);
   } catch (error) {
     console.error("Error fetching supervision cost data:", error);
     return NextResponse.json(
