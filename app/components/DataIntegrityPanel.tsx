@@ -22,6 +22,9 @@ type Props = {
   periodId: number | null;
   /** Skip the automatic first run — used where nothing has been evaluated yet. */
   autoRun?: boolean;
+  /** Hide the header button where the model already offers one in its own action
+   *  row, so the same test is not triggered from two places on one screen. */
+  showRunButton?: boolean;
 };
 
 const ENDPOINT: Record<Props['model'], string> = {
@@ -29,7 +32,7 @@ const ENDPOINT: Record<Props['model'], string> = {
   performance: '/api/performance-v2/integrity',
 };
 
-function DataIntegrityPanel({ model, periodId, autoRun = false }: Props, ref: React.Ref<DataIntegrityHandle>) {
+function DataIntegrityPanel({ model, periodId, autoRun = false, showRunButton = true }: Props, ref: React.Ref<DataIntegrityHandle>) {
   const [report, setReport] = useState<IntegrityReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,14 +73,16 @@ function DataIntegrityPanel({ model, periodId, autoRun = false }: Props, ref: Re
               after an evaluation.
             </p>
           </div>
-          <Button
-            variant="secondary"
-            onClick={run}
-            loading={loading}
-            disabled={loading || !periodId}
-          >
-            Run data integrity
-          </Button>
+          {showRunButton ? (
+            <Button
+              variant="secondary"
+              onClick={run}
+              loading={loading}
+              disabled={loading || !periodId}
+            >
+              Run data integrity
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardBody>

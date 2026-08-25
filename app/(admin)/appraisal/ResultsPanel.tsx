@@ -207,6 +207,23 @@ export default function ResultsPanel({ onGoToSetup }: { onGoToSetup?: () => void
                 >
                   Release results
                 </Button>
+                {/* Third step of the same sequence, so it belongs in this row
+                    rather than only in its own card further down the page. */}
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    setBusy('integrity');
+                    try {
+                      await integrity.current?.run();
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                  loading={busy === 'integrity'}
+                  disabled={!!busy}
+                >
+                  Run data integrity
+                </Button>
               </div>
 
               {/* AGENTS.md: a disabled control must say why on screen. */}
@@ -227,7 +244,7 @@ export default function ResultsPanel({ onGoToSetup }: { onGoToSetup?: () => void
             </CardBody>
           </Card>
 
-          <DataIntegrityPanel ref={integrity} model="appraisal" periodId={period.id} />
+          <DataIntegrityPanel ref={integrity} model="appraisal" periodId={period.id} showRunButton={false} />
 
           {departments.length > 0 ? (
             <Card className="mb-6">

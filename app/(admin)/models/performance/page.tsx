@@ -332,6 +332,15 @@ export default function PerformanceConsole() {
                   Release results
                 </Button>
               )}
+              {/* Third step of the same sequence, so it belongs in this row
+                  rather than only in its own card further down the page. */}
+              <Button
+                variant="secondary"
+                disabled={busy}
+                onClick={() => integrity.current?.run()}
+              >
+                Run data integrity
+              </Button>
             </div>
           </div>
         </section>
@@ -339,7 +348,7 @@ export default function PerformanceConsole() {
 
       {period && (
         <>
-          <DataIntegrityPanel ref={integrity} model="performance" periodId={period.id} />
+          <DataIntegrityPanel ref={integrity} model="performance" periodId={period.id} showRunButton={false} />
 
           <section className="mb-10">
             <h2 className="font-semibold text-strong mb-3">Staff results</h2>
