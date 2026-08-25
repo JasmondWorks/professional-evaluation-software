@@ -61,3 +61,6 @@ temp_interactive_push.bat
 
 docs/
 .next-build
+
+# Local-only ledger snapshots + generated baseline (never a real migration)
+.migration-baseline-backup/
