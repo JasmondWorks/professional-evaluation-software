@@ -18,6 +18,10 @@ export default function OrgStructurePage() {
   // check is enforced in /api/orgStructure — this one only saves the user
   // from filling six sections of a form that cannot be saved.
   const [utilizationRun, setUtilizationRun] = useState<boolean | null>(null);
+  // Section 17 quotes the optimal supervisory span. It used to link to a
+  // reference PDF that was never in the repo, so the button 404'd; the org's
+  // own most recent K* is both accurate and already fetched by the gate check.
+  const [latestKstar, setLatestKstar] = useState<number | null>(null);
 
   const token = typeof window !== "undefined" ? getAccessToken() : null;
 
@@ -39,7 +43,10 @@ export default function OrgStructurePage() {
         });
         const data = await res.json();
         if (!cancelled) {
-          setUtilizationRun(res.ok && Array.isArray(data?.data) && data.data.length > 0);
+          const runs = Array.isArray(data?.data) ? data.data : [];
+          setUtilizationRun(res.ok && runs.length > 0);
+          const kstar = runs[0]?.kstar;
+          setLatestKstar(kstar == null ? null : Number(kstar));
         }
       } catch {
         if (!cancelled) setUtilizationRun(false);
@@ -365,16 +372,24 @@ export default function OrgStructurePage() {
           </div>
           <div className="flex-1">
             <p className="text-sm text-body mb-6">
-              In a fair organization, optimal value at the supervisory level can be referenced directly from the standard Personnel Utilization Table.
+              In a fair organization, the optimal value at the supervisory level
+              is the span of control K* produced by the Personnel Utilization
+              model for your organization.
             </p>
+            {latestKstar !== null && (
+              <div className="mb-4 rounded-lg border border-line bg-canvas px-4 py-3">
+                <p className="text-xs font-medium text-muted mb-0.5">
+                  Your latest optimal span (K*)
+                </p>
+                <p className="text-3xl font-bold text-pes">{latestKstar}</p>
+              </div>
+            )}
             <Link
-              href="/downloadables/personnel-utilization.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/models/personnel-utilization"
               className="inline-flex items-center justify-center w-full px-4 py-3 bg-canvas text-body rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm gap-2"
             >
               <DocumentText size="18" />
-              View Reference Table
+              {latestKstar === null ? "Open Personnel Utilization" : "View Personnel Utilization"}
             </Link>
           </div>
         </div>
