@@ -13,6 +13,11 @@ export const tabs = [
   // Appraisal data entry belongs to staff and departments, never to the
   // organization admin, whose part is in Models > Staff appraisal.
   { key: 31, name: "Appraisal forms", icon: <Home3 />, href: "/appraisal", role_access: ["lecturer", "industrial-engineer", "hod", "dept-admin", "unit-head", "employee-w", "auditor"] },
+  // Target templates sit under /appraisal but belong to the other side of the
+  // wall: the organization admin and Estab./Personnel set the scheme, staff are
+  // measured against it. Listed after the tab above and matched by longest href
+  // in middleware.ts, so it wins over the broader /appraisal rule.
+  { key: 32, name: "Appraisal templates", icon: <Home3 />, href: "/appraisal/templates", role_access: ["super-admin", "admin"] },
   // The performance model's three role-specific screens. Data entry itself sits
   // under Data Entry; these are the review, the random head-scoring task and the
   // auditor's queue.

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
@@ -36,16 +37,21 @@ const ACADEMIC_CATEGORIES = CATEGORY_KEYS.academic;
 
 const GRADE_LABEL = (key: string) => `Grade ${key.replace('grade_', '')}`;
 
-/** The annual targets an appraisal is measured against. Editable because the
- *  source scheme is described as an example, and because an institution may set
- *  its own. A blank cell means the category is not targeted for that position,
- *  and it is left out of the combined total rather than counted as zero. */
+/** The annual targets an appraisal is measured against.
+ *
+ *  Read-only. The figures are copied in when the period opens, from whichever
+ *  template the organization has in force, so this screen reports them rather
+ *  than setting them. Changing them means duplicating a template.
+ *
+ *  A blank cell means the category is not targeted for that position, and it is
+ *  left out of the combined total rather than counted as zero. */
 export default function TargetEditor({ periodId }: { periodId: number }) {
   const [rows, setRows] = useState<TargetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [inForce, setInForce] = useState<
+    { scope: string; name: string; isSystem: boolean; version: number }[]
+  >([]);
 
   // A company or public-sector organization has no academic staff, so the
   // academic positions and their targets have no meaning there.
@@ -60,6 +66,20 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? 'Could not load targets.');
         if (!cancelled) setRows(data.targets);
+
+        // Non-fatal: the table is still readable without the badge.
+        const t = await apiFetch('/api/appraisal-v2/templates');
+        if (t.ok) {
+          const td = await t.json();
+          if (!cancelled) {
+            setInForce(
+              (td.scopes ?? [])
+                .map((s: any) => s.templates.find((x: any) => x.inForce) ?? null)
+                .filter(Boolean)
+                .map((x: any) => ({ scope: x.scope, name: x.name, isSystem: x.isSystem, version: x.version })),
+            );
+          }
+        }
       } catch (err: any) {
         if (!cancelled) setError(err.message);
       } finally {
@@ -89,60 +109,17 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
     return map;
   }, [rows]);
 
-  async function save(key: string, body: Record<string, unknown>) {
-    const raw = drafts[key];
-    if (raw === undefined || raw.trim() === '') return;
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-      setError('A target must be a number of zero or more.');
-      return;
-    }
-    setSaving(key);
-    setError(null);
-    try {
-      const res = await apiFetch('/api/appraisal-v2/target', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periodId, target: value, ...body }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Could not save the target.');
-      setRows((prev) => {
-        const others = prev.filter((r) => r.id !== data.target.id);
-        return [...others, data.target];
-      });
-      setDrafts((d) => {
-        const next = { ...d };
-        delete next[key];
-        return next;
-      });
-      notify.success('Target saved.');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  function cell(key: string, current: number | undefined, body: Record<string, unknown>) {
-    const draft = drafts[key];
-    const dirty = draft !== undefined && draft !== String(current ?? '');
-    return (
-      <div className="flex items-center gap-1.5">
-        <input
-          type="number"
-          min={0}
-          value={draft ?? (current ?? '')}
-          onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
-          aria-label={`Target for ${key.replace(/[:_]/g, ' ')}`}
-          className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-sm tabular-nums outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus"
-        />
-        {dirty ? (
-          <Button size="sm" variant="subtle" loading={saving === key} onClick={() => save(key, body)}>
-            Save
-          </Button>
-        ) : null}
-      </div>
+  /** Targets are read here, never edited.
+   *
+   *  They are copied in from whichever template the organization has in force,
+   *  so an input on this screen would let somebody type a figure no template
+   *  accounts for, with nothing recording what the standard was. Changing the
+   *  figures means duplicating a template, which is what the header links to. */
+  function cell(key: string, current: number | undefined, _body: Record<string, unknown>) {
+    return current === undefined ? (
+      <span className="text-muted">not set</span>
+    ) : (
+      <span className="tabular-nums text-strong">{current}</span>
     );
   }
 
@@ -260,11 +237,34 @@ export default function TargetEditor({ periodId }: { periodId: number }) {
   return (
     <Card>
       <CardHeader>
-        <h2 className="text-lg font-semibold text-strong">Annual targets</h2>
-        <p className="mt-0.5 text-sm text-muted">
-          What a staff member is expected to reach in a year. Observed output is measured
-          against these to produce the RTP and the grade.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-strong">Annual targets</h2>
+            <p className="mt-0.5 text-sm text-muted">
+              What a staff member is expected to reach in a year. Observed output is measured
+              against these to produce the RTP and the grade.
+            </p>
+          </div>
+          <Button href="/appraisal/templates" variant="outline" size="sm">
+            Manage templates
+          </Button>
+        </div>
+
+        {/* Which scheme these figures came from. The client asked on 26 Aug 2026
+            that this be on screen, and that only the organization admin and
+            Establishment see it — which is exactly who can reach this screen. */}
+        {inForce.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-wide text-muted">Scored against</span>
+            {inForce.map((t) => (
+              <Badge key={t.scope} tone={t.isSystem ? 'neutral' : 'brand'}>
+                {isAcademicOrg ? `${t.scope === 'academic' ? 'Academic' : 'Non-academic'}: ` : ''}
+                {t.name}
+                {t.version > 1 ? ` (v${t.version})` : ''}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
       </CardHeader>
       <CardBody>
         {error ? (

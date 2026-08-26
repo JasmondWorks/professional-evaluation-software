@@ -29,15 +29,21 @@ import {
   Viewer,
 } from '../app/lib/appraisal/service';
 import { ACADEMIC_FORMS } from '../app/lib/appraisal/instrument';
+import {
+  approveTemplate, duplicateTemplate, ensureSystemTemplates, listTemplates,
+  markTemplateReady, putInForce, setTemplateTarget,
+} from '../app/lib/appraisal/templates';
 
 const prisma = new PrismaClient();
 const ORG = '__walkthrough__';
 
-const admin: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering' };
+const admin: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering', productCategory: 'academic' };
 const hod: Viewer = { org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
 // Records Forms 8 and 9 from paper. A different person from the HOD, who scores.
 const deptAdmin: Viewer = { org: ORG, name: 'Dept Officer', role: 'dept-admin', dept: 'Mechanical Engineering' };
 const staff: Viewer = { org: ORG, name: 'Dr. Adeolla', role: 'lecturer', dept: 'Mechanical Engineering' };
+// A template needs a second person to approve it before it can be put in force.
+const approver: Viewer = { org: ORG, name: 'Second Officer', role: 'admin', dept: null, productCategory: 'academic' };
 const auditor: Viewer = { org: ORG, name: 'External Auditor', role: 'auditor' };
 
 let step = 0;
@@ -52,11 +58,17 @@ async function cleanup() {
   const periods = await prisma.appraisal_period.findMany({ where: { org: ORG }, select: { id: true } });
   for (const p of periods) await prisma.appraisal_period.delete({ where: { id: p.id } });
   await prisma.pesuser.deleteMany({ where: { org: ORG } });
+  await prisma.org_template_choice.deleteMany({ where: { org: ORG } });
+  await prisma.appraisal_template.deleteMany({ where: { org: ORG } });
+  await prisma.org.deleteMany({ where: { name: ORG } });
 }
 
 /** The appraisee has to exist on the roster: which appraisal they belong in is
  *  read from their post, not taken from the request. */
 async function seedStaff() {
+  await prisma.org.create({
+    data: { name: ORG, category: 'academic', plan: 'premium', evaluation: [] },
+  });
   await prisma.pesuser.create({
     data: {
       name: staff.name,
@@ -73,6 +85,23 @@ async function seedStaff() {
 async function main() {
   await cleanup();
   await seedStaff();
+
+  // -------------------------------------------------------------------------
+  say('Estab./Personnel', 'Sets the Teaching target for Lecturer I to 192.');
+  // Targets are no longer edited on the period. They come from the template the
+  // organization has in force, so the scheme is built and put in force first and
+  // the period picks it up when it opens.
+  await ensureSystemTemplates();
+  const standard = (await listTemplates(admin, 'academic')).templates.find((t) => t.isSystem)!;
+  const scheme = await duplicateTemplate(admin, { templateId: standard.id, name: 'Walkthrough scheme' });
+  await setTemplateTarget(admin, {
+    templateId: scheme.id, position: 'lecturer_i', category: 'teaching', target: 192,
+  });
+  await markTemplateReady(admin, scheme.id);
+  // A second person must approve before it can be put in force.
+  await approveTemplate(approver, scheme.id);
+  await putInForce(admin, { scope: 'academic', templateId: scheme.id });
+  show('teaching target for Lecturer I', 192);
 
   // -------------------------------------------------------------------------
   say('Estab./Personnel', 'Opens the appraisal period. This is the root of everything.');
@@ -96,12 +125,24 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  say('Estab./Personnel', 'Adjusts the Teaching target for Lecturer I. Forms 8 and 9 both count towards it.');
-  await setTarget(admin, {
-    periodId: period.id, model: 'academic', position: 'lecturer_i',
-    category: 'teaching', target: 192,
+  say('Estab./Personnel', 'The period carries the template it was opened against.');
+  expect('bound to the scheme', period.academic_template_id, scheme.id);
+  const teaching = await prisma.appraisal_target.findFirst({
+    where: { org: ORG, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
   });
-  show('teaching target for Lecturer I', 192);
+  expect('teaching target for Lecturer I', Number(teaching?.target), 192);
+
+  // -------------------------------------------------------------------------
+  say('Estab./Personnel', 'Tries to edit that target on the period directly.');
+  try {
+    await setTarget(admin, {
+      periodId: period.id, model: 'academic', position: 'lecturer_i',
+      category: 'teaching', target: 999,
+    });
+    console.log('      >>> UNEXPECTED: a period target was edited directly');
+  } catch (e: any) {
+    expect('refused', e.message.startsWith('Targets come from the template'), true);
+  }
 
   // -------------------------------------------------------------------------
   say('Estab./Personnel', 'Creates the appraisal record for a Lecturer I.');

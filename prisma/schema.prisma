@@ -282,6 +282,12 @@ model index {
   redundancy   Decimal?  @db.Decimal
   productivity Decimal?  @db.Decimal
   utility      Decimal?  @db.Decimal
+  // The un-inflated figures a productivity index was computed from. The index
+  // alone cannot be extrapolated: the future-output prediction fits a line
+  // through output against index, so the output has to be kept with the run.
+  // Nullable because every row saved before this existed has neither.
+  output_resources Decimal? @db.Decimal
+  input_resources  Decimal? @db.Decimal
   dept         String?   @db.VarChar(255)
   org          String?
   created_at   DateTime? @default(now()) @db.Timestamp(6)
@@ -844,10 +850,19 @@ model appraisal_period {
   released_by String?   @db.VarChar(255)
   created_at  DateTime? @default(now()) @db.Timestamp(6)
 
+  /// The templates this period was opened against, so a closed period keeps the
+  /// numbers it was scored with even after the org changes its choice. Null on
+  /// periods opened before templates existed.
+  academic_template_id     String? @db.Uuid
+  non_academic_template_id String? @db.Uuid
+
   targets    appraisal_target[]
   entries    appraisal_entry[]
   courses    appraisal_course[]
   indicators appraisal_indicator[]
+
+  academic_template     appraisal_template? @relation("period_academic_template", fields: [academic_template_id], references: [id], onDelete: SetNull)
+  non_academic_template appraisal_template? @relation("period_non_academic_template", fields: [non_academic_template_id], references: [id], onDelete: SetNull)
 
   @@index([org, status])
 }
@@ -860,6 +875,85 @@ model appraisal_period {
 // filled in as configuration rather than blocking the model. A missing row means
 // "not targeted", and the engine leaves that category out of the combined total
 // instead of scoring it as zero.
+/// A complete named set of appraisal targets for one scheme.
+///
+/// Either the standard PES ships (org null, is_system true, immutable) or one an
+/// organization defines for itself. A custom template is private to the
+/// organization that created it and is never visible to any other.
+///
+/// Client, 26 Aug 2026: the academic table on page 22 of the specification is
+/// fixed despite being captioned "an example", so both schemes ship as locked
+/// system templates.
+model appraisal_template {
+  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// 'academic' | 'non_academic'. An academic institution holds one of each,
+  /// since it employs both kinds of staff.
+  scope              String  @db.VarChar(20)
+  name               String  @db.VarChar(160)
+  /// null for a system template, which every organization can see and none can
+  /// edit. Otherwise the owning organization.
+  org                String? @db.VarChar(255)
+  is_system          Boolean @default(false)
+  /// draft   — still being filled in, cannot be put in force
+  /// ready   — complete and frozen, awaiting a second person's approval
+  /// archived— superseded by a newer version
+  status             String  @default("draft") @db.VarChar(20)
+  /// Editing a template that has been used creates version n+1 rather than
+  /// changing history (client answer 3).
+  version            Int     @default(1)
+  source_template_id String? @db.Uuid
+
+  created_by  String?   @db.VarChar(255)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  /// Set when the set is checked complete and frozen.
+  ready_at    DateTime? @db.Timestamp(6)
+  ready_by    String?   @db.VarChar(255)
+  /// A second person must approve before it can be put in force (client answer
+  /// 5). approved_by must differ from ready_by.
+  approved_at DateTime? @db.Timestamp(6)
+  approved_by String?   @db.VarChar(255)
+
+  targets              appraisal_template_target[]
+  choices              org_template_choice[]
+  academic_periods     appraisal_period[]          @relation("period_academic_template")
+  non_academic_periods appraisal_period[]          @relation("period_non_academic_template")
+
+  @@index([org, scope, status])
+  @@index([is_system, scope])
+}
+
+/// One target inside a template. Mirrors appraisal_target's keying exactly, so
+/// copying a template into a period is a straight field-for-field copy.
+model appraisal_template_target {
+  id          Int     @id @default(autoincrement())
+  template_id String  @db.Uuid
+  position    String? @db.VarChar(60)
+  post        String? @db.VarChar(60)
+  cadre       String? @db.VarChar(60)
+  category    String? @db.VarChar(40)
+  target      Decimal @db.Decimal(10, 2)
+
+  template appraisal_template @relation(fields: [template_id], references: [id], onDelete: Cascade)
+
+  @@unique([template_id, position, post, cadre, category], map: "appraisal_template_target_unique")
+}
+
+/// Which template an organization uses for each scheme. One row per
+/// organization per scope, so an academic institution can keep the standard for
+/// academic staff while running its own for non-academic staff (client answer 7).
+model org_template_choice {
+  id          Int      @id @default(autoincrement())
+  org         String   @db.VarChar(255)
+  scope       String   @db.VarChar(20)
+  template_id String   @db.Uuid
+  chosen_by   String?  @db.VarChar(255)
+  chosen_at   DateTime @default(now()) @db.Timestamp(6)
+
+  template appraisal_template @relation(fields: [template_id], references: [id], onDelete: Restrict)
+
+  @@unique([org, scope], map: "org_template_choice_unique")
+}
+
 model appraisal_target {
   id        Int     @id @default(autoincrement())
   org       String  @db.VarChar(255)
