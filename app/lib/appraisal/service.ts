@@ -22,17 +22,15 @@
 //      sealed until the period closes.
 
 import prisma from '@/app/api/prisma.dev';
+import { scopesForCategory, templateInForce, type TemplateScope } from './templates';
 import { IntegrityReport, IntegritySubject, runIntegrityTest } from '@/app/lib/integrity';
 import {
-  ACADEMIC_TARGETS,
-  ADMINISTRATIVE_POST_TARGETS,
   ALL_FORMS,
   modelFor,
   staffTypeForRole,
   formsFor,
   AppraisalModel,
   AppraisalPeriodFrequency,
-  CATEGORY_KEYS,
   CategoryKey,
   FormKey,
   MIN_STUDENT_EVALUATIONS,
@@ -40,7 +38,6 @@ import {
   DEPARTMENT_ADMIN_ROLES,
   DEPARTMENT_SCOPED_ROLES,
   NON_ACADEMIC_FORMS,
-  NON_ACADEMIC_TARGETS,
   questionnaireFor,
   stageOf,
   PositionKey,
@@ -95,6 +92,15 @@ export async function openPeriod(
     throw new AppraisalError('The period must end after it starts.', 400);
   }
 
+  // Which schemes this organization runs. An institution of learning has both,
+  // since it employs academic and non-academic staff; a company or public body
+  // has only the grade scheme.
+  const scopes = scopesForCategory(viewer.productCategory);
+  const bound: Partial<Record<TemplateScope, string>> = {};
+  for (const scope of scopes) {
+    bound[scope] = (await templateInForce(viewer.org, scope)).id;
+  }
+
   const period = await prisma.appraisal_period.create({
     data: {
       org: viewer.org,
@@ -102,10 +108,14 @@ export async function openPeriod(
       starts_on: input.startsOn,
       ends_on: input.endsOn,
       opened_by: viewer.name,
+      // Recorded so a closed period keeps the numbers it was scored against,
+      // even after the organization later chooses a different template.
+      academic_template_id: bound.academic ?? null,
+      non_academic_template_id: bound.non_academic ?? null,
     },
   });
 
-  await seedTargets(viewer.org, period.id);
+  await seedTargets(viewer.org, period.id, bound);
   return period;
 }
 
@@ -186,44 +196,56 @@ export async function listEntries(viewer: Viewer, periodId: number) {
 // Targets
 // ---------------------------------------------------------------------------
 
-/** Seed a period's targets from the documented scheme: academic by position,
- *  administration by post, and the seventeen non-academic grades the client
- *  supplied on 10 Aug 2026. Any target left absent is treated as "not targeted"
- *  and left out of the combined total rather than scored as zero. */
-async function seedTargets(org: string, periodId: number) {
+/** Copy the templates in force into this period's targets.
+ *
+ *  Scoring still reads appraisal_target exactly as before, so nothing
+ *  downstream changes. What changed is where the numbers come from: the
+ *  template the organization chose, rather than the constants in instrument.ts.
+ *  Copying rather than referencing is deliberate — a closed period must keep the
+ *  numbers it was scored against for good. */
+async function seedTargets(
+  org: string,
+  periodId: number,
+  templateIds: Partial<Record<TemplateScope, string>>,
+) {
   const rows: any[] = [];
 
-  for (const position of Object.keys(ACADEMIC_TARGETS) as PositionKey[]) {
-    for (const category of CATEGORY_KEYS.academic) {
-      const target = (ACADEMIC_TARGETS[position] as Record<string, number | null>)[category];
-      if (target === null) continue;
-      rows.push({ org, period_id: periodId, model: 'academic', position, category, target });
-    }
-  }
-  for (const post of ADMINISTRATIVE_POST_TARGETS) {
-    rows.push({
-      org,
-      period_id: periodId,
-      model: 'academic',
-      post: post.key,
-      category: 'administration',
-      target: post.target,
+  for (const [scope, templateId] of Object.entries(templateIds)) {
+    if (!templateId) continue;
+    const targets = await prisma.appraisal_template_target.findMany({
+      where: { template_id: templateId },
     });
-  }
-
-  // Non-academic: one total target per grade, covering all three categories.
-  for (const [grade, target] of Object.entries(NON_ACADEMIC_TARGETS)) {
-    rows.push({ org, period_id: periodId, model: 'non_academic', cadre: grade, target });
+    for (const t of targets) {
+      rows.push({
+        org,
+        period_id: periodId,
+        model: scope,
+        position: t.position,
+        post: t.post,
+        cadre: t.cadre,
+        category: t.category,
+        target: t.target,
+      });
+    }
   }
 
   if (rows.length) await prisma.appraisal_target.createMany({ data: rows, skipDuplicates: true });
 }
 
-/** Fill in or correct a target. This is how the two gaps in the source document
- *  get closed without a code change. */
+/** Targets are no longer edited on the period.
+ *
+ *  They are copied in from the template the organization has in force, so
+ *  editing a cell here would put a number on screen that no template accounts
+ *  for, with no record of what the standard was. The client asked on 26 August
+ *  2026 that the shipped values be locked and that changing them mean creating a
+ *  custom template.
+ *
+ *  Kept as a function so the old endpoint answers with an explanation rather
+ *  than a 404.
+ */
 export async function setTarget(
   viewer: Viewer,
-  input: {
+  _input: {
     periodId: number;
     model: AppraisalModel;
     position?: string;
@@ -234,25 +256,12 @@ export async function setTarget(
   },
 ) {
   requireOrgAdmin(viewer);
-  const keys = [input.position, input.post, input.cadre].filter(Boolean);
-  if (keys.length !== 1) {
-    throw new AppraisalError('Set exactly one of position, post or cadre.', 400);
-  }
-
-  const where = {
-    org: viewer.org,
-    period_id: input.periodId,
-    model: input.model,
-    position: input.position ?? null,
-    post: input.post ?? null,
-    cadre: input.cadre ?? null,
-    category: input.category ?? null,
-  };
-  const existing = await prisma.appraisal_target.findFirst({ where });
-
-  return existing
-    ? prisma.appraisal_target.update({ where: { id: existing.id }, data: { target: input.target } })
-    : prisma.appraisal_target.create({ data: { ...where, target: input.target } });
+  throw new AppraisalError(
+    'Targets come from the template this organization has in force and cannot be edited here. ' +
+      'To use different figures, duplicate a template on the Appraisal templates screen, ' +
+      'change it there, have a second person approve it, and put it in force.',
+    409,
+  );
 }
 
 async function targetsFor(org: string, periodId: number, model: AppraisalModel) {
