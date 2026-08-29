@@ -48,6 +48,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff Number",
       "Stress",
+      "Future Requirements",
     ],
     standard: [
       "Personnel Utilization",
@@ -55,6 +56,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
+      "Future Requirements",
       "Appraisal",
     ],
     premium: [
@@ -63,6 +65,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
       "Student Teacher",
       "Staff number",
       "Stress",
+      "Future Requirements",
       "Appraisal",
       "Organization Structure",
       "Performance",
@@ -70,10 +73,12 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     ],
   },
   company: {
-    basic: ["Staff Number", "Stress", "Appraisal"],
+    basic: ["Staff Number", "Stress",
+      "Future Requirements", "Appraisal"],
     standard: [
       "Staff Number",
       "Stress",
+      "Future Requirements",
       "Appraisal",
       "Organization Structure",
       "Performance",
@@ -82,6 +87,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     premium: [
       "Staff Number",
       "Stress",
+      "Future Requirements",
       "Appraisal",
       "Organization Structure",
       "Performance",
@@ -95,12 +101,14 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     basic: [
       "Student Teacher",
       "Stress",
+      "Future Requirements",
       "Institution of Learning Appraisal",
       "Motivation",
     ],
     standard: [
       "Student Teacher",
       "Stress",
+      "Future Requirements",
       "Institution of Learning Appraisal",
       "Motivation",
       "Organization Structure",
@@ -109,6 +117,7 @@ const planConfigs: Record<string, Record<string, string[]>> = {
     premium: [
       "Student Teacher",
       "Stress",
+      "Future Requirements",
       "Institution of Learning Appraisal",
       "Motivation",
       "Organization Structure",
@@ -157,6 +166,13 @@ const modelDefinitions: Record<
       "Appraise academic and non-academic staff against the target for their position or grade, then release grades.",
     icon: Personalcard,
     color: "text-orange-500 bg-orange-50",
+  },
+  "Future Requirements": {
+    path: "/models/future-requirements",
+    description:
+      "Fit a line through recorded runs to project future staff, students or output.",
+    icon: Graph,
+    color: "text-teal-500 bg-teal-50",
   },
   "Organization Structure": {
     path: "/models/org-structure",

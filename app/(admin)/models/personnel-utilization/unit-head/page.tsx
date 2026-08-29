@@ -2,6 +2,7 @@
 
 import { notify } from "@/lib/toast";
 import { useState, useEffect } from "react";
+import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from "@/app/utils/auth";
 import Link from "next/link";
@@ -30,21 +31,10 @@ export default function UnitHeadOverloadingPage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
-  // fetch K* and H* defaults
-  useEffect(() => {
-    const fetchUtilization = async () => {
-      try {
-        const res = await apiFetch("/api/personnelUtilization");
-        if (!res.ok) throw new Error("Failed to fetch utilization data");
-        const data = await res.json();
-        if (data?.Kstar) setOptimalK(data.Kstar);
-        if (data?.Hstar) setOptimalHours(data.Hstar);
-      } catch (err) {
-        console.error("Error fetching utilization data:", err);
-      }
-    };
-    fetchUtilization();
-  }, []);
+  // H* and K* are no longer pre-filled from whichever utilization run happened
+  // to be newest. That guessed at which run was meant and was silently wrong
+  // whenever an earlier one was intended, so the operator now picks the run
+  // explicitly from the history — see the button above the two fields.
 
   const calculate = () => {
     if (actualHours === "" || numSubs === "" || extraComplexity === "" || optimalHours === "" || optimalK === "") return;
@@ -202,6 +192,41 @@ export default function UnitHeadOverloadingPage() {
                 value={extraComplexity}
                 onChange={(e) => setExtraComplexity(e.target.value === "" ? "" : Number(e.target.value))}
                 className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted">
+                H* and K* come from a Personnel Utilization run.
+              </p>
+              <HistoryPicker<{
+                id: number;
+                created_at: string;
+                kstar: number | null;
+                hstar: number | null;
+                lambda: number | null;
+                mu: number | null;
+              }>
+                source="personnel-utilization"
+                label="Fill from utilization history"
+                columns={[
+                  { label: "K*", render: (r) => r.kstar ?? "—" },
+                  {
+                    label: "H*",
+                    render: (r) => (r.hstar == null ? "—" : Number(r.hstar).toFixed(4)),
+                  },
+                  {
+                    label: "\u03bb",
+                    render: (r) => (r.lambda == null ? "—" : Number(r.lambda).toFixed(4)),
+                  },
+                  {
+                    label: "\u03bc",
+                    render: (r) => (r.mu == null ? "—" : Number(r.mu).toFixed(4)),
+                  },
+                ]}
+                onSelect={(run) => {
+                  if (run.hstar != null) setOptimalHours(Number(run.hstar));
+                  if (run.kstar != null) setOptimalK(Number(run.kstar));
+                }}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -18,6 +18,7 @@ export type ModelKey =
   | 'staff-number'
   | 'student-teacher'
   | 'utility-index'
+  | 'future-requirements'
   | 'maintenance';
 
 export type ModelDefinition = {
@@ -100,6 +101,12 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     label: 'Utility index',
     description: 'Institutional utility and value delivery.',
     path: '/models/utility-index',
+  },
+  {
+    key: 'future-requirements',
+    label: 'Future requirements',
+    description: 'Predict future staff, students or output from recorded runs.',
+    path: '/models/future-requirements',
   },
   {
     key: 'maintenance',

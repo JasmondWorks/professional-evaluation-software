@@ -51,6 +51,9 @@ export default function ProductivityIndex() {
         body: JSON.stringify({
           payload: "productivity",
           productivity: result,
+          // Stored with the run so the history can be extrapolated, not just read.
+          output_resources: Number(output),
+          input_resources: Number(input),
         }),
       });
 

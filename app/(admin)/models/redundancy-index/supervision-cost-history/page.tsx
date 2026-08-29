@@ -5,6 +5,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import dayjs from "dayjs";
 
 import { apiFetch } from '@/app/utils/apiFetch';
+import RemoveRecordButton from "@/app/components/models/RemoveRecordButton";
 import { BackLink } from '@/app/components/ui';
 
 interface CostRun {
@@ -101,6 +102,7 @@ export default function SupervisionCostHistoryPage() {
                   <th className="px-6 py-4">μ</th>
                   <th className="px-6 py-4">ρ</th>
                   <th className="px-6 py-4 whitespace-nowrap">A / a / b</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -120,6 +122,14 @@ export default function SupervisionCostHistoryPage() {
                     <td className="px-6 py-4 text-body">{fmt(run.rho, 6)}</td>
                     <td className="px-6 py-4 text-muted whitespace-nowrap">
                       {fmt(run.a_ij, 1)} / {fmt(run.a_cost, 2)} / {fmt(run.b_cost, 2)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <RemoveRecordButton
+                        source="supervision-cost"
+                        id={run.id}
+                        label={`the run of ${dayjs(run.created_at).format("MMM D, YYYY")}`}
+                        onRemoved={(id) => setRuns((rows) => rows.filter((r) => r.id !== id))}
+                      />
                     </td>
                   </tr>
                 ))}

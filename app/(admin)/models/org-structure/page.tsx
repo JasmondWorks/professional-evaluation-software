@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from 'iconsax-react';
 import { useEffect, useState } from "react";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import CascadePanel from "./CascadePanel";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink } from '@/app/components/ui';
@@ -107,37 +108,10 @@ export default function OrgStructurePage() {
     }
   }
 
-  // ===== Section 18 =====
-  const [section18Numerator, setSection18Numerator] = useState<number[]>([0]);
-  const [section18DenominatorA, setSection18DenominatorA] = useState<number[]>([0]);
-  const [section18DenominatorB, setSection18DenominatorB] = useState<number[]>([0]);
-  const [section18Result, setSection18Result] = useState<number | null>(null);
-
-  const calcSection18 = async () => {
-    const sumNum = section18Numerator.reduce((a, b) => a + b, 0);
-    const sumDenA = section18DenominatorA.reduce((a, b) => a + b, 0);
-    const sumDenB = section18DenominatorB.reduce((a, b) => a + b, 0);
-    const result = sumDenA && sumDenB ? sumNum / (sumDenA * sumDenB) : 0;
-    setSection18Result(result);
-    await saveResult(18, result, section18Numerator, [
-      ...section18DenominatorA,
-      ...section18DenominatorB,
-    ]);
-  };
-
-  // ===== Section 19 =====
-  const [section19Numerator, setSection19Numerator] = useState<number[]>([0]);
-  const [section19Denominator, setSection19Denominator] = useState<number[]>([0]);
-  const [Z, setZ] = useState<number | "">("");
-  const [section19Result, setSection19Result] = useState<number | null>(null);
-
-  const calcSection19 = async () => {
-    const sumNum = section19Numerator.reduce((a, b) => a + b, 0);
-    const sumDen = section19Denominator.reduce((a, b) => a + b, 0);
-    const result = sumDen ? (Number(Z) * sumNum) / sumDen : 0;
-    setSection19Result(result);
-    await saveResult(19, result, section19Numerator, section19Denominator, { Z });
-  };
+  // Sections 18, 19 and 21 are computed together in ./CascadePanel now. They
+  // used to be three separate cards of Σ-terms whose results could contradict
+  // one another, because nothing tied the ladder in 18 to the shape in 19 or
+  // the comparison in 21.
 
   // ===== Section 20 =====
   const [maxInput, setMaxInput] = useState<number | "">("");
@@ -156,28 +130,10 @@ export default function OrgStructurePage() {
     await saveResult(20, result, [Number(minInput)], [], { type: "Min" });
   };
 
-  // ===== Section 21 =====
-  const [prNumerator, setPrNumerator] = useState<number | "">("");
-  const [prDenominator, setPrDenominator] = useState<number | "">("");
-  const [prResult, setPrResult] = useState<number | null>(null);
-
-  const calcPR = async () => {
-    const result = Number(prDenominator) !== 0 ? (Number(prNumerator) / Number(prDenominator)) * 100 : 0;
-    setPrResult(result);
-    await saveResult(21, result, [Number(prNumerator)], [Number(prDenominator)]);
-  };
-
-  // ===== Section 22 =====
-  const [a, setA] = useState<number | "">("");
-  const [b, setB] = useState<number | "">("");
-  const [x, setX] = useState<number | "">("");
-  const [projResult, setProjResult] = useState<number | null>(null);
-
-  const calcProjection = async () => {
-    const result = Number(a) + Number(b) * Number(x);
-    setProjResult(result);
-    await saveResult(22, result, [Number(a), Number(b), Number(x)]);
-  };
+  // Section 22 (future requirements) moved out to its own model at
+  // /models/future-requirements, where it reads a and b off a line fitted
+  // through the recorded history instead of asking somebody to derive them by
+  // hand and type them in.
 
   // ===== Helpers =====
   const numberInput = (
@@ -359,113 +315,11 @@ export default function OrgStructurePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         
-        {/* Model 17 */}
-        <div className="bg-white rounded-xl border border-line p-6 shadow-sm xl:col-span-1 flex flex-col">
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
-              <Chart2 size="16" variant="Bold" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-strong">17. Supervisory Size</h2>
-              <p className="text-xs text-muted">Personnel Utilization Table</p>
-            </div>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-body mb-6">
-              In a fair organization, the optimal value at the supervisory level
-              is the span of control K* produced by the Personnel Utilization
-              model for your organization.
-            </p>
-            {latestKstar !== null && (
-              <div className="mb-4 rounded-lg border border-line bg-canvas px-4 py-3">
-                <p className="text-xs font-medium text-muted mb-0.5">
-                  Your latest optimal span (K*)
-                </p>
-                <p className="text-3xl font-bold text-pes">{latestKstar}</p>
-              </div>
-            )}
-            <Link
-              href="/models/personnel-utilization"
-              className="inline-flex items-center justify-center w-full px-4 py-3 bg-canvas text-body rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm gap-2"
-            >
-              <DocumentText size="18" />
-              {latestKstar === null ? "Open Personnel Utilization" : "View Personnel Utilization"}
-            </Link>
-          </div>
-        </div>
-
-        {/* Model 18 */}
-        <div className="xl:col-span-1">
-          {modelCard(
-            "18. Org. Structure Size",
-            "Calculate structural size parameter (S)",
-            <Chart2 size="16" variant="Bold" />,
-            <>
-              {dynamicList("Numerator terms (Σ...)", section18Numerator, setSection18Numerator)}
-              {dynamicList("Denominator part A (Σ...)", section18DenominatorA, setSection18DenominatorA)}
-              {dynamicList("Denominator part B (Σ...)", section18DenominatorB, setSection18DenominatorB)}
-            </>,
-            calcSection18,
-            section18Result,
-            "Result (S)"
-          )}
-        </div>
-
-        {/* Model 19 */}
-        <div className="xl:col-span-1">
-          {modelCard(
-            "19. Shape of Structure",
-            "Calculate structural shape parameter (E)",
-            <Chart2 size="16" variant="Bold" />,
-            <>
-              {numberInput("Z — Avg. management positions/level", Z, setZ)}
-              <div className="mt-4">
-                {dynamicList("Numerator terms (Σ...)", section19Numerator, setSection19Numerator)}
-              </div>
-              {dynamicList("Denominator terms (Σ...)", section19Denominator, setSection19Denominator)}
-            </>,
-            calcSection19,
-            section19Result,
-            "Shape (E)"
-          )}
-        </div>
-
-        {/* Model 21 */}
-        <div className="xl:col-span-1">
-          {modelCard(
-            "21. Percentage Redundancy",
-            "Calculate real PR%",
-            <Chart2 size="16" variant="Bold" />,
-            <>
-              {numberInput("Numerator", prNumerator, setPrNumerator)}
-              <div className="mt-4">
-                {numberInput("Denominator", prDenominator, setPrDenominator)}
-              </div>
-            </>,
-            calcPR,
-            prResult,
-            "PR%",
-            "%"
-          )}
-        </div>
-
-        {/* Model 22 */}
-        <div className="xl:col-span-1">
-          {modelCard(
-            "22. Future Requirements",
-            "Predict/project personnel requirements",
-            <Chart2 size="16" variant="Bold" />,
-            <>
-              {numberInput("a — Intercept", a, setA)}
-              <div className="my-4">
-                {numberInput("b — Gradient", b, setB)}
-              </div>
-              {numberInput("x — Volume", x, setX, "Production/service volume")}
-            </>,
-            calcProjection,
-            projResult,
-            "Predicted Personnel"
-          )}
+        {/* Sections 17-19 and 21 are one calculation, not four: 17's head count
+            is what 18 divides down level by level, 18's ladder is 19's shape,
+            and 21 measures that ladder against the real organization. */}
+        <div className="xl:col-span-3">
+          <CascadePanel onSave={saveResult} />
         </div>
 
       </div>
