@@ -63,6 +63,16 @@ export default function PersonnelUtilizationPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // λ < μ is not one constraint among others: an arrival rate at or above the
+  // service rate describes a queue that grows without bound, so K* and H* are
+  // meaningless rather than merely unreliable. It is therefore checked whatever
+  // the eqs.39–42 toggle says, and it blocks the save outright — a bad row here
+  // would go on to poison the history the future-requirement prediction reads.
+  const lambdaMuInvalid =
+    Number.isFinite(params.lambda) &&
+    Number.isFinite(params.mu) &&
+    !((params.lambda as number) < (params.mu as number));
+
   // Decode org from JWT
   const getOrgFromToken = () => {
     try {
@@ -119,8 +129,8 @@ export default function PersonnelUtilizationPage() {
       const rhs40 =
         Y !== undefined && alpha !== undefined ? t3 * (D - Y * alpha) : t3 * D;
       if (!(W! <= rhs40)) fails.push("Eq.40 fails: W > t3*(D - Yα)");
-      if (lambda !== undefined && mu !== undefined && !(lambda <= mu))
-        fails.push("Eq.41 fails: λ > μ");
+      if (lambda !== undefined && mu !== undefined && !(lambda < mu))
+        fails.push("Eq.41 fails: λ must be strictly less than μ");
       if (J !== undefined && G !== undefined && !(J <= G - D))
         fails.push("Eq.42 fails: J > (G - D)");
     }
@@ -130,6 +140,10 @@ export default function PersonnelUtilizationPage() {
 
   const handleSave = async () => {
     if (!result) return;
+    if (lambdaMuInvalid) {
+      setSaveMsg("Cannot save: λ must be strictly less than μ.");
+      return;
+    }
     const org = getOrgFromToken();
     if (!org) {
       setSaveMsg("Missing org in token — please log in again.");
@@ -489,10 +503,31 @@ export default function PersonnelUtilizationPage() {
         </label>
       </div>
 
+      {lambdaMuInvalid && (
+        <div className="mb-3 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <strong>Rule: λ &lt; μ.</strong> The arrival rate must be strictly less
+          than the service rate. Currently λ = {params.lambda} and μ = {params.mu}
+          , so the queue never clears and there is no optimal K. Adjust the two
+          rates to continue.
+        </div>
+      )}
+
+      {/* AGENTS.md: a blocked control looks disabled but still takes the click,
+          so pressing it says why instead of doing nothing. */}
       <button
-        onClick={calculate}
-        disabled={!isFormValid()}
-        className={`px-4 py-2 rounded text-white ${isFormValid() ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
+        onClick={() => {
+          if (lambdaMuInvalid) {
+            setViolations(["λ must be strictly less than μ. Adjust the two rates to continue."]);
+            return;
+          }
+          if (!isFormValid()) {
+            setViolations(["Fill in every parameter before calculating."]);
+            return;
+          }
+          calculate();
+        }}
+        aria-disabled={!isFormValid() || lambdaMuInvalid}
+        className={`px-4 py-2 rounded text-white ${isFormValid() && !lambdaMuInvalid ? "bg-pes hover:bg-pes-800" : "bg-gray-400"}`}
       >
         Calculate
       </button>
@@ -620,9 +655,16 @@ export default function PersonnelUtilizationPage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90"
+              onClick={() => {
+                if (lambdaMuInvalid) {
+                  setSaveMsg("λ must be strictly less than μ. This result cannot be saved.");
+                  return;
+                }
+                if (saving) return;
+                handleSave();
+              }}
+              aria-disabled={saving || lambdaMuInvalid}
+              className={`rounded px-4 py-2 text-white ${saving || lambdaMuInvalid ? "bg-gray-400" : "bg-pes hover:opacity-90"}`}
             >
               {saving ? "Saving..." : "Save Result"}
             </button>

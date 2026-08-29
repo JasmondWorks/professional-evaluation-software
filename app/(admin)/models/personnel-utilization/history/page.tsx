@@ -7,6 +7,7 @@ import { getAccessToken } from "@/app/utils/auth";
 import { TableColumn } from "@/app/components/ui/Table";
 import { DataTable } from "@/app/components/ui";
 import { apiFetch } from '@/app/utils/apiFetch';
+import RemoveRecordButton from "@/app/components/models/RemoveRecordButton";
 
 type HistoryRecord = {
   id: number;
@@ -15,6 +16,8 @@ type HistoryRecord = {
   kmax: number;
   kstar: number;
   hstar: number;
+  lambda: number | null;
+  mu: number | null;
   p0: number;
   y: number;
   constraints_ok: boolean;
@@ -74,6 +77,19 @@ export default function PersonnelUtilizationHistory() {
       label: "Idleness (P0)",
       render: (item) => `${(item.p0 * 100).toFixed(2)}%`
     },
+    // The two rates that produced the run. They are what the organization
+    // structure model asks for level by level, so a stored run is only reusable
+    // if you can see which λ and μ it came from.
+    {
+      key: "lambda",
+      label: "\u03bb",
+      render: (item) => (item.lambda == null ? "—" : Number(item.lambda).toFixed(4)),
+    },
+    {
+      key: "mu",
+      label: "\u03bc",
+      render: (item) => (item.mu == null ? "—" : Number(item.mu).toFixed(4)),
+    },
     {
       key: "constraints_ok",
       label: "Status",
@@ -82,6 +98,18 @@ export default function PersonnelUtilizationHistory() {
           {item.constraints_ok ? 'Valid' : 'Violations'}
         </span>
       )
+    },
+    {
+      key: "id",
+      label: "",
+      render: (item) => (
+        <RemoveRecordButton
+          source="personnel-utilization"
+          id={item.id}
+          label={`the run of ${new Date(item.created_at).toLocaleDateString()}`}
+          onRemoved={(id) => setData((rows) => rows.filter((r) => r.id !== id))}
+        />
+      ),
     },
   ];
 

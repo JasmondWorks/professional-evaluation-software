@@ -5,11 +5,17 @@ import { getAccessToken } from "@/app/utils/auth";
 import dayjs from "dayjs";
 
 import { apiFetch } from '@/app/utils/apiFetch';
+import RemoveRecordButton from "@/app/components/models/RemoveRecordButton";
 import { BackLink } from '@/app/components/ui';
 
 interface IndexRun {
   id: number;
   productivity: number;
+  // The two figures the index was computed from. Kept alongside the result
+  // because the future-output prediction fits a line through output against
+  // index, and cannot do that from the index alone.
+  output_resources: number | null;
+  input_resources: number | null;
   created_at: string;
 }
 
@@ -83,6 +89,8 @@ export default function ProductivityHistoryPage() {
                 <tr>
                   <th className="px-6 py-4 whitespace-nowrap">Date</th>
                   <th className="px-6 py-4">Productivity Index</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Output resources (un-inflated)</th>
+                  <th className="px-6 py-4 whitespace-nowrap">Input resources (un-inflated)</th>
                   <th className="px-6 py-4 text-right">Status</th>
                 </tr>
               </thead>
@@ -95,10 +103,32 @@ export default function ProductivityHistoryPage() {
                     <td className="px-6 py-4 font-bold text-pes text-lg">
                       {Number(run.productivity).toFixed(3)}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium border bg-pes-50 text-pes-700 border-blue-200">
-                        Recorded
-                      </span>
+                    <td className="px-6 py-4 text-body">
+                      {run.output_resources == null
+                        ? "—"
+                        : Number(run.output_resources).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                    </td>
+                    <td className="px-6 py-4 text-body">
+                      {run.input_resources == null
+                        ? "—"
+                        : Number(run.input_resources).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-3">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium border bg-pes-50 text-pes-700 border-blue-200">
+                          Recorded
+                        </span>
+                        <RemoveRecordButton
+                          source="index"
+                          id={run.id}
+                          label={`the run of ${dayjs(run.created_at).format("MMM D, YYYY")}`}
+                          onRemoved={(id) => setRuns((rows) => rows.filter((r) => r.id !== id))}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}

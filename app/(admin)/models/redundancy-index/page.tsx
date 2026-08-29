@@ -4,6 +4,7 @@ import { getAccessToken } from '@/app/utils/auth';
 import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui';
 import {
@@ -142,9 +143,34 @@ function RedundancyTab() {
           </div>
           <div className="grid grid-cols-1 gap-6">
             <div className="block w-full min-w-0">
-              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
-                <span className="truncate">Wasted Man-hours</span>
-                <InfoPopover text="Hours lost due to delays, idleness, or lack of tasks." />
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center text-sm font-semibold text-body">
+                  <span className="truncate">Wasted Man-hours</span>
+                  <InfoPopover text="Hours lost due to delays, idleness, or lack of tasks. D* from a Supervision Cost run is the minimum-cost figure." />
+                </div>
+                {/* The client asked to be able to pull D* from the Supervision
+                    Cost history rather than copy it across by hand, since that
+                    is where the minimum-cost figure is computed. */}
+                <HistoryPicker<{
+                  id: number;
+                  created_at: string;
+                  Kstar: number | null;
+                  Dstar: number | null;
+                  lambda: number | null;
+                  mu: number | null;
+                }>
+                  source="supervision-cost"
+                  label="Fill D* from history"
+                  columns={[
+                    { label: "D* (min)", render: (r) => (r.Dstar == null ? "—" : Number(r.Dstar).toFixed(4)) },
+                    { label: "K*", render: (r) => r.Kstar ?? "—" },
+                    { label: "\u03bb", render: (r) => (r.lambda == null ? "—" : Number(r.lambda).toFixed(4)) },
+                    { label: "\u03bc", render: (r) => (r.mu == null ? "—" : Number(r.mu).toFixed(4)) },
+                  ]}
+                  onSelect={(run) => {
+                    if (run.Dstar != null) setWasted(Number(run.Dstar));
+                  }}
+                />
               </div>
               <input
                 type="number"
@@ -249,6 +275,12 @@ function SupervisionCostTab() {
   const calculate = () => setResult(findOptimalKCost(params));
 
   const handleSave = async () => {
+    // The params can be edited after Calculate ran, so the result on screen is
+    // not proof the rule still holds. Re-check at the point of writing.
+    if (params.lambda >= params.mu) {
+      setSaveMsg("Cannot save: λ must be strictly less than μ.");
+      return;
+    }
     if (!result) return;
     setSaving(true);
     setSaveMsg(null);
@@ -419,8 +451,9 @@ function SupervisionCostTab() {
           <div className="flex items-center gap-3 mb-6">
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
+              disabled={saving || lambdaError}
+              title={lambdaError ? "λ must be strictly less than μ" : undefined}
+              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Result"}
             </button>
