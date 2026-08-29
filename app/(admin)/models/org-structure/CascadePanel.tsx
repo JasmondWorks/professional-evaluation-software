@@ -9,6 +9,7 @@ import {
   percentageRedundancy,
   personnelRedundancy,
 } from "@/app/lib/models/orgCascade";
+import { findOptimalK } from "@/app/(admin)/models/personnel-utilization/lib/util-models11-16";
 
 // Sections 17, 18, 19 and 21 as one screen.
 //
@@ -26,7 +27,30 @@ type StaffRun = {
   createdAt: string;
 };
 
-type LevelRates = { lambda: number | ""; mu: number | ""; A: number | "" };
+// A level is not part of the ladder until its own utilization run has been
+// executed. The client's sketch has an Execute in every box for exactly this
+// reason: each level's λ and μ replace the level below's, and the operator is
+// meant to see the K* that produced before carrying the count upward.
+type LevelRun = { Kstar: number; Hstar: number; rho: number };
+type LevelRates = {
+  lambda: number | "";
+  mu: number | "";
+  A: number | "";
+  run: LevelRun | null;
+  error: string | null;
+};
+
+const emptyLevel = (): LevelRates => ({ lambda: "", mu: "", A: 8, run: null, error: null });
+
+/** Levels count only up to the first one still awaiting its Execute. */
+function takeExecutedPrefix(rows: LevelRates[]): LevelRates[] {
+  const out: LevelRates[] = [];
+  for (const r of rows) {
+    if (!r.run) break;
+    out.push(r);
+  }
+  return out;
+}
 
 const METHOD_LABELS: Record<string, string> = {
   Method1: "Plain estimation",
@@ -43,9 +67,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
   const [supervisoryKstar, setSupervisoryKstar] = useState<number | "">("");
 
   // ---- Section 18 inputs: one λ/μ pair per level above the first ----
-  const [levelRates, setLevelRates] = useState<LevelRates[]>([
-    { lambda: "", mu: "", A: 8 },
-  ]);
+  const [levelRates, setLevelRates] = useState<LevelRates[]>([emptyLevel()]);
 
   // ---- Section 21 inputs: what the organization really employs per level ----
   const [realCounts, setRealCounts] = useState<Record<number, number | "">>({});
@@ -80,8 +102,10 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
     return runCascade({
       staffNumber: Number(staffNumber),
       supervisoryKstar: Number(supervisoryKstar),
-      levels: levelRates
-        .filter((r) => r.lambda !== "" && r.mu !== "")
+      // Only the executed levels, and only as far as the first one that has not
+      // been executed — a gap in the middle would silently shift every level
+      // above it down a rung.
+      levels: takeExecutedPrefix(levelRates)
         .map((r) => ({
           lambda: Number(r.lambda),
           mu: Number(r.mu),
@@ -110,6 +134,36 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
       .map((r) => ({ ideal: r.ideal, real: r.real as number }));
     return usable.length ? personnelRedundancy(usable) : null;
   }, [redundancyRows]);
+
+  function updateLevel(i: number, patch: Partial<LevelRates>) {
+    setLevelRates((prev) => prev.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  }
+
+  /** The Execute in a level's box: run personnel utilization on that level's own
+   *  rates and keep the K* it returned. Editing any rate clears it again, so a
+   *  displayed K* always belongs to the numbers next to it. */
+  function executeLevel(i: number) {
+    const r = levelRates[i];
+    if (r.lambda === "" || r.mu === "") {
+      updateLevel(i, { run: null, error: "Enter λ and μ for this level first." });
+      return;
+    }
+    if (!(Number(r.lambda) < Number(r.mu))) {
+      updateLevel(i, { run: null, error: "λ must be strictly less than μ." });
+      return;
+    }
+    const A = r.A === "" ? 8 : Number(r.A);
+    const { Kstar, Hstar, rho } = findOptimalK({
+      A,
+      lambda: Number(r.lambda),
+      mu: Number(r.mu),
+    } as any);
+    if (!(Kstar > 0) || !Number.isFinite(Hstar)) {
+      updateLevel(i, { run: null, error: "Those rates produced no optimal K." });
+      return;
+    }
+    updateLevel(i, { run: { Kstar, Hstar, rho }, error: null });
+  }
 
   async function saveStructure() {
     if (!cascade || !cascade.reachedTop) return;
@@ -266,7 +320,8 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
         <h2 className="text-lg font-bold text-strong">18. Management levels</h2>
         <p className="mt-1 text-sm text-muted">
           Each level's head count becomes the numerator of the level above it. That level
-          needs its own λ and μ, which give it its own K* to divide by. The ladder ends
+          needs its own λ and μ, which replace the ones below and give it its own K*
+          to divide by — press Execute in the level's box to run them. The ladder ends
           when a level holds a single post.
         </p>
 
@@ -283,13 +338,11 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                   step="0.0001"
                   value={r.lambda}
                   onChange={(e) =>
-                    setLevelRates((prev) =>
-                      prev.map((p, j) =>
-                        j === i
-                          ? { ...p, lambda: e.target.value === "" ? "" : Number(e.target.value) }
-                          : p,
-                      ),
-                    )
+                    updateLevel(i, {
+                      lambda: e.target.value === "" ? "" : Number(e.target.value),
+                      run: null,
+                      error: null,
+                    })
                   }
                   className={field}
                 />
@@ -301,13 +354,11 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                   step="0.0001"
                   value={r.mu}
                   onChange={(e) =>
-                    setLevelRates((prev) =>
-                      prev.map((p, j) =>
-                        j === i
-                          ? { ...p, mu: e.target.value === "" ? "" : Number(e.target.value) }
-                          : p,
-                      ),
-                    )
+                    updateLevel(i, {
+                      mu: e.target.value === "" ? "" : Number(e.target.value),
+                      run: null,
+                      error: null,
+                    })
                   }
                   className={field}
                 />
@@ -319,38 +370,72 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                   step="0.1"
                   value={r.A}
                   onChange={(e) =>
-                    setLevelRates((prev) =>
-                      prev.map((p, j) =>
-                        j === i
-                          ? { ...p, A: e.target.value === "" ? "" : Number(e.target.value) }
-                          : p,
-                      ),
-                    )
+                    updateLevel(i, {
+                      A: e.target.value === "" ? "" : Number(e.target.value),
+                      run: null,
+                      error: null,
+                    })
                   }
                   className={field}
                 />
               </label>
-              <div className="flex items-end">
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => executeLevel(i)}
+                  disabled={r.lambda === "" || r.mu === ""}
+                  className={`rounded-md px-3 py-2 text-xs font-medium text-white ${
+                    r.lambda === "" || r.mu === ""
+                      ? "cursor-not-allowed bg-gray-400"
+                      : "bg-pes hover:opacity-90"
+                  }`}
+                >
+                  {r.run ? "Re-execute" : "Execute"}
+                </button>
                 {levelRates.length > 1 && (
                   <button
                     type="button"
                     onClick={() => setLevelRates((prev) => prev.filter((_, j) => j !== i))}
                     className="rounded-md border border-line px-3 py-2 text-xs text-danger-700 hover:bg-danger-50"
                   >
-                    Remove level
+                    Remove
                   </button>
                 )}
               </div>
-              {r.lambda !== "" && r.mu !== "" && Number(r.lambda) >= Number(r.mu) && (
+
+              {r.run ? (
+                <div className="rounded-lg border border-pes-200 bg-pes-50 px-4 py-3 sm:col-span-4">
+                  <p className="text-xs font-medium text-pes-700">
+                    Personnel utilization at this level
+                  </p>
+                  <p className="mt-0.5 text-sm text-pes">
+                    <span className="text-2xl font-bold">K* = {r.run.Kstar}</span>
+                    <span className="ml-3 text-xs">
+                      H* = {r.run.Hstar.toFixed(4)} · ρ = {r.run.rho.toFixed(4)}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted sm:col-span-4">
+                  Execute this level to get its K*. The level above it is not counted
+                  until you do.
+                </p>
+              )}
+
+              {(r.error ??
+                (r.lambda !== "" && r.mu !== "" && Number(r.lambda) >= Number(r.mu)
+                  ? "λ must be strictly less than μ."
+                  : null)) && (
                 <p className="text-xs text-danger-700 sm:col-span-4">
-                  λ must be strictly less than μ.
+                  {r.error ??
+                    "λ must be strictly less than μ."}
                 </p>
               )}
             </div>
           ))}
           <button
             type="button"
-            onClick={() => setLevelRates((prev) => [...prev, { lambda: "", mu: "", A: 8 }])}
+            onClick={() => setLevelRates((prev) => [...prev, emptyLevel()])}
             className="rounded-md border border-pes px-3 py-2 text-xs font-medium text-pes hover:bg-pes-50"
           >
             + Add another management level
@@ -388,6 +473,13 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
               </tbody>
             </table>
           </div>
+        )}
+
+        {levelRates.some((r) => !r.run) && (
+          <p className="mt-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+            {takeExecutedPrefix(levelRates).length} of {levelRates.length} levels executed.
+            The ladder below only counts the executed ones.
+          </p>
         )}
 
         {cascade?.note && (
