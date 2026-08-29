@@ -108,10 +108,10 @@ export default function OrgStructurePage() {
     }
   }
 
-  // Sections 18, 19 and 21 are computed together in ./CascadePanel now. They
-  // used to be three separate cards of Σ-terms whose results could contradict
-  // one another, because nothing tied the ladder in 18 to the shape in 19 or
-  // the comparison in 21.
+  // Sections 18 and 19 are computed together in ./CascadePanel now. They used
+  // to be separate cards of Σ-terms whose results could contradict one another,
+  // because nothing tied the ladder in 18 to the shape in 19. Section 21 has
+  // moved to the Supervision Cost tab of the Redundancy Index.
 
   // ===== Section 20 =====
   const [maxInput, setMaxInput] = useState<number | "">("");
@@ -315,9 +315,8 @@ export default function OrgStructurePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         
-        {/* Sections 17-19 and 21 are one calculation, not four: 17's head count
-            is what 18 divides down level by level, 18's ladder is 19's shape,
-            and 21 measures that ladder against the real organization. */}
+        {/* Sections 17-19 are one calculation, not three: 17's head count is
+            what 18 divides down level by level, and 18's ladder is 19's shape. */}
         <div className="xl:col-span-3">
           <CascadePanel onSave={saveResult} />
         </div>

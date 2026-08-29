@@ -12,6 +12,7 @@ import {
   DParams,
   OptimalKCostResult,
 } from "../personnel-utilization/lib/util-models11-16";
+import CostCascadePanel from "./CostCascadePanel";
 import {
   LineChart,
   Line,
@@ -511,6 +512,10 @@ function SupervisionCostTab() {
           </div>
         </div>
       )}
+
+      {/* The management ladder and Section 21, which the client moved here from
+          the organization structure page on 30 August. */}
+      <CostCascadePanel />
     </div>
   );
 }

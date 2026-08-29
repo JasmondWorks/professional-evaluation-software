@@ -70,3 +70,51 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// Saved section results, newest first. The supervision cost history reads
+// section 21 through this: percentage redundancy is computed on that page now,
+// but it is still an org-structure result and still lives in the same table.
+export async function GET(req: NextRequest) {
+  try {
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token) {
+      return NextResponse.json({ error: "Missing token" }, { status: 401 });
+    }
+
+    const decoded: any = jwtDecode(token);
+    const org = decoded?.org;
+    if (!org) {
+      return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
+    }
+
+    const sectionParam = new URL(req.url).searchParams.get("section");
+    const section = sectionParam == null ? null : Number(sectionParam);
+    if (sectionParam != null && !Number.isFinite(section)) {
+      return NextResponse.json({ error: "Invalid section" }, { status: 400 });
+    }
+
+    const rows = await prisma.org_structure_results.findMany({
+      where: { org, ...(section == null ? {} : { section }) },
+      orderBy: { created_at: "desc" },
+      take: 50,
+    });
+
+    return NextResponse.json(
+      rows.map((r) => ({
+        id: r.id,
+        section: r.section,
+        result: r.result == null ? null : Number(r.result),
+        numerator: r.numerator.map(Number),
+        denominator: r.denominator.map(Number),
+        extra_data: r.extra_data,
+        created_at: r.created_at,
+      })),
+    );
+  } catch (err: any) {
+    console.error("Error reading org structure results:", err);
+    return NextResponse.json(
+      { error: "Internal server error", details: err.message },
+      { status: 500 },
+    );
+  }
+}

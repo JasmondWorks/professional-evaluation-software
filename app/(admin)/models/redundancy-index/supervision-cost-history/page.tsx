@@ -21,11 +21,24 @@ interface CostRun {
   created_at: string;
 }
 
+// Section 21 is saved from this model's page now, so its results are shown
+// here too — the client asked for the percentage redundancy to sit with the
+// supervision cost history rather than with the organization structure.
+interface RedundancyRun {
+  id: number;
+  result: number | null;
+  numerator: number[];
+  denominator: number[];
+  extra_data: any;
+  created_at: string;
+}
+
 const fmt = (v: number | null, digits: number) =>
   v === null || !Number.isFinite(v) ? "—" : v.toFixed(digits);
 
 export default function SupervisionCostHistoryPage() {
   const [runs, setRuns] = useState<CostRun[]>([]);
+  const [redundancyRuns, setRedundancyRuns] = useState<RedundancyRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +60,21 @@ export default function SupervisionCostHistoryPage() {
 
         const data = await res.json();
         setRuns(Array.isArray(data) ? data : []);
+
+        // A separate table, and a failure to read it should not empty the page
+        // of the runs that did load.
+        try {
+          const prRes = await apiFetch("/api/orgStructure?section=21", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (prRes.ok) {
+            const prData = await prRes.json();
+            setRedundancyRuns(Array.isArray(prData) ? prData : []);
+          }
+        } catch {
+          /* the section below simply stays empty */
+        }
       } catch (err: any) {
         console.error(err);
         setError(err.message || "Failed to load history");
@@ -139,6 +167,55 @@ export default function SupervisionCostHistoryPage() {
           </div>
         </div>
       )}
+
+      {/* ===== 21. Percentage redundancy ===== */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-strong">21. Percentage redundancy</h2>
+        <p className="mt-1 mb-4 text-body">
+          Saved comparisons of the ideal management head count at each level against what
+          the organization actually employs.
+        </p>
+
+        {redundancyRuns.length === 0 ? (
+          <div className="rounded-xl border border-line bg-white p-8 text-center shadow-sm">
+            <p className="text-muted">
+              No percentage redundancy saved yet. Run the management levels on the
+              Supervision Cost tab and save the result there.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-line bg-canvas font-medium text-body">
+                  <tr>
+                    <th className="px-6 py-4 whitespace-nowrap">Date</th>
+                    <th className="px-6 py-4">Personnel redundancy</th>
+                    <th className="px-6 py-4">Levels</th>
+                    <th className="px-6 py-4">Ideal per level</th>
+                    <th className="px-6 py-4">Real per level</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {redundancyRuns.map((run) => (
+                    <tr key={run.id} className="transition-colors hover:bg-canvas">
+                      <td className="px-6 py-4 whitespace-nowrap text-muted">
+                        {dayjs(run.created_at).format("MMM D, YYYY h:mm A")}
+                      </td>
+                      <td className="px-6 py-4 text-lg font-bold text-pes">
+                        {run.result == null ? "—" : `${run.result.toFixed(2)}%`}
+                      </td>
+                      <td className="px-6 py-4 text-body">{run.denominator.length}</td>
+                      <td className="px-6 py-4 text-body">{run.denominator.join(" · ")}</td>
+                      <td className="px-6 py-4 text-body">{run.numerator.join(" · ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
