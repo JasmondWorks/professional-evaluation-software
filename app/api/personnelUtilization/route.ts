@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // adjust path if needed
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,17 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    // The queue is only stable while arrivals trail service. Rows that break the
+    // rule are not merely wrong on their own row — the history feeds the staff
+    // prediction, so one bad K* skews every extrapolation drawn through it. The
+    // form blocks this too; this is the check that actually holds.
+    if (!(Number(lambda) < Number(mu))) {
+      return NextResponse.json(
+        { error: "λ must be strictly less than μ." },
         { status: 400 },
       );
     }
@@ -49,7 +61,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    // This used to take the newest row in the table with no org filter at all,
+    // so one organization's latest run was handed to whoever asked next. The
+    // org now comes from the token and scopes the query.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    if (!org) {
+      return NextResponse.json(
+        { error: "Organization not found in token" },
+        { status: 400 },
+      );
+    }
+
     const latest = await prisma.personnel_utilization.findFirst({
+      where: { org },
       orderBy: { created_at: "desc" },
     });
 

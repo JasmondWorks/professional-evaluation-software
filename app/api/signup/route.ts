@@ -43,7 +43,12 @@ async function addToDb(info: reqInfo) {
         name: org,
         category,
         plan,
-        maintenance_model: category === 'academic',
+        // Not granted at signup. The maintenance model is bundled with the
+        // company product (see MAINTENANCE_BY_DEFAULT, which decides that from
+        // the category), and every other sector requests it from /pricing. This
+        // column records only that separate purchase, so granting it here on
+        // signup hid the request card from the sectors meant to see it.
+        maintenance_model: false,
       },
     });
 

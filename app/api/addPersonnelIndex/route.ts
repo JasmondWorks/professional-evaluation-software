@@ -36,10 +36,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Invalid payload field' }, { status: 400 });
   }
 
+  // Only meaningful for the productivity index, and only when the caller sent
+  // them. The index is a ratio; keeping the two figures behind it is what lets
+  // the future-output prediction fit a line through the history later.
+  const resourceFigures =
+    payload === 'productivity'
+      ? {
+          output_resources:
+            body.output_resources == null ? null : Number(body.output_resources),
+          input_resources:
+            body.input_resources == null ? null : Number(body.input_resources),
+        }
+      : {};
+
   try {
     // Always create a new record for historical tracking
     await prisma.index.create({
-      data: { org, dept, [payload]: value } as Prisma.indexUncheckedCreateInput,
+      data: { org, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
     });
 
     return NextResponse.json({ message: 'saved successfully' }, { status: 201 });
