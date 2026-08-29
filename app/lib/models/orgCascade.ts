@@ -10,7 +10,10 @@
 // Kept out of the page because it is the part with the arithmetic in it, and
 // because section 19 and section 21 both read the same ladder.
 
-import { findOptimalK } from '@/app/(admin)/models/personnel-utilization/lib/util-models11-16';
+import {
+  findOptimalK,
+  findOptimalKCost,
+} from '@/app/(admin)/models/personnel-utilization/lib/util-models11-16';
 
 export type CascadeLevel = {
   /** 1 for the first management level above the supervisory staff. */
@@ -26,6 +29,12 @@ export type CascadeLevel = {
   /** numerator / kstar — the managers needed at this level. */
   count: number;
 };
+
+/** Cost-side rates. The redundancy model walks the same ladder as the
+ *  organization structure, but its K* comes from minimising the supervision
+ *  cost D (Eq. 8.35) instead of maximising utilization H — the client's only
+ *  stated difference between the two pages. */
+export type CostLevelRates = { lambda: number; mu: number; A: number; a: number; b: number };
 
 export type CascadeInput = {
   /** Staff number from whichever estimation method was used. */
@@ -58,7 +67,15 @@ function headcount(value: number): number {
  *  `levels` supplies the rates for each step. The walk stops when the count
  *  reaches 1, or when it runs out of supplied rates — the caller then knows to
  *  ask for another λ/μ pair. */
-export function runCascade(input: CascadeInput): CascadeResult {
+export function runCascade(
+  input: CascadeInput,
+  /** How a level turns its rates into a span. Defaults to the utilization
+   *  optimum; the redundancy model passes the cost optimum instead. */
+  solve: (
+    level: { lambda: number; mu: number; A: number },
+    index: number,
+  ) => number = (l) => findOptimalK({ A: l.A, lambda: l.lambda, mu: l.mu }).Kstar,
+): CascadeResult {
   const { staffNumber, supervisoryKstar, levels } = input;
 
   if (!(staffNumber > 0) || !(supervisoryKstar > 0)) {
@@ -96,7 +113,7 @@ export function runCascade(input: CascadeInput): CascadeResult {
       };
     }
 
-    const { Kstar } = findOptimalK({ A, lambda, mu } as any);
+    const Kstar = solve({ A, lambda, mu }, i);
     if (!(Kstar > 0)) {
       return {
         levels: out,
@@ -157,4 +174,26 @@ export function personnelRedundancy(
   if (!(totalReal > 0)) return null;
   const totalIdeal = rows.reduce((s, r) => s + (r.ideal || 0), 0);
   return ((totalReal - totalIdeal) / totalReal) * 100;
+}
+
+
+/** The same ladder, driven by the supervision cost optimum: K* is the span that
+ *  minimises D (Eq. 8.35) rather than the one that maximises H. The client's
+ *  only stated difference between this page and the organization structure. */
+export function runCostCascade(input: {
+  staffNumber: number;
+  supervisoryKstar: number;
+  levels: CostLevelRates[];
+}): CascadeResult {
+  return runCascade(
+    {
+      staffNumber: input.staffNumber,
+      supervisoryKstar: input.supervisoryKstar,
+      levels: input.levels.map((l) => ({ lambda: l.lambda, mu: l.mu, A: l.A })),
+    },
+    (_l, i) => {
+      const { A, a, b, lambda, mu } = input.levels[i];
+      return findOptimalKCost({ A, a, b, lambda, mu }).Kstar;
+    },
+  );
 }
