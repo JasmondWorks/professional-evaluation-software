@@ -126,6 +126,7 @@ export default function ProductivityHistoryPage() {
                           source="index"
                           id={run.id}
                           label={`the run of ${dayjs(run.created_at).format("MMM D, YYYY")}`}
+                          historyCount={runs.length}
                           onRemoved={(id) => setRuns((rows) => rows.filter((r) => r.id !== id))}
                         />
                       </div>
