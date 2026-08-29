@@ -10,6 +10,7 @@ import {
   personnelRedundancy,
 } from "@/app/lib/models/orgCascade";
 import { findOptimalK } from "@/app/(admin)/models/personnel-utilization/lib/util-models11-16";
+import { useCurrentUser } from "@/app/components/useCurrentUser";
 
 // Sections 17, 18, 19 and 21 as one screen.
 //
@@ -73,6 +74,13 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
   const [realCounts, setRealCounts] = useState<Record<number, number | "">>({});
 
   const [saving, setSaving] = useState(false);
+
+  // The client's rule of 30 Aug: the organization admin executes the levels;
+  // the industrial engineer who runs the models day to day sees the ladder and
+  // saves the structure, but does not re-run the rates behind it.
+  const { user } = useCurrentUser();
+  const mayExecute =
+    user?.role === "admin" || user?.role === "super-admin";
 
   useEffect(() => {
     let cancelled = false;
@@ -344,6 +352,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                       error: null,
                     })
                   }
+                  readOnly={!mayExecute}
                   className={field}
                 />
               </label>
@@ -360,6 +369,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                       error: null,
                     })
                   }
+                  readOnly={!mayExecute}
                   className={field}
                 />
               </label>
@@ -376,23 +386,26 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                       error: null,
                     })
                   }
+                  readOnly={!mayExecute}
                   className={field}
                 />
               </label>
               <div className="flex items-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => executeLevel(i)}
-                  disabled={r.lambda === "" || r.mu === ""}
-                  className={`rounded-md px-3 py-2 text-xs font-medium text-white ${
-                    r.lambda === "" || r.mu === ""
-                      ? "cursor-not-allowed bg-gray-400"
-                      : "bg-pes hover:opacity-90"
-                  }`}
-                >
-                  {r.run ? "Re-execute" : "Execute"}
-                </button>
-                {levelRates.length > 1 && (
+                {mayExecute && (
+                  <button
+                    type="button"
+                    onClick={() => executeLevel(i)}
+                    disabled={r.lambda === "" || r.mu === ""}
+                    className={`rounded-md px-3 py-2 text-xs font-medium text-white ${
+                      r.lambda === "" || r.mu === ""
+                        ? "cursor-not-allowed bg-gray-400"
+                        : "bg-pes hover:opacity-90"
+                    }`}
+                  >
+                    {r.run ? "Re-execute" : "Execute"}
+                  </button>
+                )}
+                {mayExecute && levelRates.length > 1 && (
                   <button
                     type="button"
                     onClick={() => setLevelRates((prev) => prev.filter((_, j) => j !== i))}
@@ -417,8 +430,9 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                 </div>
               ) : (
                 <p className="text-xs text-muted sm:col-span-4">
-                  Execute this level to get its K*. The level above it is not counted
-                  until you do.
+                  {mayExecute
+                    ? "Execute this level to get its K*. The level above it is not counted until you do."
+                    : "This level has not been executed yet. Only the organization admin can execute a level; you can save the structure once every level has been."}
                 </p>
               )}
 
@@ -433,6 +447,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
               )}
             </div>
           ))}
+          {mayExecute && (
           <button
             type="button"
             onClick={() => setLevelRates((prev) => [...prev, emptyLevel()])}
@@ -440,6 +455,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
           >
             + Add another management level
           </button>
+          )}
         </div>
 
         {cascade && cascade.levels.length > 0 && (

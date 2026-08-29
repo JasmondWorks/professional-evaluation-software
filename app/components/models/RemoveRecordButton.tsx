@@ -18,18 +18,39 @@ type Props = {
   id: number;
   /** What to say in the confirmation, e.g. "the run from 3 June". */
   label?: string;
+  /** How many runs the history holds right now, if the caller knows. Used to
+   *  say what removing this one leaves behind — a fit through fewer than three
+   *  runs is not worth trusting, and the client asked that operators be told
+   *  so before they prune rather than after. */
+  historyCount?: number;
   /** Drop the row from the caller's state once the server has accepted. */
   onRemoved: (id: number) => void;
 };
 
-export default function RemoveRecordButton({ source, id, label, onRemoved }: Props) {
+export default function RemoveRecordButton({
+  source,
+  id,
+  label,
+  historyCount,
+  onRemoved,
+}: Props) {
   const [busy, setBusy] = useState(false);
 
   async function remove() {
     // A deletion with no undo, so it is worth one question first.
+    const left = historyCount == null ? null : historyCount - 1;
+    const consequence =
+      left == null
+        ? 'Any prediction fitted through this history will change.'
+        : left < 2
+          ? `That would leave ${left} run${left === 1 ? '' : 's'}, which is not enough to fit a line at all — the Future Requirements model will have no prediction to make from this history.`
+          : left < 3
+            ? `That would leave ${left} runs. A line through two points fits them perfectly and predicts nothing; three or more are needed before a forecast means anything.`
+            : `That would leave ${left} runs, and every prediction fitted through this history will change.`;
+
     if (
       !window.confirm(
-        `Remove ${label ?? 'this record'} from the history? This cannot be undone, and any prediction fitted through the history will change.`,
+        `Remove ${label ?? 'this record'} from the history?\n\nThis cannot be undone. ${consequence}`,
       )
     ) {
       return;

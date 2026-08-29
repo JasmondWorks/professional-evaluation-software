@@ -107,6 +107,7 @@ export default function PersonnelUtilizationHistory() {
           source="personnel-utilization"
           id={item.id}
           label={`the run of ${new Date(item.created_at).toLocaleDateString()}`}
+          historyCount={data.length}
           onRemoved={(id) => setData((rows) => rows.filter((r) => r.id !== id))}
         />
       ),

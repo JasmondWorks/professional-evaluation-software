@@ -269,7 +269,7 @@ export default function FutureRequirementsPage() {
                 <div className="flex items-center justify-between">
                   <dt className="flex items-center text-body">
                     R²
-                    <InfoPopover text="How much of the variation the straight line accounts for. Well below 1 means the recorded runs are not really linear, and the prediction should be treated with care." />
+                    <InfoPopover text="How much of the variation between the recorded runs the straight line accounts for. 1.00 is a perfect fit; 0 means the line explains nothing. Below about 0.7 the runs are not really a straight line, and the prediction should be treated with care." />
                   </dt>
                   <dd className="font-mono font-semibold text-strong">{fit.r2.toFixed(4)}</dd>
                 </div>
@@ -281,13 +281,36 @@ export default function FutureRequirementsPage() {
               <p className="mt-4 rounded-md bg-canvas px-3 py-2 font-mono text-xs text-body">
                 y = {fit.a.toFixed(4)} {fit.b < 0 ? "−" : "+"} {Math.abs(fit.b).toFixed(4)}x
               </p>
-              {fit.r2 < 0.5 && (
-                <p className="mt-3 text-xs text-warning-700">
-                  The recorded runs are a poor straight line (R² below 0.5). The prediction
-                  below is still what the fit says, but it is not well supported by this
-                  history.
+              {/* Two readings of the same fit, and the client asked for both to be
+                  spelled out rather than left to the operator: how well the line
+                  describes the runs, and whether there are enough runs for that
+                  number to mean anything. Two points always give R² = 1. */}
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-body">
+                  <strong>Reading R²:</strong> it is the share of the variation between
+                  the recorded runs that the straight line accounts for. 1.00 is a
+                  perfect fit and 0 explains nothing. Above about 0.9 the history is
+                  strongly linear and the prediction is dependable; between 0.7 and 0.9
+                  it is usable; below 0.7 the runs do not lie on a line and the forecast
+                  should be treated as indicative only.
                 </p>
-              )}
+                {fit.points.length < 3 ? (
+                  <p className="rounded-md border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-700">
+                    Only {fit.points.length} runs are recorded. A line through two points
+                    fits them perfectly — R² will read 1.00 whatever the data — so that
+                    figure means nothing yet. Record at least three runs before relying
+                    on this prediction.
+                  </p>
+                ) : (
+                  fit.r2 < 0.7 && (
+                    <p className="rounded-md border border-warning-200 bg-warning-50 px-3 py-2 text-xs text-warning-700">
+                      The recorded runs are a poor straight line (R² below 0.7). The
+                      prediction is still what the fit says, but this history does not
+                      support it well.
+                    </p>
+                  )
+                )}
+              </div>
             </div>
 
             <div className="rounded-xl border border-line bg-white p-6 shadow-sm">
