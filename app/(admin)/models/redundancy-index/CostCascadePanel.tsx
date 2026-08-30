@@ -73,7 +73,12 @@ export default function CostCascadePanel() {
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [supervisoryKstar, setSupervisoryKstar] = useState<number | "">("");
   const [levelRates, setLevelRates] = useState<LevelRates[]>([emptyLevel()]);
+  // The real head counts come from the employee records — the client's answer
+  // of 30 August. They stay editable: a record may not have been given its
+  // management level yet, and the operator should not be blocked by that.
   const [realCounts, setRealCounts] = useState<Record<number, number | "">>({});
+  const [employeeCounts, setEmployeeCounts] = useState<Record<number, number> | null>(null);
+  const [employeesAssigned, setEmployeesAssigned] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -95,6 +100,38 @@ export default function CostCascadePanel() {
         /* the empty state below covers it */
       } finally {
         if (!cancelled) setLoadingStaff(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/management-levels", { method: "GET" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const counts: Record<number, number> = {};
+        for (const [level, n] of Object.entries(data.counts ?? {})) {
+          counts[Number(level)] = Number(n);
+        }
+        setEmployeeCounts(counts);
+        setEmployeesAssigned(Number(data.assigned ?? 0));
+        // Seed the table with what the records say. Anything the operator has
+        // already typed wins, so this cannot overwrite work in progress.
+        setRealCounts((prev) => {
+          const next = { ...prev };
+          for (const [level, n] of Object.entries(counts)) {
+            if (next[Number(level)] === undefined) next[Number(level)] = n;
+          }
+          return next;
+        });
+      } catch {
+        /* the fields stay typed-in, as before */
       }
     })();
     return () => {
@@ -498,9 +535,17 @@ export default function CostCascadePanel() {
         <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-strong">21. Percentage redundancy</h2>
           <p className="mt-1 text-sm text-muted">
-            No-n is the ideal number of management staff at each level. Enter what the
-            organization really employs there to see the surplus.
+            No-n is the ideal number of management staff at each level. The real figures
+            are counted from the employee records — from the management level on each
+            record — and can be corrected here if a record has not been given one yet.
           </p>
+          {employeesAssigned === 0 && (
+            <p className="mt-3 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+              No employee record carries a management level yet, so nothing could be
+              counted. Set the management level on the managers in the employee database,
+              or enter the real figures by hand below.
+            </p>
+          )}
 
           <div className="mt-5 overflow-x-auto rounded-lg border border-line">
             <table className="w-full text-left text-sm">
@@ -529,6 +574,11 @@ export default function CostCascadePanel() {
                         }
                         className="w-28 rounded-md border border-line bg-surface px-2 py-1 text-sm outline-none focus:border-pes-400"
                       />
+                      {employeeCounts?.[r.level] !== undefined && (
+                        <span className="ml-2 text-xs text-muted">
+                          {employeeCounts[r.level]} on record
+                        </span>
+                      )}
                     </td>
                     <td
                       className={`px-4 py-2 font-semibold ${

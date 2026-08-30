@@ -1,357 +1,750 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Add, Trash, Setting2, TrendUp } from 'iconsax-react';
-import { getAccessToken } from "@/app/utils/auth";
-import InfoPopover from "@/app/components/ui/InfoPopover";
-import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { apiFetch } from "@/app/utils/apiFetch";
+import { notify } from "@/lib/toast";
+import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui";
+import { useCurrentUser } from "@/app/components/useCurrentUser";
+import {
+  MOTIVATOR_GROUPS,
+  COMPULSORY_KEYS,
+  PERFORMANCE_LEVELS,
+  PERIODS,
+  actionScheme,
+  entitlementFor,
+  levelFromPercentage,
+  CERTIFICATE_TYPES,
+  type PerformanceLevel,
+  type Period,
+} from "@/app/lib/motivation/scheme";
 
-interface SubItem {
-  label: string;
-  score: number;
-}
+// The motivation model, rebuilt from pages 102-109 of the client's document.
+//
+// What stood here before was a weighted survey — "Job Satisfaction, weight 0.2",
+// scored out of 100 — which appears nowhere in the document and produced a
+// number nothing consumed. The document describes a scheme, not a score: the
+// head of the establishment adopts a set of motivators for their tenure, and
+// what a member of staff receives follows from their performance grade and the
+// period, through the Motivation Action Scheme.
 
-interface Category {
-  name: string;
-  weight: number;
-  subItems: SubItem[];
-  open: boolean;
-}
+type Scheme = {
+  id: number;
+  tenure: string;
+  selections: string[];
+  additions: string[];
+  active: boolean;
+  created_at: string;
+  closed_at: string | null;
+};
 
-export default function StaffMotivationPage() {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      name: "Job Satisfaction",
-      weight: 0.2,
-      subItems: [{ label: "Satisfaction with tasks", score: 0 }],
-      open: true,
-    },
-    {
-      name: "Work Environment",
-      weight: 0.15,
-      subItems: [{ label: "Physical work conditions", score: 0 }],
-      open: true,
-    },
-    {
-      name: "Rewards & Incentives",
-      weight: 0.15,
-      subItems: [{ label: "Fairness of compensation", score: 0 }],
-      open: true,
-    },
-    {
-      name: "Opportunities for Growth",
-      weight: 0.15,
-      subItems: [{ label: "Training opportunities", score: 0 }],
-      open: true,
-    },
-    {
-      name: "Leadership Quality",
-      weight: 0.2,
-      subItems: [{ label: "Support from management", score: 0 }],
-      open: true,
-    },
-    {
-      name: "Communication Effectiveness",
-      weight: 0.15,
-      subItems: [{ label: "Clarity of goals", score: 0 }],
-      open: true,
-    },
-  ]);
+type Award = {
+  id: number;
+  staff_name: string;
+  dept: string | null;
+  period: string;
+  period_label: string;
+  level: string;
+  motivator: string;
+  detail: string | null;
+  cash_amount: string | null;
+  awarded_at: string;
+};
 
-  const [thresholds, setThresholds] = useState({
-    high: 80,
-    moderate: 60,
-  });
-
-  const [result, setResult] = useState<{
-    score: number;
-    rating: string;
-    color: string;
-  } | null>(null);
-
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const updateCategory = (index: number, field: keyof Category, value: any) => {
-    const updated = [...categories];
-    (updated as any)[index][field] = value;
-    setCategories(updated);
-  };
-
-  const updateSubItem = (
-    cIndex: number,
-    sIndex: number,
-    field: keyof SubItem,
-    value: any,
-  ) => {
-    const updated = [...categories];
-    (updated as any)[cIndex].subItems[sIndex][field] = value;
-    setCategories(updated);
-  };
-
-  const addSubItem = (cIndex: number) => {
-    const updated = [...categories];
-    updated[cIndex].subItems.push({ label: "New Sub-item", score: 0 });
-    setCategories(updated);
-  };
-
-  const removeSubItem = (cIndex: number, sIndex: number) => {
-    const updated = [...categories];
-    updated[cIndex].subItems.splice(sIndex, 1);
-    setCategories(updated);
-  };
-
-  const toggleCategory = (index: number) => {
-    const updated = [...categories];
-    updated[index].open = !updated[index].open;
-    setCategories(updated);
-  };
-
-  const calculateScore = async () => {
-    setMessage(null);
-    setErrorMsg(null);
-    let total = 0;
-    
-    // Validate weights sum to 1.0
-    const totalWeight = categories.reduce((sum, cat) => sum + cat.weight, 0);
-    if (Math.abs(totalWeight - 1.0) > 0.01) {
-      setErrorMsg("Category weights must sum up to exactly 1.0");
-      return;
-    }
-
-    categories.forEach((cat) => {
-      const subtotal = cat.subItems.reduce((sum, s) => sum + s.score, 0);
-      total += subtotal * cat.weight;
-    });
-
-    let rating = "";
-    let color = "";
-
-    if (total >= thresholds.high) {
-      rating = "High Motivation";
-      color = "text-green-700 bg-green-50 border-green-200";
-    } else if (total >= thresholds.moderate) {
-      rating = "Moderate Motivation";
-      color = "text-yellow-700 bg-yellow-50 border-yellow-200";
-    } else {
-      rating = "Low Motivation";
-      color = "text-danger-700 bg-danger-50 border-danger-100";
-    }
-
-    setResult({ score: total, rating, color });
-
-    // 🔥 Save to backend
-    setSaving(true);
-    
-    try {
-      const token = getAccessToken();
-      const res = await apiFetch("/api/motivation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          total_score: total,
-          rating,
-          thresholds,
-          categories,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage("✅ Motivation record saved successfully!");
-      } else {
-        console.error("Error saving:", data);
-        setErrorMsg(`Save failed: ${data.error || "Unknown error"}`);
-      }
-    } catch (err) {
-      console.error("Request error:", err);
-      setErrorMsg("Could not connect to server.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
+export default function MotivationPage() {
   return (
-    <div className="p-8 w-full mx-auto">
+    <div className="mx-auto w-full p-8">
       <div className="mb-4">
         <BackLink href="/models">Back to Models</BackLink>
       </div>
 
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Staff Motivation</h1>
-          <p className="text-body mb-6 max-w-2xl">
-            Evaluate staff motivation across various parameters by weighting scores for job satisfaction, environment, and opportunities.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/models/motivation/history"
-            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            View History
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold text-strong">Motivation of staff</h1>
+      <p className="mt-1 max-w-3xl text-body">
+        The establishment adopts a set of motivators for an administration, and the
+        Motivation Action Scheme decides what each grade of performance earns over each
+        period. Nothing is scored here — the performance and appraisal models produce the
+        grade, and this says what follows from it.
+      </p>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        {/* Left Column - Categories */}
-        <div className="xl:col-span-2 space-y-4">
-          {categories.map((cat, cIndex) => (
-            <div key={cIndex} className="bg-white rounded-xl border border-line overflow-hidden shadow-sm">
-              <div 
-                className="flex justify-between items-center px-6 py-4 bg-canvas border-b border-line cursor-pointer"
-                onClick={() => toggleCategory(cIndex)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
-                    <span className="font-bold text-sm">{cIndex + 1}</span>
-                  </div>
-                  <h3 className="font-semibold text-strong">{cat.name}</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-sm font-medium text-body">Weight:</span>
-                    <input
-                      type="number"
-                      step="0.05"
-                      value={cat.weight}
-                      onChange={(e) => updateCategory(cIndex, "weight", Number(e.target.value))}
-                      className="w-20 rounded border border-line px-2 py-1 text-sm outline-none focus:border-pes"
-                    />
-                  </div>
-                  <svg className={`w-5 h-5 text-muted transition-transform ${cat.open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-              
-              {cat.open && (
-                <div className="p-6">
-                  <div className="space-y-4 mb-4">
-                    {cat.subItems.map((sub, sIndex) => (
-                      <div key={sIndex} className="flex gap-4 items-start">
-                        <div className="flex-1">
-                          <label className="text-xs font-semibold text-muted mb-1 block">Parameter Label</label>
-                          <input
-                            type="text"
-                            value={sub.label}
-                            onChange={(e) => updateSubItem(cIndex, sIndex, "label", e.target.value)}
-                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none"
-                            placeholder="Enter parameter name..."
-                          />
-                        </div>
-                        <div className="w-32">
-                          <label className="text-xs font-semibold text-muted mb-1 block">Score (0-100)</label>
-                          <input
-                            type="number"
-                            value={sub.score}
-                            onChange={(e) => updateSubItem(cIndex, sIndex, "score", Number(e.target.value))}
-                            className="w-full rounded-md border border-line px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none"
-                          />
-                        </div>
-                        <div className="pt-6">
-                          <button
-                            onClick={() => removeSubItem(cIndex, sIndex)}
-                            className="text-danger-600 hover:text-danger-700 hover:bg-danger-50 p-2 rounded-md transition-colors"
-                            title="Remove Parameter"
-                          >
-                            <Trash size="18" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+      <Tabs defaultValue="scheme" syncParam="tab" className="mt-8">
+        <TabsList className="mb-8">
+          <TabsTrigger value="scheme">Adopted motivators</TabsTrigger>
+          <TabsTrigger value="action">Action scheme</TabsTrigger>
+          <TabsTrigger value="entitlement">What a grade earns</TabsTrigger>
+          <TabsTrigger value="record">Award record</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="scheme">
+          <SchemeTab />
+        </TabsContent>
+        <TabsContent value="action">
+          <ActionSchemeTab />
+        </TabsContent>
+        <TabsContent value="entitlement">
+          <EntitlementTab />
+        </TabsContent>
+        <TabsContent value="record">
+          <AwardRecordTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function SchemeTab() {
+  const { user } = useCurrentUser();
+  const isAdmin = user?.role === "admin" || user?.role === "super-admin";
+
+  const [active, setActive] = useState<Scheme | null>(null);
+  const [past, setPast] = useState<Scheme[]>([]);
+  const [tenure, setTenure] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set(COMPULSORY_KEYS));
+  const [additions, setAdditions] = useState<string[]>([]);
+  const [newAddition, setNewAddition] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/motivation-scheme", { method: "GET" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.active) {
+          setActive(data.active);
+          setTenure(data.active.tenure);
+          setSelected(new Set([...(data.active.selections ?? []), ...COMPULSORY_KEYS]));
+          setAdditions(data.active.additions ?? []);
+        }
+        setPast(data.past ?? []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  function toggle(key: string) {
+    if (COMPULSORY_KEYS.includes(key)) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function save() {
+    if (!tenure.trim()) {
+      notify.error("Name the administration this selection belongs to.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await apiFetch("/api/motivation-scheme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenure: tenure.trim(),
+          selections: Array.from(selected),
+          additions,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not save the scheme.");
+      setActive(data.scheme);
+      if (data.replaced) {
+        notify.success("The previous administration's scheme was closed and kept on record.");
+      } else {
+        notify.success("Scheme saved.");
+      }
+    } catch (err: any) {
+      notify.error(err.message ?? "Could not save the scheme.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <p className="text-muted">Loading the adopted scheme…</p>;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Administration</h2>
+        <p className="mt-1 text-sm text-muted">
+          The selection is kept against the administration that made it. Naming a new one
+          closes the current selection and starts a fresh record, so what a previous
+          administration ran on stays readable.
+        </p>
+        <input
+          value={tenure}
+          onChange={(e) => setTenure(e.target.value)}
+          readOnly={!isAdmin}
+          placeholder="e.g. Prof. A. Balogun, 2026-2030"
+          className="mt-4 block w-full max-w-md rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+        />
+        {active && (
+          <p className="mt-2 text-xs text-muted">
+            Currently in force: <strong>{active.tenure}</strong>, adopted{" "}
+            {new Date(active.created_at).toLocaleDateString()}.
+          </p>
+        )}
+      </section>
+
+      {MOTIVATOR_GROUPS.map((group) => (
+        <section key={group.key} className="rounded-xl border border-line bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-strong">{group.title}</h2>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {group.items.map((item) => {
+              const compulsory = Boolean(item.compulsory);
+              return (
+                <label
+                  key={item.key}
+                  className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                    compulsory ? "border-pes-200 bg-pes-50" : "border-line"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(item.key)}
+                    disabled={compulsory || !isAdmin}
+                    onChange={() => toggle(item.key)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-body">
+                    {item.label}
+                    {compulsory && (
+                      <span className="ml-2 text-xs font-medium text-pes-700">compulsory</span>
+                    )}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          {group.allowsAdditions && (
+            <div className="mt-4">
+              <p className="text-xs font-medium text-muted">
+                The document leaves room for the establishment's own additions here.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {additions.map((a) => (
+                  <li key={a} className="flex items-center gap-2 text-sm text-body">
+                    <span>• {a}</span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setAdditions((prev) => prev.filter((x) => x !== a))}
+                        className="text-xs text-danger-700 underline"
+                      >
+                        remove
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {isAdmin && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={newAddition}
+                    onChange={(e) => setNewAddition(e.target.value)}
+                    placeholder="Add an item of your own"
+                    className="block w-full max-w-sm rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+                  />
                   <button
-                    onClick={() => addSubItem(cIndex)}
-                    className="flex items-center gap-1 text-sm font-medium text-pes hover:text-pes-800 transition-colors"
+                    type="button"
+                    onClick={() => {
+                      const value = newAddition.trim();
+                      if (!value) return;
+                      setAdditions((prev) => Array.from(new Set([...prev, value])));
+                      setNewAddition("");
+                    }}
+                    className="rounded-md border border-pes px-3 py-2 text-xs font-medium text-pes hover:bg-pes-50"
                   >
-                    <Add size="16" /> Add Parameter
+                    Add
                   </button>
                 </div>
               )}
             </div>
-          ))}
+          )}
+        </section>
+      ))}
+
+      {isAdmin ? (
+        <div>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className={`rounded-lg px-6 py-3 text-sm font-medium text-white ${
+              saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
+            }`}
+          >
+            {saving ? "Saving…" : "Save adopted scheme"}
+          </button>
         </div>
+      ) : (
+        <p className="text-sm text-muted">
+          The adopted scheme is set by the organization admin on behalf of top management.
+        </p>
+      )}
 
-        {/* Right Column - Thresholds & Save */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
-              <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
-                <Setting2 size="16" variant="Bold" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-strong">Thresholds</h2>
-                <p className="text-xs text-muted">Define rating limits</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="block">
-                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
-                  <span className="truncate">High Motivation (≥)</span>
-                  <InfoPopover text="Scores at or above this will be rated High Motivation." />
-                </div>
-                <input
-                  type="number"
-                  value={thresholds.high}
-                  onChange={(e) => setThresholds({ ...thresholds, high: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
-                />
-              </div>
-              <div className="block">
-                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
-                  <span className="truncate">Moderate Motivation (≥)</span>
-                  <InfoPopover text="Scores at or above this will be rated Moderate Motivation." />
-                </div>
-                <input
-                  type="number"
-                  value={thresholds.moderate}
-                  onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
-                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
-                />
-              </div>
-            </div>
-          </div>
+      {past.length > 0 && (
+        <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-strong">Previous administrations</h2>
+          <ul className="mt-3 space-y-2 text-sm text-body">
+            {past.map((p) => (
+              <li key={p.id}>
+                <strong>{p.tenure}</strong> — {(p.selections ?? []).length} motivators,{" "}
+                {new Date(p.created_at).toLocaleDateString()} to{" "}
+                {p.closed_at ? new Date(p.closed_at).toLocaleDateString() : "—"}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
 
-          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-strong mb-4">Calculate & Save</h2>
-            
-            {errorMsg && <p className="text-danger-600 font-medium text-sm mb-4">{errorMsg}</p>}
-            {message && <p className="text-green-600 font-medium text-sm mb-4">{message}</p>}
+// ---------------------------------------------------------------------------
 
-            <button
-              onClick={calculateScore}
-              disabled={saving}
-              className="w-full py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
-            >
-              {saving ? (
-                "Saving..."
-              ) : (
-                <>
-                  <TrendUp size="18" />
-                  Evaluate Motivation
-                </>
-              )}
-            </button>
-
-            {result && (
-              <div className={`mt-6 p-4 rounded-lg border text-center ${result.color}`}>
-                <p className="text-sm font-medium mb-1">Total Score</p>
-                <p className="text-3xl font-bold mb-1">{result.score.toFixed(2)}</p>
-                <p className="text-sm font-semibold">{result.rating}</p>
-              </div>
-            )}
-          </div>
-        </div>
+function ActionSchemeTab() {
+  const scheme = actionScheme();
+  return (
+    <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-bold text-strong">Motivation Action Scheme</h2>
+      <p className="mt-1 text-sm text-muted">
+        Performance level against period, as the document sets it out. A blank cell is
+        blank there too.
+      </p>
+      <div className="mt-5 overflow-x-auto rounded-lg border border-line">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-line bg-canvas font-medium text-body">
+            <tr>
+              <th className="px-4 py-2">Performance level</th>
+              {PERIODS.map((p) => (
+                <th key={p.key} className="px-4 py-2">
+                  {p.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {PERFORMANCE_LEVELS.map((level) => {
+              const disciplinary = ["Very Poor", "Poor", "Fair"].includes(level);
+              return (
+                <tr key={level} className={disciplinary ? "bg-warning-50/40" : undefined}>
+                  <td className="px-4 py-3 font-semibold text-strong">{level}</td>
+                  {PERIODS.map((p) => {
+                    const actions = scheme[level]?.[p.key] ?? [];
+                    return (
+                      <td key={p.key} className="px-4 py-3 align-top text-body">
+                        {actions.length === 0 ? (
+                          <span className="text-muted">—</span>
+                        ) : (
+                          <ul className="list-inside list-disc">
+                            {actions.map((a) => (
+                              <li key={a}>{a}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function EntitlementTab() {
+  const [level, setLevel] = useState<PerformanceLevel>("Very Good");
+  const [period, setPeriod] = useState<Period>("annual");
+  const [percentage, setPercentage] = useState<number | "">("");
+  const [adopted, setAdopted] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/motivation-scheme", { method: "GET" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setAdopted(data.active?.selections ?? null);
+      } catch {
+        /* falls back to the compulsory motivators only */
+      }
+    })();
+  }, []);
+
+  const entitlement = useMemo(
+    () => entitlementFor(level, period, adopted),
+    [level, period, adopted],
+  );
+
+  const labelFor = (key: string) => {
+    for (const g of MOTIVATOR_GROUPS) {
+      const found = g.items.find((i) => i.key === key);
+      if (found) return found.label;
+    }
+    return key;
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">What a grade earns</h2>
+        <p className="mt-1 text-sm text-muted">
+          Pick the grade and the period, or type an overall percentage and let the
+          classification scheme name the grade.
+        </p>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <label className="text-sm font-semibold text-body">
+            Performance level
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value as PerformanceLevel)}
+              className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+            >
+              {PERFORMANCE_LEVELS.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm font-semibold text-body">
+            Period
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as Period)}
+              className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+            >
+              {PERIODS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm font-semibold text-body">
+            Or an overall percentage
+            <input
+              type="number"
+              value={percentage}
+              onChange={(e) => {
+                const v = e.target.value === "" ? "" : Number(e.target.value);
+                setPercentage(v);
+                if (v !== "" && Number.isFinite(v)) setLevel(levelFromPercentage(Number(v)));
+              }}
+              className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section
+        className={`rounded-xl border p-6 shadow-sm ${
+          entitlement.disciplinary
+            ? "border-warning-200 bg-warning-50"
+            : "border-line bg-white"
+        }`}
+      >
+        <h3 className="text-sm font-semibold text-strong">
+          {entitlement.disciplinary ? "Action due" : "Award due"} — {level},{" "}
+          {PERIODS.find((p) => p.key === period)?.label.toLowerCase()}
+        </h3>
+
+        {entitlement.actions.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            The scheme leaves this cell blank: nothing is due at this level for this period.
+          </p>
+        ) : (
+          <ul className="mt-3 list-inside list-disc text-sm text-body">
+            {entitlement.actions.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
+          </ul>
+        )}
+
+        {entitlement.certificateClass && (
+          <div className="mt-5">
+            <p className="text-sm font-semibold text-body">
+              Achievement certificates — {entitlement.certificateClass}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Issued for the parameters the staff member earned them in:
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CERTIFICATE_TYPES.map((c) => (
+                <span
+                  key={c}
+                  className="rounded-md border border-line bg-canvas px-2.5 py-1 text-xs text-body"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {entitlement.motivators.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-semibold text-body">
+              From the motivators this administration adopted
+            </p>
+            <ul className="mt-2 list-inside list-disc text-sm text-body">
+              {entitlement.motivators.map((k) => (
+                <li key={k}>{labelFor(k)}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {adopted == null && (
+          <p className="mt-5 text-xs text-warning-700">
+            No scheme has been adopted yet, so only the compulsory motivators are counted.
+            Set one on the first tab.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function AwardRecordTab() {
+  const { user } = useCurrentUser();
+  const isAdmin = user?.role === "admin" || user?.role === "super-admin";
+
+  const [awards, setAwards] = useState<Award[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({
+    staff_name: "",
+    dept: "",
+    period: "annual" as Period,
+    period_label: String(new Date().getFullYear()),
+    level: "Very Good" as PerformanceLevel,
+    motivator: "",
+    detail: "",
+    cash_amount: "" as number | "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function load() {
+    try {
+      const res = await apiFetch("/api/motivation-awards", { method: "GET" });
+      if (!res.ok) return;
+      setAwards(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function record() {
+    if (!form.staff_name.trim() || !form.motivator.trim()) {
+      notify.error("A staff name and what was awarded are both needed.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await apiFetch("/api/motivation-awards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not record the award.");
+      notify.success("Award recorded.");
+      setForm((f) => ({ ...f, staff_name: "", motivator: "", detail: "", cash_amount: "" }));
+      load();
+    } catch (err: any) {
+      notify.error(err.message ?? "Could not record the award.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const field =
+    "mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400";
+
+  return (
+    <div className="flex flex-col gap-6">
+      {isAdmin && (
+        <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-strong">Record an award</h2>
+          <p className="mt-1 text-sm text-muted">
+            The document requires that every award given, and who received it, is on record
+            for the year.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <label className="text-sm font-semibold text-body">
+              Staff name
+              <input
+                value={form.staff_name}
+                onChange={(e) => setForm((f) => ({ ...f, staff_name: e.target.value }))}
+                className={field}
+              />
+            </label>
+            <label className="text-sm font-semibold text-body">
+              Department
+              <input
+                value={form.dept}
+                onChange={(e) => setForm((f) => ({ ...f, dept: e.target.value }))}
+                className={field}
+              />
+            </label>
+            <label className="text-sm font-semibold text-body">
+              Period
+              <select
+                value={form.period}
+                onChange={(e) => setForm((f) => ({ ...f, period: e.target.value as Period }))}
+                className={field}
+              >
+                {PERIODS.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-body">
+              Period label
+              <input
+                value={form.period_label}
+                onChange={(e) => setForm((f) => ({ ...f, period_label: e.target.value }))}
+                placeholder="2026, Q1 2026, …"
+                className={field}
+              />
+            </label>
+            <label className="text-sm font-semibold text-body">
+              Performance level
+              <select
+                value={form.level}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, level: e.target.value as PerformanceLevel }))
+                }
+                className={field}
+              >
+                {PERFORMANCE_LEVELS.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold text-body">
+              What was awarded
+              <input
+                value={form.motivator}
+                onChange={(e) => setForm((f) => ({ ...f, motivator: e.target.value }))}
+                placeholder="1st class Certificate of Competence"
+                className={field}
+              />
+            </label>
+            <label className="text-sm font-semibold text-body sm:col-span-2">
+              Detail
+              <input
+                value={form.detail}
+                onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
+                className={field}
+              />
+            </label>
+            <label className="text-sm font-semibold text-body">
+              Cash accompanying it
+              <input
+                type="number"
+                value={form.cash_amount}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    cash_amount: e.target.value === "" ? "" : Number(e.target.value),
+                  }))
+                }
+                className={field}
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={record}
+            disabled={saving}
+            className={`mt-5 rounded-lg px-6 py-3 text-sm font-medium text-white ${
+              saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
+            }`}
+          >
+            {saving ? "Recording…" : "Record award"}
+          </button>
+        </section>
+      )}
+
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Awards given</h2>
+        {loading ? (
+          <p className="mt-3 text-sm text-muted">Loading the record…</p>
+        ) : awards.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">Nothing has been awarded yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-lg border border-line">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-line bg-canvas font-medium text-body">
+                <tr>
+                  <th className="px-4 py-2">Date</th>
+                  <th className="px-4 py-2">Staff</th>
+                  <th className="px-4 py-2">Period</th>
+                  <th className="px-4 py-2">Level</th>
+                  <th className="px-4 py-2">Award</th>
+                  <th className="px-4 py-2">Cash</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {awards.map((a) => (
+                  <tr key={a.id}>
+                    <td className="px-4 py-2 whitespace-nowrap text-muted">
+                      {new Date(a.awarded_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2 font-medium text-strong">
+                      {a.staff_name}
+                      {a.dept && <span className="ml-1 text-xs text-muted">({a.dept})</span>}
+                    </td>
+                    <td className="px-4 py-2 text-body">{a.period_label}</td>
+                    <td className="px-4 py-2 text-body">{a.level}</td>
+                    <td className="px-4 py-2 text-body">
+                      {a.motivator}
+                      {a.detail && <span className="block text-xs text-muted">{a.detail}</span>}
+                    </td>
+                    <td className="px-4 py-2 text-body">
+                      {a.cash_amount == null ? "—" : Number(a.cash_amount).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-4 text-xs text-muted">
+          Certificates and badges are printed from the{" "}
+          <Link href="/reward/badges/staff" className="text-pes underline">
+            reward pages
+          </Link>
+          .
+        </p>
+      </section>
     </div>
   );
 }

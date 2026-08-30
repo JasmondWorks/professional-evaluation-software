@@ -46,6 +46,10 @@ export type EmployeeInput = {
   post?: string | null;
   dopp?: string | null;
   level?: string | null;
+  /** Which management level the person sits at, 1 being the first level above
+   *  the supervisory staff. Null for everyone holding no management post.
+   *  Section 21 counts these as the real head count per level. */
+  management_level?: number | string | null;
   org: string;
 } & Partial<Record<PermissionKey, boolean>>;
 
@@ -143,7 +147,7 @@ export async function createEmployee(
 ): Promise<CreateOutcome> {
   const {
     name, email, gsm, role, address, dept, faculty_college,
-    dob, doa, poa, doc, post, dopp, level, org,
+    dob, doa, poa, doc, post, dopp, level, management_level, org,
   } = input;
 
   try {
@@ -200,6 +204,13 @@ export async function createEmployee(
         post: sanitizeString(post),
         dopp: dopp ? new Date(dopp) : null,
         level: sanitizeString(level),
+        management_level:
+          management_level === null ||
+          management_level === undefined ||
+          management_level === '' ||
+          !Number.isFinite(Number(management_level))
+            ? null
+            : Math.trunc(Number(management_level)),
         image: null,
         org: org || null,
       },
