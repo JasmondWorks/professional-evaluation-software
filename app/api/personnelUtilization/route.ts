@@ -8,6 +8,24 @@ export async function POST(req: NextRequest) {
     const { org, a_ij, lambda, mu, rho, p0, lbar, kmin, kmax, kstar, hstar } =
       body;
 
+    // The rest of the parameter set, stored so the management levels above can
+    // be tested against the same boundary conditions. Optional: a run made from
+    // the rates alone is still a valid run.
+    const numeric = (v: any) =>
+      v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v);
+    const constraints = {
+      alpha: numeric(body.alpha),
+      y_coef: numeric(body.y_coef),
+      w_val: numeric(body.w_val),
+      d_val: numeric(body.d_val),
+      g_val: numeric(body.g_val),
+      j_val: numeric(body.j_val),
+      t1: numeric(body.t1),
+      t2: numeric(body.t2),
+      t3: numeric(body.t3),
+      t4: numeric(body.t4),
+    };
+
     if (
       !org ||
       a_ij == null ||
@@ -46,6 +64,7 @@ export async function POST(req: NextRequest) {
         kmax,
         kstar,
         hstar,
+        ...constraints,
       },
     });
 
@@ -99,6 +118,61 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching personnel utilization data:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+// Attaching the staff numbers a run was used against.
+//
+// The client wants the future staff-number prediction to read a K* and its head
+// count out of this history alone. A utilization run does not know the head
+// count when it is made — the organization structure cascade works that out
+// afterwards, from the K* this run produced — so the cascade writes the numbers
+// back here when the structure is saved.
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    if (!org) {
+      return NextResponse.json(
+        { error: "Organization not found in token" },
+        { status: 400 },
+      );
+    }
+
+    const body = await req.json();
+    const id = Number(body.id);
+    if (!Number.isFinite(id)) {
+      return NextResponse.json({ error: "A run id is required" }, { status: 400 });
+    }
+
+    // Scoped by org as well as id, so a run belonging to another organization
+    // cannot be written to by guessing its number.
+    const updated = await prisma.personnel_utilization.updateMany({
+      where: { id, org },
+      data: {
+        staff_number:
+          body.staff_number == null ? null : Number(body.staff_number),
+        supervisory_staff:
+          body.supervisory_staff == null ? null : Math.round(Number(body.supervisory_staff)),
+        management_staff:
+          body.management_staff == null ? null : Math.round(Number(body.management_staff)),
+        staff_method: body.staff_method == null ? null : String(body.staff_method),
+      },
+    });
+
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "No such run" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error attaching staff numbers to a utilization run:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

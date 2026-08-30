@@ -13,14 +13,38 @@ interface HomeProps {
 export default function MaintenanceDetail({ params }: HomeProps) {
   const facilityName = decodeURIComponent(params.ToolAndFacility);
 
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  // The client asked for every field on these sheets to carry data, so he can
+  // see the maintenance model working end to end without first inventing a
+  // machine's history. These are worked sample figures for one facility over a
+  // year: 8,760 operating hours, six failures, and a maintenance plan against
+  // them. They are ordinary editable values — typing over one replaces it — and
+  // the banner says plainly that they are samples.
+  const SAMPLE_DATA: Record<string, Record<string, number>> = {
+    "Time taken to Failure": { totalTime: 8760, numFailures: 6 },
+    "Maintenance Schedule Card": { plannedHours: 4, plannedFreq: 52 },
+    "Job Report Card": { totalHours: 186, costPerHour: 4500 },
+    "Weekly Maintenance Plan": { completed: 47, scheduled: 52 },
+    "Job Specification Sheet": { stdHours: 3.5, actualJobHours: 4.2 },
+    "Critical Examination Sheet": { reliability: 0.92, criticality: 1.4 },
+    "History Record Card": { downtimeHours: 214, totalOperatingHours: 8760 },
+  };
+
+  const [formData, setFormData] = useState<Record<string, any>>(SAMPLE_DATA);
+  const [usingSample, setUsingSample] = useState(true);
   const [results, setResults] = useState<Record<string, number>>({});
 
   const handleChange = (sheet: string, field: string, value: string) => {
+    setUsingSample(false);
     setFormData((prev) => ({
       ...prev,
       [sheet]: { ...prev[sheet], [field]: parseFloat(value) || 0 },
     }));
+  };
+
+  const clearAll = () => {
+    setUsingSample(false);
+    setFormData({});
+    setResults({});
   };
 
   const calculateModel = () => {
@@ -101,6 +125,23 @@ export default function MaintenanceDetail({ params }: HomeProps) {
           </div>
         </div>
 
+        {usingSample && (
+          <div className="mx-4 mt-4 flex items-center justify-between gap-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
+            <p className="text-sm text-warning-700">
+              These sheets are filled with <strong>sample figures</strong> — one facility
+              over a year of 8,760 operating hours — so the model can be seen working.
+              Type over any field to use your own, or clear them all.
+            </p>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="shrink-0 rounded-md border border-warning-200 px-3 py-1.5 text-xs font-medium text-warning-700 hover:bg-warning-100"
+            >
+              Clear sheets
+            </button>
+          </div>
+        )}
+
         {/* Forms */}
         <div className="p-4">
           {sheets.map((sheet, index) => (
@@ -119,7 +160,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                         <input
                           type="number"
                           className="border rounded p-2 w-full"
-                          value={formData[sheet.name]?.[field] || ""}
+                          value={formData[sheet.name]?.[field] ?? ""}
                           onChange={(e) =>
                             handleChange(sheet.name, field, e.target.value)
                           }

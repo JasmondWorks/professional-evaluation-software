@@ -464,6 +464,17 @@ export default function FormOne({
           </div>
           <Input {...inputProps} name="dopp" label="Date appointed" type="date" tabIndex={12} />
           <Input {...inputProps} name="level" label="Current level" placeholder="Current level" tabIndex={13} />
+          {/* Optional, and only meaningful for management posts: Section 21
+              counts these to get the real head count at each level of the
+              ladder. Left blank for everyone who manages nobody. */}
+          <Input
+            {...inputProps}
+            name="management_level"
+            label="Management level (optional)"
+            type="number"
+            placeholder="1 = first level above supervisory staff"
+            tabIndex={14}
+          />
         </div>
       </Section>
 

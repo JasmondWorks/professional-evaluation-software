@@ -7,6 +7,11 @@ import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { runCascade } from "@/app/lib/models/orgCascade";
 import { findOptimalK } from "@/app/(admin)/models/personnel-utilization/lib/util-models11-16";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
+import {
+  boundaryViolations,
+  hasConstraintParams,
+  type ConstraintParams,
+} from "@/app/lib/models/boundaryConditions";
 
 // Sections 17, 18 and 19 as one screen.
 //
@@ -29,7 +34,7 @@ type StaffRun = {
 // executed. The client's sketch has an Execute in every box for exactly this
 // reason: each level's λ and μ replace the level below's, and the operator is
 // meant to see the K* that produced before carrying the count upward.
-type LevelRun = { Kstar: number; Hstar: number; rho: number };
+type LevelRun = { Kstar: number; Hstar: number; rho: number; violations: string[] };
 type LevelRates = {
   lambda: number | "";
   mu: number | "";
@@ -63,6 +68,16 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [supervisoryKstar, setSupervisoryKstar] = useState<number | "">("");
+  // Which utilization run that K* came from. Saving the structure writes the
+  // head counts back onto that run, so the future staff-number prediction can
+  // read a K* and its staff number off one row — the client's instruction of
+  // 30 August.
+  const [utilizationRunId, setUtilizationRunId] = useState<number | null>(null);
+  // The rest of that run's parameter set. The client's rule: the full form is
+  // filled once, at level 1, and every level above holds it constant while
+  // supplying only its own rates — which is what lets the boundary conditions
+  // be tested all the way up rather than at the supervisory level alone.
+  const [inherited, setInherited] = useState<ConstraintParams | null>(null);
 
   // ---- Section 18 inputs: one λ/μ pair per level above the first ----
   const [levelRates, setLevelRates] = useState<LevelRates[]>([emptyLevel()]);
@@ -143,7 +158,15 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
       updateLevel(i, { run: null, error: "Those rates produced no optimal K." });
       return;
     }
-    updateLevel(i, { run: { Kstar, Hstar, rho }, error: null });
+    // Eq. 39, 40 and 42 with the level-1 run's parameters and this level's own
+    // K and rates. Only when that run actually carried them: a run saved before
+    // they were stored has nothing to inherit, and testing against zeros would
+    // fail every level for the wrong reason.
+    const violations = hasConstraintParams(inherited)
+      ? boundaryViolations(inherited!, Kstar, Number(r.lambda), Number(r.mu))
+      : [];
+
+    updateLevel(i, { run: { Kstar, Hstar, rho, violations }, error: null });
   }
 
   async function saveStructure() {
@@ -165,6 +188,28 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
         cascade.levels.map((l) => l.count),
         [cascade.n],
       );
+
+      // The pairing the future staff-number prediction needs: this K*, and the
+      // organization it implies. Best-effort — the structure is saved either
+      // way, and a failure here costs a data point, not the run.
+      if (utilizationRunId != null && staffNumber != null) {
+        const management = cascade.levels.reduce((sum, l) => sum + l.count, 0);
+        try {
+          await apiFetch("/api/personnelUtilization", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: utilizationRunId,
+              staff_number: Number(staffNumber) + management,
+              supervisory_staff: Number(staffNumber),
+              management_staff: management,
+              staff_method: selectedStaff?.methodType ?? null,
+            }),
+          });
+        } catch {
+          /* the structure is saved; the pairing can be re-made on the next run */
+        }
+      }
     } finally {
       setSaving(false);
     }
@@ -258,17 +303,38 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                   { label: "λ", render: (r) => (r.lambda == null ? "—" : Number(r.lambda).toFixed(4)) },
                   { label: "μ", render: (r) => (r.mu == null ? "—" : Number(r.mu).toFixed(4)) },
                 ]}
-                onSelect={(run) => {
+                onSelect={(run: any) => {
                   if (run.kstar != null) setSupervisoryKstar(Number(run.kstar));
+                  setUtilizationRunId(run.id ?? null);
+                  setInherited({
+                    alpha: run.alpha,
+                    Y: run.y_coef,
+                    W: run.w_val,
+                    D: run.d_val,
+                    G: run.g_val,
+                    J: run.j_val,
+                    t1: run.t1,
+                    t2: run.t2,
+                    t3: run.t3,
+                    t4: run.t4,
+                  });
+                  // Every level is re-tested against the newly inherited set.
+                  setLevelRates((prev) =>
+                    prev.map((p) => ({ ...p, run: null, error: null })),
+                  );
                 }}
               />
             </div>
             <input
               type="number"
               value={supervisoryKstar}
-              onChange={(e) =>
-                setSupervisoryKstar(e.target.value === "" ? "" : Number(e.target.value))
-              }
+              onChange={(e) => {
+                setSupervisoryKstar(e.target.value === "" ? "" : Number(e.target.value));
+                // Typed by hand, so it is no longer a particular stored run and
+                // there is nothing to inherit.
+                setUtilizationRunId(null);
+                setInherited(null);
+              }}
               className={field}
               placeholder="K* from Personnel Utilization"
             />
@@ -294,7 +360,9 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
         <p className="mt-1 text-sm text-muted">
           Each level's head count becomes the numerator of the level above it. That level
           needs its own λ and μ, which replace the ones below and give it its own K*
-          to divide by — press Execute in the level's box to run them. The ladder ends
+          to divide by — press Execute in the level's box to run them. Everything else
+          is held constant from the level-1 utilization run picked above, and each
+          level's K* is tested against those same boundary conditions. The ladder ends
           when a level holds a single post.
         </p>
 
@@ -392,6 +460,18 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                       H* = {r.run.Hstar.toFixed(4)} · ρ = {r.run.rho.toFixed(4)}
                     </span>
                   </p>
+                  {r.run.violations.length > 0 && (
+                    <div className="mt-2 rounded-md border border-warning-200 bg-warning-50 px-3 py-2">
+                      <p className="text-xs font-medium text-warning-700">
+                        This span breaks the boundary conditions carried up from level 1:
+                      </p>
+                      <ul className="mt-1 list-inside list-disc text-xs text-warning-700">
+                        {r.run.violations.map((v) => (
+                          <li key={v}>{v}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs text-muted sm:col-span-4">

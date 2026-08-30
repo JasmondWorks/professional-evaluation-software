@@ -78,19 +78,26 @@ const SERIES: Series[] = [
     key: "staff-number",
     label: "Staff number",
     question:
-      "Given a K* from personnel utilization, what total staff number — supervisory through management — does the organization need?",
+      "Given a K* from personnel utilization, what total staff number — supervisory through management — does the organization need? Fitted through the utilization runs that have had a structure saved against them.",
     xLabel: "K* (optimal span of control)",
     yLabel: "Total staff (supervisory → management)",
     load: async () => {
-      const runs = await studentTeacherRuns();
+      // From the personnel utilization history, as the client specified: each
+      // run carries the K* it produced and the head count the organization
+      // structure then derived from it. Runs made before a structure was saved
+      // have no head count yet and are skipped rather than counted as zero.
+      const res = await apiFetch("/api/getPersonnelUtilization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Could not load the utilization history.");
+      const data = await res.json();
+      const runs: any[] = data.data ?? [];
       return runs
         .map((r) => ({
-          x: Number(r.optimalK),
-          y:
-            Number(r.supervisoryStaff ?? 0) +
-            Number(r.managementLevel1 ?? 0) +
-            Number(r.managementLevel2 ?? 0) +
-            Number(r.topManagement ?? 0),
+          x: Number(r.kstar),
+          y: Number(r.staff_number),
         }))
         .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && p.y > 0);
     },

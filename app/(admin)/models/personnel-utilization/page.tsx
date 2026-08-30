@@ -34,6 +34,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import InfoPopover from "@/app/components/ui/InfoPopover";
+import { boundaryViolations } from "@/app/lib/models/boundaryConditions";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { BackLink } from '@/app/components/ui';
 
@@ -119,21 +120,16 @@ export default function PersonnelUtilizationPage() {
 
   const calculate = () => {
     const r = findOptimalK({ ...params, A: params.A ?? 8 } as any);
-    const fails: string[] = [];
-    if (usePdfConstraints) {
-      const { t3 = 1, t4 = 0, D = 0, Y, alpha, W, lambda, mu, J, G } = params;
-      const rhs39 =
-        Y !== undefined && alpha !== undefined ? t3 * (D - Y * alpha) : t3 * D;
-      if (!(t4 * r.Kstar <= rhs39))
-        fails.push("Eq.39 fails: t4*K > t3*(D - Yα)");
-      const rhs40 =
-        Y !== undefined && alpha !== undefined ? t3 * (D - Y * alpha) : t3 * D;
-      if (!(W! <= rhs40)) fails.push("Eq.40 fails: W > t3*(D - Yα)");
-      if (lambda !== undefined && mu !== undefined && !(lambda < mu))
-        fails.push("Eq.41 fails: λ must be strictly less than μ");
-      if (J !== undefined && G !== undefined && !(J <= G - D))
-        fails.push("Eq.42 fails: J > (G - D)");
-    }
+    // The same check the management levels run, from the same module — see
+    // app/lib/models/boundaryConditions.ts.
+    const fails = usePdfConstraints
+      ? boundaryViolations(
+          params as any,
+          r.Kstar,
+          params.lambda ?? 0,
+          params.mu ?? 0,
+        )
+      : [];
     setResult(r);
     setViolations(fails);
   };
@@ -179,6 +175,19 @@ export default function PersonnelUtilizationPage() {
           kmax: result.table.length,
           kstar: result.Kstar,
           hstar: result.Hstar,
+          // Kept with the run so every management level above this one can be
+          // tested against the same boundary conditions without the operator
+          // re-entering them — the client's rule of 30 August.
+          alpha: params.alpha,
+          y_coef: params.Y,
+          w_val: params.W,
+          d_val: params.D,
+          g_val: params.G,
+          j_val: params.J,
+          t1: params.t1,
+          t2: params.t2,
+          t3: params.t3,
+          t4: params.t4,
         }),
       });
 
