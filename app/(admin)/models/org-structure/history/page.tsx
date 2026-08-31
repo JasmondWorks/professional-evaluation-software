@@ -141,26 +141,79 @@ export default function OrgStructureHistory() {
                   </p>
                 </div>
 
-                <div className="mt-auto space-y-2 bg-canvas rounded-lg p-3 border border-line">
-                  {run.numerator && run.numerator.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted">Inputs / Numerators:</p>
-                      <p className="text-sm font-medium text-strong break-words">{run.numerator.join(", ")}</p>
-                    </div>
-                  )}
-                  {run.denominator && run.denominator.length > 0 && (
-                    <div className="pt-2 border-t border-line">
-                      <p className="text-xs font-semibold text-muted">Denominators:</p>
-                      <p className="text-sm font-medium text-strong break-words">{run.denominator.join(", ")}</p>
-                    </div>
-                  )}
-                  {run.extra_data && Object.keys(run.extra_data).length > 0 && (
-                    <div className="pt-2 border-t border-line">
-                      <p className="text-xs font-semibold text-muted">Extra Parameters:</p>
-                      <pre className="text-xs font-medium text-strong whitespace-pre-wrap">{JSON.stringify(run.extra_data, null, 2)}</pre>
-                    </div>
-                  )}
-                </div>
+                {/* The ladder, drawn as it is on the model page. This used to
+                    print the numerator and denominator arrays and a raw JSON
+                    dump of the extra parameters, which the client could not
+                    read — and which was the only record of a run once the
+                    table on the model page had been navigated away from. */}
+                {Array.isArray(run.extra_data?.levels) && run.extra_data.levels.length > 0 ? (
+                  <div className="mt-auto overflow-x-auto rounded-lg border border-line">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-line bg-canvas font-medium text-body">
+                        <tr>
+                          <th className="px-2 py-1.5">Level</th>
+                          <th className="px-2 py-1.5">Numerator</th>
+                          <th className="px-2 py-1.5">λ</th>
+                          <th className="px-2 py-1.5">μ</th>
+                          <th className="px-2 py-1.5">K*</th>
+                          <th className="px-2 py-1.5">No-n</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {run.extra_data.levels.map((l: any) => (
+                          <tr key={l.level}>
+                            <td className="px-2 py-1.5 font-medium text-strong">{l.level}</td>
+                            <td className="px-2 py-1.5">{l.numerator}</td>
+                            <td className="px-2 py-1.5 text-muted">
+                              {l.lambda == null ? "—" : Number(l.lambda).toFixed(4)}
+                            </td>
+                            <td className="px-2 py-1.5 text-muted">
+                              {l.mu == null ? "—" : Number(l.mu).toFixed(4)}
+                            </td>
+                            <td className="px-2 py-1.5">{l.kstar}</td>
+                            <td className="px-2 py-1.5 font-bold text-pes">{l.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {(run.extra_data.staffNumber != null ||
+                      run.extra_data.supervisoryKstar != null) && (
+                      <p className="border-t border-line bg-canvas px-2 py-1.5 text-xs text-muted">
+                        Staff number {run.extra_data.staffNumber ?? "—"} ÷ supervisory K*{" "}
+                        {run.extra_data.supervisoryKstar ?? "—"}
+                        {run.extra_data.method ? ` · ${run.extra_data.method}` : ""}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* Runs saved before the ladder was recorded. The counts and
+                     spans are all they have, so they are shown as a table of
+                     their own rather than as two comma-separated lines. */
+                  <div className="mt-auto overflow-x-auto rounded-lg border border-line">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-line bg-canvas font-medium text-body">
+                        <tr>
+                          <th className="px-2 py-1.5">Level</th>
+                          <th className="px-2 py-1.5">
+                            {run.section === 21 ? "Real" : "No-n"}
+                          </th>
+                          <th className="px-2 py-1.5">
+                            {run.section === 21 ? "Ideal" : "K*"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {(run.numerator ?? []).map((n: number, i: number) => (
+                          <tr key={i}>
+                            <td className="px-2 py-1.5 font-medium text-strong">{i + 1}</td>
+                            <td className="px-2 py-1.5 font-bold text-pes">{n}</td>
+                            <td className="px-2 py-1.5">{run.denominator?.[i] ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/app/utils/apiFetch";
+import { useStickyState } from "@/app/lib/models/useStickyState";
 import { getAccessToken } from "@/app/utils/auth";
 import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
@@ -70,13 +71,13 @@ const METHOD_LABELS: Record<string, string> = {
 export default function CostCascadePanel() {
   const [staffRuns, setStaffRuns] = useState<StaffRun[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
-  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
-  const [supervisoryKstar, setSupervisoryKstar] = useState<number | "">("");
-  const [levelRates, setLevelRates] = useState<LevelRates[]>([emptyLevel()]);
+  const [selectedStaffId, setSelectedStaffId] = useStickyState<number | null>("pes.cost.staffRun", null);
+  const [supervisoryKstar, setSupervisoryKstar] = useStickyState<number | "">("pes.cost.kstar", "");
+  const [levelRates, setLevelRates] = useStickyState<LevelRates[]>("pes.cost.levels", [emptyLevel()]);
   // The real head counts come from the employee records — the client's answer
   // of 30 August. They stay editable: a record may not have been given its
   // management level yet, and the operator should not be blocked by that.
-  const [realCounts, setRealCounts] = useState<Record<number, number | "">>({});
+  const [realCounts, setRealCounts] = useStickyState<Record<number, number | "">>("pes.cost.realCounts", {});
   const [employeeCounts, setEmployeeCounts] = useState<Record<number, number> | null>(null);
   const [employeesAssigned, setEmployeesAssigned] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -166,6 +167,11 @@ export default function CostCascadePanel() {
         level: l.level,
         ideal: l.count,
         real: realNum,
+        // The client asked for the head count itself, not only the percentage:
+        // how many posts at this level the computation finds surplus. Negative
+        // means the level is short-staffed against its ideal, which is worth
+        // seeing rather than clamping to zero.
+        redundant: realNum == null ? null : realNum - l.count,
         pr: realNum == null ? null : percentageRedundancy(l.count, realNum),
       };
     });
@@ -177,6 +183,15 @@ export default function CostCascadePanel() {
       .map((r) => ({ ideal: r.ideal, real: r.real as number }));
     return usable.length ? personnelRedundancy(usable) : null;
   }, [redundancyRows]);
+
+  /** The head count the whole ladder finds surplus, which is what the client
+   *  asked to see beside the percentage. Shortfalls at one level do not cancel
+   *  a surplus at another — they are different problems — so only the positive
+   *  ones are summed. */
+  const totalRedundant = useMemo(
+    () => redundancyRows.reduce((sum, r) => sum + Math.max(0, r.redundant ?? 0), 0),
+    [redundancyRows],
+  );
 
   function updateLevel(i: number, patch: Partial<LevelRates>) {
     setLevelRates((prev) => prev.map((p, j) => (j === i ? { ...p, ...patch } : p)));
@@ -554,6 +569,7 @@ export default function CostCascadePanel() {
                   <th className="px-4 py-2">Level</th>
                   <th className="px-4 py-2">Ideal (No-n)</th>
                   <th className="px-4 py-2">Real</th>
+                  <th className="px-4 py-2">Redundant staff</th>
                   <th className="px-4 py-2">PR %</th>
                 </tr>
               </thead>
@@ -582,6 +598,23 @@ export default function CostCascadePanel() {
                     </td>
                     <td
                       className={`px-4 py-2 font-semibold ${
+                        r.redundant == null
+                          ? "text-muted"
+                          : r.redundant > 0
+                            ? "text-danger-700"
+                            : "text-green-700"
+                      }`}
+                    >
+                      {r.redundant == null
+                        ? "—"
+                        : r.redundant > 0
+                          ? `${r.redundant} surplus`
+                          : r.redundant < 0
+                            ? `${Math.abs(r.redundant)} short`
+                            : "none"}
+                    </td>
+                    <td
+                      className={`px-4 py-2 font-semibold ${
                         r.pr == null ? "text-muted" : r.pr > 0 ? "text-danger-700" : "text-green-700"
                       }`}
                     >
@@ -594,14 +627,24 @@ export default function CostCascadePanel() {
           </div>
 
           {overallRedundancy != null && (
-            <div className="mt-4 rounded-lg border border-pes-200 bg-pes-50 px-4 py-3">
-              <p className="text-xs font-medium text-pes-700">Personnel redundancy</p>
-              <p className="mt-0.5 text-3xl font-bold text-pes">
-                {overallRedundancy.toFixed(2)}%
-              </p>
-              <p className="mt-1 text-xs text-pes-700">
-                Surplus across every level, against the total actually employed.
-              </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-pes-200 bg-pes-50 px-4 py-3">
+                <p className="text-xs font-medium text-pes-700">Personnel redundancy</p>
+                <p className="mt-0.5 text-3xl font-bold text-pes">
+                  {overallRedundancy.toFixed(2)}%
+                </p>
+                <p className="mt-1 text-xs text-pes-700">
+                  Surplus across every level, against the total actually employed.
+                </p>
+              </div>
+              <div className="rounded-lg border border-line bg-canvas px-4 py-3">
+                <p className="text-xs font-medium text-muted">Staff found redundant</p>
+                <p className="mt-0.5 text-3xl font-bold text-strong">{totalRedundant}</p>
+                <p className="mt-1 text-xs text-muted">
+                  Management posts across every level beyond what the computation says the
+                  organization needs.
+                </p>
+              </div>
             </div>
           )}
 
