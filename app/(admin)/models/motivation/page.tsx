@@ -6,9 +6,14 @@ import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
 import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
+import AwardArt, { type ArtKind } from "@/app/components/motivation/AwardArt";
+import {
+  APPRAISAL_AWARD_CATEGORIES,
+  type AwardOutcome,
+} from "@/app/lib/motivation/appraisalAwards";
 import {
   MOTIVATOR_GROUPS,
-  COMPULSORY_KEYS,
+  RECOMMENDED_KEYS,
   PERFORMANCE_LEVELS,
   PERIODS,
   actionScheme,
@@ -61,9 +66,10 @@ export default function MotivationPage() {
       <h1 className="text-2xl font-bold text-strong">Motivation of staff</h1>
       <p className="mt-1 max-w-3xl text-body">
         The establishment adopts a set of motivators for an administration, and the
-        Motivation Action Scheme decides what each grade of performance earns over each
-        period. Nothing is scored here — the performance and appraisal models produce the
-        grade, and this says what follows from it.
+        Motivation Action Scheme decides what each grade earns over each period. Nothing
+        is scored here — the performance and appraisal models produce the grades, and this
+        says what follows from them. The performance side reads the action scheme; the
+        appraisal side ranks staff against each other, faculty by faculty.
       </p>
 
       <Tabs defaultValue="scheme" syncParam="tab" className="mt-8">
@@ -71,6 +77,7 @@ export default function MotivationPage() {
           <TabsTrigger value="scheme">Adopted motivators</TabsTrigger>
           <TabsTrigger value="action">Action scheme</TabsTrigger>
           <TabsTrigger value="entitlement">What a grade earns</TabsTrigger>
+          <TabsTrigger value="appraisal">Appraisal awards</TabsTrigger>
           <TabsTrigger value="record">Award record</TabsTrigger>
         </TabsList>
 
@@ -82,6 +89,9 @@ export default function MotivationPage() {
         </TabsContent>
         <TabsContent value="entitlement">
           <EntitlementTab />
+        </TabsContent>
+        <TabsContent value="appraisal">
+          <AppraisalAwardsTab />
         </TabsContent>
         <TabsContent value="record">
           <AwardRecordTab />
@@ -100,7 +110,7 @@ function SchemeTab() {
   const [active, setActive] = useState<Scheme | null>(null);
   const [past, setPast] = useState<Scheme[]>([]);
   const [tenure, setTenure] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set(COMPULSORY_KEYS));
+  const [selected, setSelected] = useState<Set<string>>(new Set(RECOMMENDED_KEYS));
   const [additions, setAdditions] = useState<string[]>([]);
   const [newAddition, setNewAddition] = useState("");
   const [saving, setSaving] = useState(false);
@@ -115,7 +125,7 @@ function SchemeTab() {
         if (data.active) {
           setActive(data.active);
           setTenure(data.active.tenure);
-          setSelected(new Set([...(data.active.selections ?? []), ...COMPULSORY_KEYS]));
+          setSelected(new Set(data.active.selections ?? []));
           setAdditions(data.active.additions ?? []);
         }
         setPast(data.past ?? []);
@@ -126,7 +136,6 @@ function SchemeTab() {
   }, []);
 
   function toggle(key: string) {
-    if (COMPULSORY_KEYS.includes(key)) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -197,25 +206,25 @@ function SchemeTab() {
           <h2 className="text-lg font-bold text-strong">{group.title}</h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {group.items.map((item) => {
-              const compulsory = Boolean(item.compulsory);
+              const recommended = Boolean(item.recommended);
               return (
                 <label
                   key={item.key}
                   className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-                    compulsory ? "border-pes-200 bg-pes-50" : "border-line"
+                    recommended ? "border-pes-200 bg-pes-50" : "border-line"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(item.key)}
-                    disabled={compulsory || !isAdmin}
+                    disabled={!isAdmin}
                     onChange={() => toggle(item.key)}
                     className="mt-0.5"
                   />
                   <span className="text-body">
                     {item.label}
-                    {compulsory && (
-                      <span className="ml-2 text-xs font-medium text-pes-700">compulsory</span>
+                    {recommended && (
+                      <span className="ml-2 text-xs font-medium text-pes-700">recommended</span>
                     )}
                   </span>
                 </label>
@@ -745,6 +754,120 @@ function AwardRecordTab() {
           .
         </p>
       </section>
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+
+function AppraisalAwardsTab() {
+  const [data, setData] = useState<{
+    periods: number;
+    period: { starts_on: string; ends_on: string } | null;
+    staff?: number;
+    outcomes: AwardOutcome[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/appraisal-awards", { method: "GET" });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? "Could not work out the awards.");
+        setData(body);
+      } catch (err: any) {
+        setError(err.message ?? "Could not work out the awards.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) return <p className="text-muted">Working out who has won what…</p>;
+  if (error) return <p className="rounded-lg bg-danger-50 px-4 py-3 text-danger-700">{error}</p>;
+  if (!data) return null;
+
+  const outcomeFor = (key: string) => data.outcomes.find((o) => o.award.key === key);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Appraisal motivation</h2>
+        <p className="mt-1 text-sm text-muted">
+          The lower half of the client's template, applied to the appraisal results. Most
+          of these are competitive — the best in a category within a faculty or department
+          — so they are decided across the whole cohort rather than from one result.
+        </p>
+        {data.period ? (
+          <p className="mt-3 text-sm text-body">
+            Drawn from the released period ending{" "}
+            <strong>{new Date(data.period.ends_on).toLocaleDateString()}</strong>
+            {data.staff != null && <> · {data.staff} staff results</>} ·{" "}
+            {data.periods} released period{data.periods === 1 ? "" : "s"} on record.
+          </p>
+        ) : (
+          <p className="mt-3 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+            No appraisal period has been released yet, so nothing can be awarded. The
+            criteria below are still shown, so the scheme can be checked before results
+            exist.
+          </p>
+        )}
+      </section>
+
+      {APPRAISAL_AWARD_CATEGORIES.map((cat) => (
+        <section key={cat.no} className="rounded-xl border border-line bg-white p-6 shadow-sm">
+          <h3 className="text-base font-bold text-strong">
+            {cat.no}. {cat.title}
+          </h3>
+
+          <div className="mt-4 space-y-3">
+            {cat.awards.map((award) => {
+              const outcome = outcomeFor(award.key);
+              const winners = outcome?.winners ?? [];
+              return (
+                <div key={award.key} className="rounded-lg border border-line p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-body">{award.label}</p>
+                      <p className="mt-0.5 text-xs text-muted">{award.criteria}</p>
+                    </div>
+                    {award.art && (
+                      <AwardArt
+                        kind={award.art as ArtKind}
+                        size={84}
+                        title={winners.length === 1 ? award.label : undefined}
+                        recipient={winners.length === 1 ? winners[0].name : undefined}
+                      />
+                    )}
+                  </div>
+
+                  {winners.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-sm text-body">
+                      {winners.map((w, i) => (
+                        <li key={`${w.name}-${i}`} className="flex flex-wrap gap-x-2">
+                          <span className="font-medium text-strong">{w.name}</span>
+                          {w.scopeLabel && <span className="text-muted">· {w.scopeLabel}</span>}
+                          {w.dept && <span className="text-muted">· {w.dept}</span>}
+                          {w.score != null && (
+                            <span className="text-muted">· {Number(w.score).toFixed(2)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted">
+                      {outcome?.pending ?? "Nobody met the criteria in this period."}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

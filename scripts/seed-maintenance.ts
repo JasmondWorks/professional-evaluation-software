@@ -74,17 +74,28 @@ async function main() {
     process.exit(1);
   }
 
-  const existing = await prisma.facilities.count({ where: { org } });
-  if (existing > 0) {
-    console.log(`${org} already has ${existing} facilities; nothing added.`);
+  // Top up rather than skip: an organization that already has a facility or two
+  // still needs the rest of the register populated, and re-running should never
+  // duplicate a symbol it already holds.
+  const existing = await prisma.facilities.findMany({
+    where: { org },
+    select: { identification_symbol: true },
+  });
+  const held = new Set(existing.map((f) => f.identification_symbol));
+  const missing = FACILITIES.filter((f) => !held.has(f.identification_symbol));
+
+  if (missing.length === 0) {
+    console.log(`${org} already holds all ${FACILITIES.length} sample facilities.`);
     return;
   }
 
   await prisma.facilities.createMany({
-    data: FACILITIES.map((f) => ({ ...f, org })),
+    data: missing.map((f) => ({ ...f, org })),
   });
 
-  console.log(`Added ${FACILITIES.length} facilities to ${org}.`);
+  console.log(
+    `Added ${missing.length} facilities to ${org} (it already had ${existing.length}).`,
+  );
 }
 
 main()

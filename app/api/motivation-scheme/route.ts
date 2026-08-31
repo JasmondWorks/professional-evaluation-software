@@ -10,7 +10,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
-import { COMPULSORY_KEYS } from '@/app/lib/motivation/scheme';
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,9 +68,9 @@ export async function POST(req: NextRequest) {
       : [];
     const additions: string[] = Array.isArray(body.additions) ? body.additions.map(String) : [];
 
-    // The starred items are compulsory; the form hides the checkbox, and this
-    // makes sure a direct post cannot drop them either.
-    const merged = Array.from(new Set([...selections, ...COMPULSORY_KEYS]));
+    // The starred items used to be forced in here. The client asked on 30 Aug
+    // for every motivator to be selectable, so the selection is taken as sent.
+    const merged = Array.from(new Set(selections));
 
     const existing = await prisma.motivation_scheme.findFirst({
       where: { org, active: true },
