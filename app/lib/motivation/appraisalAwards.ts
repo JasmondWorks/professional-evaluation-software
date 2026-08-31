@@ -40,9 +40,13 @@ export type StaffResult = {
   overallPercent: number | null;
   scores: Partial<Record<AppraisalCategory, number>>;
   grades: Partial<Record<AppraisalCategory, PerformanceLevel>>;
-  /** Consecutive released periods at or above each grade, most recent first. */
+  /** Consecutive released periods at each grade, most recent first. */
   consecutiveVeryGood?: number;
   consecutiveExcellent?: number;
+  /** Consecutive released periods spent anywhere within a band of grades. Some
+   *  criteria are written as ranges ("Very Good to Excellent"), which a run at
+   *  a single grade would undercount. */
+  consecutiveInBand?: (grades: PerformanceLevel[]) => number;
 };
 
 export type Scope = 'department' | 'faculty' | 'institution';
@@ -51,7 +55,20 @@ export type AwardRule =
   | { kind: 'top'; category: AppraisalCategory; grade: PerformanceLevel; scope: Scope; cadre?: 'junior' | 'senior' }
   | { kind: 'grade'; category: AppraisalCategory | 'overall'; grade: PerformanceLevel }
   | { kind: 'streak'; years: number; grade: PerformanceLevel }
+  /** This period's overall grade falls in a set — "Poor or Fair", "above Good". */
+  | { kind: 'grade-any'; grades: PerformanceLevel[] }
+  /** N consecutive years anywhere in a set of grades. */
+  | { kind: 'streak-any'; years: number; grades: PerformanceLevel[] }
+  /** The lay-off rule: a low grade sustained, and an overall under a figure. */
+  | { kind: 'below'; percent: number; grades: PerformanceLevel[]; years: number }
+  /** Best overall in the institution — "best overall cumulative performance". */
+  | { kind: 'top-overall' }
+  /** Nothing in the system can decide it; the establishment does. */
   | { kind: 'manual' };
+
+const GOOD_AND_ABOVE: PerformanceLevel[] = ['Good', 'Very Good', 'Excellent', 'Very Outstanding'];
+const VERY_GOOD_AND_ABOVE: PerformanceLevel[] = ['Very Good', 'Excellent', 'Very Outstanding'];
+const POOR_OR_FAIR: PerformanceLevel[] = ['Very Poor', 'Poor', 'Fair'];
 
 export type AppraisalAward = {
   key: string;
@@ -144,41 +161,125 @@ export const APPRAISAL_AWARD_CATEGORIES: AwardCategory[] = [
     no: 3,
     title: 'Promotion',
     awards: [
-      manual('rank-promotion', 'Rank Promotion', '3-year "Excellent" overall performance plus regular promotion requirements.'),
-      manual('position-promotion', 'Promotion into existing positions', 'Regular promotion requirements.'),
-      manual('step-promotion', 'Step Incremental Promotion', '3-year "Excellent" overall performance.'),
+      {
+        key: 'rank-promotion',
+        label: 'Rank Promotion',
+        criteria: '3-year "Excellent" overall performance plus regular promotion requirements.',
+        rule: { kind: 'streak', years: 3, grade: 'Excellent' },
+      },
+      manual(
+        'position-promotion',
+        'Promotion into existing positions',
+        'Regular promotion requirements — which sit outside this software, so the establishment decides.',
+      ),
+      {
+        key: 'step-promotion',
+        label: 'Step Incremental Promotion',
+        criteria: '3-year "Excellent" overall performance.',
+        rule: { kind: 'streak', years: 3, grade: 'Excellent' },
+      },
     ],
   },
   {
     no: 4,
     title: 'Reprimands',
     awards: [
-      manual('reprimand-counselling', 'Counselling', '"Poor" or "Fair" annual overall performance.'),
-      manual('reprimand-warning', 'Warning', '"Poor" or "Fair" 2-yearly to 4-yearly overall performance.'),
-      manual('reprimand-layoff', 'Lay-Offs', '"Poor" 4-yearly or "Fair" 5-yearly overall performance below 35%.'),
+      {
+        key: 'reprimand-counselling',
+        label: 'Counselling',
+        criteria: '"Poor" or "Fair" annual overall performance.',
+        rule: { kind: 'grade-any', grades: POOR_OR_FAIR },
+      },
+      {
+        key: 'reprimand-warning',
+        label: 'Warning',
+        criteria: '"Poor" or "Fair" 2-yearly to 4-yearly overall performance.',
+        rule: { kind: 'streak-any', years: 2, grades: POOR_OR_FAIR },
+      },
+      {
+        key: 'reprimand-layoff',
+        label: 'Lay-Offs',
+        criteria: '"Poor" 4-yearly or "Fair" 5-yearly overall performance below 35%.',
+        rule: { kind: 'below', percent: 35, grades: POOR_OR_FAIR, years: 4 },
+      },
     ],
   },
   {
     no: 5,
     title: 'Gifts',
     awards: [
-      manual('gift-communication', 'Communication devices: radios, videos, mobile phones, televisions, computers', 'Annual and 3-years above "Good" performance.'),
-      manual('gift-semi-monumental', 'Semi-monumental: bicycles, motorcycles, vehicles', 'Annual and 4-years above "Very Good" performance.'),
-      manual('gift-monumental', 'Monumental: land, houses', '5-years overall "Very Good", "Excellent" or "Very Outstanding".'),
-      manual('gift-books', 'Books', 'Annual and 4-years performance from "Very Good" to "Excellent".'),
-      manual('gift-wares', 'Wares and household items', 'As books.'),
-      manual('gift-clothes', 'Custom-made clothes', 'As books.'),
+      {
+        key: 'gift-communication',
+        label: 'Communication devices: radios, videos, mobile phones, televisions, computers',
+        criteria: 'Annual and 3-years above "Good" performance.',
+        rule: { kind: 'grade-any', grades: GOOD_AND_ABOVE },
+      },
+      {
+        key: 'gift-semi-monumental',
+        label: 'Semi-monumental: bicycles, motorcycles, vehicles',
+        criteria: 'Annual and 4-years above "Very Good" performance.',
+        rule: { kind: 'streak-any', years: 4, grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'gift-monumental',
+        label: 'Monumental: land, houses',
+        criteria: '5-years overall "Very Good", "Excellent" or "Very Outstanding".',
+        rule: { kind: 'streak-any', years: 5, grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'gift-books',
+        label: 'Books',
+        criteria: 'Annual and 4-years performance from "Very Good" to "Excellent".',
+        rule: { kind: 'grade-any', grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'gift-wares',
+        label: 'Wares and household items',
+        criteria: 'As books.',
+        rule: { kind: 'grade-any', grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'gift-clothes',
+        label: 'Custom-made clothes',
+        criteria: 'As books.',
+        rule: { kind: 'grade-any', grades: VERY_GOOD_AND_ABOVE },
+      },
     ],
   },
   {
     no: 6,
     title: 'Training, Scholarship and Fellowship',
     awards: [
-      manual('training-specialist', 'Specialist Training', 'Best overall cumulative performance.'),
-      manual('training-selective', 'Selective Training', '"Very Good" to "Excellent" 3-year overall performance.'),
-      manual('training-deficiency', 'Deficiency Training', '"Poor" to "Fair" annual to 3-year overall performance.'),
-      manual('training-leadership', 'Leadership Training', 'As selective training.'),
-      manual('training-scholarship', 'Special Scholarship Award or Fellowship', 'As selective training.'),
+      {
+        key: 'training-specialist',
+        label: 'Specialist Training',
+        criteria: 'Best overall cumulative performance.',
+        rule: { kind: 'top-overall' },
+      },
+      {
+        key: 'training-selective',
+        label: 'Selective Training',
+        criteria: '"Very Good" to "Excellent" 3-year overall performance.',
+        rule: { kind: 'streak-any', years: 3, grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'training-deficiency',
+        label: 'Deficiency Training',
+        criteria: '"Poor" to "Fair" annual to 3-year overall performance.',
+        rule: { kind: 'grade-any', grades: POOR_OR_FAIR },
+      },
+      {
+        key: 'training-leadership',
+        label: 'Leadership Training',
+        criteria: 'As selective training.',
+        rule: { kind: 'streak-any', years: 3, grades: VERY_GOOD_AND_ABOVE },
+      },
+      {
+        key: 'training-scholarship',
+        label: 'Special Scholarship Award or Fellowship',
+        criteria: 'As selective training.',
+        rule: { kind: 'streak-any', years: 3, grades: VERY_GOOD_AND_ABOVE },
+      },
     ],
   },
   {
@@ -272,6 +373,63 @@ export function determineAwards(
               : s.scores[rule.category],
         }));
       return { award, winners };
+    }
+
+    if (rule.kind === 'grade-any') {
+      const winners = staff
+        .filter((s) => s.overallGrade != null && rule.grades.includes(s.overallGrade))
+        .map((s) => ({
+          name: s.name,
+          dept: s.dept,
+          faculty: s.faculty,
+          score: s.overallPercent ?? undefined,
+        }));
+      return { award, winners };
+    }
+
+    if (rule.kind === 'streak-any') {
+      if (releasedPeriods < rule.years) {
+        return {
+          award,
+          winners: [],
+          pending: `Needs ${rule.years} consecutive years of released results; the organization has ${releasedPeriods}.`,
+        };
+      }
+      // A run inside a band, not at one grade: "Very Good to Excellent" counts a
+      // year that moved between the two, which counting one grade would miss.
+      const winners = staff
+        .filter((s) => (s.consecutiveInBand?.(rule.grades) ?? 0) >= rule.years)
+        .map((s) => ({ name: s.name, dept: s.dept, faculty: s.faculty }));
+      return { award, winners };
+    }
+
+    if (rule.kind === 'below') {
+      if (releasedPeriods < rule.years) {
+        return {
+          award,
+          winners: [],
+          pending: `Needs ${rule.years} years of released results; the organization has ${releasedPeriods}.`,
+        };
+      }
+      const winners = staff
+        .filter(
+          (s) =>
+            (s.consecutiveInBand?.(rule.grades) ?? 0) >= rule.years &&
+            s.overallPercent != null &&
+            s.overallPercent < rule.percent,
+        )
+        .map((s) => ({ name: s.name, dept: s.dept, faculty: s.faculty, score: s.overallPercent ?? undefined }));
+      return { award, winners };
+    }
+
+    if (rule.kind === 'top-overall') {
+      const ranked = staff.filter((s) => s.overallPercent != null);
+      if (ranked.length === 0) return { award, winners: [], pending: 'No overall results to rank.' };
+      const best = ranked.reduce((a, b) => ((b.overallPercent ?? 0) > (a.overallPercent ?? 0) ? b : a));
+      return {
+        award,
+        winners: [{ name: best.name, dept: best.dept, faculty: best.faculty, score: best.overallPercent ?? undefined }],
+      };
     }
 
     // top — one winner per scope, and only among those who reached the grade.

@@ -106,6 +106,19 @@ export async function GET(req: NextRequest) {
       return n;
     };
 
+    /** The same walk, but counting any year spent inside a band of grades. */
+    const streakInBand = (name: string, grades: string[]): number => {
+      const m = gradesByPerson.get(name);
+      if (!m) return 0;
+      let n = 0;
+      for (const pid of orderedPeriodIds) {
+        const g = m.get(pid);
+        if (g != null && grades.includes(g)) n += 1;
+        else break;
+      }
+      return n;
+    };
+
     const staff: StaffResult[] = entries.map((e) => {
       const rows = byEntry.get(e.id) ?? [];
       const scoreMap: StaffResult['scores'] = {};
@@ -131,14 +144,19 @@ export async function GET(req: NextRequest) {
         grades: gradeMap,
         consecutiveVeryGood: streak(e.pesuser_name, 'Very Good'),
         consecutiveExcellent: streak(e.pesuser_name, 'Excellent'),
+        consecutiveInBand: (grades) => streakInBand(e.pesuser_name, grades),
       };
     });
+
+    // determineAwards is called here, on the server, precisely because the band
+    // walk is a function on each result and would not survive JSON.
+    const outcomes = determineAwards(staff, periods.length);
 
     return NextResponse.json({
       periods: periods.length,
       period: { id: latest.id, starts_on: latest.starts_on, ends_on: latest.ends_on },
       staff: staff.length,
-      outcomes: determineAwards(staff, periods.length),
+      outcomes,
     });
   } catch (error) {
     console.error('Error determining appraisal awards:', error);
