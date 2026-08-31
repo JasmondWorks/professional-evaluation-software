@@ -123,6 +123,30 @@ Judgement still applies to a few things, so ask before:
 - removing the client's own uploaded documents from the repo,
 - force-pushing over anyone else's commits.
 
+### Nothing is done until it is on `jasmond/dev`
+
+Vercel builds `jasmond/dev`. Work that sits anywhere else is not deployed, and
+the client cannot see it however many times they sign in.
+
+So before reporting anything as done, shipped, live or deployed, confirm it:
+
+```bash
+git fetch jasmond && git log --oneline -1 jasmond/dev
+```
+
+The commit you expect must be the one printed. Say which commit you confirmed.
+
+A push is not proof. It can be rejected by a repository ruleset (`GH013`,
+"Changes must be made through a pull request"), by a permission prompt, or by a
+credential problem, and the failure is easy to skim past when the next task is
+already underway. A pull request that has been opened but not merged does not
+count either, and neither does a feature branch.
+
+If the work cannot reach `jasmond/dev`, say so plainly and say what is blocking
+it. An unmerged pull request reported as a finished feature costs the client a
+round of testing against a deployment that does not contain it, which is worse
+than saying "written, not yet deployed".
+
 **Revisit this section the moment a real organization onboards.** From then on
 the deployed database holds other people's staff records, and the caution above
 becomes mandatory again rather than optional.
