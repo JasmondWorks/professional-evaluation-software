@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/app/utils/apiFetch";
+import { useStickyState } from "@/app/lib/models/useStickyState";
 import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { runCascade } from "@/app/lib/models/orgCascade";
 import { findOptimalK } from "@/app/(admin)/models/personnel-utilization/lib/util-models11-16";
@@ -66,21 +67,21 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
   // ---- Section 17 inputs ----
   const [staffRuns, setStaffRuns] = useState<StaffRun[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
-  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
-  const [supervisoryKstar, setSupervisoryKstar] = useState<number | "">("");
+  const [selectedStaffId, setSelectedStaffId] = useStickyState<number | null>("pes.cascade.staffRun", null);
+  const [supervisoryKstar, setSupervisoryKstar] = useStickyState<number | "">("pes.cascade.kstar", "");
   // Which utilization run that K* came from. Saving the structure writes the
   // head counts back onto that run, so the future staff-number prediction can
   // read a K* and its staff number off one row — the client's instruction of
   // 30 August.
-  const [utilizationRunId, setUtilizationRunId] = useState<number | null>(null);
+  const [utilizationRunId, setUtilizationRunId] = useStickyState<number | null>("pes.cascade.utilRun", null);
   // The rest of that run's parameter set. The client's rule: the full form is
   // filled once, at level 1, and every level above holds it constant while
   // supplying only its own rates — which is what lets the boundary conditions
   // be tested all the way up rather than at the supervisory level alone.
-  const [inherited, setInherited] = useState<ConstraintParams | null>(null);
+  const [inherited, setInherited] = useStickyState<ConstraintParams | null>("pes.cascade.inherited", null);
 
   // ---- Section 18 inputs: one λ/μ pair per level above the first ----
-  const [levelRates, setLevelRates] = useState<LevelRates[]>([emptyLevel()]);
+  const [levelRates, setLevelRates] = useStickyState<LevelRates[]>("pes.cascade.levels", [emptyLevel()]);
 
   const [saving, setSaving] = useState(false);
 
@@ -180,7 +181,21 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
         cascade.levels[cascade.levels.length - 1].count,
         cascade.levels.map((l) => l.count),
         cascade.levels.map((l) => l.kstar),
-        { staffNumber, supervisoryKstar, method: selectedStaff?.methodType },
+        {
+          staffNumber,
+          supervisoryKstar,
+          method: selectedStaff?.methodType,
+          // The ladder itself, so the history page can redraw the table the
+          // operator saw here rather than printing the arrays back at them.
+          levels: cascade.levels.map((l) => ({
+            level: l.level,
+            numerator: l.numerator,
+            lambda: Number.isFinite(l.lambda) ? l.lambda : null,
+            mu: Number.isFinite(l.mu) ? l.mu : null,
+            kstar: l.kstar,
+            count: l.count,
+          })),
+        },
       );
       await onSave(
         19,

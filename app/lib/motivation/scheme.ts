@@ -35,15 +35,17 @@ export const PERFORMANCE_LEVELS: PerformanceLevel[] = [
   'Very Outstanding',
 ];
 
-export type Period = 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'three-year' | 'six-year';
+// The periods of the client's PERFORMANCE MOTIVATION TEMPLATE (30 Aug 2026),
+// which supersedes the monthly/quarterly/biannual scheme on page 108 of the
+// original document for the performance model.
+export type Period = 'annual' | 'two-year' | 'three-year' | 'four-year' | 'five-year';
 
 export const PERIODS: { key: Period; label: string }[] = [
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'quarterly', label: 'Quarterly' },
-  { key: 'biannual', label: 'Biannually' },
   { key: 'annual', label: 'Annually' },
-  { key: 'three-year', label: '3-yearly' },
-  { key: 'six-year', label: '6-yearly' },
+  { key: 'two-year', label: '2-Year' },
+  { key: 'three-year', label: '3-Yearly' },
+  { key: 'four-year', label: '4-Yearly' },
+  { key: 'five-year', label: '5-Yearly' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -53,8 +55,10 @@ export const PERIODS: { key: Period; label: string }[] = [
 export type Motivator = {
   key: string;
   label: string;
-  /** Marked with * in the document: the establishment may not deselect it. */
-  compulsory?: boolean;
+  /** Starred in the original document. It used to lock the checkbox; the client
+   *  asked on 30 Aug for these to be selectable like everything else, so the
+   *  star is now a recommendation the establishment can decline. */
+  recommended?: boolean;
 };
 
 export type MotivatorGroup = {
@@ -75,12 +79,12 @@ export const MOTIVATOR_GROUPS: MotivatorGroup[] = [
       { key: 'short-term-programmes', label: 'Specialist short-term programmes: workshops, conferences, seminars' },
       { key: 'educational-scholarships', label: 'Educational scholarships for staff (junior and senior, excluding top management)' },
       { key: 'new-employee-training', label: 'Adequate training for new employees' },
-      { key: 'in-house-reprimand-training', label: 'In-house training for reprimands', compulsory: true },
-      { key: 'specialist-training', label: 'Specialist training', compulsory: true },
-      { key: 'selective-training', label: 'Selective training', compulsory: true },
-      { key: 'deficiency-training', label: 'Deficiency training', compulsory: true },
-      { key: 'special-scholarship', label: 'Special scholarship', compulsory: true },
-      { key: 'special-counselling', label: 'Special counselling unit for very poor graded staff', compulsory: true },
+      { key: 'in-house-reprimand-training', label: 'In-house training for reprimands', recommended: true },
+      { key: 'specialist-training', label: 'Specialist training', recommended: true },
+      { key: 'selective-training', label: 'Selective training', recommended: true },
+      { key: 'deficiency-training', label: 'Deficiency training', recommended: true },
+      { key: 'special-scholarship', label: 'Special scholarship', recommended: true },
+      { key: 'special-counselling', label: 'Special counselling unit for very poor graded staff', recommended: true },
     ],
   },
   {
@@ -161,9 +165,10 @@ export const MOTIVATOR_GROUPS: MotivatorGroup[] = [
   },
 ];
 
-/** Every motivator the document marks with * — selected always, shown as fixed. */
-export const COMPULSORY_KEYS = MOTIVATOR_GROUPS.flatMap((g) =>
-  g.items.filter((i) => i.compulsory).map((i) => i.key),
+/** Every motivator the document marks with *. Offered pre-ticked on a fresh
+ *  scheme, but the establishment may untick any of them. */
+export const RECOMMENDED_KEYS = MOTIVATOR_GROUPS.flatMap((g) =>
+  g.items.filter((i) => i.recommended).map((i) => i.key),
 );
 
 // ---------------------------------------------------------------------------
@@ -211,58 +216,85 @@ export function certificateClassFor(level: PerformanceLevel): CertificateClass |
 /** What is due at a given performance level for a given period. Transcribed
  *  from the document's matrix; a blank cell there is an empty list here. */
 const ACTION_SCHEME: Record<PerformanceLevel, Partial<Record<Period, string[]>>> = {
+  // The template has no Very Poor row. It is the level below Poor in the same
+  // grading scheme, so it carries Poor's actions brought forward a period: the
+  // written warning arrives annually rather than at two years, and the lay-off
+  // at four years rather than five. Confirmed with the client 30 Aug.
   'Very Poor': {
-    monthly: ['Counselling'],
-    quarterly: ['Written warning'],
-    biannual: ['Stern written warning'],
-    annual: ['Stern written warning', 'Deficiency training'],
-    'three-year': ['Lay-off at the end of the period'],
+    annual: ['Written warning (By Estab. Department) and deficiency training in areas found lacking'],
+    'two-year': ['Stern written warning at the end of period (By Estab. Department)'],
+    'three-year': ['Last stern warning (By Estab. Department)'],
+    'four-year': ['Lay-off at the end of the period'],
   },
   Poor: {
-    monthly: ['Counselling'],
-    quarterly: ['Verbal warning'],
-    biannual: ['Written warning'],
-    annual: ['Stern written warning', 'Deficiency training'],
-    'three-year': ['Last stern warning'],
-    'six-year': ['Lay-off at the end of the period'],
+    annual: ['Counselling (By Organization Counselling Unit)'],
+    'two-year': [
+      'Written warning (By Estab. Department) and deficiency training in areas found lacking',
+    ],
+    'three-year': ['Stern written warning at the end of period (By Estab. Department)'],
+    'four-year': ['Lay-off at the end of the period'],
   },
   Fair: {
-    monthly: ['Counselling'],
-    quarterly: ['Counselling'],
-    biannual: ['Counselling'],
-    annual: ['Written advice', 'Deficiency training'],
-    'three-year': ['Written advice', 'Deficiency training'],
+    annual: ['Counselling (By Organization Counselling Unit)'],
+    'two-year': ['Written advice and deficiency training (By Organization Counselling Unit)'],
+    'three-year': ['Written warning at the end of period (By Organization Counselling Unit)'],
+    'four-year': ['Stern written warning at the end of period (By Organization Counselling Unit)'],
+    'five-year': ['Lay-off those with under 35% overall performance at the end of the period'],
   },
   Good: {
-    monthly: ['Assorted best worker displays, if any'],
-    quarterly: ['Achievement certificate and associated cash and kind, if any'],
-    biannual: ['Achievement certificate and associated cash and kind, if any'],
-    annual: ['Achievement certificate and associated cash and kind, if any'],
-    'three-year': ['Achievement certificate and associated cash and kind, if any'],
+    annual: ['Letter of commendation (By Estab. Department)'],
+    'two-year': ['Letter of commendation (By Estab. Department)'],
+    'three-year': ['Letter of commendation (By Estab. Department)'],
+    'four-year': ['Letter of commendation (By Estab. Department)'],
+    'five-year': ['Letter of commendation (By Estab. Department)'],
   },
   'Very Good': {
-    monthly: ['Assorted best worker displays, if any'],
-    quarterly: ['Assorted 3rd class achievement certificates', 'Appropriate displays', 'Associated cash'],
-    biannual: ['Assorted 3rd class certificates', 'Displays', 'Associated cash', 'Gifts'],
-    annual: ['3rd class certificates', 'Displays', 'Gifts', 'Souvenir', 'Cash'],
-    'three-year': ['Incremental promotion', 'Establish in the 2nd Book of Records'],
-    'six-year': ['Monumental gifts plus cash'],
+    annual: ['Assorted Very Good performer displays, awards and badges'],
+    'two-year': [
+      'As annually, plus lower level communication device gifts, books/cash and badges',
+    ],
+    'three-year': [
+      'As 2-yearly, plus certificates and special selective training scholarship, fellowships and promotion if any',
+    ],
+    'four-year': [
+      'As 3-yearly, 2nd Book of Records with certificate, plus lower level semi-monumental gifts and cash',
+    ],
+    'five-year': [
+      '1st Book of Records with certificate, promotions, lower level monumental gifts, cash',
+    ],
   },
   Excellent: {
-    monthly: ['Assorted best worker displays'],
-    quarterly: ['Assorted 2nd class achievement certificates', 'Displays', 'Associated gifts and cash'],
-    biannual: ['Assorted 2nd class achievement certificates', 'Displays', 'Gifts', 'Cash'],
-    annual: ['2nd class certificates', 'Displays', 'Gifts', 'Souvenir', 'Cash'],
-    'three-year': ['Position promotion if available', 'Establish in the 1st Book of Records'],
-    'six-year': ['Monumental gifts plus cash'],
+    annual: ['Assorted Excellent performer displays and awards with certificate'],
+    'two-year': [
+      'As annually, plus higher level communication devices as gifts, books/cash, certificate',
+    ],
+    'three-year': [
+      'As 2-yearly, 2nd Book of Records with certificate, plus selective training, fellowships/scholarship and promotion if any',
+    ],
+    'four-year': [
+      'As 3-yearly, 1st Book of Records with certificate, plus higher level semi-monumental gifts and cash and promotion if any',
+    ],
+    'five-year': [
+      'Hall of Fame membership with certificate, rank promotions, higher level monumental gifts, cash',
+    ],
   },
+  // The template stops at Excellent. Very Outstanding is the level above it in
+  // the same scheme, so it takes Excellent's actions at their fullest: the Hall
+  // of Fame arrives a period earlier and the annual award is 1st class.
   'Very Outstanding': {
-    monthly: ['Assorted best worker displays'],
-    quarterly: ['Assorted 1st class achievement certificates', 'Displays', 'Gifts', 'Cash'],
-    biannual: ['Assorted 1st class achievement certificates', 'Displays', 'Gifts', 'Cash'],
-    annual: ['1st class certificates', 'Displays', 'Gifts', 'Souvenir', 'Cash'],
-    'three-year': ['Rank promotion', 'Member of the Hall of Fame'],
-    'six-year': ['Monumental gifts plus cash'],
+    annual: ['Assorted 1st class performer displays and awards with certificate'],
+    'two-year': [
+      'As annually, plus higher level communication devices as gifts, books/cash, certificate',
+    ],
+    'three-year': [
+      'As 2-yearly, 1st Book of Records with certificate, plus selective training, fellowships/scholarship and promotion if any',
+    ],
+    'four-year': [
+      'Hall of Fame membership with certificate, plus higher level semi-monumental gifts, cash and promotion if any',
+    ],
+    'five-year': [
+      'Hall of Fame membership with certificate, rank promotions, higher level monumental gifts, cash',
+    ],
   },
 };
 
@@ -314,23 +346,23 @@ function qualifyingMotivators(level: PerformanceLevel, period: Period): string[]
     out.push('selective-training', 'special-scholarship');
   }
   if (good) {
-    if (period === 'monthly') out.push('best-of-month');
-    if (period === 'quarterly') out.push('best-of-quarter');
-    if (period === 'biannual') out.push('best-biannual');
-    if (period === 'annual') {
-      out.push('best-annual', 'communication-devices', 'semi-monumental', 'books', 'wares', 'clothes');
-    }
-    if (period === 'three-year') {
-      out.push('communication-devices', 'semi-monumental');
-    }
+    if (period === 'annual') out.push('best-annual', 'books', 'wares', 'clothes');
+    if (period === 'two-year') out.push('communication-devices', 'books');
+    if (period === 'three-year') out.push('communication-devices', 'semi-monumental');
   }
-  if (period === 'three-year') {
-    if (level === 'Very Good') out.push('second-book', 'step-promotion');
-    if (level === 'Excellent') out.push('first-book', 'position-promotion');
-    if (level === 'Very Outstanding') out.push('hall-of-fame', 'rank-promotion', 'special-training');
+  if (period === 'three-year' && strong) {
+    out.push('selective-training', 'special-scholarship', 'position-promotion');
   }
-  if (period === 'six-year' && strong) {
-    out.push('monumental');
+  if (period === 'four-year') {
+    if (level === 'Very Good') out.push('second-book', 'semi-monumental');
+    if (level === 'Excellent') out.push('first-book', 'semi-monumental');
+    if (level === 'Very Outstanding') out.push('hall-of-fame', 'semi-monumental');
+  }
+  if (period === 'five-year') {
+    if (level === 'Very Good') out.push('first-book', 'monumental', 'step-promotion');
+    if (level === 'Excellent' || level === 'Very Outstanding') {
+      out.push('hall-of-fame', 'monumental', 'rank-promotion');
+    }
   }
   return Array.from(new Set(out));
 }
@@ -339,10 +371,10 @@ export function entitlementFor(
   level: PerformanceLevel,
   period: Period,
   /** The motivators this administration adopted. Null means "not yet chosen",
-   *  in which case only the compulsory ones apply. */
+   *  in which case the recommended set is assumed. */
   adopted: string[] | null,
 ): Entitlement {
-  const allowed = new Set([...(adopted ?? []), ...COMPULSORY_KEYS]);
+  const allowed = new Set(adopted ?? RECOMMENDED_KEYS);
   const motivators = qualifyingMotivators(level, period).filter((k) => allowed.has(k));
 
   return {

@@ -6,9 +6,14 @@ import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
 import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
+import AwardArt, { type ArtKind } from "@/app/components/motivation/AwardArt";
+import {
+  APPRAISAL_AWARD_CATEGORIES,
+  type AwardOutcome,
+} from "@/app/lib/motivation/appraisalAwards";
 import {
   MOTIVATOR_GROUPS,
-  COMPULSORY_KEYS,
+  RECOMMENDED_KEYS,
   PERFORMANCE_LEVELS,
   PERIODS,
   actionScheme,
@@ -61,9 +66,10 @@ export default function MotivationPage() {
       <h1 className="text-2xl font-bold text-strong">Motivation of staff</h1>
       <p className="mt-1 max-w-3xl text-body">
         The establishment adopts a set of motivators for an administration, and the
-        Motivation Action Scheme decides what each grade of performance earns over each
-        period. Nothing is scored here — the performance and appraisal models produce the
-        grade, and this says what follows from it.
+        Motivation Action Scheme decides what each grade earns over each period. Nothing
+        is scored here — the performance and appraisal models produce the grades, and this
+        says what follows from them. The performance side reads the action scheme; the
+        appraisal side ranks staff against each other, faculty by faculty.
       </p>
 
       <Tabs defaultValue="scheme" syncParam="tab" className="mt-8">
@@ -71,6 +77,8 @@ export default function MotivationPage() {
           <TabsTrigger value="scheme">Adopted motivators</TabsTrigger>
           <TabsTrigger value="action">Action scheme</TabsTrigger>
           <TabsTrigger value="entitlement">What a grade earns</TabsTrigger>
+          <TabsTrigger value="due">Who is due what</TabsTrigger>
+          <TabsTrigger value="appraisal">Appraisal awards</TabsTrigger>
           <TabsTrigger value="record">Award record</TabsTrigger>
         </TabsList>
 
@@ -82,6 +90,12 @@ export default function MotivationPage() {
         </TabsContent>
         <TabsContent value="entitlement">
           <EntitlementTab />
+        </TabsContent>
+        <TabsContent value="due">
+          <WhoIsDueTab />
+        </TabsContent>
+        <TabsContent value="appraisal">
+          <AppraisalAwardsTab />
         </TabsContent>
         <TabsContent value="record">
           <AwardRecordTab />
@@ -100,7 +114,7 @@ function SchemeTab() {
   const [active, setActive] = useState<Scheme | null>(null);
   const [past, setPast] = useState<Scheme[]>([]);
   const [tenure, setTenure] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set(COMPULSORY_KEYS));
+  const [selected, setSelected] = useState<Set<string>>(new Set(RECOMMENDED_KEYS));
   const [additions, setAdditions] = useState<string[]>([]);
   const [newAddition, setNewAddition] = useState("");
   const [saving, setSaving] = useState(false);
@@ -115,7 +129,7 @@ function SchemeTab() {
         if (data.active) {
           setActive(data.active);
           setTenure(data.active.tenure);
-          setSelected(new Set([...(data.active.selections ?? []), ...COMPULSORY_KEYS]));
+          setSelected(new Set(data.active.selections ?? []));
           setAdditions(data.active.additions ?? []);
         }
         setPast(data.past ?? []);
@@ -126,7 +140,6 @@ function SchemeTab() {
   }, []);
 
   function toggle(key: string) {
-    if (COMPULSORY_KEYS.includes(key)) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -197,25 +210,25 @@ function SchemeTab() {
           <h2 className="text-lg font-bold text-strong">{group.title}</h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {group.items.map((item) => {
-              const compulsory = Boolean(item.compulsory);
+              const recommended = Boolean(item.recommended);
               return (
                 <label
                   key={item.key}
                   className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
-                    compulsory ? "border-pes-200 bg-pes-50" : "border-line"
+                    recommended ? "border-pes-200 bg-pes-50" : "border-line"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(item.key)}
-                    disabled={compulsory || !isAdmin}
+                    disabled={!isAdmin}
                     onChange={() => toggle(item.key)}
                     className="mt-0.5"
                   />
                   <span className="text-body">
                     {item.label}
-                    {compulsory && (
-                      <span className="ml-2 text-xs font-medium text-pes-700">compulsory</span>
+                    {recommended && (
+                      <span className="ml-2 text-xs font-medium text-pes-700">recommended</span>
                     )}
                   </span>
                 </label>
@@ -745,6 +758,403 @@ function AwardRecordTab() {
           .
         </p>
       </section>
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+
+function AppraisalAwardsTab() {
+  const [data, setData] = useState<{
+    periods: number;
+    period: { starts_on: string; ends_on: string } | null;
+    staff?: number;
+    outcomes: AwardOutcome[];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [artPreview, setArtPreview] = useState<{
+    kind: ArtKind;
+    title: string;
+    recipient?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/appraisal-awards", { method: "GET" });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? "Could not work out the awards.");
+        setData(body);
+      } catch (err: any) {
+        setError(err.message ?? "Could not work out the awards.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) return <p className="text-muted">Working out who has won what…</p>;
+  if (error) return <p className="rounded-lg bg-danger-50 px-4 py-3 text-danger-700">{error}</p>;
+  if (!data) return null;
+
+  const outcomeFor = (key: string) => data.outcomes.find((o) => o.award.key === key);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Appraisal motivation</h2>
+        <p className="mt-1 text-sm text-muted">
+          The lower half of the client's template, applied to the appraisal results. Most
+          of these are competitive — the best in a category within a faculty or department
+          — so they are decided across the whole cohort rather than from one result.
+        </p>
+        {data.period ? (
+          <p className="mt-3 text-sm text-body">
+            Drawn from the released period ending{" "}
+            <strong>{new Date(data.period.ends_on).toLocaleDateString()}</strong>
+            {data.staff != null && <> · {data.staff} staff results</>} ·{" "}
+            {data.periods} released period{data.periods === 1 ? "" : "s"} on record.
+          </p>
+        ) : (
+          <p className="mt-3 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+            No appraisal period has been released yet, so nothing can be awarded. The
+            criteria below are still shown, so the scheme can be checked before results
+            exist.
+          </p>
+        )}
+      </section>
+
+      {artPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+          onClick={() => setArtPreview(null)}
+        >
+          <div
+            className="max-h-full w-full max-w-3xl overflow-auto rounded-xl bg-white p-6 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <h3 className="text-lg font-bold text-strong">
+                {artPreview.title}
+                {artPreview.recipient ? ` — ${artPreview.recipient}` : ""}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setArtPreview(null)}
+                className="rounded-md border border-line px-3 py-1.5 text-sm text-body hover:bg-canvas"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <AwardArt
+                kind={artPreview.kind}
+                size={artPreview.kind.startsWith("cert-") ? 520 : 240}
+                title={artPreview.title}
+                recipient={artPreview.recipient ?? "— recipient —"}
+                issuer="PES"
+                date={new Date().toLocaleDateString()}
+              />
+            </div>
+            {!artPreview.recipient && (
+              <p className="mt-3 text-center text-xs text-muted">
+                Nobody has won this yet, so the template is shown blank.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {APPRAISAL_AWARD_CATEGORIES.map((cat) => (
+        <section key={cat.no} className="rounded-xl border border-line bg-white p-6 shadow-sm">
+          <h3 className="text-base font-bold text-strong">
+            {cat.no}. {cat.title}
+          </h3>
+
+          <div className="mt-4 space-y-3">
+            {cat.awards.map((award) => {
+              const outcome = outcomeFor(award.key);
+              const winners = outcome?.winners ?? [];
+              return (
+                <div key={award.key} className="rounded-lg border border-line p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-body">{award.label}</p>
+                      <p className="mt-0.5 text-xs text-muted">{award.criteria}</p>
+                    </div>
+                    {award.art && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setArtPreview({
+                            kind: award.art as ArtKind,
+                            title: award.label,
+                            recipient: winners[0]?.name,
+                          })
+                        }
+                        title="See the award as it would be issued"
+                        className="shrink-0 rounded-md p-1 hover:bg-canvas"
+                      >
+                        <AwardArt
+                          kind={award.art as ArtKind}
+                          size={84}
+                          title={winners.length === 1 ? award.label : undefined}
+                          recipient={winners.length === 1 ? winners[0].name : undefined}
+                        />
+                      </button>
+                    )}
+                  </div>
+
+                  {winners.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-sm text-body">
+                      {winners.map((w, i) => (
+                        <li key={`${w.name}-${i}`} className="flex flex-wrap gap-x-2">
+                          <span className="font-medium text-strong">{w.name}</span>
+                          {w.scopeLabel && <span className="text-muted">· {w.scopeLabel}</span>}
+                          {w.dept && <span className="text-muted">· {w.dept}</span>}
+                          {w.score != null && (
+                            <span className="text-muted">· {Number(w.score).toFixed(2)}</span>
+                          )}
+                          {award.art && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setArtPreview({
+                                  kind: award.art as ArtKind,
+                                  title: award.label,
+                                  recipient: w.name,
+                                })
+                              }
+                              className="text-xs text-pes underline"
+                            >
+                              view award
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted">
+                      {outcome?.pending ?? "Nobody met the criteria in this period."}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+
+type DueRow = {
+  name: string;
+  dept: string | null;
+  isHead: boolean;
+  overall: number | null;
+  partial: boolean;
+  level: PerformanceLevel;
+  entitlement: {
+    actions: string[];
+    certificateClass: string | null;
+    motivators: string[];
+    disciplinary: boolean;
+  };
+};
+
+function WhoIsDueTab() {
+  const [period, setPeriod] = useState<Period>("annual");
+  const [data, setData] = useState<{
+    staff: DueRow[];
+    heads: DueRow[];
+    schemeAdopted: boolean;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<DueRow | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await apiFetch(`/api/performance-motivation?period=${period}`, {
+          method: "GET",
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? "Could not load the results.");
+        setData(body);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message ?? "Could not load the results.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [period]);
+
+  const certArt = (cls: string | null): ArtKind | null =>
+    cls === "1st class" ? "cert-1st" : cls === "2nd class" ? "cert-2nd" : cls === "3rd class" ? "cert-3rd" : null;
+  const badgeArt = (cls: string | null): ArtKind | null =>
+    cls === "1st class" ? "badge-1st" : cls === "2nd class" ? "badge-2nd" : cls === "3rd class" ? "badge-3rd" : null;
+
+  const table = (rows: DueRow[], title: string) => (
+    <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-bold text-strong">{title}</h2>
+      {rows.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">
+          No settled performance results for this group yet.
+        </p>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-lg border border-line">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-line bg-canvas font-medium text-body">
+              <tr>
+                <th className="px-4 py-2">Staff</th>
+                <th className="px-4 py-2">Overall</th>
+                <th className="px-4 py-2">Level</th>
+                <th className="px-4 py-2">What is due</th>
+                <th className="px-4 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {rows.map((r) => (
+                <tr key={r.name} className={r.entitlement.disciplinary ? "bg-warning-50/40" : undefined}>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-strong">{r.name}</span>
+                    {r.dept && <span className="block text-xs text-muted">{r.dept}</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.overall == null ? "—" : r.overall.toFixed(2)}
+                    {r.partial && <span className="ml-1 text-xs text-warning-700">partial</span>}
+                  </td>
+                  <td className="px-4 py-3 font-medium text-body">{r.level}</td>
+                  <td className="px-4 py-3">
+                    {r.entitlement.actions.length === 0 ? (
+                      <span className="text-muted">Nothing at this level for this period.</span>
+                    ) : (
+                      <ul className="list-inside list-disc text-body">
+                        {r.entitlement.actions.map((a) => (
+                          <li key={a}>{a}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {r.entitlement.certificateClass && (
+                      <button
+                        type="button"
+                        onClick={() => setPreview(r)}
+                        className="rounded-md border border-pes px-2.5 py-1 text-xs font-medium text-pes hover:bg-pes-50"
+                      >
+                        View award
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-strong">Performance motivation</h2>
+            <p className="mt-1 text-sm text-muted">
+              The action scheme applied to the settled performance results, for staff and
+              for heads, as the template asks.
+            </p>
+          </div>
+          <label className="text-sm font-semibold text-body">
+            Period
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as Period)}
+              className="mt-1.5 block rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+            >
+              {PERIODS.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {data && !data.schemeAdopted && (
+          <p className="mt-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+            No scheme has been adopted for this administration, so only the recommended
+            motivators are counted. Set one on the first tab.
+          </p>
+        )}
+      </section>
+
+      {loading ? (
+        <p className="text-muted">Working out what each person is due…</p>
+      ) : error ? (
+        <p className="rounded-lg bg-danger-50 px-4 py-3 text-danger-700">{error}</p>
+      ) : data ? (
+        <>
+          {table(data.staff, "Staff")}
+          {table(data.heads, "Heads of department and unit")}
+        </>
+      ) : null}
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="max-h-full w-full max-w-3xl overflow-auto rounded-xl bg-white p-6 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-strong">
+                {preview.name} — {preview.entitlement.certificateClass}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                className="rounded-md border border-line px-3 py-1.5 text-sm text-body hover:bg-canvas"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-start justify-center gap-8">
+              {certArt(preview.entitlement.certificateClass) && (
+                <AwardArt
+                  kind={certArt(preview.entitlement.certificateClass) as ArtKind}
+                  size={520}
+                  recipient={preview.name}
+                  title={`${preview.level} performance${preview.dept ? ` · ${preview.dept}` : ""}`}
+                  issuer="PES"
+                  date={new Date().toLocaleDateString()}
+                />
+              )}
+              {badgeArt(preview.entitlement.certificateClass) && (
+                <AwardArt
+                  kind={badgeArt(preview.entitlement.certificateClass) as ArtKind}
+                  size={200}
+                  title={preview.level}
+                  recipient={preview.name}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
