@@ -51,14 +51,80 @@ export function artLabel(kind: ArtKind): string {
 
 type Props = {
   kind: ArtKind;
-  /** Printed across the badge's blank band. */
+  /** Printed across the badge's blank band, or the certificate's ruled lines. */
   title?: string;
   recipient?: string;
+  /** Certificates carry a date and the awarding body on their two lower rules. */
+  date?: string;
+  issuer?: string;
   size?: number;
 };
 
-export default function AwardArt({ kind, title, recipient, size = 160 }: Props) {
+export default function AwardArt({
+  kind,
+  title,
+  recipient,
+  date,
+  issuer,
+  size = 160,
+}: Props) {
   const isBadge = kind.startsWith('badge-');
+  const isCert = kind.startsWith('cert-');
+
+  // The certificate art is landscape and leaves its blanks in fixed places: a
+  // ruled line for the recipient under "This certificate is presented to", a
+  // caption line beneath it for what the award is, and Signature / Date rules
+  // at the foot. Percentages rather than pixels so it scales with `size`.
+  if (isCert) {
+    const width = size;
+    const height = size * 0.818; // the template's own 933x763 ratio
+    return (
+      <figure className="m-0 inline-flex flex-col items-center gap-2">
+        <div className="relative" style={{ width, height }}>
+          <Image
+            src={SOURCES[kind]}
+            alt={LABELS[kind]}
+            fill
+            sizes={`${width}px`}
+            className="object-contain"
+          />
+          {recipient && (
+            <span
+              className="absolute inset-x-[18%] text-center font-semibold leading-tight text-black"
+              style={{ top: '50%', fontSize: Math.max(9, width * 0.032) }}
+            >
+              {recipient}
+            </span>
+          )}
+          {title && (
+            <span
+              className="absolute inset-x-[16%] text-center leading-tight text-black/80"
+              style={{ top: '63%', fontSize: Math.max(7, width * 0.021) }}
+            >
+              {title}
+            </span>
+          )}
+          {issuer && (
+            <span
+              className="absolute text-center leading-tight text-black/70"
+              style={{ left: '13%', width: '24%', top: '75.5%', fontSize: Math.max(6, width * 0.018) }}
+            >
+              {issuer}
+            </span>
+          )}
+          {date && (
+            <span
+              className="absolute text-center leading-tight text-black/70"
+              style={{ left: '63%', width: '24%', top: '75.5%', fontSize: Math.max(6, width * 0.018) }}
+            >
+              {date}
+            </span>
+          )}
+        </div>
+        <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>
+      </figure>
+    );
+  }
 
   return (
     <figure className="m-0 inline-flex flex-col items-center gap-2">
