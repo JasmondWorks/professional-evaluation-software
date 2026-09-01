@@ -192,7 +192,8 @@ export default function SupervisionCostHistoryPage() {
                     <th className="px-6 py-4 whitespace-nowrap">Date</th>
                     <th className="px-6 py-4">Personnel redundancy</th>
                     <th className="px-6 py-4">Levels</th>
-                    <th className="px-6 py-4">Ideal per level</th>
+                    <th className="px-6 py-4">Staff per level</th>
+                    <th className="px-6 py-4">K* per level</th>
                     <th className="px-6 py-4">Real per level</th>
                   </tr>
                 </thead>
@@ -203,11 +204,27 @@ export default function SupervisionCostHistoryPage() {
                         {dayjs(run.created_at).format("MMM D, YYYY h:mm A")}
                       </td>
                       <td className="px-6 py-4 text-lg font-bold text-pes">
-                        {run.result == null ? "—" : `${run.result.toFixed(2)}%`}
+                        {run.result == null || !run.extra_data?.hasRealCounts
+                          ? "—"
+                          : `${run.result.toFixed(2)}%`}
                       </td>
                       <td className="px-6 py-4 text-body">{run.denominator.length}</td>
-                      <td className="px-6 py-4 text-body">{run.denominator.join(" · ")}</td>
-                      <td className="px-6 py-4 text-body">{run.numerator.join(" · ")}</td>
+                      {/* The head count each level needs. It was missing from
+                          this table, which the client reported: a saved run
+                          showed a percentage and no staff numbers. */}
+                      <td className="px-6 py-4 font-semibold text-strong">
+                        {Array.isArray(run.extra_data?.levels)
+                          ? run.extra_data.levels.map((l: any) => l.staff ?? l.ideal).join(" · ")
+                          : run.denominator.join(" · ")}
+                      </td>
+                      <td className="px-6 py-4 text-body">
+                        {Array.isArray(run.extra_data?.levels)
+                          ? run.extra_data.levels.map((l: any) => l.kstar ?? "—").join(" · ")
+                          : "—"}
+                      </td>
+                      <td className="px-6 py-4 text-body">
+                        {run.extra_data?.hasRealCounts ? run.numerator.join(" · ") : "not entered"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

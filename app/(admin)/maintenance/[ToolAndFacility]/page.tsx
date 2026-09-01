@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
+import { apiFetch } from "@/app/utils/apiFetch";
+import { notify } from "@/lib/toast";
+import { planMaintenance } from "@/app/lib/maintenance/schedule";
 
 interface HomeProps {
   params: {
@@ -32,6 +35,46 @@ export default function MaintenanceDetail({ params }: HomeProps) {
   const [formData, setFormData] = useState<Record<string, any>>(SAMPLE_DATA);
   const [usingSample, setUsingSample] = useState(true);
   const [results, setResults] = useState<Record<string, number>>({});
+  // The maintenance head picks the day the first visit falls on; everything
+  // after it is spaced by the computed interval.
+  const [startsOn, setStartsOn] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const plan = useMemo(() => {
+    if (!results.interval || !results.totalPlannedHours) return null;
+    return planMaintenance(results.interval, results.totalPlannedHours, startsOn);
+  }, [results.interval, results.totalPlannedHours, startsOn]);
+
+  async function saveRun() {
+    if (Object.keys(results).length === 0) return;
+    setSaving(true);
+    try {
+      const res = await apiFetch("/api/maintenance-runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          facility: facilityName,
+          inputs: formData,
+          results,
+          optimal_interval: results.interval,
+          planned_hours: results.totalPlannedHours,
+          cycles: plan?.cycles ?? null,
+          days_between: plan?.daysBetween ?? null,
+          starts_on: plan ? startsOn : null,
+          schedule: plan?.dates ?? [],
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not save this run.");
+      notify.success("Saved. It is on the history page with its planned dates.");
+    } catch (err: any) {
+      notify.error(err.message ?? "Could not save this run.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const handleChange = (sheet: string, field: string, value: string) => {
     setUsingSample(false);
@@ -201,6 +244,88 @@ export default function MaintenanceDetail({ params }: HomeProps) {
             <p>Weekly Compliance: {results.compliance?.toFixed(2)}%</p>
             <p>Job Variance: {results.variance?.toFixed(2)} hrs</p>
             <p>Downtime: {results.downtimePercent?.toFixed(2)}%</p>
+          </div>
+        )}
+
+        {/* The preventive maintenance plan, from the client's sketch: the
+            optimal interval over the planned hours gives the number of visits,
+            the planned hours over twenty-four gives the days between them, and
+            a chosen start date turns that into dates. */}
+        {plan && (
+          <div className="border-t p-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="font-semibold text-strong">Preventive maintenance plan</h2>
+                <p className="mt-1 text-sm text-muted">
+                  {results.interval?.toFixed(2)} ÷ {results.totalPlannedHours?.toFixed(2)} ={" "}
+                  {plan.exactCycles.toFixed(2)}, so <strong>{plan.cycles} maintenance
+                  cycles</strong>. {results.totalPlannedHours?.toFixed(2)} hours ÷ 24 ={" "}
+                  {plan.exactDays.toFixed(2)}, so one every{" "}
+                  <strong>{plan.daysBetween} days</strong>.
+                </p>
+              </div>
+              <label className="text-sm font-semibold text-body">
+                First maintenance day
+                <input
+                  type="date"
+                  value={startsOn}
+                  onChange={(e) => setStartsOn(e.target.value)}
+                  className="mt-1.5 block rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+                />
+              </label>
+            </div>
+
+            {/* The loops of the sketch, in order, ending where the last cycle
+                falls rather than running on. */}
+            <ol className="mt-5 flex flex-wrap items-center gap-2">
+              {plan.dates.map((d, i) => (
+                <li key={d} className="flex items-center gap-2">
+                  <div className="rounded-xl border-2 border-pes-200 bg-pes-50 px-4 py-3 text-center">
+                    <p className="text-xs font-medium text-pes-700">Cycle {i + 1}</p>
+                    <p className="text-sm font-bold text-pes">
+                      {new Date(d).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <p className="text-[11px] text-pes-700">
+                      {results.totalPlannedHours?.toFixed(0)} hrs
+                    </p>
+                  </div>
+                  {i < plan.dates.length - 1 && (
+                    <span className="text-lg text-muted" aria-hidden>
+                      →
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+
+            <p className="mt-3 text-sm text-body">
+              Starting {new Date(plan.dates[0]).toLocaleDateString()}, the {plan.cycles}{" "}
+              cycles complete on{" "}
+              <strong>{new Date(plan.dates[plan.dates.length - 1]).toLocaleDateString()}</strong>.
+              The plan stops there.
+            </p>
+          </div>
+        )}
+
+        {Object.keys(results).length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-t p-4">
+            <button
+              type="button"
+              onClick={saveRun}
+              disabled={saving}
+              className={`rounded px-6 py-2 text-sm font-medium text-white ${
+                saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
+              }`}
+            >
+              {saving ? "Saving…" : "Save result and plan"}
+            </button>
+            <Link href="/maintenance/history" className="text-sm text-pes underline">
+              View history
+            </Link>
           </div>
         )}
       </div>

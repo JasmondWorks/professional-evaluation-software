@@ -11,6 +11,7 @@
 // The Books of Records and the certificates have their own art, and their own
 // proportions, so they are separate cases rather than one image with a class.
 
+import { useRef } from 'react';
 import Image from 'next/image';
 
 export type ArtKind =
@@ -51,6 +52,9 @@ export function artLabel(kind: ArtKind): string {
 
 type Props = {
   kind: ArtKind;
+  /** Show a print button under the art. The client asked that a member of staff
+   *  be able to take their award away, which for a certificate means paper. */
+  printable?: boolean;
   /** Printed across the badge's blank band, or the certificate's ruled lines. */
   title?: string;
   recipient?: string;
@@ -66,8 +70,35 @@ export default function AwardArt({
   recipient,
   date,
   issuer,
+  printable = false,
   size = 160,
 }: Props) {
+  const frame = useRef<HTMLDivElement>(null);
+
+  // Printing one award rather than the page around it: the artwork is opened in
+  // its own window at its own size and sent to the printer. No library, and no
+  // screenshot of a scaled-down preview, so it comes out at full quality.
+  const print = () => {
+    const node = frame.current;
+    if (!node) return;
+    const w = window.open('', '_blank', 'width=1100,height=850');
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><title>${
+      [title, recipient].filter(Boolean).join(' - ') || 'Award'
+    }</title><style>
+      @page { size: landscape; margin: 10mm; }
+      body { margin: 0; display: flex; align-items: center; justify-content: center; }
+      .frame { position: relative; width: 100%; max-width: 1000px; }
+      .frame img { width: 100%; height: auto; display: block; }
+      .overlay { position: absolute; text-align: center; color: #000; }
+    </style></head><body>${node.outerHTML}</body></html>`);
+    w.document.close();
+    // The artwork has to be decoded before the print dialog freezes the page.
+    w.addEventListener('load', () => {
+      w.focus();
+      w.print();
+    });
+  };
   const isBadge = kind.startsWith('badge-');
   const isCert = kind.startsWith('cert-');
 
@@ -80,7 +111,7 @@ export default function AwardArt({
     const height = size * 0.818; // the template's own 933x763 ratio
     return (
       <figure className="m-0 inline-flex flex-col items-center gap-2">
-        <div className="relative" style={{ width, height }}>
+        <div ref={frame} className="relative" style={{ width, height }}>
           <Image
             src={SOURCES[kind]}
             alt={LABELS[kind]}
@@ -122,13 +153,22 @@ export default function AwardArt({
           )}
         </div>
         <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>
+        {printable && (
+          <button
+            type="button"
+            onClick={print}
+            className="rounded-md border border-pes px-3 py-1.5 text-xs font-medium text-pes hover:bg-pes-50"
+          >
+            Print this certificate
+          </button>
+        )}
       </figure>
     );
   }
 
   return (
     <figure className="m-0 inline-flex flex-col items-center gap-2">
-      <div className="relative" style={{ width: size, height: size }}>
+      <div ref={frame} className="relative" style={{ width: size, height: size }}>
         <Image
           src={SOURCES[kind]}
           alt={LABELS[kind]}
@@ -164,6 +204,15 @@ export default function AwardArt({
         )}
       </div>
       <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>
+      {printable && (
+        <button
+          type="button"
+          onClick={print}
+          className="rounded-md border border-pes px-3 py-1.5 text-xs font-medium text-pes hover:bg-pes-50"
+        >
+          Print this badge
+        </button>
+      )}
     </figure>
   );
 }

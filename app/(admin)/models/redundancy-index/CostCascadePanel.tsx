@@ -222,7 +222,7 @@ export default function CostCascadePanel() {
   }
 
   async function saveRedundancy() {
-    if (!cascade || overallRedundancy == null) return;
+    if (!cascade || cascade.levels.length === 0) return;
     const token = getAccessToken();
     if (!token) {
       setSaveMsg("Missing token — please log in again.");
@@ -239,7 +239,11 @@ export default function CostCascadePanel() {
         },
         body: JSON.stringify({
           section: 21,
-          result: overallRedundancy,
+          // Saveable before the real head counts are known: the ladder itself is
+          // the result worth keeping, and the percentage joins it when the
+          // operator has the real figures. It used to be all or nothing, which
+          // left an executed ladder with no Save button at all.
+          result: overallRedundancy ?? 0,
           numerator: redundancyRows.map((r) => r.real ?? 0),
           denominator: redundancyRows.map((r) => r.ideal),
           // Kept so the history can show what the percentage was drawn from —
@@ -249,9 +253,16 @@ export default function CostCascadePanel() {
             staffNumber,
             supervisoryKstar,
             method: selectedStaff?.methodType,
+            // Every figure behind the ladder, so the history can show the staff
+            // numbers rather than a bare percentage.
+            hasRealCounts: overallRedundancy != null,
             levels: cascade.levels.map((l) => ({
               level: l.level,
+              numerator: l.numerator,
+              lambda: Number.isFinite(l.lambda) ? l.lambda : null,
+              mu: Number.isFinite(l.mu) ? l.mu : null,
               kstar: l.kstar,
+              staff: l.count,
               ideal: l.count,
               real: realCounts[l.level] ?? null,
             })),
@@ -260,7 +271,11 @@ export default function CostCascadePanel() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to save");
-      setSaveMsg("✅ Percentage redundancy saved to the history.");
+      setSaveMsg(
+        overallRedundancy == null
+          ? "✅ Saved. Enter the real head counts to record the percentage too."
+          : "✅ Saved to the history.",
+      );
     } catch (err: any) {
       setSaveMsg(`❌ ${err.message ?? "Error saving result."}`);
     } finally {
@@ -462,6 +477,21 @@ export default function CostCascadePanel() {
                       D* = {r.run.Dstar.toFixed(4)} · ρ = {r.run.rho.toFixed(4)}
                     </span>
                   </p>
+                  {/* The head count this span implies: the staff carried up from
+                      the level below, divided by the K* just computed. The
+                      client asked for it here, beside K*, rather than only in
+                      the ladder further down the page. */}
+                  {cascade?.levels[i + 1] && (
+                    <p className="mt-2 border-t border-pes-200 pt-2 text-sm text-pes-700">
+                      Staff at this level:{" "}
+                      <span className="text-xl font-bold text-pes">
+                        {cascade.levels[i + 1].count}
+                      </span>
+                      <span className="ml-2 text-xs">
+                        {cascade.levels[i + 1].numerator} ÷ {r.run.Kstar}
+                      </span>
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs text-muted sm:col-span-6">
@@ -544,6 +574,19 @@ export default function CostCascadePanel() {
           </p>
         )}
       </section>
+
+      {/* A level can be executed before a staff number and supervisory K* have
+          been chosen, in which case there is no ladder yet and nothing to save.
+          Saying so beats a screen with no Save button on it, which is what the
+          client reported. */}
+      {levelRates.some((r) => r.run) && (!cascade || cascade.levels.length === 0) && (
+        <section className="rounded-xl border border-warning-200 bg-warning-50 p-6">
+          <p className="text-sm text-warning-700">
+            The levels are executed, but the ladder needs a staff number and a supervisory
+            K* before it can be built and saved. Pick both at the top of this page.
+          </p>
+        </section>
+      )}
 
       {/* ===== 21. Percentage redundancy ===== */}
       {cascade && cascade.levels.length > 0 && (
@@ -652,14 +695,12 @@ export default function CostCascadePanel() {
             <button
               type="button"
               onClick={saveRedundancy}
-              disabled={overallRedundancy == null || saving}
+              disabled={saving}
               className={`rounded-lg px-6 py-3 text-sm font-medium text-white transition-colors ${
-                overallRedundancy != null && !saving
-                  ? "bg-pes hover:opacity-90"
-                  : "cursor-not-allowed bg-gray-400"
+                saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
               }`}
             >
-              {saving ? "Saving…" : "Save percentage redundancy"}
+              {saving ? "Saving…" : "Save results to history"}
             </button>
             <Link
               href="/models/redundancy-index/supervision-cost-history"

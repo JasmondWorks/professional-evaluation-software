@@ -77,6 +77,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       { key: 6, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['super-admin', 'admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
       { key: 11, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['super-admin', 'admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
       { key: 7, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
+      { key: 13, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
       { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['super-admin', 'admin'] },
       { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'super-admin', 'admin'] },

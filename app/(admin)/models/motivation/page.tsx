@@ -851,6 +851,7 @@ function AppraisalAwardsTab() {
             <div className="flex justify-center">
               <AwardArt
                 kind={artPreview.kind}
+                printable={Boolean(artPreview.recipient)}
                 size={artPreview.kind.startsWith("cert-") ? 520 : 240}
                 title={artPreview.title}
                 recipient={artPreview.recipient ?? "— recipient —"}
@@ -1136,6 +1137,7 @@ function WhoIsDueTab() {
               {certArt(preview.entitlement.certificateClass) && (
                 <AwardArt
                   kind={certArt(preview.entitlement.certificateClass) as ArtKind}
+                  printable
                   size={520}
                   recipient={preview.name}
                   title={`${preview.level} performance${preview.dept ? ` · ${preview.dept}` : ""}`}
@@ -1146,6 +1148,7 @@ function WhoIsDueTab() {
               {badgeArt(preview.entitlement.certificateClass) && (
                 <AwardArt
                   kind={badgeArt(preview.entitlement.certificateClass) as ArtKind}
+                  printable
                   size={200}
                   title={preview.level}
                   recipient={preview.name}

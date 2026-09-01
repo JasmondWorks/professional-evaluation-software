@@ -122,6 +122,7 @@ export default function MaintenancePage() {
       </div>
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-strong mb-2">Maintenance Management</h1>
+        <Link href="/maintenance/history" className="text-sm text-pes underline">View history</Link>
         <p className="text-muted max-w-2xl text-sm">
           Track and manage your organization's tools and facilities. Add new assets to the inventory, set priority ratings, and monitor maintenance schedules.
         </p>

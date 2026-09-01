@@ -317,6 +317,25 @@ model motivation {
 
 // Which motivators an administration adopted. A change of top management closes
 // the current row and opens a new one, so each tenure's scheme stays on record.
+// A saved maintenance computation and the preventive schedule it produced.
+model maintenance_run {
+  id               Int       @id @default(autoincrement())
+  org              String    @db.VarChar(255)
+  facility         String    @db.VarChar(255)
+  inputs           Json      @default("{}")
+  results          Json      @default("{}")
+  optimal_interval Float?
+  planned_hours    Float?
+  cycles           Int?
+  days_between     Int?
+  starts_on        DateTime? @db.Date
+  schedule         Json      @default("[]")
+  run_by           String?   @db.VarChar(255)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([org, created_at(sort: Desc)], map: "maintenance_run_org_created_idx")
+}
+
 model motivation_scheme {
   id         Int       @id @default(autoincrement())
   org        String    @db.VarChar(255)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAccessToken } from "@/app/utils/auth";
 import dayjs from "dayjs";
 
@@ -20,6 +20,31 @@ interface OrgStructureRun {
 
 export default function OrgStructureHistory() {
   const [history, setHistory] = useState<OrgStructureRun[]>([]);
+
+  // Sections 18, 19 and 21 are saved in the same breath, so the history holds
+  // several rows per execution. Listed flat across a grid they read as
+  // scattered, which is what the client reported. They are grouped back into
+  // the execution they came from, newest first, and each group is headed with
+  // the date and time it was run.
+  const executions = useMemo(() => {
+    const byRun = new Map<string, OrgStructureRun[]>();
+    const ordered = [...history].sort((a, b) => {
+      const t = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return t !== 0 ? t : b.id - a.id;
+    });
+    for (const run of ordered) {
+      // To the minute: three rows written by one Save share a timestamp to the
+      // second, but a slow save can straddle one.
+      const key = dayjs(run.created_at).format("YYYY-MM-DD HH:mm");
+      byRun.set(key, [...(byRun.get(key) ?? []), run]);
+    }
+    return [...byRun.entries()].map(([key, runs]) => ({
+      key,
+      when: runs[0].created_at,
+      // Section order within an execution, so 17 reads before 21.
+      runs: [...runs].sort((a, b) => a.section - b.section),
+    }));
+  }, [history]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,8 +145,17 @@ export default function OrgStructureHistory() {
             color="#f59e0b" 
             formatter={(val) => `${val.toFixed(2)}`} 
           />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {history.map((run) => (
+          {executions.map((execution) => (
+            <section key={execution.key} className="mb-8">
+              <h2 className="mb-3 flex items-baseline gap-3 text-sm font-semibold text-strong">
+                {dayjs(execution.when).format("dddd, MMMM D YYYY • h:mm A")}
+                <span className="text-xs font-normal text-muted">
+                  {execution.runs.length} section
+                  {execution.runs.length === 1 ? "" : "s"} saved
+                </span>
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {execution.runs.map((run) => (
             <div key={run.id} className="bg-white rounded-xl shadow-sm border border-line overflow-hidden flex flex-col">
               <div className="px-5 py-4 border-b border-line bg-canvas flex justify-between items-center">
                 <span className="text-xs font-medium text-muted">
@@ -217,7 +251,9 @@ export default function OrgStructureHistory() {
               </div>
             </div>
           ))}
-          </div>
+              </div>
+            </section>
+          ))}
         </>
       )}
     </div>
