@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
 
+// Tiers allowed through the platform console login.
+const PLATFORM_TIERS = ['super-admin', 'admin'];
+
 type reqInfo = {
   email: string
   password: string
@@ -17,20 +20,19 @@ async function getUser(info: reqInfo) {
     return [];
   }
 
-  const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
-  
+  // Only bcrypt. The old code fell back to `password === user.password` for any
+  // row whose hash did not start with $2a/$2b/$2y, which meant a legacy plaintext
+  // row was still a valid credential.
   let isMatch = false;
-  if (isBcrypt) {
-    try {
-      isMatch = await bcrypt.compare(password, user.password);
-    } catch (e) {
-      isMatch = false;
-    }
-  } else {
-    isMatch = password === user.password;
+  try {
+    isMatch = await bcrypt.compare(password, user.password);
+  } catch {
+    isMatch = false;
   }
 
-  if (isMatch) {
+  // This is the console login, not the tenant one. A non-platform account that
+  // authenticates here used to walk away with a token claiming admin.
+  if (isMatch && PLATFORM_TIERS.includes(user.role ?? '')) {
     return [user];
   }
   return [];
@@ -59,6 +61,15 @@ export async function POST(req: Request) {
 
     const user = data[0];
 
+    // Was signed with the literal 'oti', which is both a secret committed to the
+    // repo and a secret nothing else verifies with — so the token this route
+    // issued was rejected by every guarded route it was meant to open.
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET is not set; refusing to issue a token.');
+      return NextResponse.json({ message: 'Server auth is not configured.' }, { status: 500 });
+    }
+
     const token = jwt.sign(
       {
         userID: user.id,
@@ -67,7 +78,8 @@ export async function POST(req: Request) {
         email: user.email,
         org: user.org,
       },
-      'oti'
+      secret,
+      { expiresIn: '15m' }
     );
 
     return NextResponse.json({

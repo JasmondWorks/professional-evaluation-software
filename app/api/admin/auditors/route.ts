@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -13,7 +15,10 @@ const transporter = nodemailer.createTransport({
 });
 
 // Get all pending auditors
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin", "admin"] });
+  if (!auth.ok) return auth.response;
+
   try {
     const auditors = await prisma.auditor_responses.findMany({
       orderBy: { created_at: "desc" },
@@ -27,6 +32,11 @@ export async function GET() {
 
 // Approve or Reject
 export async function POST(req: Request) {
+  // Approving an auditor creates a pesuser and mails out credentials. It ran
+  // unauthenticated, so anyone could mint an auditor account.
+  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin", "admin"] });
+  if (!auth.ok) return auth.response;
+
   try {
     const { id, action } = await req.json();
 
@@ -72,7 +82,7 @@ export async function POST(req: Request) {
           data: {
             name: a.name,
             email: a.email,
-            password: "default_password",
+            password: await bcrypt.hash("default_password", 10),
             gsm: a.gsm,
             role: "auditor",
             address: a.address,
