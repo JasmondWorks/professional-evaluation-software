@@ -1208,8 +1208,19 @@ export default function StressAnalysisTool() {
                         labelFormatter={(label) => `Stress score: ${label}`}
                       />
                       <Line type="monotone" dataKey="density" stroke="#4f46e5" strokeWidth={2} dot={false} name="Normal curve" />
-                      <ReferenceLine y={32} stroke="blue" label={{ value: "Minimum stress 32%", position: "insideLeft", fill: "blue", fontSize: 12 }} />
-                      <ReferenceLine y={68} stroke="red" label={{ value: "Maximum stress limit 68%", position: "insideLeft", fill: "red", fontSize: 12 }} />
+                      {/* insideTopLeft, not insideLeft: the latter centres the
+                          text on the line, so the line runs through the words
+                          and reads as struck out. This rests them on it. */}
+                      <ReferenceLine
+                        y={32}
+                        stroke="blue"
+                        label={{ value: "Minimum stress 32%", position: "insideTopLeft", fill: "blue", fontSize: 12 }}
+                      />
+                      <ReferenceLine
+                        y={68}
+                        stroke="red"
+                        label={{ value: "Maximum stress limit 68%", position: "insideTopLeft", fill: "red", fontSize: 12 }}
+                      />
                       {/* Warning line 5% below the max limit (68% − 5% = 63%). */}
                       <ReferenceLine y={63} stroke="#eab308" strokeDasharray="6 4" strokeWidth={2} label={{ value: "Warning 63%", position: "right", fill: "#a16207", fontSize: 12, fontWeight: 600 }} />
                       <ReferenceLine y={50} stroke="black" strokeDasharray="5 5" label={{ value: "Average", position: "insideTopLeft", fontSize: 12 }} />
