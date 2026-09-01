@@ -6,6 +6,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
 
+// Saving a maintenance run is open to anyone signed in to the organization, and
+// deliberately so. The client's instruction of 1 September is that the unit
+// group head runs this model and must not wait on the organization admin. The
+// organization's own accounts do not all hold preset roles — most of them carry
+// a custom role that falls back to the baseline employee surface — so naming
+// roles here would lock out the very people meant to use it.
+
 export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});

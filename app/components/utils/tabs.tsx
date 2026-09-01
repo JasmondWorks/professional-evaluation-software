@@ -30,5 +30,9 @@ export const tabs = [
   // the check happens in the model routes rather than here.
   { key: 10, name: "Models", icon: <Setting3 />, href: "/models", role_access: ["super-admin", "admin", "industrial-engineer"] },
   { key: 12, name: "Model Access", icon: <Setting3 />, href: "/model-access", role_access: ["super-admin", "admin"] },
-  { key: 9, name: "Maintenance Model", icon: <Setting3 />, href: "/maintenance", role_access: ["lecturer", "industrial-engineer", "hod", "unit-head", "employee-w", "super-admin", "admin"] },
+  // Every role in the organization, on purpose. The unit group head runs the
+  // maintenance model and cannot be waiting on the organization admin to press
+  // Conduct or Save for them (client, 1 September). Custom roles resolve to
+  // employee-w, which is on this list, so they reach it too.
+  { key: 9, name: "Maintenance Model", icon: <Setting3 />, href: "/maintenance", role_access: ["lecturer", "industrial-engineer", "hod", "unit-head", "dept-admin", "employee-w", "auditor", "super-admin", "admin"] },
 ];
