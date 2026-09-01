@@ -6,6 +6,8 @@ import Link from "next/link";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
 import { planMaintenance } from "@/app/lib/maintenance/schedule";
+import { isMaintenanceTeam } from "@/app/lib/maintenance/team";
+import { useCurrentUser } from "@/app/components/useCurrentUser";
 
 interface HomeProps {
   params: {
@@ -41,6 +43,12 @@ export default function MaintenanceDetail({ params }: HomeProps) {
     new Date().toISOString().slice(0, 10),
   );
   const [saving, setSaving] = useState(false);
+
+  // The model belongs to the maintenance team, not to the organization admin.
+  // An admin reaching this page is told so rather than blocked, since the
+  // organization may not have a maintenance head on its books yet.
+  const { user } = useCurrentUser();
+  const onTeam = isMaintenanceTeam(user?.role);
 
   const plan = useMemo(() => {
     if (!results.interval || !results.totalPlannedHours) return null;
@@ -167,6 +175,17 @@ export default function MaintenanceDetail({ params }: HomeProps) {
             <h1 className="text-xl font-semibold">{facilityName}</h1>
           </div>
         </div>
+
+        {user && !onTeam && (
+          <div className="mx-4 mt-4 rounded-lg border border-line bg-canvas px-4 py-3">
+            <p className="text-sm text-body">
+              This model is run by the maintenance team, the engineers, technologists and
+              technicians who work at the production floor, rather than by the organization
+              admin. You can conduct and save a run, but the schedule it produces is theirs
+              to act on.
+            </p>
+          </div>
+        )}
 
         {usingSample && (
           <div className="mx-4 mt-4 flex items-center justify-between gap-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
