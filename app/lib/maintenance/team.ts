@@ -7,22 +7,24 @@
 // organization admin's to execute; this one belongs to the people standing next
 // to the machine.
 //
-// It is deliberately not enforced by hiding the controls from the admin. The
-// organization has no unit-head account yet, and an empty allow-list would mean
-// nobody could run the model at all, which is a worse failure than an admin
-// being able to press a button meant for somebody else. The page says who the
-// model belongs to instead, and the allow-list is ready for the day the
-// maintenance head exists.
+// Expressed as "everyone except the admin" rather than as a list of allowed
+// roles, deliberately. Most technicians in a real organization hold a custom
+// role, which resolves to the baseline employee surface, and an allow-list of
+// preset names would keep locking out exactly the people the rule is meant to
+// empower. The rule is about who may NOT run it, so that is what is written.
 
-export const MAINTENANCE_TEAM_ROLES = [
-  'unit-head',
-  'hod',
-  'industrial-engineer',
-  // Custom roles resolve to the baseline employee surface, and most of this
-  // organization's technicians hold one.
-  'employee-w',
-];
+const ADMIN_ROLES = ['admin', 'super-admin'];
 
-export function isMaintenanceTeam(role?: string | null): boolean {
-  return MAINTENANCE_TEAM_ROLES.includes(role ?? '');
+/** The maintenance head proper. An organization with none of these has nobody
+ *  formally accountable for the schedule, which is worth saying out loud. */
+export const MAINTENANCE_HEAD_ROLE = 'unit-head';
+
+export function isOrgAdmin(role?: string | null): boolean {
+  return ADMIN_ROLES.includes(role ?? '');
+}
+
+/** May this person conduct a run and save its plan? */
+export function mayRunMaintenance(role?: string | null): boolean {
+  if (!role) return false;
+  return !isOrgAdmin(role);
 }

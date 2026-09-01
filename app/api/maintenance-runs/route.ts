@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { mayRunMaintenance } from '@/app/lib/maintenance/team';
 
-// Saving a maintenance run is open to anyone signed in to the organization, and
-// deliberately so. The client's instruction of 1 September is that the unit
-// group head runs this model and must not wait on the organization admin. The
-// organization's own accounts do not all hold preset roles — most of them carry
-// a custom role that falls back to the baseline employee surface — so naming
-// roles here would lock out the very people meant to use it.
+// Reading a run is open to the organization. Saving one is not open to its
+// admin: the client's rule of 1 September is that the maintenance team runs this
+// model, because the schedule belongs to whoever is standing next to the
+// machine. Written as "not the admin" rather than as a list of allowed roles,
+// since most technicians hold a custom role that falls back to the baseline
+// employee surface and an allow-list would lock them out.
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,6 +44,17 @@ export async function POST(req: NextRequest) {
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
+    }
+
+    // The screen greys the button for an admin; this is the check that holds.
+    if (!mayRunMaintenance(auth.user?.role)) {
+      return NextResponse.json(
+        {
+          error:
+            'The maintenance team saves this plan. The organization admin cannot run the maintenance model.',
+        },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();

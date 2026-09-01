@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
 import { planMaintenance } from "@/app/lib/maintenance/schedule";
-import { isMaintenanceTeam } from "@/app/lib/maintenance/team";
+import { mayRunMaintenance, isOrgAdmin } from "@/app/lib/maintenance/team";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
 
 interface HomeProps {
@@ -44,11 +44,26 @@ export default function MaintenanceDetail({ params }: HomeProps) {
   );
   const [saving, setSaving] = useState(false);
 
-  // The model belongs to the maintenance team, not to the organization admin.
-  // An admin reaching this page is told so rather than blocked, since the
-  // organization may not have a maintenance head on its books yet.
+  // The model belongs to the maintenance team. The organization admin may open
+  // it and read it, but not conduct a run or save a plan: the client's rule is
+  // that the schedule is set by whoever is standing next to the machine.
   const { user } = useCurrentUser();
-  const onTeam = isMaintenanceTeam(user?.role);
+  const mayRun = mayRunMaintenance(user?.role);
+  const admin = isOrgAdmin(user?.role);
+  const [heads, setHeads] = useState<{ name: string; dept: string | null }[] | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/maintenance-head", { method: "GET" });
+        if (!res.ok) return;
+        const body = await res.json();
+        setHeads(body.heads ?? []);
+      } catch {
+        /* the notice below simply does not appear */
+      }
+    })();
+  }, []);
 
   const plan = useMemo(() => {
     if (!results.interval || !results.totalPlannedHours) return null;
@@ -176,13 +191,37 @@ export default function MaintenanceDetail({ params }: HomeProps) {
           </div>
         </div>
 
-        {user && !onTeam && (
+        {/* Who this model belongs to, and what to do when nobody holds it. */}
+        {admin && (
+          <div className="mx-4 mt-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3">
+            <p className="text-sm font-medium text-warning-700">
+              This model is run by the maintenance team, not by the organization admin.
+            </p>
+            <p className="mt-1 text-sm text-warning-700">
+              Maintenance is carried out at the production floor, and the schedule is set by
+              the engineers, technologists and technicians who monitor the machine. You can
+              read this page and its history, but conducting a run and saving a plan is
+              theirs.
+              {heads && heads.length === 0 && (
+                <>
+                  {" "}
+                  <strong>
+                    No maintenance head has been appointed yet, so nobody can run it.
+                  </strong>{" "}
+                  Add an employee with the role “Faculty / Division Head” in the employee
+                  database, and the model becomes theirs to use.
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
+        {!admin && heads && heads.length === 0 && (
           <div className="mx-4 mt-4 rounded-lg border border-line bg-canvas px-4 py-3">
             <p className="text-sm text-body">
-              This model is run by the maintenance team, the engineers, technologists and
-              technicians who work at the production floor, rather than by the organization
-              admin. You can conduct and save a run, but the schedule it produces is theirs
-              to act on.
+              No maintenance head has been appointed for this organization yet. You can
+              still conduct and save runs; ask your administrator to appoint one so the
+              schedule has an owner.
             </p>
           </div>
         )}
@@ -241,8 +280,17 @@ export default function MaintenanceDetail({ params }: HomeProps) {
         </div>
 
         <button
-          onClick={calculateModel}
-          className="flex items-center bg-pes text-white px-4 py-2  m-4 rounded"
+          onClick={() =>
+            mayRun
+              ? calculateModel()
+              : notify.error(
+                  "The maintenance team conducts this model. Ask the maintenance head to run it.",
+                )
+          }
+          aria-disabled={!mayRun}
+          className={`m-4 flex items-center rounded px-4 py-2 text-white ${
+            mayRun ? "bg-pes" : "bg-gray-400 opacity-70"
+          }`}
         >
           Conduct P.M Model
         </button>
@@ -334,10 +382,17 @@ export default function MaintenanceDetail({ params }: HomeProps) {
           <div className="flex flex-wrap items-center gap-3 border-t p-4">
             <button
               type="button"
-              onClick={saveRun}
+              onClick={() =>
+                mayRun
+                  ? saveRun()
+                  : notify.error(
+                      "The maintenance team saves this plan. Ask the maintenance head to save it.",
+                    )
+              }
+              aria-disabled={!mayRun}
               disabled={saving}
               className={`rounded px-6 py-2 text-sm font-medium text-white ${
-                saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
+                saving || !mayRun ? "bg-gray-400 opacity-70" : "bg-pes hover:opacity-90"
               }`}
             >
               {saving ? "Saving…" : "Save result and plan"}
