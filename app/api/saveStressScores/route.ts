@@ -13,6 +13,10 @@ async function createStressScore(data: Prisma.stress_scoresUncheckedCreateInput)
     return await prisma.stress_scores.create({ data })
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      // The only $executeRawUnsafe left in the app, and deliberately so: the
+      // statement is a fixed string with nothing interpolated into it. It is
+      // Unsafe rather than tagged because it takes no parameters at all — a
+      // tagged template would have nothing to bind.
       await prisma.$executeRawUnsafe(
         `SELECT setval(pg_get_serial_sequence('stress_scores','id'), GREATEST((SELECT MAX(id) FROM stress_scores), 1))`,
       )
