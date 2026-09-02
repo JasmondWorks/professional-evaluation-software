@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import { sendMail } from '@/app/lib/email'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 const randombytes = require('randombytes')
 
@@ -33,7 +34,14 @@ async function sendLoginEmail(to: string, name: string, password: string) {
   })
 }
 
+// Overwrites an account's password with a fresh one and mails it out. With no
+// auth this was a remote lockout of anybody whose email address you could guess:
+// POST the address, their password is gone and the replacement goes to them.
+// Only an admin, and only over their own organization's people.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), { roles: ['super-admin', 'admin'] })
+  if (!auth.ok) return auth.response
+
   try {
     const { email } = await req.json()
 
@@ -44,10 +52,17 @@ export async function POST(req: Request) {
     // Check user exists
     const user = await prisma.pesuser.findUnique({
       where: { email },
-      select: { id: true, name: true },
+      select: { id: true, name: true, org: true },
     })
 
-    if (!user) {
+    // A super-admin operates across organizations; an org admin does not. The
+    // reply is the same either way, so the route cannot be used to test which
+    // addresses hold accounts elsewhere.
+    const callerOrg = auth.user.org ? String(auth.user.org) : null
+    const reachable =
+      auth.user.role === 'super-admin' || (!!callerOrg && user?.org === callerOrg)
+
+    if (!user || !reachable) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 })
     }
 

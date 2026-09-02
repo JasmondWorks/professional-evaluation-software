@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { PERMISSION_KEYS, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
 import { validateData, createRoleSchema, formatZodErrors } from '@/app/lib/validation'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 type reqInfo = {
     role_name: string
@@ -42,7 +43,16 @@ async function addUser(info: reqInfo) {
     }
 }
 
+// Creates a custom role, with its permission template, for the org named in the
+// body — unauthenticated, so anyone could mint a role carrying any capability
+// into anyone's organization. Both the permission to do it and the org it lands
+// in now come from the token.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {
+    anyOf: ['can_manage_user_roles'],
+  })
+  if (!auth.ok) return auth.response
+
   const body = await req.json()
 
   const validation = validateData(createRoleSchema, body);
@@ -53,7 +63,14 @@ export async function POST(req: Request) {
     )
   }
 
-  const reqInfo = body as reqInfo;
+  // The org is not the caller's to choose.
+  const reqInfo = { ...(body as reqInfo), org: String(auth.user.org ?? '') };
+  if (!reqInfo.org) {
+    return NextResponse.json(
+      { message: 'This account is not attached to an organization' },
+      { status: 403 },
+    )
+  }
 
    try {
       let data = await addUser(reqInfo)

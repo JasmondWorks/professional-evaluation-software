@@ -161,3 +161,123 @@ becomes mandatory again rather than optional.
   settings cycle. Faculty stress = mean of its departments; organization stress
   = mean of its faculties. See project memory `stress-eval-rules`.
 - **Database queries:** NEVER use raw SQL queries (`$queryRaw`, `$queryRawUnsafe`, or `$executeRaw`) unless absolutely necessary (e.g., for DDL schema migrations like `ALTER TABLE`). Always leverage the power of the Prisma ORM methods (like `findMany`, `create`, `updateMany`) for all CRUD operations to ensure type-safety, relationship cascades, and automatic protection against SQL injection.
+
+## API route security constraints
+
+Every file under `app/api/**/route.ts` is a public URL. Next.js does not protect
+it, the sidebar does not protect it, and `middleware.ts` does not protect it —
+that file matches page paths only, and gates on a `role` **cookie**, which the
+browser sends and the browser can set. An unguarded route handler is reachable by
+anyone on the internet with `curl`.
+
+### Every route handler starts by asking who the caller is
+
+Before the first database call, every `GET`/`POST`/`PATCH`/`DELETE` handler must
+establish identity from a **cryptographically verified** token:
+
+```ts
+import { authorize, tokenFromRequest } from '@/app/api/_lib/authGuard';
+
+export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});   // {} = any signed-in user
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;   // ← the ONLY org
+  …
+}
+```
+
+Use `authorize(token, { anyOf: ['can_…'] })` or `{ roles: [...] }` when the route
+needs more than a signed-in user. Routes under `app/api/admin/` use
+`consoleViewer()` from `app/api/admin/_scope.ts` instead, which additionally
+separates the platform operator (`super-admin`) from an organization admin
+(`admin`) — **these are different tiers**; see `app/components/utils/roles.ts`.
+
+The four exceptions, and there are no others: `login`, `signup`, `resetPassword`
+(request leg), and provider webhooks — which authenticate by **signature**, as
+`paystack/webhook` does with HMAC SHA-512. If a route is deliberately public,
+say so in a comment at the top with the reason.
+
+### The org must come from the token, never from the request
+
+This is the rule that has been broken most often here, and it is subtle because
+the resulting code *looks* correct — the query is scoped by `org`, it is just
+scoped by an `org` the caller chose. Three routes were once fixed by a commit
+titled "scope … to org to prevent data leakage" and remained fully readable
+across tenants afterwards, because the org still arrived in the request body.
+
+```ts
+// Wrong — every one of these is attacker-controlled.
+const { org } = await req.json();
+const org = new URL(req.url).searchParams.get('org');
+const org = jwtDecode<{ org: string }>(token).org;   // decode ≠ verify
+const org = params.org;                              // from the URL path
+
+// Right — a claim on a token whose signature was checked.
+const auth = authorize(tokenFromRequest(req), {});
+if (!auth.ok) return auth.response;
+const org = String(auth.user.org);
+```
+
+`jwt.decode()` / `jwtDecode()` **read** a token without checking its signature.
+They are fine in client components displaying the user's own name; using either
+one on the server, for anything the answer depends on, means the server accepts a
+token the attacker wrote by hand. Server side: `jwt.verify`, always, via
+`verifyToken()`.
+
+Where an org, user id, or department genuinely must come from the URL (the
+`app/api/admin/orgs/[org]/*` console routes), compare it against the verified
+claim and refuse the mismatch — and prefer **404 over 403**, since a 403 confirms
+that the other tenant's record exists.
+
+### Never sign or verify with an inline fallback secret
+
+```ts
+// Wrong: one unset variable silently downgrades the app to a secret that is
+// published in this repository.
+jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+```
+
+Use the helper in `app/lib/jwt.ts`, which throws instead. Never write a literal
+secret; `app/api/admin/login` shipped signing with `'oti'`.
+
+### Never return a password column
+
+`prisma.pesuser.findMany()` with no `select` returns `password`, `resettoken` and
+`resettokenexpiry`. Always name the columns. For the console routes, reuse
+`PUBLIC_USER_COLUMNS` from `app/api/admin/_scope.ts`.
+
+### Store credentials hashed, and compare them one way
+
+Passwords are written with `bcrypt.hash(...)` and checked with `bcrypt.compare`.
+Never write a literal into the column (`password: "default_password"` shipped
+here), and never fall back to `password === user.password` when the stored value
+does not look like a hash — that keeps legacy plaintext rows working as valid
+credentials forever, which is exactly why they never get migrated.
+
+### No route may run DDL, and no debug route ships
+
+`app/api/runMigration` executed `ALTER TABLE` on an unauthenticated `GET`. Schema
+changes go through `prisma/migrations/` (see [CLAUDE.md](CLAUDE.md)), never a
+route handler. Routes named `debug*`, and anything that exists to introspect the
+app rather than serve it, do not belong in `app/api/`.
+
+### Before you finish a task that touched `app/api/`
+
+```bash
+# Any handler with no identity check is a finding, not a style preference.
+grep -rLE 'authorize|verifyToken|tokenFromRequest|viewerFrom|consoleViewer' \
+  app/api --include=route.ts
+
+# Server-side use of an unverified token.
+grep -rn 'jwtDecode\|jwt\.decode' app/api
+
+# Attacker-supplied scoping.
+grep -rn 'body\.org\|searchParams.get("org")\|params\.org' app/api
+```
+
+New entries in any of these lists must be justified in the commit message or
+fixed. **Do not copy the shape of a neighbouring route to decide this.** Most of
+`app/api/` was inherited from the client's original codebase, where no route
+checked anything; matching the surrounding idiom reproduces the vulnerability,
+and that is how it spread into routes written here.

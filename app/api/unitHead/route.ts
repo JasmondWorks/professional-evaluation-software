@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Stores a unit-head overloading run. `org` came from the body, so the run could
+// be filed against any organization by anyone; it now comes from the token.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
 
+    const org = auth.user.org ? String(auth.user.org) : null;
     const {
-      org,
       actualHours,
       numSubs,
       extraComplexity,

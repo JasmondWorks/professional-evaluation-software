@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { sendMail } from "@/app/lib/email";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Invites an external auditor. It had no auth, so it was an open relay: anyone
+// could make the organization's mail account send an arbitrary address a link
+// that grants auditor entry.
 export async function POST(request: Request) {
+  const auth = authorize(tokenFromRequest(request), { roles: ["super-admin", "admin"] });
+  if (!auth.ok) return auth.response;
+
   try {
     const { email, origin } = await request.json();
 
@@ -13,9 +20,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const secret =
-      process.env.JWT_SECRET || "fallback-secret-change-in-production";
-    const token = jwt.sign({ email }, secret, { expiresIn: "7d" });
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error("JWT_SECRET is not set; refusing to issue an invite token.");
+      return NextResponse.json(
+        { message: "Server auth is not configured." },
+        { status: 500 },
+      );
+    }
+    // The invite carries the inviting org, so accepting it lands the auditor in
+    // the right tenant rather than wherever the accept form happens to say.
+    const token = jwt.sign({ email, org: auth.user.org }, secret, { expiresIn: "7d" });
     // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,
     // which previously produced dead localhost invite links.
     const BASE_URL =

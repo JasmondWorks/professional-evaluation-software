@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
+import { authorize, tokenFromRequest } from '../_lib/authGuard';
 
 // Table: lead_scores (pesuser_name, dept, competence, integrity, compatibility, use_of_resources)
 
+// Scoring a lead. lead_scores is keyed on (pesuser_name, dept) alone, with no
+// org column, so an unauthenticated caller could overwrite the scores of a
+// same-named lead in any organization. Scoring is a supervisory act, so it needs
+// the capability, not merely a session.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {
+    anyOf: ['can_manage_performance_reviews'],
+    roles: ['hod', 'unit-head'],
+  });
+  if (!auth.ok) return auth.response;
+
   try {
     const { pesuser_name, dept, scores } = await req.json();
     if (!pesuser_name || !dept || !scores) {
