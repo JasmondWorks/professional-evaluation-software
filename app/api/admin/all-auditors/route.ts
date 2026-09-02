@@ -1,29 +1,22 @@
 import prisma from "../../prisma.dev";
 import { NextRequest, NextResponse } from "next/server";
-import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { tokenFromRequest } from "../../_lib/authGuard";
+import { consoleViewer, PUBLIC_USER_COLUMNS } from "../_scope";
 
 // This route queries the DB per request — never prerender/cache it at build time.
 export const dynamic = "force-dynamic";
 
-// Auditors across every organization — platform console only.
+// Auditors: every organization's for the platform operator, the caller's own for
+// an org admin. Was unauthenticated and returned full pesuser rows.
 export async function GET(req: NextRequest) {
-  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin"], allowAdmins: false });
+  const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
   const auditors = await prisma.pesuser.findMany({
-    where: { role: "auditor" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      org: true,
-      dept: true,
-      gsm: true,
-      address: true,
-      image: true,
-      audit_count: true,
-    },
+    where: auth.viewer.isPlatform
+      ? { role: "auditor" }
+      : { role: "auditor", org: auth.viewer.org },
+    select: PUBLIC_USER_COLUMNS,
   });
 
   return NextResponse.json(auditors);

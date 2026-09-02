@@ -1,31 +1,23 @@
 import prisma from "../../prisma.dev";
 import { NextRequest, NextResponse } from "next/server";
-import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { tokenFromRequest } from "../../_lib/authGuard";
+import { consoleViewer, PUBLIC_USER_COLUMNS } from "../_scope";
 
 // This route queries the DB per request — never prerender/cache it at build time.
 export const dynamic = "force-dynamic";
 
-// Every user in every organization: the platform console's roster. It had no
-// auth and no `select`, so it served the whole `pesuser` table — password
-// hashes included — to anyone who asked.
+// The console's roster, grouped by organization. It had no auth and no `select`,
+// so it served the whole pesuser table — password hashes included — to anyone
+// who asked. The platform operator still sees every org; an org admin sees the
+// single group for their own.
 export async function GET(req: NextRequest) {
-  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin"], allowAdmins: false });
+  const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
   const users = await prisma.pesuser.findMany({
+    where: auth.viewer.isPlatform ? {} : { org: auth.viewer.org },
     orderBy: { org: "asc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      org: true,
-      dept: true,
-      gsm: true,
-      address: true,
-      image: true,
-      audit_count: true,
-    },
+    select: PUBLIC_USER_COLUMNS,
   });
 
   // Group users by org (equivalent to json_agg + GROUP BY org).

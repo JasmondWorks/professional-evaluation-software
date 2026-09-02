@@ -1,35 +1,32 @@
 export const dynamic = "force-dynamic";
 import prisma from "../../../../prisma.dev";
 import { NextRequest, NextResponse } from "next/server";
-import { authorize, tokenFromRequest } from "../../../../_lib/authGuard";
+import { tokenFromRequest } from "../../../../_lib/authGuard";
+import { consoleViewer, canReachOrg, PUBLIC_USER_COLUMNS } from "../../../_scope";
 
-// The org whose users are listed comes from the URL, so this can read across
-// tenants by construction — it belongs to the platform console, and a tenant
-// admin must not reach it. Their own roster is /api/getUsers, which scopes to
-// the org on their verified token.
+// The org comes from the URL, so without a check this reads across tenants by
+// construction — which is what it did, unauthenticated. An org admin may now ask
+// only about their own org; the platform operator may ask about any.
 export async function GET(
   req: NextRequest,
   { params }: { params: { org: string } }
 ) {
-  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin"], allowAdmins: false });
+  const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
+
+  const org = decodeURIComponent(params.org);
+  if (!canReachOrg(auth.viewer, org)) {
+    return NextResponse.json(
+      { error: "You do not have permission to view this organization" },
+      { status: 403 }
+    );
+  }
 
   try {
     const users = await prisma.pesuser.findMany({
-      where: { org: params.org },
+      where: { org },
       orderBy: { name: "asc" },
-      select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      org: true,
-      dept: true,
-      gsm: true,
-      address: true,
-      image: true,
-      audit_count: true,
-    },
+      select: PUBLIC_USER_COLUMNS,
     });
 
     return NextResponse.json(users);

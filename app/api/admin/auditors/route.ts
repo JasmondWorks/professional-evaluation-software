@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
-import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { tokenFromRequest } from "../../_lib/authGuard";
+import { consoleViewer } from "../_scope";
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -16,7 +17,7 @@ const transporter = nodemailer.createTransport({
 
 // Get all pending auditors
 export async function GET(req: Request) {
-  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin", "admin"] });
+  const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
   try {
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   // Approving an auditor creates a pesuser and mails out credentials. It ran
   // unauthenticated, so anyone could mint an auditor account.
-  const auth = authorize(tokenFromRequest(req), { roles: ["super-admin", "admin"] });
+  const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
   try {
