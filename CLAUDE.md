@@ -34,3 +34,37 @@ npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate deploy
 ```
 
 `origin` is the client's upstream repo (Henryho-dev); `jasmond` is ours.
+
+## Neon and `P1001`
+
+If a Prisma CLI command reports `P1001: Can't reach database server`, the
+database is very probably fine. Prisma's default connect timeout is 5s, which
+Neon's pooler regularly exceeds, and the failure is intermittent — the same
+command succeeds on the next run. A plain `pg` client connects throughout.
+
+`.env.production.local` therefore pins `connect_timeout=30` on `DATABASE_URL`.
+Keep it there when the password is rotated; without it, `migrate status` and
+`migrate deploy` fail unpredictably and look like an outage.
+
+Diagnose before believing an outage: `nc -vz <host> 5432` proves reachability,
+and the Neon console's Computes page shows whether the compute is SUSPENDED
+(normal, Free plan scales to zero after 5 minutes of inactivity) or disabled.
+
+## Applying SQL through the Neon console
+
+When the CLI cannot be used, run the migration's SQL in the console — then
+record it, or Prisma still counts the migration as pending and the next
+`migrate deploy` re-applies it:
+
+```sql
+INSERT INTO "_prisma_migrations"
+  (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count)
+VALUES (gen_random_uuid(), '<sha256 of migration.sql>', now(), '<folder name>', NULL, NULL, now(), 1);
+```
+
+The checksum is `shasum -a 256 prisma/migrations/<name>/migration.sql`, and it
+must match the file exactly. `prisma migrate resolve --applied <name>` does the
+same thing whenever the CLI can connect; prefer it.
+
+One-off data fixes are not migrations. They live in `prisma/backfills/`, are
+written to be safe to run twice, and are applied with `prisma db execute`.
