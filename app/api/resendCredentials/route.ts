@@ -3,6 +3,7 @@ import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import { sendMail } from '@/app/lib/email'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rateLimit } from '../_lib/rateLimit'
 
 const randombytes = require('randombytes')
 
@@ -41,6 +42,15 @@ async function sendLoginEmail(to: string, name: string, password: string) {
 export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), { roles: ['super-admin', 'admin'] })
   if (!auth.ok) return auth.response
+
+  // Each call sends mail and destroys a password, so bound it even for an admin.
+  const tooMany = rateLimit(req, {
+    key: 'resend-credentials',
+    limit: 20,
+    windowMs: 60 * 60_000,
+    subject: auth.user.org ? String(auth.user.org) : null,
+  })
+  if (tooMany) return tooMany
 
   try {
     const { email } = await req.json()

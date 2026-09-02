@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
 import { getJWTSecret } from '@/app/lib/jwt'
+import { rateLimit } from '../../_lib/rateLimit'
 
 // Tiers allowed through the platform console login.
 const PLATFORM_TIERS = ['super-admin', 'admin'];
@@ -44,6 +45,16 @@ async function getUser(info: reqInfo) {
 // are not a platform tier, so authenticating here is not by itself entry.
 export async function POST(req: Request) {
   const body = await req.json();
+
+  const tooMany =
+    rateLimit(req, { key: 'admin-login', limit: 10, windowMs: 60_000 }) ??
+    rateLimit(req, {
+      key: 'admin-login:account',
+      limit: 5,
+      windowMs: 60_000,
+      subject: typeof body?.email === 'string' ? body.email.toLowerCase() : null,
+    });
+  if (tooMany) return tooMany;
 
   const validation = validateData(loginSchema, body);
   if (!validation.success) {

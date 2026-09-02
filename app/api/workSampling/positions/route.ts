@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 import { orgOfStudy, orgOfPosition, notYours } from "../_scope";
+import { validateData, workSamplingPositionSchema, formatZodErrors } from "@/app/lib/validation";
 
 // POST — add a position to a study
 export async function POST(req: NextRequest) {
@@ -9,15 +10,14 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await req.json();
-    const { studyId, name, department, performanceAllowance } = body;
-
-    if (!studyId || !name) {
+    const parsed = validateData(workSamplingPositionSchema, await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "studyId and name are required" },
+        { success: false, error: "Validation failed", details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       );
     }
+    const { studyId, name, department, performanceAllowance } = parsed.data!;
 
     // The study id arrives from the browser; it has to be the caller's own.
     const owner = await orgOfStudy(Number(studyId));

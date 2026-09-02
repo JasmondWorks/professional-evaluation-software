@@ -211,3 +211,100 @@ export function formatZodErrors(errors: z.ZodError): Record<string, string> {
   }
   return formatted;
 }
+
+// ---------------------------------------------------------------------------
+// Model-run schemas
+//
+// These routes store the runs the models are later extrapolated from — the
+// future-requirement prediction fits a line through the history, so a row with a
+// string where a number belongs, or a negative head count, does not merely look
+// wrong on one screen: it drags every projection drawn afterwards. Validating on
+// the way in is cheaper than finding it later in a chart.
+//
+// `org` is absent from all of them on purpose. It comes off the verified token
+// in the route, never off the body (see AGENTS.md).
+// ---------------------------------------------------------------------------
+
+/** A figure that must parse as a finite number, whether sent as one or as text. */
+const numeric = z
+  .union([z.string(), z.number()])
+  .transform((v) => (typeof v === 'string' ? Number(v) : v))
+  .refine((n) => Number.isFinite(n), { message: 'Must be a number' });
+
+const nonNegative = numeric.refine((n) => n >= 0, { message: 'Must not be negative' });
+
+export const personnelRedundancySchema = z.object({
+  actual_staff: nonNegative,
+  optimal_staff: nonNegative,
+  low_threshold: nonNegative.optional(),
+  moderate_threshold: nonNegative.optional(),
+  pr_value: numeric,
+  rating: z.string().min(1),
+});
+
+export const stressAnalysisSchema = z.object({
+  group_by: z.string().min(1).optional(),
+  ssto: numeric.optional(),
+  sstr: numeric.optional(),
+  sse: numeric.optional(),
+  f_statistic: numeric.optional(),
+  critical_value: numeric.optional(),
+  conclusion: z.string().optional(),
+  df_between: numeric.optional(),
+  df_within: numeric.optional(),
+  ms_between: numeric.optional(),
+  ms_within: numeric.optional(),
+  mean: numeric.optional(),
+  std_dev: numeric.optional(),
+});
+
+export const unitHeadSchema = z.object({
+  actualHours: nonNegative,
+  numSubs: nonNegative,
+  extraComplexity: numeric,
+  optimalHours: nonNegative,
+  optimalK: numeric.optional(),
+  CF: numeric.optional(),
+  OR: numeric.optional(),
+  status: z.string().optional(),
+});
+
+export const personnelIndexSchema = z.object({
+  payload: z.enum(['productivity', 'redundancy', 'utility']),
+  output_resources: nonNegative.optional().nullable(),
+  input_resources: nonNegative.optional().nullable(),
+});
+
+export const leadScoresSchema = z.object({
+  pesuser_name: z.string().min(1),
+  dept: z.string().min(1),
+  scores: z.object({
+    competence: numeric.nullable().optional(),
+    integrity: numeric.nullable().optional(),
+    compatibility: numeric.nullable().optional(),
+    use_of_resources: numeric.nullable().optional(),
+  }),
+});
+
+export const counterTotalsSchema = z.object({
+  section: numeric,
+  result: numeric,
+  numerator: z.array(numeric).optional(),
+  denominator: z.array(numeric).optional(),
+});
+
+export const workSamplingPositionSchema = z.object({
+  studyId: numeric,
+  name: z.string().min(1),
+  department: z.string().nullable().optional(),
+  performanceAllowance: numeric.nullable().optional(),
+});
+
+export const workSamplingObservationSchema = z.object({
+  positionId: numeric,
+  date: z.string().min(1),
+  time: z.string().min(1),
+  isBusy: z.boolean().optional(),
+  performanceRating: numeric.nullable().optional(),
+  notes: z.string().nullable().optional(),
+});

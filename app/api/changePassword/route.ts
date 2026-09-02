@@ -3,6 +3,7 @@ import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import { validateData, changePasswordSchema, formatZodErrors } from '@/app/lib/validation'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rateLimit } from '../_lib/rateLimit'
 
 // Changing your own password. It knew the current password had to be right, but
 // not who was asking, and with no rate limiting that made it a password oracle
@@ -12,6 +13,16 @@ import { authorize, tokenFromRequest } from '../_lib/authGuard'
 export async function POST(request: NextRequest) {
   const auth = authorize(tokenFromRequest(request), {})
   if (!auth.ok) return auth.response
+
+  // Authenticated, but the reply still says whether the current password was
+  // right, so the guessing has to be bounded too.
+  const tooMany = rateLimit(request, {
+    key: 'change-password',
+    limit: 5,
+    windowMs: 60_000,
+    subject: auth.user.email ? String(auth.user.email) : null,
+  })
+  if (tooMany) return tooMany
 
   try {
     const body = await request.json()

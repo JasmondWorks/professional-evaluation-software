@@ -64,3 +64,11 @@ docs/
 
 # Local-only ledger snapshots + generated baseline (never a real migration)
 .migration-baseline-backup/
+
+# Database dumps and ad-hoc SQL. backup.sql was tracked and held COPY data for
+# pesuser, appraisal, goals, org and ~25 other tables — real names, 22 email
+# addresses and password hashes. Schema changes belong in prisma/migrations/,
+# and a dump belongs nowhere near the repository.
+*.sql
+!prisma/migrations/**/*.sql
+!prisma/manual-migrations/*.sql

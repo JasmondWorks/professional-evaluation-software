@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 import { orgOfPosition, notYours } from "../_scope";
+import { validateData, workSamplingObservationSchema, formatZodErrors } from "@/app/lib/validation";
 
 // POST — record a single observation (with programmatic upsert)
 export async function POST(req: NextRequest) {
@@ -9,15 +10,14 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const body = await req.json();
-    const { positionId, date, time, isBusy, performanceRating, notes } = body;
-
-    if (!positionId || !date || !time) {
+    const parsed = validateData(workSamplingObservationSchema, await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "positionId, date and time are required" },
+        { success: false, error: "Validation failed", details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       );
     }
+    const { positionId, date, time, isBusy, performanceRating, notes } = parsed.data!;
 
     // Observations are the study's raw data — anyone able to write them can
     // move the utilisation figure the study produces.

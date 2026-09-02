@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { sendMail } from "@/app/lib/email";
 import { getJWTSecret } from "@/app/lib/jwt";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { rateLimit } from "../_lib/rateLimit";
 
 // Invites an external auditor. It had no auth, so it was an open relay: anyone
 // could make the organization's mail account send an arbitrary address a link
@@ -10,6 +11,14 @@ import { authorize, tokenFromRequest } from "../_lib/authGuard";
 export async function POST(request: Request) {
   const auth = authorize(tokenFromRequest(request), { roles: ["super-admin", "admin"] });
   if (!auth.ok) return auth.response;
+
+  const tooMany = rateLimit(request, {
+    key: "auditor-invite",
+    limit: 20,
+    windowMs: 60 * 60_000,
+    subject: auth.user.org ? String(auth.user.org) : null,
+  });
+  if (tooMany) return tooMany;
 
   try {
     const { email, origin } = await request.json();

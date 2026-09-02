@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { authorize, tokenFromRequest } from "../_lib/authGuard"; // adjust if your prisma file is elsewhere
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { validateData, stressAnalysisSchema, formatZodErrors } from '@/app/lib/validation'; // adjust if your prisma file is elsewhere
 
 // A stress ANOVA run. The org it was filed under came from the body, so anyone
 // could write a run into anyone's history — and the history is not just a log:
@@ -13,6 +14,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    const parsed = validateData(stressAnalysisSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
+    }
 
     const {
       group_by,

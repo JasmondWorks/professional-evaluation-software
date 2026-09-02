@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server'
 import { getJWTSecret } from '@/app/lib/jwt';
+import { rateLimit } from '../_lib/rateLimit';
 import jwt from 'jsonwebtoken'
 import prisma from '../prisma.dev'
 import { randomUUID } from "crypto";
@@ -138,7 +139,11 @@ async function confirmPayment(
 
 export async function POST(req: Request) {
   const body = await req.json()
-  
+
+  // Account creation is public, so it is also a way to fill the table.
+  const tooMany = rateLimit(req, { key: 'signup', limit: 5, windowMs: 60 * 60_000 });
+  if (tooMany) return tooMany;
+
   const validation = validateData(signupSchema, body);
   if (!validation.success) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { rateLimit } from "../_lib/rateLimit";
 import nodemailer from "nodemailer";
 
 // Configure Nodemailer transporter
@@ -32,6 +33,10 @@ const questions = [
 // have an account. Submissions land in a queue an admin must approve
 // (/api/admin/auditors) before they become a user.
 export async function POST(req: Request) {
+  // Public, and each submission mails the admin, so bound it.
+  const tooMany = rateLimit(req, { key: "auditor-responses", limit: 5, windowMs: 60 * 60_000 });
+  if (tooMany) return tooMany;
+
   try {
     const body = await req.json();
     const { name, email, gsm, address, dob, image, responses } = body;

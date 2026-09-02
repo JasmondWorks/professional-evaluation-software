@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
 import { validateData, resetPasswordSchema, confirmResetSchema, formatZodErrors } from '@/app/lib/validation'
+import { rateLimit } from '../_lib/rateLimit'
 
 type ResetPasswordRequest = {
   email: string
@@ -21,6 +22,18 @@ type ConfirmResetRequest = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+
+    // This leg sends mail, so unlimited it is both a guessing oracle and a way
+    // to bury somebody's inbox.
+    const tooMany =
+      rateLimit(request, { key: 'reset', limit: 5, windowMs: 60_000 }) ??
+      rateLimit(request, {
+        key: 'reset:account',
+        limit: 3,
+        windowMs: 15 * 60_000,
+        subject: typeof body?.email === 'string' ? body.email.toLowerCase() : null,
+      })
+    if (tooMany) return tooMany
     
     const validation = validateData(resetPasswordSchema, body);
     if (!validation.success) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { validateData, unitHeadSchema, formatZodErrors } from '@/app/lib/validation';
 
 // Stores a unit-head overloading run. `org` came from the body, so the run could
 // be filed against any organization by anyone; it now comes from the token.
@@ -12,6 +13,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const org = auth.user.org ? String(auth.user.org) : null;
+    const parsed = validateData(unitHeadSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
+    }
+
     const {
       actualHours,
       numSubs,

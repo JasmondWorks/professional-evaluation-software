@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { validateData, leadScoresSchema, formatZodErrors } from '@/app/lib/validation';
 
 // Table: lead_scores (pesuser_name, dept, competence, integrity, compatibility, use_of_resources)
 
@@ -16,10 +17,14 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const { pesuser_name, dept, scores } = await req.json();
-    if (!pesuser_name || !dept || !scores) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const parsed = validateData(leadScoresSchema, await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
     }
+    const { pesuser_name, dept, scores } = parsed.data!;
     // Upsert the lead's scores
     const values = {
       competence: scores.competence ?? null,

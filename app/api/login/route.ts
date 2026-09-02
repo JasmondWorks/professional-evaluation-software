@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server'
 import { getJWTSecret, getRefreshSecret } from '@/app/lib/jwt';
+import { rateLimit } from '../_lib/rateLimit';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
@@ -12,7 +13,20 @@ import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation
 // check yet.
 export async function POST(req: Request) {
   const body = await req.json();
-  
+
+  // Ten a minute from one address, and five a minute against one account. The
+  // second limit matters because a wrong password here is a distinguishable
+  // answer: without it, guessing is only as slow as the network.
+  const tooMany =
+    rateLimit(req, { key: 'login', limit: 10, windowMs: 60_000 }) ??
+    rateLimit(req, {
+      key: 'login:account',
+      limit: 5,
+      windowMs: 60_000,
+      subject: typeof body?.email === 'string' ? body.email.toLowerCase() : null,
+    });
+  if (tooMany) return tooMany;
+
   const validation = validateData(loginSchema, body);
   if (!validation.success) {
     return NextResponse.json(

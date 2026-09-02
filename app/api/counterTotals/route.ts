@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { validateData, counterTotalsSchema, formatZodErrors } from '@/app/lib/validation';
 
 // Stores a counter-evaluation total. counter_totals carries no org column, so
 // there is nothing to scope by here — but writing one is still not something an
@@ -12,14 +13,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { section, result, numerator = [], denominator = [] } = body
-
-    if (!section || result === undefined || result === null) {
+    const parsed = validateData(counterTotalsSchema, body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields (section or result)' },
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       )
     }
+    const { section, result, numerator = [], denominator = [] } = parsed.data!
 
     const record = await prisma.counter_totals.create({
       data: {

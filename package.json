@@ -12,7 +12,7 @@
     "db:setup": "npm run db:up && prisma generate",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:push": "prisma db push",
+    "db:push": "echo 'Refusing: prisma db push leaves no migration file and no ledger row. See CLAUDE.md — use db:migrate locally, db:deploy for production.' && exit 1",
     "db:pull": "prisma db pull",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy"

@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev"; // your Prisma client
+import { rateLimit } from "../../_lib/rateLimit";
 import nodemailer from "nodemailer";
 
 // Deliberately public: the staff survey is answered from a link, by people who
 // are not necessarily signed in. It only ever inserts a response; it reads
 // nothing back, so there is nothing here to disclose.
 export async function POST(req: Request) {
+  // Public, so the only thing standing between it and an insert flood is this.
+  const tooMany = rateLimit(req, { key: "survey-staff", limit: 10, windowMs: 60 * 60_000 });
+  if (tooMany) return tooMany;
+
   try {
     const body = await req.json();
     const {
