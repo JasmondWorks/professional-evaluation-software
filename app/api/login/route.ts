@@ -1,6 +1,7 @@
 
 
 import { NextResponse } from 'next/server'
+import { getJWTSecret, getRefreshSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
@@ -38,13 +39,24 @@ export async function POST(req: Request) {
     // otherwise fail even though the password is correct.
     const cleanPassword = typeof password === 'string' ? password.trim() : password;
 
-    // Compare hashed password (with fallback to plain text if not bcrypt)
+    // Some rows still hold their password as plain text, from before hashing
+    // existed here. Simply dropping the comparison would lock those people out,
+    // so the plaintext match stays — but a row that matches this way is hashed
+    // on the spot, so each such login drains one more of them and the branch can
+    // eventually go. Nothing is ever written back in plain text.
     const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
     let isMatch = false;
     if (isBcrypt) {
       isMatch = await bcrypt.compare(cleanPassword, user.password);
     } else {
       isMatch = cleanPassword === user.password;
+      if (isMatch) {
+        await prisma.pesuser.update({
+          where: { id: user.id },
+          data: { password: await bcrypt.hash(cleanPassword, 10) },
+        });
+        console.log('Migrated a plaintext password to bcrypt on login:', user.email);
+      }
     }
 
     if (!isMatch) {
@@ -93,13 +105,13 @@ export async function POST(req: Request) {
 
     const accessToken = jwt.sign(
       payload,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production',
+      getJWTSecret(),
       { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
       { userID: user.id },
-      process.env.REFRESH_TOKEN_SECRET || 'fallback-refresh-secret-change-in-production',
+      getRefreshSecret(),
       { expiresIn: remember ? '30d' : '1d' }
     );
 

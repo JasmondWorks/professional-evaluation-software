@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+      getJWTSecret()
     ) as { org: string; role: string }
 
     if (decoded.role !== 'admin') {

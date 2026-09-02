@@ -15,7 +15,10 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { PermissionKey } from '@/app/components/utils/roles';
 
-const SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+// Read per call, via the one helper that refuses a missing or placeholder
+// secret. Held in a module constant this was also resolved at import time,
+// before the environment was necessarily populated.
+import { getJWTSecret } from '@/app/lib/jwt';
 
 // Platform tiers that bypass capability checks within their org.
 const ADMIN_TIERS = ['super-admin', 'admin'];
@@ -32,7 +35,7 @@ export type DecodedUser = {
 export function verifyToken(token?: string | null): DecodedUser | null {
   if (!token) return null;
   try {
-    return jwt.verify(token, SECRET) as DecodedUser;
+    return jwt.verify(token, getJWTSecret()) as DecodedUser;
   } catch {
     return null;
   }

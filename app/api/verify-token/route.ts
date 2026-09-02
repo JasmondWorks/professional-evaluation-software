@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getJWTSecret } from '@/app/lib/jwt';
 import jwt from 'jsonwebtoken';
 
 export async function POST(request: Request) {
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Token is required' }, { status: 400 });
     }
 
-    const secret = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+    const secret = getJWTSecret();
 
     // Verify token
     const decoded = jwt.verify(token, secret) as { email: string };

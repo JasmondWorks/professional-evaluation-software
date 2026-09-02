@@ -3,6 +3,7 @@ import prisma from '../../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
+import { getJWTSecret } from '@/app/lib/jwt'
 
 // Tiers allowed through the platform console login.
 const PLATFORM_TIERS = ['super-admin', 'admin'];
@@ -64,12 +65,6 @@ export async function POST(req: Request) {
     // Was signed with the literal 'oti', which is both a secret committed to the
     // repo and a secret nothing else verifies with — so the token this route
     // issued was rejected by every guarded route it was meant to open.
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      console.error('JWT_SECRET is not set; refusing to issue a token.');
-      return NextResponse.json({ message: 'Server auth is not configured.' }, { status: 500 });
-    }
-
     const token = jwt.sign(
       {
         userID: user.id,
@@ -78,7 +73,7 @@ export async function POST(req: Request) {
         email: user.email,
         org: user.org,
       },
-      secret,
+      getJWTSecret(),
       { expiresIn: '15m' }
     );
 

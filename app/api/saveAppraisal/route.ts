@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev';
 import jwt from 'jsonwebtoken';
 import { validateData, saveAppraisalSchema, formatZodErrors } from '@/app/lib/validation';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+    jwt.verify(token, getJWTSecret())
 
     // Validate input
     const validation = validateData(saveAppraisalSchema, body);

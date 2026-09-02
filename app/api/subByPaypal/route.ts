@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePackages } from "../../lib/utils/paypalSetup";
 import prisma from "../prisma.dev"; // assuming you have prisma client set up
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { UUID } from "crypto";
 
 function serialize(obj: any) {
@@ -17,9 +18,15 @@ function serialize(obj: any) {
   return result;
 }
 
+// Same as paypal/subscribe: the account the plan is created for came from the
+// body rather than the token.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { plan, userID } = await req.json();
+    const { plan } = await req.json();
+    const userID = auth.user.userID;
     if (!plan || !userID) {
       return NextResponse.json({ error: "Plan & userID are required" }, { status: 400 });
     }

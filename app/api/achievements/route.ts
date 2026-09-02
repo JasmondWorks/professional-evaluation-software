@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// A person's own awards. The name came from the body, so anyone could read
+// anyone's record by guessing it.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { name } = await req.json();
+    const name = auth.user.name ? String(auth.user.name) : null;
+    if (!name) {
+      return NextResponse.json({ error: "No name on this account" }, { status: 403 });
+    }
 
     const [first, second, hall, badges] = await Promise.all([
       prisma.first_book_of_record.findMany({ where: { name } }),

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getJWTSecret, getRefreshSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 import { compactPermissions } from '@/app/components/utils/roles'
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
   try {
     const decoded: any = jwt.verify(
       refreshToken,
-      process.env.REFRESH_TOKEN_SECRET || 'fallback-refresh-secret-change-in-production'
+      getRefreshSecret()
     );
 
     const user = await prisma.pesuser.findUnique({
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
 
     const newAccessToken = jwt.sign(
       payload,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production',
+      getJWTSecret(),
       { expiresIn: '15m' }
     );
 

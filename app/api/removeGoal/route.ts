@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Verify token to ensure the request is authenticated
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+      getJWTSecret()
     ) as { name: string; userID: number }
 
     // Delete the goal, scoped to the user so they can only delete their own goals

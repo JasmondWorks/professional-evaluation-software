@@ -44,14 +44,24 @@ export async function GET(req: Request, { params }: { params: { filename: string
         return NextResponse.json({ error: 'Missing filename parameter' }, { status: 400 });
     }
 
-    const filePath = `public/downloadables/${filename}`;
+    // The name was interpolated straight into the path. Resolve it and require
+    // the result to still sit inside the downloadables directory, so no amount
+    // of "..", encoded or otherwise, walks out of it.
+    const root = path.resolve(process.cwd(), 'public', 'downloadables');
+    const filePath = path.resolve(root, filename);
+    if (filePath !== root && !filePath.startsWith(root + path.sep)) {
+        return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
 
     try {
         const fileData = await fs.readFile(filePath);
-        return NextResponse.json(fileData, {
+        // The file was previously handed back through NextResponse.json, which
+        // serialised the buffer as a JSON object of byte indices — the download
+        // has never actually worked.
+        return new NextResponse(new Uint8Array(fileData), {
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'Content-Disposition': `attachment; filename="${filename}"`,
+                'Content-Disposition': `attachment; filename="${path.basename(filePath)}"`,
             },
         });
     } catch (error) {

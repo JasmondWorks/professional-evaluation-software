@@ -2,8 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import { validateData, changePasswordSchema, formatZodErrors } from '@/app/lib/validation'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
+// Changing your own password. It knew the current password had to be right, but
+// not who was asking, and with no rate limiting that made it a password oracle
+// against any address: guess, and the 401 tells you whether you guessed wrong.
+// The address now comes off the session, so the only account reachable here is
+// the caller's own.
 export async function POST(request: NextRequest) {
+  const auth = authorize(tokenFromRequest(request), {})
+  if (!auth.ok) return auth.response
+
   try {
     const body = await request.json()
 
@@ -15,7 +24,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, currentPassword, newPassword } = validation.data!
+    const { currentPassword, newPassword } = validation.data!
+    const email = auth.user.email ? String(auth.user.email) : null
+
+    if (!email) {
+      return NextResponse.json({ error: 'No email on this account' }, { status: 403 })
+    }
 
     // Find user
     const user = await prisma.pesuser.findUnique({

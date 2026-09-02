@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server'
+import { getJWTSecret } from '@/app/lib/jwt';
 import jwt from 'jsonwebtoken'
 import prisma from '../prisma.dev'
 import { randomUUID } from "crypto";
@@ -231,7 +232,7 @@ export async function POST(req: Request) {
         productPlan: user.plan,
         maintenance_model: maintenance_model || false,
       },
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production',
+      getJWTSecret(),
     );
 
     return NextResponse.json({ message: 'Login successful!', token, status: 200 });

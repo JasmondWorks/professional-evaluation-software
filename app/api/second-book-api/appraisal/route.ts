@@ -1,8 +1,14 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
 export async function GET(req: Request) {
+  // These read staff names, achievements and citations. They were the only
+  // functional GET routes in the app and the only ones with no auth on them.
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");

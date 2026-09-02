@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
+// The email said whose subscription to touch, and nothing checked that it was
+// the caller's. It comes off the token now; a subscription is not something you
+// should be able to alter by knowing somebody's address.
 export async function POST(req: NextRequest) {
-  const { email, oldPlan, newPlan } = await req.json();
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const email = auth.user.email ? String(auth.user.email) : null;
+  if (!email) {
+    return NextResponse.json({ error: "No email on this account" }, { status: 403 });
+  }
+
+  const { oldPlan, newPlan } = await req.json();
 
   const current = await prisma.$queryRaw<any[]>`
     SELECT *

@@ -1,8 +1,14 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
-export async function GET() {
+export async function GET(req: Request) {
+  // These read staff names, achievements and citations. They were the only
+  // functional GET routes in the app and the only ones with no auth on them.
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const rows = await prisma.hall_of_fame.findMany({
       select: {

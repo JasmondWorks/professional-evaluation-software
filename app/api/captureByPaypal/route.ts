@@ -1,7 +1,13 @@
 // app/api/captureByPaypal/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Captures a PayPal order using the app's own merchant credentials, so it must
+// not be callable by anyone who has an order id.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const { orderID } = await req.json();
 
