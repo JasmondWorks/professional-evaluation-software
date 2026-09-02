@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Appraisal scores. Unauthenticated and unscoped: a name in the body read that
+// person's scores in whichever organization happened to hold the name, and an
+// empty body read everyone's.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+
   try {
     const { pesuser_name } = await req.json();
     const results = await prisma.appraisal.findMany({
-      where: pesuser_name ? { pesuser_name } : undefined,
+      where: { org, ...(pesuser_name ? { pesuser_name } : {}) },
       select: {
         pesuser_name: true,
         dept: true,

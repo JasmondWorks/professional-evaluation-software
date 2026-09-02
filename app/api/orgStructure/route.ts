@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtDecode } from "jwt-decode";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 401 });
-    }
+    // jwtDecode read this org without checking the signature, so both storing a
+    // structure run and reading one back could be pointed at any organization.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
 
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
+    const org = auth.user.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
@@ -76,13 +75,12 @@ export async function POST(req: NextRequest) {
 // but it is still an org-structure result and still lives in the same table.
 export async function GET(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 401 });
-    }
+    // jwtDecode read this org without checking the signature, so both storing a
+    // structure run and reading one back could be pointed at any organization.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
 
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
+    const org = auth.user.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }

@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Counter-stress submissions. There was no org filter and no auth: POST a name and the
+// query ran against every organization's rows at once.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+
   try {
     const body = await req.json();
     const { name } = body;
 
     const results = await prisma.counter_stress.findMany({
-      where: name ? { pesuser_name: name } : undefined,
+      where: { org, ...(name ? { pesuser_name: name } : {}) },
       select: {
         pesuser_name: true,
         dept: true,

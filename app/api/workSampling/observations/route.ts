@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { orgOfPosition, notYours } from "../_scope";
 
 // POST — record a single observation (with programmatic upsert)
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
     const { positionId, date, time, isBusy, performanceRating, notes } = body;
@@ -13,6 +18,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Observations are the study's raw data — anyone able to write them can
+    // move the utilisation figure the study produces.
+    const owner = await orgOfPosition(Number(positionId));
+    if (!owner || owner !== auth.user.org) return notYours();
 
     // Check if an observation already exists for the same position, date, and time
     const existing = await prisma.workSamplingObservation.findFirst({
@@ -57,12 +67,24 @@ export async function POST(req: NextRequest) {
 
 // DELETE — remove an observation
 export async function DELETE(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await req.json();
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
-    
+
+    const existing = await prisma.workSamplingObservation.findUnique({
+      where: { id: Number(id) },
+      select: { positionId: true },
+    });
+    if (!existing) return notYours();
+
+    const owner = await orgOfPosition(existing.positionId);
+    if (!owner || owner !== auth.user.org) return notYours();
+
     await prisma.workSamplingObservation.delete({
       where: { id: Number(id) }
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
 async function getInventory( user: string | null ) {
@@ -7,10 +8,13 @@ async function getInventory( user: string | null ) {
   return prisma.facilities.findMany({ where: { org: user } })
 }
 
+// Facilities for an organization. The client posted the org it wanted, which is
+// to say anyone could post any org and read its inventory.
 export async function POST(request: NextRequest) {
-  // The client posts the decoded token; facilities are scoped by org (not name).
-  const body = await request.json();
-  const org = body?.org ?? body?.name;
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
 
   if (org) {
     try {

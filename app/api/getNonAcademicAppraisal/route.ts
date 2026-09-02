@@ -1,28 +1,28 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { jwtDecode } from "jwt-decode";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Non-academic appraisal records, scoped to the caller's organization. The org was read with jwtDecode,
+// which decodes without checking the signature, so a token written by hand named
+// any org it liked and this returned that org's records.
 export async function GET(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+  if (!org) {
+    return NextResponse.json(
+      { error: "This account is not attached to an organization" },
+      { status: 403 }
+    );
+  }
+
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: "Authorization header missing" },
-        { status: 401 }
-      );
-    }
-    
-    const token = authHeader.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Token missing" }, { status: 401 });
-    }
-    
-    const decoded = jwtDecode<{ org: string }>(token);
     
     const records = await prisma.non_academic_appraisal.findMany({
       where: {
-        org: decoded.org,
+        org,
       },
       orderBy: {
         created_at: "desc",

@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../prisma.dev"; // adjust path as needed
+import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard"; // adjust path as needed
 
+// A personnel-redundancy run. The org it was filed under came from the body, so anyone
+// could write a run into anyone's history — and the history is not just a log:
+// the future-requirement prediction fits a line through it.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+
   try {
     const body = await req.json();
     const {
-      org,
       actual_staff,
       optimal_staff,
       low_threshold,

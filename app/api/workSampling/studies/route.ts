@@ -2,23 +2,6 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 
-// Helper to run raw SQL migrations to ensure columns exist in development/production dynamically.
-async function ensureColumnsExist() {
-  try {
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedDates" jsonb;
-    `;
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedTimes" jsonb;
-    `;
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "studyMonths" jsonb;
-    `;
-  } catch (error) {
-    console.error("Auto-migration column check failed:", error);
-  }
-}
-
 // POST — create a new study (with parameters)
 export async function POST(req: NextRequest) {
   try {
@@ -84,8 +67,7 @@ export async function POST(req: NextRequest) {
 // GET — list all studies (with position and observation counts)
 export async function GET() {
   try {
-    await ensureColumnsExist();
-    const results = await prisma.$queryRaw`
+      const results = await prisma.$queryRaw`
       SELECT s.*,
         (SELECT COUNT(*)::int FROM "WorkSamplingPosition" WHERE "studyId" = s.id) AS "positionCount",
         (SELECT COUNT(*)::int FROM "WorkSamplingObservation" o

@@ -1,17 +1,16 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
-import { jwtDecode } from 'jwt-decode';
 import { hodCounterScores, staffPerformance } from '@/app/lib/performance/results';
+import { authorize, tokenFromRequest } from '../_lib/authGuard';
 
+// The org was taken from an unverified jwtDecode, so every score in this
+// response could be pulled for any organization by hand-writing a token.
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader) {
-    return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
-  }
-  const token = authHeader.split(" ")[1];
-  const decoded = jwtDecode<{ org: string }>(token);
-  const org = decoded.org;
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
 
   if (!org) {
     return NextResponse.json(
