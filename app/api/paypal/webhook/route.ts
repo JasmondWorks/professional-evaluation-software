@@ -51,6 +51,8 @@ async function verifyWebhook(request: NextRequest, webhookId: string): Promise<b
   return verifyRes.ok && verifyJson.verification_status === "SUCCESS";
 }
 
+// Deliberately public: PayPal calls this. Authenticated by signature, verified
+// against PayPal's verify-webhook-signature endpoint.
 export async function POST(req: NextRequest) {
   try {
     const webhookId = process.env.PAYPAL_WEBHOOK_ID!;

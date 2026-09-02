@@ -1,13 +1,20 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
 // POST — create a new study (with parameters)
+// Creates a study. `org` came from the body, so a study could be filed into
+// another organization - and the org is what every other work-sampling route
+// checks ownership against.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
+    const org = auth.user.org ? String(auth.user.org) : null;
     const {
-      org,
       department,
       analyst,
       authorizedBy,
@@ -65,7 +72,13 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — list all studies (with position and observation counts)
-export async function GET() {
+// Listed every study on the platform, unauthenticated.
+export async function GET(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+
   try {
       const results = await prisma.$queryRaw`
       SELECT s.*,
@@ -74,6 +87,7 @@ export async function GET() {
           JOIN "WorkSamplingPosition" p ON o."positionId" = p.id
           WHERE p."studyId" = s.id) AS "observationCount"
       FROM "WorkSamplingStudy" s
+      WHERE s."org" = ${org}
       ORDER BY s."createdAt" DESC
     `;
     return NextResponse.json({ success: true, data: results });

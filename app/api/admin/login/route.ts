@@ -40,6 +40,8 @@ async function getUser(info: reqInfo) {
 }
 
 
+// Deliberately public: the platform console's login. It refuses accounts that
+// are not a platform tier, so authenticating here is not by itself entry.
 export async function POST(req: Request) {
   const body = await req.json();
 

@@ -65,6 +65,7 @@ async function verifyWebhook(
   return verifyRes.ok && verifyJson.verification_status === "SUCCESS";
 }
 
+// Deliberately public: a PayPal webhook, authenticated by signature.
 export async function POST(req: NextRequest) {
   try {
     const webhookId = process.env.PAYPAL_WEBHOOK_ID!;

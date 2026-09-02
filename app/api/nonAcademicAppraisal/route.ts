@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: Request) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // jwtDecode parses a token without checking its signature, so this org was
+    // whatever the caller wrote into one.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
 
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
+    const org = auth.user.org ? String(auth.user.org) : null;
     if (!org)
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
 

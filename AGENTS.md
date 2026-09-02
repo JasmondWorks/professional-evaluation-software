@@ -266,7 +266,9 @@ app rather than serve it, do not belong in `app/api/`.
 
 ```bash
 # Any handler with no identity check is a finding, not a style preference.
-grep -rLE 'authorize|verifyToken|tokenFromRequest|viewerFrom|consoleViewer' \
+# Match the CALL, not the bare word: `authorize` also matches `authorizedBy`,
+# which is a study field, and that false pass hid an unguarded route once.
+grep -rLE 'authorize\(|verifyToken\(|tokenFromRequest\(|viewerFrom\(|consoleViewer\(|jwt.verify\(|Deliberately public' \
   app/api --include=route.ts
 
 # Server-side use of an unverified token.

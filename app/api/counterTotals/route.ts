@@ -1,8 +1,15 @@
 // app/api/counterTotals/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
+// Stores a counter-evaluation total. counter_totals carries no org column, so
+// there is nothing to scope by here — but writing one is still not something an
+// anonymous caller should be able to do.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json()
     const { section, result, numerator = [], denominator = [] } = body

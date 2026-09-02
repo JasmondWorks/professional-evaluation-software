@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+// Deliberately public: clearing a session must work even when the token that
+// would authenticate the request has already expired.
 export async function POST() {
   const response = NextResponse.json({ message: "Logged out successfully" }, { status: 200 });
 

@@ -37,6 +37,8 @@ import { NextRequest, NextResponse } from 'next/server';
 //   }
 // }
 
+// Deliberately public: serves the blank forms under public/downloadables, which
+// are the same files for everyone. The path is containment-checked below.
 export async function GET(req: Request, { params }: { params: { filename: string } }) {
     const { filename } = params;
 

@@ -28,6 +28,9 @@ const questions = [
   "If invited again in the future, will you accept the invitation even if you were openly criticized?",
 ];
 
+// Deliberately public: an invited external auditor answers this before they
+// have an account. Submissions land in a queue an admin must approve
+// (/api/admin/auditors) before they become a user.
 export async function POST(req: Request) {
   try {
     const body = await req.json();

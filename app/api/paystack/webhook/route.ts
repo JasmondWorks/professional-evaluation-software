@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import crypto from "crypto";
 
+// Deliberately public: Paystack calls this, not the browser. It is
+// authenticated by signature — HMAC SHA-512 over the raw body — not by session.
 export async function POST(req: NextRequest) {
   try {
     const raw = await req.text();

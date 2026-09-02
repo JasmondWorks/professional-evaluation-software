@@ -12,6 +12,8 @@ import prisma from "../../prisma.dev";
 //   • Events: email.delivered, email.bounced, email.complained
 //   • Copy the signing secret into RESEND_WEBHOOK_SECRET (whsec_...).
 
+// Deliberately public: Resend calls this. Authenticated by the Svix signature
+// over the raw body.
 export async function POST(req: Request) {
   // Raw body is required for signature verification.
   const raw = await req.text();

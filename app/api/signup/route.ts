@@ -90,6 +90,7 @@ async function addToDb(info: reqInfo) {
 }
 
 
+// Deliberately public: account creation precedes any session.
 export async function GET() {
   return NextResponse.json({ name: 'successful!', data: 'true' })
 }

@@ -8,6 +8,8 @@ import bcrypt from 'bcryptjs'
 import { compactPermissions } from '@/app/components/utils/roles'
 import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
 
+// Deliberately public: this is where a session begins, so there is no token to
+// check yet.
 export async function POST(req: Request) {
   const body = await req.json();
   

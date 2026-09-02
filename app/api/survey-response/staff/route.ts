@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev"; // your Prisma client
 import nodemailer from "nodemailer";
 
+// Deliberately public: the staff survey is answered from a link, by people who
+// are not necessarily signed in. It only ever inserts a response; it reads
+// nothing back, so there is nothing here to disclose.
 export async function POST(req: Request) {
   try {
     const body = await req.json();

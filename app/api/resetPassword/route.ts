@@ -15,6 +15,9 @@ type ConfirmResetRequest = {
 }
 
 // Request password reset (send email with token)
+// Deliberately public: someone who has lost their password cannot present one.
+// The POST leg answers the same way whether or not the address exists, and the
+// PUT leg is authenticated by the emailed reset token rather than a session.
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

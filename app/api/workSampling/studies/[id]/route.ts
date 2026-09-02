@@ -1,35 +1,27 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../prisma.dev";
-
-// Helper to run raw SQL migrations to ensure columns exist in development/production dynamically.
-async function ensureColumnsExist() {
-  try {
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedDates" jsonb;
-    `;
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedTimes" jsonb;
-    `;
-    await prisma.$executeRaw`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "studyMonths" jsonb;
-    `;
-  } catch (error) {
-    console.error("Auto-migration column check failed:", error);
-  }
-}
+import { authorize, tokenFromRequest } from "../../../_lib/authGuard";
+import { orgOfStudy, notYours } from "../../_scope";
 
 // GET /api/workSampling/studies/[id] — load a full study with positions + observations
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    await ensureColumnsExist();
     const id = Number(params.id);
     if (!id) {
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
+
+    // The study id comes off the URL, so it has to be checked against the
+    // caller's org before any of the study is handed back.
+    const owner = await orgOfStudy(id);
+    if (!owner || owner !== auth.user.org) return notYours();
 
     const [study, positions, observations] = await Promise.all([
       prisma.workSamplingStudy.findUnique({ where: { id } }),
@@ -62,13 +54,21 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    await ensureColumnsExist();
     const id = Number(params.id);
+
+    const owner = await orgOfStudy(id);
+    if (!owner || owner !== auth.user.org) return notYours();
+
     const body = await req.json();
 
+    // `org` is deliberately not updatable from the body: it is what decides who
+    // may reach the study, so letting the body set it would let a caller hand
+    // their own study to another organization — or take one from it.
     const updateData: any = {};
-    if (body.org !== undefined) updateData.org = body.org;
     if (body.department !== undefined) updateData.department = body.department;
     if (body.analyst !== undefined) updateData.analyst = body.analyst;
     if (body.authorizedBy !== undefined) updateData.authorizedBy = body.authorizedBy;
