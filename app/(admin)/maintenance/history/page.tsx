@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { BackLink } from "@/app/components/ui";
@@ -15,6 +16,8 @@ import { BackLink } from "@/app/components/ui";
 type Run = {
   id: number;
   facility: string;
+  facility_symbol: string | null;
+  mtbf: number | null;
   optimal_interval: number | null;
   planned_hours: number | null;
   cycles: number | null;
@@ -26,6 +29,11 @@ type Run = {
 };
 
 export default function MaintenanceHistoryPage() {
+  // Arriving from a machine's page shows that machine's runs; arriving from the
+  // menu shows all of them, grouped by machine.
+  const params = useSearchParams();
+  const only = params.get("facility");
+
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +41,10 @@ export default function MaintenanceHistoryPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("/api/maintenance-runs", { method: "GET" });
+        const res = await apiFetch(
+          `/api/maintenance-runs${only ? `?facility=${encodeURIComponent(only)}` : ""}`,
+          { method: "GET" },
+        );
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? "Could not load the history.");
         setRuns(Array.isArray(body) ? body : []);
@@ -43,7 +54,22 @@ export default function MaintenanceHistoryPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [only]);
+
+  // A run belongs to a machine, so the history reads by machine, each one's runs
+  // newest first.
+  const machines = useMemo(() => {
+    const byMachine = new Map<string, Run[]>();
+    for (const run of runs) {
+      const key = run.facility;
+      byMachine.set(key, [...(byMachine.get(key) ?? []), run]);
+    }
+    return [...byMachine.entries()].map(([facility, list]) => ({
+      facility,
+      symbol: list.find((r) => r.facility_symbol)?.facility_symbol ?? null,
+      runs: list,
+    }));
+  }, [runs]);
 
   return (
     <div className="mx-auto w-full p-8">
@@ -53,8 +79,9 @@ export default function MaintenanceHistoryPage() {
 
       <h1 className="text-2xl font-bold text-strong">Maintenance history</h1>
       <p className="mt-1 text-body">
-        Every saved computation, with the preventive plan it produced and the date it was
-        run.
+        {only
+          ? `Saved runs for ${only}, newest first.`
+          : "Every saved computation, by machine, with the preventive plan it produced and the date it was run."}
       </p>
 
       {loading ? (
@@ -69,20 +96,47 @@ export default function MaintenanceHistoryPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-4">
-          {runs.map((run) => (
+        <div className="mt-8 flex flex-col gap-8">
+          {machines.map((machine) => (
+            <div key={machine.facility}>
+              <h2 className="mb-3 flex items-baseline gap-2 text-sm font-semibold text-strong">
+                {machine.facility}
+                {machine.symbol && (
+                  <span className="rounded-md border border-line px-2 py-0.5 text-xs font-normal text-muted">
+                    {machine.symbol}
+                  </span>
+                )}
+                <span className="text-xs font-normal text-muted">
+                  {machine.runs.length} run{machine.runs.length === 1 ? "" : "s"}
+                </span>
+              </h2>
+
+              <div className="flex flex-col gap-4">
+          {machine.runs.map((run) => (
             <section
               key={run.id}
               className="rounded-xl border border-line bg-white p-6 shadow-sm"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h2 className="text-base font-bold text-strong">{run.facility}</h2>
+                <h3 className="text-sm font-semibold text-body">
+                  {run.facility_symbol ?? run.facility}
+                </h3>
                 <span className="text-xs text-muted">
                   Executed {dayjs(run.created_at).format("dddd, MMMM D YYYY • h:mm A")}
                 </span>
               </div>
 
-              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-4">
+              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-5">
+                <div>
+                  <dt className="text-xs text-muted">MTBF</dt>
+                  <dd className="font-semibold text-strong">
+                    {run.mtbf == null
+                      ? run.results?.mtbf == null
+                        ? "—"
+                        : `${Number(run.results.mtbf).toFixed(2)} hrs`
+                      : `${run.mtbf.toFixed(2)} hrs`}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-xs text-muted">Optimal interval</dt>
                   <dd className="font-semibold text-strong">
@@ -121,6 +175,9 @@ export default function MaintenanceHistoryPage() {
                 </div>
               )}
             </section>
+          ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

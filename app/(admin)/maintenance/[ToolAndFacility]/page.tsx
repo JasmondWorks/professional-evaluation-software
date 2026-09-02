@@ -8,6 +8,8 @@ import { notify } from "@/lib/toast";
 import { planMaintenance } from "@/app/lib/maintenance/schedule";
 import { mayRunMaintenance, isOrgAdmin } from "@/app/lib/maintenance/team";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
+import { getAccessToken } from "@/app/utils/auth";
+import { jwtDecode } from "jwt-decode";
 
 interface HomeProps {
   params: {
@@ -51,6 +53,14 @@ export default function MaintenanceDetail({ params }: HomeProps) {
   const mayRun = mayRunMaintenance(user?.role);
   const admin = isOrgAdmin(user?.role);
   const [heads, setHeads] = useState<{ name: string; dept: string | null }[] | null>(null);
+  // The register entry this page is about. The URL carries the description,
+  // which is editable text; a run belongs to the machine on the register, so the
+  // record is looked up and saved with the result.
+  const [machine, setMachine] = useState<{
+    id: number;
+    identification_symbol: string | null;
+    facility_register_id_no: string | null;
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -63,7 +73,28 @@ export default function MaintenanceDetail({ params }: HomeProps) {
         /* the notice below simply does not appear */
       }
     })();
-  }, []);
+
+    (async () => {
+      try {
+        const token = getAccessToken();
+        if (!token) return;
+        const claims: any = jwtDecode(token);
+        const res = await apiFetch("/api/getInventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(claims),
+        });
+        if (!res.ok) return;
+        const rows = await res.json();
+        const found = (Array.isArray(rows) ? rows : []).find(
+          (r: any) => r.description_of_facility === facilityName,
+        );
+        if (found) setMachine(found);
+      } catch {
+        /* the run still saves, under the description alone */
+      }
+    })();
+  }, [facilityName]);
 
   const plan = useMemo(() => {
     if (!results.interval || !results.totalPlannedHours) return null;
@@ -79,8 +110,13 @@ export default function MaintenanceDetail({ params }: HomeProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           facility: facilityName,
+          // Saved against the registered machine, so a run can still be found
+          // after somebody edits the description on the register.
+          facility_id: machine?.id ?? null,
+          facility_symbol: machine?.identification_symbol ?? null,
           inputs: formData,
           results,
+          mtbf: results.mtbf,
           optimal_interval: results.interval,
           planned_hours: results.totalPlannedHours,
           cycles: plan?.cycles ?? null,
@@ -397,8 +433,13 @@ export default function MaintenanceDetail({ params }: HomeProps) {
             >
               {saving ? "Saving…" : "Save result and plan"}
             </button>
-            <Link href="/maintenance/history" className="text-sm text-pes underline">
-              View history
+            <Link
+              href={`/maintenance/history${
+                machine ? `?facility=${encodeURIComponent(facilityName)}` : ""
+              }`}
+              className="text-sm text-pes underline"
+            >
+              {machine ? "View this machine's history" : "View history"}
             </Link>
           </div>
         )}
