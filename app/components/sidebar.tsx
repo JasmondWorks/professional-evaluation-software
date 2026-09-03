@@ -14,7 +14,8 @@ import {
    CloseSquare,
    Setting2,
    Data2,
-   Verify
+   Verify,
+   Lock1
 } from 'iconsax-react';
 import jwt from 'jsonwebtoken'
 import Link from 'next/link';
@@ -80,6 +81,10 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       { key: 13, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
       { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['super-admin', 'admin'] },
+      // The page existed and nothing linked to it, so the only way to change a
+      // password was to know the URL. Every role gets this one: it is the
+      // account you are signed in as, whoever you are.
+      { key: 13, name: 'Change Password', icon: Lock1, href: '/change-password', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'super-admin', 'admin'] },
       { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['super-admin', 'admin'] }
    ]
