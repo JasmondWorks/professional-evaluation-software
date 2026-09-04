@@ -1,3 +1,7 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 // app/api/captureByPaypal/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";

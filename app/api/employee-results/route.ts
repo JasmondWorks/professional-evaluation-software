@@ -1,3 +1,7 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 // Every result PES holds for one employee, for the employee record's
 // "Performance analysis" tab.
 //

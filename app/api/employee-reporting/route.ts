@@ -1,3 +1,7 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 // Who an employee reports to, for the employee record's Reporting hierarchy
 // panel. The structure comes from `hod_assignments` (the department lead a
 // staff member is assigned to), which is set from the HOD assignment flow —
