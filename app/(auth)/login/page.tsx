@@ -197,11 +197,14 @@ export default function Home() {
             >
               Sign In
             </button>
-            <p className="text-center">
-              {`Don't have an Account?`}{" "}
-              <Link className="text-pes" href={"/signup"}>
-                Sign Up
-              </Link>{" "}
+            {/* No "Sign Up" link. An organization is created by buying a
+                plan on the PES website, and signup will not proceed without a
+                payment reference it can verify with PayPal — so a link here
+                led only to a page that refuses. Anyone who has paid arrives
+                with the link from their confirmation. */}
+            <p className="text-center text-sm text-muted">
+              Organizations join PES by purchasing a plan. Once payment is
+              confirmed, use the signup link in your confirmation email.
             </p>
             {/* The guide needs no account, so someone locked out can still read
                 how the product works and what their plan includes. */}

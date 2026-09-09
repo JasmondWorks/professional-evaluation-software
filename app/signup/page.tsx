@@ -1,6 +1,6 @@
 "use client";
 import { ArrowRight, Category } from "iconsax-react";
-import { FormEvent, useState, useEffect, ChangeEvent } from "react";
+import { FormEvent, useState, useEffect, useCallback, ChangeEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -68,25 +68,60 @@ export default function Home() {
   // Signup is only reachable by following a paid checkout, which appends the
   // institution type, the plan and the PayPal reference. Reaching this page by
   // hand means there is no payment to attach the organization to, so there is
-  // nothing to sign up for. Send them to login rather than showing a form that
-  // cannot succeed.
+  // nothing to sign up for.
+  //
+  // The check used to live only on submit — and was commented out here — so the
+  // form rendered for anyone, and a person could choose an organization name and
+  // a password before being told there was no payment. The server verifies the
+  // reference with PayPal before the form is shown at all, and the answer it
+  // gives is the same one /api/signup will give on submit.
+  const [gate, setGate] = useState<
+    | { status: "checking" }
+    | { status: "ok"; paidAt?: string; expiresAt?: string }
+    | { status: "blocked"; reason: string; needsReference: boolean }
+  >({ status: "checking" });
+  const [manualReference, setManualReference] = useState("");
+
+  const runPrecheck = useCallback(
+    async (reference: string) => {
+      setGate({ status: "checking" });
+      try {
+        const res = await apiFetch("/api/signup/precheck", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category: productCategory, plan: planType, reference }),
+        });
+        const data = await res.json();
+        if (res.ok && data?.ok) {
+          setFormData((prev) => ({ ...prev, reference }));
+          setGate({ status: "ok", paidAt: data.paidAt, expiresAt: data.expiresAt });
+        } else {
+          setGate({
+            status: "blocked",
+            reason: data?.reason ?? "That payment could not be confirmed.",
+            needsReference: Boolean(data?.needsReference),
+          });
+        }
+      } catch {
+        setGate({
+          status: "blocked",
+          reason: "We could not reach the payment service. Try again in a moment.",
+          needsReference: Boolean(paymentReference),
+        });
+      }
+    },
+    [productCategory, planType, paymentReference],
+  );
+
   useEffect(() => {
-    const institution = normalizeInstitution(productCategory);
-    const plan = normalizePlan(planType);
-
-    // if (!institution || !plan) {
-    //   notify.error("Missing payment plan details");
-    //   router.replace("/login");
-    //   return;
-    // }
-
     setFormData((prev) => ({
       ...prev,
       category: productCategory,
       plan: planType,
       reference: paymentReference ?? "",
     }));
-  }, [productCategory, planType, paymentReference, router]);
+    runPrecheck(paymentReference ?? "");
+  }, [productCategory, planType, paymentReference, runPrecheck]);
 
   const allFieldsFilled =
     formData.name.trim() !== "" &&
@@ -192,6 +227,75 @@ export default function Home() {
       notify.dismiss(toastId);
       notify.error(errorMsg);
     }
+  }
+
+  if (gate.status !== "ok") {
+    return (
+      <main className="w-full min-h-screen flex items-center justify-center p-8 bg-gray-10">
+        <div className="max-w-lg w-full bg-white rounded-2xl border border-line shadow-sm p-10 text-center">
+          <div className="my-2 text-pes text-3xl font-extrabold flex justify-center">
+            <Image src={"/Vector.svg"} alt="PES" width={48} height={48} />
+            <p className="ms-2 my-auto">PES</p>
+          </div>
+
+          {gate.status === "checking" ? (
+            <>
+              <div className="mx-auto mt-8 w-9 h-9 border-4 border-pes border-t-transparent rounded-full animate-spin" />
+              <p className="mt-5 text-sm text-muted">Confirming your payment…</p>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-6 text-xl font-semibold text-strong">
+                We could not confirm a payment for this signup
+              </h1>
+              <p className="mt-2 text-sm text-muted leading-relaxed">{gate.reason}</p>
+
+              {gate.needsReference && (
+                <div className="mt-7 text-left">
+                  <label
+                    htmlFor="manual-reference"
+                    className="block text-sm font-medium text-strong mb-1.5"
+                  >
+                    PayPal reference
+                  </label>
+                  <p className="text-xs text-muted mb-2">
+                    The transaction, order or subscription id from your PayPal
+                    receipt — any of the three will do.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      id="manual-reference"
+                      value={manualReference}
+                      onChange={(e) => setManualReference(e.target.value)}
+                      placeholder="e.g. 8XW12345AB678901C"
+                      className="flex-1 h-11 px-3 rounded-lg border border-line text-sm outline-none focus:border-pes"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => runPrecheck(manualReference.trim())}
+                      disabled={!manualReference.trim()}
+                      className="h-11 px-5 rounded-lg bg-pes text-white text-sm font-medium disabled:opacity-50"
+                    >
+                      Check
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <p className="mt-8 text-xs text-muted">
+                An organization is created by buying a plan. If you have not
+                bought one yet, start on the PES website. Already have an
+                account?{" "}
+                <Link href="/login" className="text-pes font-medium">
+                  Sign in
+                </Link>
+                .
+              </p>
+            </>
+          )}
+        </div>
+      </main>
+    );
   }
 
   return (
