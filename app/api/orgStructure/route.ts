@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireModel } from '../_lib/planGuard';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
     // structure run and reading one back could be pointed at any organization.
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'org-structure');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
     if (!org) {
@@ -83,6 +86,8 @@ export async function GET(req: NextRequest) {
     // structure run and reading one back could be pointed at any organization.
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'org-structure');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
     if (!org) {

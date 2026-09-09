@@ -36,100 +36,6 @@ type ProductDetails = {
   maintenance: boolean;
 };
 
-// The maintenance model ships with the company product. Every other sector buys
-// it separately from the pricing page, so it appears here only once they have.
-const MAINTENANCE_BY_DEFAULT = ["company"];
-
-const planConfigs: Record<string, Record<string, string[]>> = {
-  public: {
-    basic: [
-      "Personnel Utilization",
-      "Productivity Index",
-      "Student Teacher",
-      "Staff Number",
-      "Stress",
-      "Future Requirements",
-    ],
-    standard: [
-      "Personnel Utilization",
-      "Productivity Index",
-      "Student Teacher",
-      "Staff number",
-      "Stress",
-      "Future Requirements",
-      "Appraisal",
-    ],
-    premium: [
-      "Personnel Utilization",
-      "Productivity Index",
-      "Student Teacher",
-      "Staff number",
-      "Stress",
-      "Future Requirements",
-      "Appraisal",
-      "Organization Structure",
-      "Performance",
-      "Motivation",
-    ],
-  },
-  company: {
-    basic: ["Staff Number", "Stress",
-      "Future Requirements", "Appraisal"],
-    standard: [
-      "Staff Number",
-      "Stress",
-      "Future Requirements",
-      "Appraisal",
-      "Organization Structure",
-      "Performance",
-      "Motivation",
-    ],
-    premium: [
-      "Staff Number",
-      "Stress",
-      "Future Requirements",
-      "Appraisal",
-      "Organization Structure",
-      "Performance",
-      "Motivation",
-      "Personnel Utilization",
-      "Productivity Index",
-      "Redundancy Index",
-    ],
-  },
-  academic: {
-    basic: [
-      "Student Teacher",
-      "Stress",
-      "Future Requirements",
-      "Institution of Learning Appraisal",
-      "Motivation",
-    ],
-    standard: [
-      "Student Teacher",
-      "Stress",
-      "Future Requirements",
-      "Institution of Learning Appraisal",
-      "Motivation",
-      "Organization Structure",
-      "Performance",
-    ],
-    premium: [
-      "Student Teacher",
-      "Stress",
-      "Future Requirements",
-      "Institution of Learning Appraisal",
-      "Motivation",
-      "Organization Structure",
-      "Performance",
-      "Personnel Utilization",
-      "Productivity Index",
-      "Staff Number",
-      "Redundancy Index",
-    ],
-  },
-};
-
 const modelDefinitions: Record<
   string,
   { path: string; description: string; icon: any; color: string }
@@ -272,33 +178,23 @@ export default function ModelsPage() {
     }
   }, [router]);
 
-  const getRoutes = () => {
-    if (!productDetails) return [];
+  // Which cards to show comes from the server, not from a list kept here.
+  //
+  // There used to be a `planConfigs` map in this file naming the models each
+  // category and tier gets. It disagreed with the product plan document — it
+  // offered the student/teacher ratio to public and company institutions, which
+  // the document excludes outright — and being client-side it could not gate
+  // anything anyway. /api/model-access now answers with the plan's models
+  // narrowed to what this person's role may open, which is the same list the
+  // server will enforce.
+  const nameByPath = new Map<string, string>();
+  for (const [name, def] of Object.entries(modelDefinitions)) {
+    if (!nameByPath.has(def.path)) nameByPath.set(def.path, name);
+  }
 
-    const categoryConfig = planConfigs[productDetails.productCategory];
-    if (!categoryConfig) return [];
-
-    const planRoutes = categoryConfig[productDetails.productPlan] ?? [];
-
-    const hasMaintenance =
-      MAINTENANCE_BY_DEFAULT.includes(productDetails.productCategory) ||
-      productDetails.maintenance;
-
-    return hasMaintenance ? [...planRoutes, "Maintenance model"] : planRoutes;
-  };
-
-  // A card the server would refuse is worse than no card, so the plan's list is
-  // narrowed to what this person may reach. The admin may reach everything; the
-  // industrial/production engineer only what has been switched on for them.
-  const allowedPaths = new Set(
-    MODEL_CATALOG.filter((m) => access.models.includes(m.key)).map((m) => m.path),
-  );
-  const filteredRoutes = access.canRunModels
-    ? getRoutes()
-    : getRoutes().filter((route) => {
-        const def = modelDefinitions[route];
-        return def ? allowedPaths.has(def.path) : false;
-      });
+  const filteredRoutes = MODEL_CATALOG.filter((m) => access.models.includes(m.key))
+    .map((m) => nameByPath.get(m.path))
+    .filter((name): name is string => Boolean(name));
 
   if (isLoading || access.loading) {
     return (

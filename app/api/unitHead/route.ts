@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
 import { validateData, unitHeadSchema, formatZodErrors } from '@/app/lib/validation';
 
 // Stores a unit-head overloading run. `org` came from the body, so the run could
@@ -12,6 +13,9 @@ import { validateData, unitHeadSchema, formatZodErrors } from '@/app/lib/validat
 export async function POST(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  // Unit head overloading is a Premium line in the product plan.
+  const plan = await requireEntitlement(auth.user, 'personnel-utilization.unit-head-overloading');
+  if (!plan.ok) return plan.response;
 
   try {
     const body = await req.json();

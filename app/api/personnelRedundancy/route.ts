@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
 import { validateData, personnelRedundancySchema, formatZodErrors } from '@/app/lib/validation'; // adjust path as needed
 
 // A personnel-redundancy run. The org it was filed under came from the body, so anyone
@@ -13,6 +14,8 @@ import { validateData, personnelRedundancySchema, formatZodErrors } from '@/app/
 export async function POST(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'redundancy.real-percentage');
+  if (!plan.ok) return plan.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
 

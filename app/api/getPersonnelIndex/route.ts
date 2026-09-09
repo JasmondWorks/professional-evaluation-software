@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { verifyToken } from "../_lib/authGuard";
+import { requireModel } from '../_lib/planGuard';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,6 +20,9 @@ export async function GET(req: NextRequest) {
     
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+    const plan = await requireModel(decoded, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
     const org = decoded.org;
     
     if (!org) {

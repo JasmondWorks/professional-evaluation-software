@@ -30,7 +30,13 @@ function viewerFrom(req: Request): ModelViewer {
   if (!claims?.org) {
     throw new ModelAccessError('This account is not attached to an organization.', 403);
   }
-  return { org: claims.org, role: claims.role, name: claims.name };
+  return {
+    org: claims.org,
+    role: claims.role,
+    name: claims.name,
+    productCategory: claims.productCategory ?? claims.category ?? null,
+    productPlan: claims.productPlan ?? claims.plan ?? null,
+  };
 }
 
 function fail(err: unknown) {

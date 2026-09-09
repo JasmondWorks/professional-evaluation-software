@@ -5,11 +5,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { requireModel } from "../_lib/planGuard";
 
 export async function POST(request: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(request), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
 
     const orgName = auth.user.org ? String(auth.user.org) : null;
 

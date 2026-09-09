@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "./components/useAuth";
 import { Toaster } from "sonner";
 import Logger from "./components/Logger";
@@ -9,12 +9,6 @@ import Logger from "./components/Logger";
 // exposed as --font-sans (see tailwind fontFamily.sans). This replaces the
 // previously commented-out Lato and the admin-only font, so marketing, auth,
 // and app now share one typographic voice.
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
@@ -40,7 +34,7 @@ export default function RootLayout({
               the split-personality of modern pages inside dated chrome.
             OWN-WORLD: Light canvas (#f7f7fa) with white surfaces, systematized indigo
               (#322b80 ramp) as the single brand ink, cool-neutral text ramp, hairline
-              lines, one soft offset-shadow depth scale, Inter. Craft bar: Linear.
+              lines, one soft offset-shadow depth scale, Plus Jakarta Sans. Craft bar: Linear.
             STORY: A staff member or admin lands, instantly knows where they are (titled
               pages, active nav), completes a form or reads a result with calm confidence.
             FIRST VIEWPORT: Fixed left rail (brand header, grouped nav, user footer) + top

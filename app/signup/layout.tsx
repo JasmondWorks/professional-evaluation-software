@@ -1,15 +1,10 @@
 import '.././globals.css'
 import type { Metadata } from 'next'
-import { Inter, Montserrat, Lato } from 'next/font/google'
 
-const inter = Inter( {subsets: ['latin'] })
-const montserrat = Montserrat( {subsets: ['latin'] })
-const lato = Lato( 
-  {
-    weight: ['100', '300', '400', '700', '900'],
-    subsets: ['latin']
-   }
-  )
+// No font is loaded here on purpose. Signup inherits the platform's one
+// typeface from the root layout — it used to apply Lato to this page alone
+// (and download Inter and Montserrat without using either), so the first
+// screen a customer saw was set in a face that appeared nowhere else.
 
 export const metadata: Metadata = {
   title: 'PES | Sign Up',
@@ -22,7 +17,7 @@ export default function SignupLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className={ lato.className + ' bg-gray-10 flex flex-row relative justify-center w-full max-w-screen min-h-screen' }>
+    <div className='bg-gray-10 flex flex-row relative justify-center w-full max-w-screen min-h-screen'>
         {children}          
     </div>
   )

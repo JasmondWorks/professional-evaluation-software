@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // adjust path if needed
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireModel } from "../_lib/planGuard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,6 +90,8 @@ export async function GET(req: NextRequest) {
     // org now comes from the token and scopes the query.
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {
@@ -140,6 +143,8 @@ export async function PATCH(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {

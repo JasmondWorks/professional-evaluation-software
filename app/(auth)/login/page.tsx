@@ -203,6 +203,14 @@ export default function Home() {
                 Sign Up
               </Link>{" "}
             </p>
+            {/* The guide needs no account, so someone locked out can still read
+                how the product works and what their plan includes. */}
+            <p className="text-center text-sm text-muted">
+              New to PES?{" "}
+              <Link className="text-pes" href={"/help"}>
+                Read the user guide
+              </Link>
+            </p>
         </Form>
       )}
     </Formik>

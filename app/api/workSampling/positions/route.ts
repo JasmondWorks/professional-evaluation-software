@@ -7,11 +7,14 @@ import prisma from "../../prisma.dev";
 import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 import { orgOfStudy, orgOfPosition, notYours } from "../_scope";
 import { validateData, workSamplingPositionSchema, formatZodErrors } from "@/app/lib/validation";
+import { requireEntitlement } from '../../_lib/planGuard';
 
 // POST — add a position to a study
 export async function POST(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   try {
     const parsed = validateData(workSamplingPositionSchema, await req.json());
@@ -47,6 +50,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   try {
     const { id } = await req.json();

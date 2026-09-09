@@ -2,7 +2,6 @@
 import '../../globals.css'
 import { useRouter } from "next/navigation";
 import { usePathname } from 'next/navigation';
-import { Lato } from 'next/font/google'
 // import { Provider } from 'react-redux'
 // import { store } from '../state/store'
 import { useEffect, useState } from 'react'
@@ -10,13 +9,6 @@ import { CloseSquare, DocumentSketch } from 'iconsax-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import LoadingButton from '../../components/ui/LoadingButton';
-
-const lato = Lato( 
-  {
-    weight: ['100', '300', '400', '700', '900'],
-    subsets: ['latin']
-   }
-  )
 
 export default function RootLayout({ children, }: { children: React.ReactNode }) {
 
@@ -45,7 +37,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
   }, [])
   
   return (
-      <div className={ lato.className + 'bg-canvas flex flex-row relative justify-center w-screen' }
+      <div className='bg-canvas flex flex-row relative justify-center w-screen'
         onChange={handleMobile}>
 
           <div className="(sidebar) bg-white w-2/12 border-e">

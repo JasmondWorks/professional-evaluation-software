@@ -11,6 +11,8 @@
 // Access is opt-in: with no row in model_access, the engineer has nothing.
 
 import prisma from '@/app/api/prisma.dev';
+import { modelsFor, resolveEntitlements, type PlanViewer } from '@/app/lib/billing/access';
+import type { EntitlementKey } from '@/app/lib/billing/entitlements';
 import { resolveEffectiveRole } from '@/app/components/utils/roles';
 import {
   MODEL_ADMIN_ROLES,
@@ -28,7 +30,10 @@ export class ModelAccessError extends Error {
   }
 }
 
-export type ModelViewer = { org: string; role: string; name?: string | null };
+// The category and plan ride along so the guard can ask what the organization
+// bought as well as what the caller's role is. Both are optional on the type
+// because they are optional claims; the org row fills either gap.
+export type ModelViewer = PlanViewer & { org: string; role: string; name?: string | null };
 
 export function isModelAdmin(role: string | null | undefined): boolean {
   return MODEL_ADMIN_ROLES.includes(resolveEffectiveRole(role));
@@ -51,21 +56,58 @@ export async function enabledModelsFor(org: string, role: string): Promise<Model
  *  models page render from. An admin gets everything. */
 export async function accessForViewer(
   viewer: ModelViewer,
-): Promise<{ role: string; canRunModels: boolean; models: ModelKey[] }> {
+): Promise<{
+  role: string;
+  canRunModels: boolean;
+  models: ModelKey[];
+  /** The sub-model keys the plan includes, for the parts of a page that are
+   *  sold separately — which stress index, which operational-staff method. */
+  entitlements: EntitlementKey[];
+}> {
   const role = resolveEffectiveRole(viewer.role);
 
+  if (!isModelAdmin(role) && !isDataEntryRole(role)) {
+    return { role, canRunModels: false, models: [], entitlements: [] };
+  }
+
+  // What the plan opens bounds everything below it: an admin has every role
+  // permission there is and still cannot reach a model the organization has
+  // not bought.
+  const { keys } = await resolveEntitlements(viewer);
+  const byPlan = modelsFor(keys);
+  const entitlements = [...keys];
+
   if (isModelAdmin(role)) {
-    return { role, canRunModels: true, models: [...MODEL_KEYS] };
+    return {
+      role,
+      canRunModels: true,
+      models: MODEL_KEYS.filter((k) => byPlan.includes(k)),
+      entitlements,
+    };
   }
-  if (isDataEntryRole(role)) {
-    // Data entry only: the engineer saves figures, the admin runs the model.
-    return { role, canRunModels: false, models: await enabledModelsFor(viewer.org, role) };
-  }
-  return { role, canRunModels: false, models: [] };
+
+  // Data entry only: the engineer saves figures, the admin runs the model.
+  const enabled = await enabledModelsFor(viewer.org, role);
+  return {
+    role,
+    canRunModels: false,
+    models: enabled.filter((k) => byPlan.includes(k)),
+    entitlements,
+  };
 }
 
 /** Throw unless the caller may open this model at all. */
 export async function assertModelAccess(viewer: ModelViewer, model: ModelKey): Promise<void> {
+  // The plan first, and for everyone. Role decides who inside the organization
+  // may use a model; the plan decides whether the organization has it at all,
+  // so the admin is subject to it too.
+  const { keys } = await resolveEntitlements(viewer);
+  if (!modelsFor(keys).includes(model)) {
+    throw new ModelAccessError(
+      "This model is not included in your organization's plan. Upgrade to use it.",
+    );
+  }
+
   if (isModelAdmin(viewer.role)) return;
 
   if (!isDataEntryRole(viewer.role)) {

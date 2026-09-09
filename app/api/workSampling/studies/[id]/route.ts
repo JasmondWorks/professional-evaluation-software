@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../prisma.dev";
 import { authorize, tokenFromRequest } from "../../../_lib/authGuard";
 import { orgOfStudy, notYours } from "../../_scope";
+import { requireEntitlement } from '../../../_lib/planGuard';
 
 // GET /api/workSampling/studies/[id] — load a full study with positions + observations
 export async function GET(
@@ -11,6 +12,8 @@ export async function GET(
 ) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   try {
     const id = Number(params.id);
@@ -56,6 +59,8 @@ export async function PATCH(
 ) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   try {
     const id = Number(params.id);
@@ -103,14 +108,27 @@ export async function PATCH(
 
 // DELETE /api/workSampling/studies/[id] — delete a study and all related data
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // This handler took no token at all and deleted by id alone, so any caller
+  // could destroy any organization's study — and its positions and
+  // observations with it — by guessing a number. It is now held to the same
+  // three checks as GET and PATCH above: signed in, plan includes work
+  // sampling, and the study belongs to the caller's organization.
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
+
   try {
     const id = Number(params.id);
     if (!id) {
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
+
+    const owner = await orgOfStudy(id);
+    if (!owner || owner !== auth.user.org) return notYours();
 
     // Since schema has onDelete: Cascade, deleting the study is sufficient,
     // but we can explicitly delete dependents first to be absolutely sure.

@@ -11,6 +11,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma.dev';
+import { requireEntitlement } from '../_lib/planGuard';
+import type { EntitlementKey } from '@/app/lib/billing/entitlements';
 
 /** The tables a history row may be deleted from, and the delegate for each.
  *  An allow-list rather than a table name taken off the request: the name
@@ -22,9 +24,17 @@ const DELETABLE = {
   index: () => prisma.index,
 } as const;
 
+/** Which entitlement each history belongs to. Deleting a run is using the
+ *  model, so it is refused on the same terms as running it. */
+const HISTORY_ENTITLEMENT: Record<HistoryKey, EntitlementKey> = {
+  'personnel-utilization': 'personnel-utilization.index',
+  'supervision-cost': 'redundancy',
+  index: 'personnel-utilization.index',
+};
+
 type HistoryKey = keyof typeof DELETABLE;
 
-function orgFrom(req: Request): string {
+function claimsFrom(req: Request): any {
   const header = req.headers.get('authorization') ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) throw Object.assign(new Error('Sign in to continue.'), { status: 401 });
@@ -43,12 +53,13 @@ function orgFrom(req: Request): string {
       status: 403,
     });
   }
-  return claims.org as string;
+  return claims;
 }
 
 export async function DELETE(req: Request) {
   try {
-    const org = orgFrom(req);
+    const claims = claimsFrom(req);
+    const org = claims.org as string;
     const url = new URL(req.url);
     const source = url.searchParams.get('source') as HistoryKey | null;
     const id = Number(url.searchParams.get('id'));
@@ -59,6 +70,9 @@ export async function DELETE(req: Request) {
     if (!Number.isInteger(id) || id <= 0) {
       return NextResponse.json({ error: 'A record id is required.' }, { status: 400 });
     }
+
+    const plan = await requireEntitlement(claims, HISTORY_ENTITLEMENT[source]);
+    if (!plan.ok) return plan.response;
 
     // deleteMany, not delete, so the org is part of the match rather than a
     // check made after the fact — a row belonging to another organization

@@ -278,19 +278,19 @@ model hall_of_fame {
 }
 
 model index {
-  id           Int       @id @default(autoincrement())
-  redundancy   Decimal?  @db.Decimal
-  productivity Decimal?  @db.Decimal
-  utility      Decimal?  @db.Decimal
+  id               Int       @id @default(autoincrement())
+  redundancy       Decimal?  @db.Decimal
+  productivity     Decimal?  @db.Decimal
+  utility          Decimal?  @db.Decimal
   // The un-inflated figures a productivity index was computed from. The index
   // alone cannot be extrapolated: the future-output prediction fits a line
   // through output against index, so the output has to be kept with the run.
   // Nullable because every row saved before this existed has neither.
-  output_resources Decimal? @db.Decimal
-  input_resources  Decimal? @db.Decimal
-  dept         String?   @db.VarChar(255)
-  org          String?
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  output_resources Decimal?  @db.Decimal
+  input_resources  Decimal?  @db.Decimal
+  dept             String?   @db.VarChar(255)
+  org              String?
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model lead_scores {
@@ -479,18 +479,18 @@ model personnel_redundancy {
 }
 
 model personnel_utilization {
-  id         Int       @id @default(autoincrement())
-  org        String
-  a_ij       Decimal?  @db.Decimal(10, 4)
-  lambda     Decimal?  @db.Decimal(10, 6)
-  mu         Decimal?  @db.Decimal(10, 6)
-  rho        Decimal?  @db.Decimal(10, 6)
-  p0         Decimal?  @db.Decimal(10, 6)
-  lbar       Decimal?  @db.Decimal(10, 6)
-  kmin       Int?
-  kmax       Int?
-  kstar      Int?
-  hstar      Decimal?  @db.Decimal(12, 6)
+  id                Int       @id @default(autoincrement())
+  org               String
+  a_ij              Decimal?  @db.Decimal(10, 4)
+  lambda            Decimal?  @db.Decimal(10, 6)
+  mu                Decimal?  @db.Decimal(10, 6)
+  rho               Decimal?  @db.Decimal(10, 6)
+  p0                Decimal?  @db.Decimal(10, 6)
+  lbar              Decimal?  @db.Decimal(10, 6)
+  kmin              Int?
+  kmax              Int?
+  kstar             Int?
+  hstar             Decimal?  @db.Decimal(12, 6)
   // The staff number this run was made against, kept so the future-requirements
   // model can pair a K* with a head count out of this history alone — the
   // client's instruction of 30 Aug 2026.
@@ -501,17 +501,17 @@ model personnel_utilization {
   // The rest of the utilization parameter set, kept so the boundary conditions
   // (Eq. 39, 40, 42) can be re-tested at every management level from the run
   // that was filled in at level 1.
-  alpha      Float?
-  y_coef     Float?
-  w_val      Float?
-  d_val      Float?
-  g_val      Float?
-  j_val      Float?
-  t1         Float?
-  t2         Float?
-  t3         Float?
-  t4         Float?
-  created_at DateTime? @default(now()) @db.Timestamp(6)
+  alpha             Float?
+  y_coef            Float?
+  w_val             Float?
+  d_val             Float?
+  g_val             Float?
+  j_val             Float?
+  t1                Float?
+  t2                Float?
+  t3                Float?
+  t4                Float?
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model supervision_cost {
@@ -1385,6 +1385,21 @@ model hod_performance_result {
 // industrial/production engineer may enter data into the ones the admin has
 // switched on for them. Absence of a row means "not enabled" — access is opt-in,
 // so a model added later is closed until somebody opens it.
+model org_entitlements {
+  id              Int      @id @default(autoincrement())
+  org             String   @db.VarChar(255)
+  // A key from ENTITLEMENTS in app/lib/billing/entitlements.ts.
+  entitlement_key String   @db.VarChar(80)
+  // true grants a key the plan does not include, false withdraws one it does.
+  granted         Boolean  @default(true)
+  reason          String?
+  updated_by      String?  @db.VarChar(255)
+  updated_at      DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([org, entitlement_key], map: "org_entitlements_unique")
+  @@index([org])
+}
+
 model model_access {
   id         Int      @id @default(autoincrement())
   org        String   @db.VarChar(255)

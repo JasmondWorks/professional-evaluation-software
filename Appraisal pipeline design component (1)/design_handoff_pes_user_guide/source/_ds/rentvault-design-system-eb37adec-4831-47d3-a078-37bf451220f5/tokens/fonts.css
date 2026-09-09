@@ -1,0 +1,8 @@
+/* RentVault — Webfonts.
+   Inter (weights 400 & 600) loaded from Google Fonts.
+   NOTE: no local font binaries were provided, so Inter is loaded from the
+   Google Fonts CDN. Inter is the specified brand font (not a substitution).
+   If you have licensed local Inter files, drop them in assets/fonts/ and
+   replace these @import/@font-face rules with local src() declarations. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');

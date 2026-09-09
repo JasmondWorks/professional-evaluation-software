@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { Calculator, Chart2, Save2, DocumentText, Warning2 } from 'iconsax-react';
+import { useModelAccess, hasEntitlement } from '@/app/components/useModelAccess';
 import { getAccessToken } from '@/app/utils/auth';
 import { BackLink } from '@/app/components/ui';
 import { Tabs, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
@@ -96,6 +97,16 @@ const computeANOVA = (groups: GroupedData) => {
 };
 
 export default function StressAnalysisTool() {
+  // The time-pressure and conflict indices are sold separately from the stress
+  // model itself — every tier gets stress, only Premium gets these two. They
+  // are computed in the browser from the same answers, so hiding them is the
+  // only place the boundary can be drawn; there is no server response to
+  // withhold. The stored history is redacted server-side in
+  // /api/getStressEvaluation for the same reason.
+  const access = useModelAccess();
+  const showPressure = hasEntitlement(access, 'stress.time-pressure');
+  const showConflict = hasEntitlement(access, 'stress.conflict');
+
   const [activeTab, setActiveTab] = useState<"analysis" | "results">("analysis");
   const [stressData, setStressData] = useState<StressEntry[]>([]);
   const [dataCycle, setDataCycle] = useState<{ id: number; created_at: string; phase?: string } | null>(null);
@@ -583,7 +594,9 @@ export default function StressAnalysisTool() {
         <div>
           <h1 className="text-2xl font-bold mb-2">Stress Evaluation Tool</h1>
           <p className="text-body mb-6 max-w-2xl">
-            Analyze self-reported stress, pressure, and conflict factors across departments using ANOVA.
+            {showPressure || showConflict
+              ? 'Analyze self-reported stress, pressure, and conflict factors across departments using ANOVA.'
+              : 'Analyze self-reported stress factors across departments using ANOVA.'}
           </p>
         </div>
         <div className="flex gap-3">
@@ -1038,19 +1051,31 @@ export default function StressAnalysisTool() {
             </p>
           )}
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div
+            className={`grid grid-cols-1 gap-6 ${
+              showPressure && showConflict
+                ? 'md:grid-cols-3'
+                : showPressure || showConflict
+                  ? 'md:grid-cols-2'
+                  : 'md:grid-cols-1'
+            }`}
+          >
             <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
               <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Stress</span>
               <span className="text-4xl font-bold text-danger-600">{(summary.stress).toFixed(1)}%</span>
             </div>
-            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Pressure</span>
-              <span className="text-4xl font-bold text-orange-500">{(summary.pressure).toFixed(1)}%</span>
-            </div>
-            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Conflict</span>
-              <span className="text-4xl font-bold text-yellow-500">{(summary.conflict).toFixed(1)}%</span>
-            </div>
+            {showPressure && (
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
+                <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Pressure</span>
+                <span className="text-4xl font-bold text-orange-500">{(summary.pressure).toFixed(1)}%</span>
+              </div>
+            )}
+            {showConflict && (
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center items-center text-center">
+                <span className="text-sm font-semibold text-muted uppercase tracking-wider mb-2">Overall Conflict</span>
+                <span className="text-4xl font-bold text-yellow-500">{(summary.conflict).toFixed(1)}%</span>
+              </div>
+            )}
           </div>
 
           {/* Form 6/7 outputs: overall theme frequency + the major feeling. */}
@@ -1262,13 +1287,13 @@ export default function StressAnalysisTool() {
                       <th className="px-6 py-3 font-semibold">{section.subject}</th>
                       <th className="px-6 py-3 font-semibold text-right">Staff</th>
                       <th className="px-6 py-3 font-semibold text-right">Stress</th>
-                      <th className="px-6 py-3 font-semibold text-right">Pressure</th>
-                      <th className="px-6 py-3 font-semibold text-right">Conflict</th>
+                      {showPressure && <th className="px-6 py-3 font-semibold text-right">Pressure</th>}
+                      {showConflict && <th className="px-6 py-3 font-semibold text-right">Conflict</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {section.rows.length === 0 ? (
-                      <tr><td colSpan={5} className="px-6 py-4 text-muted text-center">No data</td></tr>
+                      <tr><td colSpan={3 + (showPressure ? 1 : 0) + (showConflict ? 1 : 0)} className="px-6 py-4 text-muted text-center">No data</td></tr>
                     ) : (
                       section.rows.map((r) => (
                         <tr key={r.name} className="hover:bg-canvas/50 transition-colors">
@@ -1279,16 +1304,20 @@ export default function StressAnalysisTool() {
                               {(r.stress).toFixed(1)}%
                             </span>
                           </td>
-                          <td className="px-6 py-3 text-right">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                              {(r.pressure).toFixed(1)}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                              {(r.conflict).toFixed(1)}%
-                            </span>
-                          </td>
+                          {showPressure && (
+                            <td className="px-6 py-3 text-right">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                {(r.pressure).toFixed(1)}%
+                              </span>
+                            </td>
+                          )}
+                          {showConflict && (
+                            <td className="px-6 py-3 text-right">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                {(r.conflict).toFixed(1)}%
+                              </span>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}

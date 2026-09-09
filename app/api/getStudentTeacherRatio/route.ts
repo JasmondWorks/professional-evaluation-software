@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { verifyToken } from "../_lib/authGuard";
+import { requireModel } from "../_lib/planGuard";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,6 +20,9 @@ export async function GET(req: NextRequest) {
     
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    // Only academic institutions are sold the student/teacher ratio at all.
+    const plan = await requireModel(decoded, 'student-teacher');
+    if (!plan.ok) return plan.response;
     
     const records = await prisma.student_teacher_ratio.findMany({
       where: { org: decoded.org },

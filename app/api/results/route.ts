@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { verifyToken } from "../_lib/authGuard";
+import { requireEntitlement } from "../_lib/planGuard";
 
 // ✅ GET: Fetch all results (optionally by mode)
 export async function GET(req: Request) {
@@ -15,6 +16,12 @@ export async function GET(req: Request) {
   const token = authHeader.split(" ")[1];
   const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+  // The student/teacher ratio is sold as two models: ordinary, and robust at a
+  // higher tier. `mode` says which one this call is for.
+  const readKey = mode === "robust" ? "student-teacher.robust" : "student-teacher.ordinary";
+  const readPlan = await requireEntitlement(decoded, readKey);
+  if (!readPlan.ok) return readPlan.response;
 
   const results = await prisma.optimizationResult.findMany({
     where: { 
@@ -42,6 +49,12 @@ export async function POST(req: Request) {
   if (!data.mode || !data.optimalK || !data.totalStaffNeeded) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  const writePlan = await requireEntitlement(
+    decoded,
+    data.mode === "robust" ? "student-teacher.robust" : "student-teacher.ordinary",
+  );
+  if (!writePlan.ok) return writePlan.response;
 
   const {
     mode,

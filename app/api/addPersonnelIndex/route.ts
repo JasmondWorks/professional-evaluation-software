@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { Prisma } from '@prisma/client'
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { requireModel } from '../_lib/planGuard';
 
 // The org, user and department were read with jwtDecode, which does not check
 // the signature — so a token typed by hand named whichever org it liked and the
@@ -13,6 +14,8 @@ import { authorize, tokenFromRequest } from '../_lib/authGuard';
 export async function POST(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireModel(auth.user, 'personnel-utilization');
+  if (!plan.ok) return plan.response;
 
   const body = await req.json();
   const { payload } = body;

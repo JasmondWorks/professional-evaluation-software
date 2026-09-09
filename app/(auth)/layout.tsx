@@ -1,12 +1,10 @@
 import "../globals.css";
 import type { Metadata } from "next";
-import { Lato } from "next/font/google";
 import Image from "next/image";
 
-const lato = Lato({
-  weight: ["100", "300", "400", "700", "900"],
-  subsets: ["latin"],
-});
+// The auth screens inherit the platform's one typeface from the root layout.
+// They used to set Lato here, so login and reset-password were the only pages
+// in the product not set in it.
 
 export const metadata: Metadata = {
   title: "PES | Authentication",
@@ -20,7 +18,7 @@ export default function AuthLayout({
 }) {
   return (
     <div
-      className={`${lato.className} bg-gray-10 flex flex-row relative justify-center w-full max-w-screen min-h-screen`}
+      className="bg-gray-10 flex flex-row relative justify-center w-full max-w-screen min-h-screen"
     >
       {/* Illustration — shared across all auth screens */}
       <div className="illustration bg-pes-gradient hidden md:flex w-1/2 sticky top-0 h-screen">

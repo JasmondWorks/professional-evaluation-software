@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
 import { mayRunMaintenance } from '@/app/lib/maintenance/team';
+import { requireModel } from '../_lib/planGuard';
 
 // Reading a run is open to the organization. Saving one is not open to its
 // admin: the client's rule of 1 September is that the maintenance team runs this
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'maintenance');
+    if (!plan.ok) return plan.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
@@ -41,6 +44,8 @@ export async function POST(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'maintenance');
+    if (!plan.ok) return plan.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });

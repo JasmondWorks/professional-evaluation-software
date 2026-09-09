@@ -11,11 +11,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
 import { MAINTENANCE_HEAD_ROLE } from '@/app/lib/maintenance/team';
+import { requireModel } from '../_lib/planGuard';
 
 export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'maintenance');
+    if (!plan.ok) return plan.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });

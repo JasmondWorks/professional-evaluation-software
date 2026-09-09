@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { verifyToken } from "../_lib/authGuard";
+import { requireModel } from "../_lib/planGuard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
     
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+    const plan = await requireModel(decoded, 'student-teacher');
+    if (!plan.ok) return plan.response;
     
     const record = await prisma.student_teacher_ratio.create({
       data: {

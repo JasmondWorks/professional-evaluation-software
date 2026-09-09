@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { requireEntitlement } from '../../_lib/planGuard';
 
 // POST — create a new study (with parameters)
 // Creates a study. `org` came from the body, so a study could be filed into
@@ -10,6 +11,8 @@ import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 export async function POST(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   try {
     const body = await req.json();
@@ -76,6 +79,8 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
 

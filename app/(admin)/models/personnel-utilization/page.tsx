@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from "@/app/utils/auth";
+import { useModelAccess, hasEntitlement } from "@/app/components/useModelAccess";
 
 import { findOptimalK, HParams, OptimalKResult } from "./lib/util-models11-16";
 
@@ -39,6 +40,7 @@ import { apiFetch } from "@/app/utils/apiFetch";
 import { BackLink } from '@/app/components/ui';
 
 export default function PersonnelUtilizationPage() {
+  const access = useModelAccess();
   const [params, setParams] = useState<HParamsWithConstraints>({
     A: 8,
     K: 1,
@@ -678,13 +680,17 @@ export default function PersonnelUtilizationPage() {
               {saving ? "Saving..." : "Save Result"}
             </button>
 
-            {/* 🔗 Show link here when results exist */}
-            <Link
-              href="/models/personnel-utilization/unit-head"
-              className="bg-canvas hover:bg-gray-200 text-pes-700 font-medium px-4 py-2 rounded border border-line"
-            >
-              ➜ Go to Unit Head Model
-            </Link>
+            {/* 🔗 Show link here when results exist — and only when unit head
+                overloading is in the plan. It is a separately sold line, so an
+                organization can hold the H* index without it. */}
+            {hasEntitlement(access, 'personnel-utilization.unit-head-overloading') && (
+              <Link
+                href="/models/personnel-utilization/unit-head"
+                className="bg-canvas hover:bg-gray-200 text-pes-700 font-medium px-4 py-2 rounded border border-line"
+              >
+                ➜ Go to Unit Head Model
+              </Link>
+            )}
           </div>
 
           {saveMsg && <p className="mt-2 text-sm">{saveMsg}</p>}

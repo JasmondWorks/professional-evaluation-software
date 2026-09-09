@@ -15,7 +15,8 @@ import {
    Setting2,
    Data2,
    Verify,
-   Lock1
+   Lock1,
+   MessageQuestion
 } from 'iconsax-react';
 import jwt from 'jsonwebtoken'
 import Link from 'next/link';
@@ -185,6 +186,20 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
                </div>
             ))}
          </nav>
+
+         {/* The guide sits below the nav rather than in it: it is reference
+             material for every role, and it is public, so it is not one of the
+             role-gated destinations above. */}
+         <div className="px-3 pb-2 shrink-0">
+            <Link
+               href="/help"
+               onClick={onNavigate}
+               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted hover:text-strong hover:bg-line/50 transition-colors"
+            >
+               <MessageQuestion size={20} />
+               User guide
+            </Link>
+         </div>
 
          {/* User footer */}
          {user.name && (

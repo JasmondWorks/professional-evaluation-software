@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "../_lib/authGuard";
+import { requireModel } from "../_lib/planGuard";
 import prisma from "../prisma.dev";
 
 export async function GET(req: NextRequest) {
@@ -20,6 +21,8 @@ export async function GET(req: NextRequest) {
     
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const plan = await requireModel(decoded, 'org-structure');
+    if (!plan.ok) return plan.response;
     
     const records = await prisma.org_structure_results.findMany({
       where: {

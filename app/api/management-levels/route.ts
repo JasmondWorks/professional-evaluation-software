@@ -12,11 +12,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { requireEntitlement } from '../_lib/planGuard';
 
 export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    const plan = await requireEntitlement(auth.user, 'org-structure.management-levels');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
     if (!org) {

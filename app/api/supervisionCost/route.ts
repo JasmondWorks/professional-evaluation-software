@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
 
 // Supervision Cost (Eq. 8.35) — persists the K* that MINIMISES the wasted
 // man-hour cost D_ij, alongside the queueing intermediates used to derive it.
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    // Supervision cost belongs to the redundancy model.
+    const plan = await requireEntitlement(auth.user, 'redundancy');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user?.org;
     if (!org) {
@@ -85,6 +89,9 @@ export async function GET(req: NextRequest) {
   try {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
+    // Supervision cost belongs to the redundancy model.
+    const plan = await requireEntitlement(auth.user, 'redundancy');
+    if (!plan.ok) return plan.response;
 
     const org = auth.user?.org;
     if (!org) {
