@@ -9,9 +9,27 @@ import { requireModel } from "../_lib/planGuard";
 
 export async function POST(req: NextRequest) {
   try {
+    // This handler took no token at all and read `org` from the body, so an
+    // unauthenticated caller could write runs into any organization's
+    // utilization history — and that history feeds the staff prediction, so a
+    // planted row bends every extrapolation drawn through it afterwards. The
+    // org now comes from the verified token, as it does in the GET and PATCH
+    // below; anything the body claims about it is ignored.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
+
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    if (!org) {
+      return NextResponse.json(
+        { error: "This account is not attached to an organization" },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json();
-    const { org, a_ij, lambda, mu, rho, p0, lbar, kmin, kmax, kstar, hstar } =
-      body;
+    const { a_ij, lambda, mu, rho, p0, lbar, kmin, kmax, kstar, hstar } = body;
 
     // The rest of the parameter set, stored so the management levels above can
     // be tested against the same boundary conditions. Optional: a run made from
@@ -32,7 +50,6 @@ export async function POST(req: NextRequest) {
     };
 
     if (
-      !org ||
       a_ij == null ||
       lambda == null ||
       mu == null ||

@@ -10,8 +10,7 @@ import { TableColumn } from "@/app/components/ui/Table";
 import DataTable from "@/app/components/ui/DataTable";
 import RoleSelect from "@/app/components/ui/RoleSelect";
 import Badge, { type BadgeTone } from "@/app/components/ui/Badge";
-import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
-import { orgTerms } from "@/app/lib/orgTerms";
+import { PRESET_ROLES, presetRoleLabel } from "@/app/components/utils/roles";
 import { jwtDecode } from "jwt-decode";
 import { apiFetch } from "@/app/utils/apiFetch";
 import BulkUploadModal from "@/app/components/bulk-upload/BulkUploadModal";
@@ -22,16 +21,8 @@ import { employeeUploadSpec } from "@/app/lib/bulk-upload/specs/employees";
 // Custom roles are appended below at runtime.
 // The unit-head label adapts to the org sector (academic → Dean, else → Manager),
 // so build options from the org's category rather than a fixed label map.
-const buildAssignOptions = (category?: string | null) => {
-  const head = orgTerms(category).head; // "Dean" | "Manager"
-  return PRESET_ROLES.map((r) => ({
-    value: r,
-    label:
-      r === "unit-head"
-        ? `Faculty / Division Head (${head})`
-        : PRESET_ROLE_LABELS[r],
-  }));
-};
+const buildAssignOptions = (category?: string | null) =>
+  PRESET_ROLES.map((r) => ({ value: r, label: presetRoleLabel(r, category) }));
 // A staff member counts as "assigned" once they hold one of these management roles.
 const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
 

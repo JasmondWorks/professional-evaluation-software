@@ -7,6 +7,8 @@ import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
 import { planMaintenance } from "@/app/lib/maintenance/schedule";
 import { mayRunMaintenance, isOrgAdmin } from "@/app/lib/maintenance/team";
+import { presetRoleLabel } from "@/app/components/utils/roles";
+import { useOrgCategory } from "@/app/lib/useOrgCategory";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
 import { getAccessToken } from "@/app/utils/auth";
 import { jwtDecode } from "jwt-decode";
@@ -52,6 +54,9 @@ export default function MaintenanceDetail({ params }: HomeProps) {
   const { user } = useCurrentUser();
   const mayRun = mayRunMaintenance(user?.role);
   const admin = isOrgAdmin(user?.role);
+  // "Faculty / Division Head" is a university title; in a company the same role
+  // is simply the unit head, and it is the one that runs this model.
+  const unitHeadLabel = presetRoleLabel("unit-head", useOrgCategory());
   const [heads, setHeads] = useState<{ name: string; dept: string | null }[] | null>(null);
   // The register entry this page is about. The URL carries the description,
   // which is editable text; a run belongs to the machine on the register, so the
@@ -244,7 +249,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                   <strong>
                     No maintenance head has been appointed yet, so nobody can run it.
                   </strong>{" "}
-                  Add an employee with the role “Faculty / Division Head” in the employee
+                  Add an employee with the role “{unitHeadLabel}” in the employee
                   database, and the model becomes theirs to use.
                 </>
               )}

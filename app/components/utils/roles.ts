@@ -9,6 +9,8 @@
 
 // System preset roles that drive role-based UI. A custom role must map onto one
 // of these. "super-admin" is a platform tier (not assignable as a base role).
+import { orgTerms } from '@/app/lib/orgTerms';
+
 export const PRESET_ROLES = [
   'admin',
   'hod',
@@ -41,6 +43,34 @@ export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   'employee-w': 'Employee (baseline)',
   auditor: 'Auditor',
 };
+
+/** The label for a preset, in the words the organization actually uses.
+ *
+ *  Only `unit-head` differs by institution type, and it differs twice over. In
+ *  a university it is the Dean above the HODs. In a company or public body it
+ *  is the head of a unit — and it is also the role that runs the MAINTENANCE
+ *  MODEL, which the organization admin is barred from executing (the client,
+ *  1 September: maintenance happens at the production floor). An admin looking
+ *  for the person who runs maintenance was being shown "Faculty / Division
+ *  Head", which reads like a university title and describes none of that.
+ *
+ *  Pass the org's product category — see orgTerms for the Faculty/Division and
+ *  Dean/Manager pairing this builds on. */
+export function presetRoleLabel(role: PresetRole, category?: string | null): string {
+  if (role !== 'unit-head') return PRESET_ROLE_LABELS[role];
+
+  const { unit, head } = orgTerms(category);
+  return `${unit} Head (${head})`;
+}
+
+/** What a role carries beyond its name, for the places that assign one. Only
+ *  the responsibilities a person would not guess from the title. */
+export function presetRoleNote(role: PresetRole): string | null {
+  if (role === 'unit-head') {
+    return 'Also runs the maintenance model, which the organization admin cannot execute.';
+  }
+  return null;
+}
 
 // All roles the app special-cases by name (presets + platform super-admin).
 export const KNOWN_ROLES = ['super-admin', ...PRESET_ROLES] as const;

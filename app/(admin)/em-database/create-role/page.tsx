@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import jwt from "jsonwebtoken";
 import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
-import { PRESET_ROLES, PRESET_ROLE_LABELS } from "@/app/components/utils/roles";
+import { PRESET_ROLES, presetRoleLabel } from "@/app/components/utils/roles";
+import { useOrgCategory } from "@/app/lib/useOrgCategory";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink } from '@/app/components/ui';
 
 export default function CreateRole() {
+  // Preset names read differently by institution type — see presetRoleLabel.
+  const orgCategory = useOrgCategory();
   // base_role defaults to the baseline preset so the role is always mappable.
   const [formData, setFormData] = useState<Record<string, any>>({
     base_role: "employee-w",
@@ -142,7 +145,7 @@ export default function CreateRole() {
                 >
                   {PRESET_ROLES.map((r) => (
                     <option key={r} value={r}>
-                      {PRESET_ROLE_LABELS[r]}
+                      {presetRoleLabel(r, orgCategory)}
                     </option>
                   ))}
                 </select>

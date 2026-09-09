@@ -278,8 +278,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: "p3-unithead",
     level: "sub",
     roles: ["unit-head"],
-    title: "3.4 Faculty or Division Head",
-    html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.4 Faculty / Division Head</h3>
+    title: "3.4 Faculty, Division or Unit Head",
+    html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.4 Faculty, Division or Unit Head</h3>
+      <p style="font-size:15px;line-height:1.7;color:var(--text-strong-secondary);margin:0 0 16px;max-width:62ch">One role, named for your institution. A university calls this person the Dean of a Faculty; a company or public body calls them the head of a Division or Unit. PES stores them the same way and shows the name your organization uses.</p>
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you can see</div>
@@ -287,7 +288,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you must do</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Approve appraisals that have been reviewed by the HOD, before they go to Establishment. Counter-score performance results for the departments under you.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Approve appraisals that have been reviewed by the HOD, before they go to Establishment. Counter-score performance results for the departments under you. <strong style="font-weight:600">You also run the maintenance model</strong> — see Part 7.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What is waiting on you</div>
@@ -295,7 +296,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you cannot do, and why</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">You cannot skip the HOD's review, and you cannot run the evaluation or release results. Faculty-level stress figures are means of departmental means — you cannot recompute them from individuals.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">You cannot skip the HOD's review, and you cannot run the evaluation or release results — with one exception: the maintenance model is yours to run, and the organization admin's to stay out of. Faculty-level stress figures are means of departmental means — you cannot recompute them from individuals.</p>
         </div>
       </div>`,
   },
@@ -599,6 +600,15 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 7</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 12px">Maintenance model, work sampling and surveys</h2>
       <p style="font-size:16px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 20px;max-width:66ch">The Maintenance Model tab appears only when your organization has the maintenance model enabled. It predicts maintenance intervals for equipment, and keeps a run history and a maintenance plan.</p>
+      <div style="background:var(--brand-50);border-radius:10px;padding:16px;margin:0 0 20px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 6px">Who runs it</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">The unit head — the same role a university calls the Dean and a company calls the head of a Division or Unit. This is the one model the organization administrator <strong style="font-weight:600">cannot</strong> execute, deliberately: maintenance happens on the production floor, and monitoring machines needs someone close to them. Anyone who is not an admin may conduct and save a run, so a technician holding a custom role is not locked out.</p>
+        <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:12px 0 0">If no unit head has been appointed, the page says so rather than leaving somebody hunting for a button that is not there. Appointing one is the admin's job, in the Employee Database.</p>
+      </div>
+      <div style="background:var(--surface-card);border-left:3px solid var(--warning-600);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 20px">
+        <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--warning-900);margin:0 0 4px">How you receive the role</div>
+        <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Your administrator assigns it in the Employee Database and your credentials arrive by email. There is no separate step to accept a role — once it is assigned, the Maintenance Model tab appears at your next sign-in.</p>
+      </div>
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:15px;font-weight:600;margin:0 0 6px">Work sampling</div>

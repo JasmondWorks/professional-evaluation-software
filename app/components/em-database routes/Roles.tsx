@@ -11,10 +11,12 @@ import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import {
   PRESET_ROLES,
   PRESET_ROLE_LABELS,
+  presetRoleLabel,
   PERMISSION_TREE,
   PermissionKey,
 } from "@/app/components/utils/roles";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { useOrgCategory } from '@/app/lib/useOrgCategory';
 
 type Role = {
   id: string | number;
@@ -29,6 +31,8 @@ const roleLabel = (name: string) =>
   isPreset(name) ? PRESET_ROLE_LABELS[name as keyof typeof PRESET_ROLE_LABELS] : name;
 
 export default function Roles() {
+  // Role names differ by institution type — see presetRoleLabel.
+  const orgCategory = useOrgCategory();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -406,7 +410,7 @@ export default function Roles() {
                   className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                 >
                   {PRESET_ROLES.map((r) => (
-                    <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
+                    <option key={r} value={r}>{presetRoleLabel(r, orgCategory)}</option>
                   ))}
                 </select>
               </div>
@@ -502,7 +506,7 @@ export default function Roles() {
                 className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
               >
                 {PRESET_ROLES.map((r) => (
-                  <option key={r} value={r}>{PRESET_ROLE_LABELS[r]}</option>
+                  <option key={r} value={r}>{presetRoleLabel(r, orgCategory)}</option>
                 ))}
               </select>
               <p className="text-xs text-muted mt-1">
