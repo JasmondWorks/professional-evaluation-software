@@ -25,7 +25,11 @@ export type Plan = {
   interval: 'YEAR';
   intervalCount: number;
   /** The PayPal billing plan this maps to. Null until it is created in the
-   *  PayPal catalogue for this institution type. */
+   *  PayPal catalogue for this institution type — which is exactly what a
+   *  missing price means today, so null here and price 0 above travel
+   *  together. These are SANDBOX ids: PAYPAL_SANDBOX=true in every
+   *  environment, and going live means creating the catalogue again against
+   *  live credentials and replacing all of them. */
   paypalPlanId: string | null;
   /** Evaluation models unlocked, matching the checkmark lists on the
    *  WordPress product page. These are the keys used by org.evaluation. */
@@ -35,6 +39,10 @@ export type Plan = {
 export type Subscription = {
   id: string;
   institutionType: InstitutionType;
+  /** The PayPal catalogue product these plans hang off. A billing plan cannot
+   *  be created without one, so it is recorded here rather than rediscovered.
+   *  SANDBOX ids — the live catalogue is a separate set. */
+  paypalProductId: string | null;
   plans: Plan[];
 };
 
@@ -44,8 +52,9 @@ export const CATALOG: Subscription[] = [
   {
     id: 'sub_academic',
     institutionType: 'ACADEMIC',
+    paypalProductId: 'PROD-25456155FY6547134',
     plans: [
-      { name: 'BASIC', price: 3571, ...YEARLY, paypalPlanId: null, features: ['appraisal'] },
+      { name: 'BASIC', price: 3571, ...YEARLY, paypalPlanId: 'P-8CA45489CF404270LNKQYXYQ', features: ['appraisal'] },
       { name: 'STANDARD', price: 0, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance'] },
       { name: 'PREMIUM', price: 0, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance', 'stress', 'motivation'] },
     ],
@@ -53,18 +62,20 @@ export const CATALOG: Subscription[] = [
   {
     id: 'sub_company',
     institutionType: 'COMPANY',
+    paypalProductId: 'PROD-8SS07929LW2250519',
     plans: [
-      { name: 'BASIC', price: 5357, ...YEARLY, paypalPlanId: null, features: ['appraisal'] },
-      { name: 'STANDARD', price: 11429, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance'] },
-      { name: 'PREMIUM', price: 22857, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance', 'stress', 'motivation'] },
+      { name: 'BASIC', price: 5357, ...YEARLY, paypalPlanId: 'P-1JF58806V3116300LNKQYXYY', features: ['appraisal'] },
+      { name: 'STANDARD', price: 11429, ...YEARLY, paypalPlanId: 'P-9CK00926DY0827308NKQYXZA', features: ['appraisal', 'performance'] },
+      { name: 'PREMIUM', price: 22857, ...YEARLY, paypalPlanId: 'P-1M005614YK583653VNKQYXZI', features: ['appraisal', 'performance', 'stress', 'motivation'] },
     ],
   },
   {
     id: 'sub_public',
     institutionType: 'PUBLIC',
+    paypalProductId: 'PROD-5FS316841V737145L',
     plans: [
-      { name: 'BASIC', price: 4286, ...YEARLY, paypalPlanId: null, features: ['appraisal'] },
-      { name: 'STANDARD', price: 10000, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance'] },
+      { name: 'BASIC', price: 4286, ...YEARLY, paypalPlanId: 'P-9GS4991057671020GNKQYXZY', features: ['appraisal'] },
+      { name: 'STANDARD', price: 10000, ...YEARLY, paypalPlanId: 'P-9KR58657E9745801RNKQYXZY', features: ['appraisal', 'performance'] },
       { name: 'PREMIUM', price: 0, ...YEARLY, paypalPlanId: null, features: ['appraisal', 'performance', 'stress', 'motivation'] },
     ],
   },
