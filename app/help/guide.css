@@ -89,3 +89,46 @@
   .pes-guide a[href^="#"]::after { content: " (" attr(href) ")"; color: #555; font-size: 10pt; }
   .pes-guide [data-pipe-stage] { border: 1pt solid #000 !important; background: #fff !important; }
 }
+
+/* ---- Vertical rhythm -------------------------------------------------
+ *
+ * Proximity does the grouping: how far apart two things sit is what says
+ * whether they belong together. The gap between two sections is the bottom
+ * margin of the first plus the top cushion of the second, which gives three
+ * clearly different distances:
+ *
+ *   part  → part   104px  a new subject, and it should not touch the last
+ *                         card of the one before it
+ *   group → its subsections  32px  they are its contents, so they stay close
+ *   sub   → sub     56px  siblings: further than the lines inside one,
+ *                         nearer than two parts
+ *   last sub → part  88px  still reads as a part break
+ *
+ * The transcription from the design bundle dropped these margins entirely,
+ * so every part ran straight into the one before it with only the eyebrow
+ * between them. These are the bundle's own three distances, widened.
+ */
+.pes-guide [data-sec] { scroll-margin-top: 24px; }
+
+.pes-guide [data-level="part"] { margin: 0 0 72px; padding-top: 32px; }
+.pes-guide [data-level="group"] { margin: 0 0 32px; padding-top: 32px; }
+.pes-guide [data-level="sub"] { margin: 0 0 56px; padding-top: 0; }
+
+/* The first section needs no cushion — the role filter above it carries its
+ * own margin. */
+.pes-guide [data-sec]:first-of-type { padding-top: 0; }
+
+/* A heading belongs to what follows it, never to what precedes it, so the
+ * space above it is always the larger of the two. */
+.pes-guide [data-sec] h3 { margin-top: 40px; }
+.pes-guide [data-sec] h3:first-child { margin-top: 0; }
+
+/* Cards and callouts stand off the paragraph before them. */
+.pes-guide [data-sec] > div + div,
+.pes-guide [data-sec] > div + table,
+.pes-guide [data-sec] > table + div { margin-top: 20px; }
+
+@media print {
+  .pes-guide [data-level="part"],
+  .pes-guide [data-level="group"] { padding-top: 0; }
+}

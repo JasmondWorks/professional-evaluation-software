@@ -11,8 +11,23 @@
 // it is generated from the billing catalogue and the entitlement matrix so the
 // published table cannot disagree with what the software enforces.
 
+/** How a section sits in the document, which is what decides the space around
+ *  it. Related things are close, unrelated things are far apart:
+ *
+ *    part  — a top-level part. The largest gap, so a new part reads as a new
+ *            subject rather than as more of the previous one.
+ *    group — a part that opens a run of subsections. Its own gap is small,
+ *            because what follows belongs to it.
+ *    sub   — a subsection inside such a group. Held closer than a part.
+ *
+ *  These are the design bundle's own three values, widened: the transcription
+ *  dropped the section margins entirely, and parts ran straight into each
+ *  other with only the eyebrow to separate them. */
+export type SectionLevel = 'part' | 'group' | 'sub';
+
 export type GuideSection = {
   id: string;
+  level: SectionLevel;
   /** Roles this section applies to; ["all"] shows for every filter. */
   roles: string[];
   /** The label used in the contents list. */
@@ -26,6 +41,7 @@ export type GuideSection = {
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: "p0",
+    level: "part",
     roles: ["all"],
     title: "Start here \u2014 what PES does and how work flows",
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 0</div>
@@ -64,6 +80,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p1",
+    level: "part",
     roles: ["admin", "super-admin"],
     title: "Setting up an organization \u2014 plan, payment, signup",
     printBreak: true,
@@ -90,15 +107,18 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <div data-editor-note style="border:1px dashed var(--border-input);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0 0 8px"><strong style="font-weight:600">Screenshot placeholder —</strong> the Pricing screen showing the three product categories and the three plan tiers, with one plan selected.</div>`,
   },
   {
-    id: 'plans',
-    roles: ['all'],
-    title: 'Plans — what each institution type and tier includes',
+    id: "plans",
+    level: "part",
+    roles: ["all"],
+    title: "Plans — what each institution type and tier includes",
     html: null,
   },
   {
     id: "p2",
+    level: "part",
     roles: ["admin", "super-admin"],
-    title: "Building your organization \u2014 employees, roles, permissions, hierarchy, model access",
+    title:
+      "Building your organization \u2014 employees, roles, permissions, hierarchy, model access",
     printBreak: true,
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 2 · Admin</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 12px">Building your organization inside PES</h2>
@@ -157,6 +177,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3",
+    level: "group",
     roles: ["all"],
     title: "Your role, day to day",
     printBreak: true,
@@ -166,6 +187,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-employee",
+    level: "sub",
     roles: ["employee"],
     title: "3.1 Employee \u2014 academic and non-academic staff",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.1 Employee — academic and non-academic</h3>
@@ -193,6 +215,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-deptadmin",
+    level: "sub",
     roles: ["dept-admin"],
     title: "3.2 Departmental Administrator \u2014 Forms 8 and 9",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.2 Departmental Administrator</h3>
@@ -220,6 +243,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-hod",
+    level: "sub",
     roles: ["hod"],
     title: "3.3 Department Lead HOD \u2014 counter-scoring and approval",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.3 Department Lead (HOD)</h3>
@@ -244,6 +268,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-unithead",
+    level: "sub",
     roles: ["unit-head"],
     title: "3.4 Faculty or Division Head",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.4 Faculty / Division Head</h3>
@@ -268,6 +293,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-auditor",
+    level: "sub",
     roles: ["auditor"],
     title: "3.5 Auditor \u2014 contested appraisals",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.5 Auditor</h3>
@@ -292,6 +318,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-admin",
+    level: "sub",
     roles: ["admin"],
     title: "3.6 Organization Admin \u2014 Establishment, Personnel, HR",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.6 Organization Admin</h3>
@@ -319,6 +346,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p3-superadmin",
+    level: "sub",
     roles: ["super-admin"],
     title: "3.7 Super Admin \u2014 platform tier",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.7 Super Admin</h3>
@@ -343,6 +371,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p4",
+    level: "group",
     roles: ["all"],
     title: "The evaluation cycles",
     printBreak: true,
@@ -352,6 +381,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p4-appraisal",
+    level: "sub",
     roles: ["all"],
     title: "4.1 Appraisal \u2014 the seven stages",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">4.1 Appraisal</h3>
@@ -407,6 +437,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p4-performance",
+    level: "sub",
     roles: ["all"],
     title: "4.2 Performance \u2014 five stages and the classification table",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">4.2 Performance</h3>
@@ -446,6 +477,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p4-stress",
+    level: "sub",
     roles: ["all"],
     title: "4.3 Stress \u2014 cycles and the two-level aggregation rule",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">4.3 Stress</h3>
@@ -462,6 +494,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p4-motivation",
+    level: "sub",
     roles: ["all"],
     title: "4.4 Motivation",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">4.4 Motivation</h3>
@@ -470,8 +503,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p5",
+    level: "part",
     roles: ["all"],
-    title: "The mathematical models \u2014 fourteen models and their prerequisites",
+    title:
+      "The mathematical models \u2014 fourteen models and their prerequisites",
     printBreak: true,
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 5</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 12px">The mathematical models</h2>
@@ -522,8 +557,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p6",
+    level: "part",
     roles: ["all"],
-    title: "Goals, recognition and records \u2014 awards, Hall of Fame, Book of Records",
+    title:
+      "Goals, recognition and records \u2014 awards, Hall of Fame, Book of Records",
     printBreak: true,
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 6</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 12px">Goals, recognition and records</h2>
@@ -548,6 +585,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p7",
+    level: "part",
     roles: ["all"],
     title: "Maintenance model, work sampling and surveys",
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 7</div>
@@ -566,6 +604,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p8",
+    level: "part",
     roles: ["all"],
     title: "Account and billing \u2014 profile, password, subscription",
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 8</div>
@@ -583,8 +622,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "p9",
+    level: "part",
     roles: ["all"],
-    title: "Troubleshooting \u2014 a tab is missing, a model is greyed out, my appraisal is stuck",
+    title:
+      "Troubleshooting \u2014 a tab is missing, a model is greyed out, my appraisal is stuck",
     printBreak: true,
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Part 9</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 20px">Troubleshooting</h2>
@@ -624,6 +665,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "appA",
+    level: "part",
     roles: ["all"],
     title: "Appendix A \u2014 role and permission reference, navigation table",
     printBreak: true,
@@ -674,8 +716,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "appB",
+    level: "part",
     roles: ["all"],
-    title: "Appendix B \u2014 glossary: H index, lambda, mu, RTP target, tolerance band",
+    title:
+      "Appendix B \u2014 glossary: H index, lambda, mu, RTP target, tolerance band",
     printBreak: true,
     html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Appendix B</div>
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 16px">Glossary</h2>
@@ -694,6 +738,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: "appC",
+    level: "part",
     roles: ["all"],
     title: "Appendix C \u2014 to confirm with the product team",
     printBreak: true,

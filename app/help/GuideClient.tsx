@@ -346,9 +346,9 @@ export default function GuideClient() {
             const props = {
               id: s.id,
               'data-sec': s.id,
+              'data-level': s.level,
               'data-dim': dimmed(s) ? 'true' : 'false',
               'data-print-break': s.printBreak ? '' : undefined,
-              style: { scrollMarginTop: 24 },
             };
             return s.html === null ? (
               <section key={s.id} {...props}>
