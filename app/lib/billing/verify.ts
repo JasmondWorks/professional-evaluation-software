@@ -37,6 +37,13 @@ export type VerifiedPayment = {
 export type VerificationFailure = { ok: false; reason: string };
 export type VerificationResult = { ok: true; payment: VerifiedPayment } | VerificationFailure;
 
+/** How the money was taken. The client, 9 September: the app is bought once
+ *  from the website, and everything after that renews yearly — so a reference
+ *  arriving at signup can be either kind and we cannot know which from the
+ *  string alone. The maintenance model is the other one-time payment, handled
+ *  separately in /api/maintenance/verify. */
+export type PaymentKind = 'subscription' | 'order';
+
 async function accessToken(): Promise<string> {
   const id = process.env.PAYPAL_CLIENT_ID;
   const secret = process.env.PAYPAL_SECRET;
@@ -125,6 +132,101 @@ export async function verifySubscription(
       payerEmail: sub.subscriber?.email_address ?? null,
     },
   };
+}
+
+/** Verify a one-time PayPal order — the website's purchase of the app.
+ *
+ *  An order is not a subscription: it has no plan id to compare against and no
+ *  next billing date, so the two checks a subscription gets are replaced by
+ *  one on the amount, and access runs for the catalogue interval from the day
+ *  the money landed. */
+export async function verifyOrder(
+  orderId: string,
+  claimed: { institutionType: InstitutionType; plan: PlanType },
+): Promise<VerificationResult> {
+  const plan = findPlan(claimed.institutionType, claimed.plan);
+  if (!plan) return { ok: false, reason: 'That plan does not exist for this institution type.' };
+
+  let order: any;
+  try {
+    const token = await accessToken();
+    const resp = await fetch(
+      `${PAYPAL_BASE}/v2/checkout/orders/${encodeURIComponent(orderId)}`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' },
+    );
+    order = await resp.json();
+    if (!resp.ok) return { ok: false, reason: 'PayPal does not recognise that payment reference.' };
+  } catch (err: any) {
+    return { ok: false, reason: err.message ?? 'Could not reach PayPal to confirm the payment.' };
+  }
+
+  // Only a completed order is money in the account. APPROVED means the buyer
+  // clicked through but the capture never happened.
+  if (order.status !== 'COMPLETED') {
+    return {
+      ok: false,
+      reason: `That payment is ${String(order.status).toLowerCase()}, not completed.`,
+    };
+  }
+
+  const capture = order.purchase_units?.[0]?.payments?.captures?.[0];
+  const value = capture?.amount?.value ?? order.purchase_units?.[0]?.amount?.value;
+  const amount = value ? Math.round(parseFloat(value) * 100) : 0;
+
+  // The amount must cover the plan being claimed, or a Basic payment could be
+  // presented at signup as Premium. Only checked when the plan has a price:
+  // three tiers are still unpriced, and comparing against 0 would wave
+  // anything through.
+  if (plan.price > 0 && amount + 1 < plan.price) {
+    return { ok: false, reason: 'That payment does not cover the plan being claimed.' };
+  }
+
+  const paidAt = capture?.create_time
+    ? new Date(capture.create_time)
+    : order.create_time
+      ? new Date(order.create_time)
+      : new Date();
+
+  const expiresAt = addInterval(paidAt, plan.interval, plan.intervalCount);
+  if (expiresAt.getTime() <= Date.now()) {
+    return { ok: false, reason: 'That payment has lapsed. Please renew before signing up.' };
+  }
+
+  return {
+    ok: true,
+    payment: {
+      reference: order.id,
+      institutionType: claimed.institutionType,
+      plan: claimed.plan,
+      amount: amount || plan.price,
+      paidAt,
+      expiresAt,
+      payerEmail: order.payer?.email_address ?? null,
+    },
+  };
+}
+
+/** Verify a reference of either kind.
+ *
+ *  Tried as a subscription first, then as an order. PayPal ids do not announce
+ *  which they are, and the buyer should not have to tell us how they were
+ *  charged — they followed a link from the website and typed nothing.
+ *
+ *  The subscription's failure is the one reported when both fail, unless it
+ *  simply did not recognise the id: "does not recognise" from the
+ *  subscriptions endpoint says nothing useful about an order. */
+export async function verifyPayment(
+  reference: string,
+  claimed: { institutionType: InstitutionType; plan: PlanType },
+): Promise<VerificationResult> {
+  const asSubscription = await verifySubscription(reference, claimed);
+  if (asSubscription.ok) return asSubscription;
+
+  const unrecognised = asSubscription.reason.includes('does not recognise');
+  const asOrder = await verifyOrder(reference, claimed);
+  if (asOrder.ok) return asOrder;
+
+  return unrecognised ? asOrder : asSubscription;
 }
 
 export function addInterval(from: Date, unit: 'YEAR' | 'MONTH', count: number): Date {

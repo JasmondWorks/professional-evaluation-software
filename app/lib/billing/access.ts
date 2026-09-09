@@ -18,6 +18,7 @@ import {
   type InstitutionType,
   type PlanType,
 } from './catalog';
+import { orgSubscription } from './subscription';
 import {
   ENTITLEMENTS,
   UNGOVERNED_MODELS,
@@ -36,6 +37,18 @@ export class EntitlementError extends Error {
   }
 }
 
+/** Distinct from "your plan does not include this": the plan may well include
+ *  it, and renewing restores it. 402 rather than 403 so the client can tell a
+ *  billing problem from a permission one without matching on the message. */
+export class SubscriptionExpiredError extends EntitlementError {
+  constructor() {
+    super(
+      "Your organization's payment plan has expired. Ask your administrator to renew it.",
+      402,
+    );
+  }
+}
+
 /** What a route knows about the caller. The category and plan travel in the
  *  token (productCategory / productPlan); both are optional because a token
  *  signed before those claims existed is still in circulation, and because the
@@ -50,6 +63,10 @@ export type PlanViewer = {
 export type ResolvedPlan = {
   institution: InstitutionType;
   plan: PlanType;
+  /** False once the subscription has lapsed. Every key is withdrawn, so a
+   *  lapsed organization holds nothing regardless of what it bought. */
+  subscriptionActive: boolean;
+  expiresAt: Date | null;
   /** Every key held: the tier's, plus on-demand grants, plus per-org overrides. */
   keys: Set<EntitlementKey>;
   /** True when the plan had to be guessed because the stored value was not one
@@ -107,6 +124,22 @@ async function identify(viewer: PlanViewer): Promise<{
 /** Everything this organization may use right now. */
 export async function resolveEntitlements(viewer: PlanViewer): Promise<ResolvedPlan> {
   const { institution, plan, maintenanceGranted, degraded } = await identify(viewer);
+  const subscription = await orgSubscription(viewer.org);
+
+  // A lapsed subscription is not a smaller plan, it is no plan. Returning an
+  // empty set here means every model route already guarded refuses without
+  // needing its own expiry check, and the UI renders nothing it would then be
+  // refused for.
+  if (!subscription.active) {
+    return {
+      institution,
+      plan,
+      keys: new Set<EntitlementKey>(),
+      degraded,
+      subscriptionActive: false,
+      expiresAt: subscription.expiresAt,
+    };
+  }
 
   const keys = new Set<EntitlementKey>(planEntitlements(institution, plan));
 
@@ -130,13 +163,25 @@ export async function resolveEntitlements(viewer: PlanViewer): Promise<ResolvedP
     else keys.delete(o.entitlement_key);
   }
 
-  return { institution, plan, keys, degraded };
+  return {
+    institution,
+    plan,
+    keys,
+    degraded,
+    subscriptionActive: true,
+    expiresAt: subscription.expiresAt,
+  };
 }
 
 /** The models the plan opens. A model opens when any one of its entitlements is
  *  held, because a tier often buys some methods of a model and not others —
  *  the page is reachable and the method is gated inside it. */
 export function modelsFor(keys: Set<EntitlementKey>): ModelKey[] {
+  // An empty key set means the subscription has lapsed, and the models the
+  // product plan does not govern lapse with it — they were never free, just
+  // not separately sold.
+  if (keys.size === 0) return [];
+
   const models = new Set<ModelKey>(UNGOVERNED_MODELS);
   for (const e of ENTITLEMENTS) {
     if (keys.has(e.key)) for (const m of e.models) models.add(m);
@@ -152,8 +197,9 @@ export async function entitledModels(viewer: PlanViewer): Promise<ModelKey[]> {
  *  for anything finer than a whole model — which stress index, which
  *  operational-staff method. */
 export async function assertEntitled(viewer: PlanViewer, key: EntitlementKey): Promise<void> {
-  const { keys } = await resolveEntitlements(viewer);
+  const { keys, subscriptionActive } = await resolveEntitlements(viewer);
   if (keys.has(key)) return;
+  if (!subscriptionActive) throw new SubscriptionExpiredError();
 
   const label = ENTITLEMENTS.find((e) => e.key === key)?.label ?? key;
   throw new EntitlementError(
@@ -163,8 +209,9 @@ export async function assertEntitled(viewer: PlanViewer, key: EntitlementKey): P
 
 /** Throw unless the plan opens this model at all. */
 export async function assertModelEntitled(viewer: PlanViewer, model: ModelKey): Promise<void> {
-  const { keys } = await resolveEntitlements(viewer);
+  const { keys, subscriptionActive } = await resolveEntitlements(viewer);
   if (modelsFor(keys).includes(model)) return;
+  if (!subscriptionActive) throw new SubscriptionExpiredError();
 
   throw new EntitlementError(
     `This model is not included in your organization's plan. Upgrade to use it.`,

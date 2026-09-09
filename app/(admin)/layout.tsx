@@ -13,6 +13,7 @@ import NotificationSent from "../components/modals/notification_sent";
 import RoleCreated from "../components/modals/role_created";
 import Viewgoal from "../components/modals/viewgoal";
 import Failure from "../components/modals/failure";
+import SubscriptionGate from "../components/SubscriptionGate";
 import { useState } from "react";
 
 export default function RootLayout({
@@ -48,7 +49,10 @@ export default function RootLayout({
             is_sidebar_active={is_sidebar_active}
             handleSideBar={handleSideBar}
           />
-          {children}
+          {/* Every signed-in page sits inside this. A lapsed subscription
+              closes the platform to every role, not just to the admin who can
+              renew it. */}
+          <SubscriptionGate>{children}</SubscriptionGate>
         </div>
       </div>
     </Provider>

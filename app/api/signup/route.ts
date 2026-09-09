@@ -7,7 +7,7 @@ import prisma from '../prisma.dev'
 import { randomUUID } from "crypto";
 import bcrypt from 'bcryptjs';
 import { findPlan, normalizeInstitution, normalizePlan, type InstitutionType, type PlanType } from '@/app/lib/billing/catalog';
-import { addInterval, verifySubscription, type VerifiedPayment } from '@/app/lib/billing/verify';
+import { addInterval, verifyPayment, type VerifiedPayment } from '@/app/lib/billing/verify';
 
 type reqInfo = {
   name: string
@@ -115,7 +115,7 @@ async function confirmPayment(
   const ref = typeof reference === 'string' ? reference.trim() : '';
 
   if (ref) {
-    const result = await verifySubscription(ref, { institutionType, plan: planName });
+    const result = await verifyPayment(ref, { institutionType, plan: planName });
     if (result.ok) return result.payment;
     if (enforced) return { error: result.reason };
   } else if (enforced) {
