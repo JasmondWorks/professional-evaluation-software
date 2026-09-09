@@ -10,6 +10,14 @@
 // The one section that is NOT from the bundle is `plans`, in PlansSection.tsx:
 // it is generated from the billing catalogue and the entitlement matrix so the
 // published table cannot disagree with what the software enforces.
+//
+// Appendix C ("to confirm with the product team") is deliberately absent. It
+// was the design's list of open questions about the product, which is working
+// material for us and not something a customer should be reading — a guide
+// that publishes its own gaps undermines the fourteen parts that are settled.
+// The questions themselves still need answering; they went to the client
+// rather than to production. It is the last section in the bundle, so nothing
+// else moved when it was dropped.
 
 /** How a section sits in the document, which is what decides the space around
  *  it. Related things are close, unrelated things are far apart:
@@ -499,7 +507,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "4.4 Motivation",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">4.4 Motivation</h3>
       <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 12px;max-width:66ch">The motivation model measures and compares employee motivation levels, and feeds the recognition surfaces described in Part 6 — motivation schemes and motivation awards.</p>
-      <div data-editor-note style="border:1px dashed var(--border-input);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-secondary)"><strong style="font-weight:600">Editor's note —</strong> the stage-by-stage workflow for motivation, if it has one distinct from ordinary model runs, is not documented in the source brief. Listed in Appendix C.</div>`,
+      <div data-editor-note style="border:1px dashed var(--border-input);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-secondary)"><strong style="font-weight:600">Editor's note —</strong> the stage-by-stage workflow for motivation, if it has one distinct from ordinary model runs, is not documented in the source brief.</div>`,
   },
   {
     id: "p5",
@@ -553,7 +561,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         </table>
       </div>
 
-      <div data-editor-note style="border:1px dashed var(--border-input);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-secondary)"><strong style="font-weight:600">Editor's note —</strong> several models are currently write-only: a run is saved, but there is not yet a screen to retrieve or report on the results. This guide does not name which, because the list was not supplied. See Appendix C.</div>`,
+      <div data-editor-note style="border:1px dashed var(--border-input);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-secondary)"><strong style="font-weight:600">Editor's note —</strong> several models are currently write-only: a run is saved, but there is not yet a screen to retrieve or report on the results. This guide does not name which, because the list was not supplied.</div>`,
   },
   {
     id: "p6",
@@ -725,41 +733,15 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 16px">Glossary</h2>
       <dl style="margin:0;background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:4px 18px">
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">H index</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The personnel-utilization result, computed from lambda and mu. Required input for the organization structure model.</dd></div>
-        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Lambda (λ)</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">Arrival-side input to personnel utilization, from queuing theory. <em>Definition to confirm — see Appendix C.</em></dd></div>
-        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Mu (μ)</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">Service-side input to personnel utilization, from queuing theory. <em>Definition to confirm — see Appendix C.</em></dd></div>
+        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Lambda (λ)</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">Arrival-side input to personnel utilization, from queuing theory. <em>Definition to be confirmed.</em></dd></div>
+        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Mu (μ)</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">Service-side input to personnel utilization, from queuing theory. <em>Definition to be confirmed.</em></dd></div>
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">RTP target</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The target the performance model scores against, across competence, integrity, compatibility and use of resources.</dd></div>
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Tolerance band</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">A band of 10 between a staff member's self-score and the head's counter-score. A wider gap escalates the disagreement, visible to the organization admin only.</dd></div>
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Cycle</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The period governing stress evaluation, set by an effective settings cycle. Data never mixes across cycles.</dd></div>
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Appraisal period</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The window the organization admin opens for an appraisal session, and closes by running the evaluation and releasing results.</dd></div>
-        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Forms 8 and 9</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The paper appraisal forms the departmental administrator records in PES and verifies against the originals. <em>Their exact contents are not documented here — see Appendix C.</em></dd></div>
+        <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Forms 8 and 9</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The paper appraisal forms the departmental administrator records in PES and verifies against the originals. <em>Their exact contents are not documented here.</em></dd></div>
         <div style="padding:14px 0;border-bottom:1px solid var(--border-divider)"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Management level</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">A rung in the reporting hierarchy. Level 1 is the first level above supervisory staff.</dd></div>
         <div style="padding:14px 0"><dt style="font-size:15px;font-weight:600;margin:0 0 3px">Base role</dt><dd style="margin:0;font-size:14px;line-height:1.6;color:var(--text-strong-secondary)">The preset a custom role is mapped onto. The base role decides access; the custom name is only a label.</dd></div>
       </dl>`,
-  },
-  {
-    id: "appC",
-    level: "part",
-    roles: ["all"],
-    title: "Appendix C \u2014 to confirm with the product team",
-    printBreak: true,
-    html: `<div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-600);margin:0 0 8px">Appendix C</div>
-      <h2 style="font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:0 0 12px">To confirm with the product team</h2>
-      <p style="font-size:16px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 20px;max-width:66ch">Everything below was not settled by the source material. Nothing in the body of this guide asserts an answer to any of it.</p>
-      <ol style="margin:0;padding:0 0 0 20px;font-size:15px;line-height:1.75;color:var(--text-strong-secondary)">
-        <li style="margin:0 0 10px">Which of the fourteen models are currently write-only — saved but with no retrieval or reporting screen. The guide describes no reporting for any model until this list exists.</li>
-        <li style="margin:0 0 10px">The exact contents of Forms 8 and 9, and what the departmental administrator checks line by line.</li>
-        <li style="margin:0 0 10px">Precise definitions of lambda and mu as PES collects them, and the units expected on the personnel-utilization form.</li>
-        <li style="margin:0 0 10px">Whether motivation has its own stage-by-stage workflow, or is only run as a model.</li>
-        <li style="margin:0 0 10px">Who draws the random staff sample that scores a head on performance, when it is drawn, and how large it is.</li>
-        <li style="margin:0 0 10px">Whether the Dean's approval and Establishment's approval are two distinct actions inside stage 6, or one.</li>
-        <li style="margin:0 0 10px">Whether performance entries can be contested by the head as well as by the member of staff.</li>
-        <li style="margin:0 0 10px">Whether an appraisal can be sent back to an earlier stage, and by whom.</li>
-        <li style="margin:0 0 10px">Who may create and administer motivation schemes and grant awards.</li>
-        <li style="margin:0 0 10px">Which roles can see Work Sampling and Surveys, and where they sit in the sidebar.</li>
-        <li style="margin:0 0 10px">Whether Maintenance Model requires a permission in addition to being enabled for the organization.</li>
-        <li style="margin:0 0 10px">Exactly which models each product category and plan combination includes.</li>
-        <li style="margin:0 0 10px">Whether the Employee (baseline) role can complete an appraisal, or only view.</li>
-        <li>Where a user goes for help inside the product — no support contact route was supplied, so none is stated anywhere in this guide.</li>
-      </ol>`,
   },
 ];
