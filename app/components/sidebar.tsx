@@ -22,6 +22,7 @@ import jwt from 'jsonwebtoken'
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from './useAuth';
+import { guideRoleFor } from '@/app/help/roles';
 import { LucideDatabase } from 'lucide-react';
 import { resolveEffectiveRole, PermissionKey } from './utils/roles';
 import { usePermissions } from './usePermissions';
@@ -35,7 +36,16 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
    const pathname = usePathname()
    // Initialize with default values to prevent undefined access
-   const [user, setUser] = useState({ name: '', role: '', org: '', logo: '', maintenance_model: false})
+   const [user, setUser] = useState({ name: '', role: '', org: '', logo: '', maintenance_model: false, category: '' })
+   // /help is public, so it works signed out too; these two only decide where
+   // it opens.
+   const helpHref = (() => {
+      const q = new URLSearchParams();
+      if (user.role) q.set('role', guideRoleFor(user.role));
+      if (user.category) q.set('type', user.category);
+      const qs = q.toString();
+      return qs ? `/help?${qs}` : '/help';
+   })();
    const { role } = useAuth(); // Optional, depending on if useAuth is faster
    const { can } = usePermissions();
    // Sidebar header shows the ORGANIZATION (name + logo). This is the footer
@@ -59,7 +69,8 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
                      role: decoded.role || '',
                      org: decoded.org || '',
                      logo: decoded.logo || '',
-                     maintenance_model: decoded.maintenance_model || false
+                     maintenance_model: decoded.maintenance_model || false,
+                     category: decoded.productCategory || decoded.category || ''
                   });
                }
             } catch (e) {
@@ -192,7 +203,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
              role-gated destinations above. */}
          <div className="px-3 pb-2 shrink-0">
             <Link
-               href="/help"
+               href={helpHref}
                onClick={onNavigate}
                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted hover:text-strong hover:bg-line/50 transition-colors"
             >

@@ -9,15 +9,19 @@
 // lives in the component rather than in the DOM.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { GUIDE_SECTIONS } from './sections';
 import PlansSection from './PlansSection';
+import { normalizeInstitution, type InstitutionType } from '@/app/lib/billing/catalog';
+import { guideRoleFor } from './roles';
+
 
 const ROLE_CHIPS: { key: string; label: string }[] = [
   { key: 'all', label: 'Everyone' },
   { key: 'employee', label: 'I am a member of staff' },
   { key: 'dept-admin', label: 'Departmental Administrator' },
   { key: 'hod', label: 'Head of Department' },
-  { key: 'unit-head', label: 'Faculty / Division Head' },
+  { key: 'unit-head', label: 'Faculty, Division or Unit Head' },
   { key: 'auditor', label: 'Auditor' },
   { key: 'admin', label: 'Organization Admin' },
   { key: 'super-admin', label: 'Super Admin' },
@@ -52,7 +56,20 @@ const buttonStyle: React.CSSProperties = {
 };
 
 export default function GuideClient() {
-  const [role, setRole] = useState('all');
+  // Arriving from inside the product, the link carries who is reading:
+  // /help?role=hod&type=academic opens on their part of the guide rather than
+  // at the top of a long document. Both are only a starting position — the
+  // chips still change it, and a hand-typed value that means nothing falls
+  // back to showing everything.
+  const params = useSearchParams();
+  const initialRole = useMemo(() => {
+    const asked = params.get('role');
+    if (!asked) return 'all';
+    return ROLE_CHIPS.some((c) => c.key === asked) ? asked : guideRoleFor(asked);
+  }, [params]);
+  const institution: InstitutionType | null = normalizeInstitution(params.get('type'));
+
+  const [role, setRole] = useState(initialRole);
   const [query, setQuery] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [active, setActive] = useState(GUIDE_SECTIONS[0]?.id ?? '');
@@ -352,7 +369,7 @@ export default function GuideClient() {
             };
             return s.html === null ? (
               <section key={s.id} {...props}>
-                <PlansSection />
+                <PlansSection institution={institution} />
               </section>
             ) : (
               <section key={s.id} {...props} dangerouslySetInnerHTML={{ __html: s.html }} />

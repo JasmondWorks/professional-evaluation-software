@@ -6,6 +6,7 @@
 // outside middleware.ts's matcher, so no role cookie is required.
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import GuideClient from './GuideClient';
 import './guide.css';
 
@@ -16,5 +17,12 @@ export const metadata: Metadata = {
 };
 
 export default function HelpPage() {
-  return <GuideClient />;
+  // The guide reads ?role= and ?type= to open on the reader's own part of it,
+  // which needs a Suspense boundary — without one, useSearchParams opts the
+  // whole page out of static rendering.
+  return (
+    <Suspense fallback={null}>
+      <GuideClient />
+    </Suspense>
+  );
 }

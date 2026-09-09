@@ -80,7 +80,13 @@ function modelLabel(e: Entitlement): string {
   return MODEL_CATALOG.find((m) => m.key === first)?.label ?? first;
 }
 
-function InstitutionTable({ institution }: { institution: InstitutionType }) {
+function InstitutionTable({
+  institution,
+  highlight,
+}: {
+  institution: InstitutionType;
+  highlight?: boolean;
+}) {
   const plans = CATALOG.find((s) => s.institutionType === institution)?.plans ?? [];
 
   return (
@@ -94,6 +100,23 @@ function InstitutionTable({ institution }: { institution: InstitutionType }) {
         }}
       >
         {INSTITUTION_LABEL[institution]} software
+        {highlight && (
+          <span
+            style={{
+              display: 'inline-block',
+              marginLeft: 8,
+              padding: '2px 8px',
+              borderRadius: 9999,
+              fontSize: 11,
+              fontWeight: 600,
+              verticalAlign: 'middle',
+              background: 'var(--brand-50)',
+              color: 'var(--brand-900)',
+            }}
+          >
+            Yours
+          </span>
+        )}
       </h3>
       <p
         style={{
@@ -223,7 +246,19 @@ function InstitutionTable({ institution }: { institution: InstitutionType }) {
   );
 }
 
-export default function PlansSection() {
+export default function PlansSection({
+  institution,
+}: {
+  /** When the reader arrived from inside the product, their own institution
+   *  type. Their product is shown first and the other two are still there —
+   *  they are what an upgrade or a different organization would buy, and
+   *  hiding them would make the page useless to anyone comparing. */
+  institution?: InstitutionType | null;
+}) {
+  const ordered = institution
+    ? [institution, ...INSTITUTION_TYPES.filter((i) => i !== institution)]
+    : [...INSTITUTION_TYPES];
+
   return (
     <>
       <h2
@@ -269,8 +304,22 @@ export default function PlansSection() {
         <a href="#p9">Troubleshooting</a> if something you expected is missing.
       </p>
 
-      {INSTITUTION_TYPES.map((i) => (
-        <InstitutionTable key={i} institution={i} />
+      {institution && (
+        <p
+          style={{
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: 'var(--text-secondary)',
+            margin: '0 0 8px',
+          }}
+        >
+          Your organization is on the {INSTITUTION_LABEL[institution].toLowerCase()} product,
+          shown first.
+        </p>
+      )}
+
+      {ordered.map((i) => (
+        <InstitutionTable key={i} institution={i} highlight={i === institution} />
       ))}
 
       <div
