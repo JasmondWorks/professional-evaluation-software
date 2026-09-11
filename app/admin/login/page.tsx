@@ -54,7 +54,7 @@ export default function Home() {
 
         document.cookie = `role=${res.role}; path=/; max-age=86400`;
 
-        router.push("/admin/dashboard");
+        router.push(res.role === "super-admin" ? "/admin/overview" : "/admin/dashboard");
       } else if (res.status == 500) {
         setMessage({
           visibility: "visible",
@@ -68,7 +68,8 @@ export default function Home() {
 
   useEffect(() => {
     if (getAccessToken()) {
-      router.push("/admin/dashboard");
+      const role = document.cookie.match(/(?:^|; )role=([^;]+)/)?.[1];
+      router.push(role === "super-admin" ? "/admin/overview" : "/admin/dashboard");
     }
   }, [router]);
 
