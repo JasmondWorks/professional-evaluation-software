@@ -38,6 +38,35 @@ export default function ProfileChunk({ editable = false }: { editable?: boolean 
    const field = (label: string, value: string) =>
       loading ? <TextFallback /> : <DataField label={label} value={value} />;
 
+   // A platform operator belongs to no organization or department, so the
+   // employee-record fields below (GSM, faculty, appointment history, ...)
+   // don't apply to this role and would only ever read blank or stale.
+   const isPlatformOperator = user?.role === 'super-admin';
+
+   if (isPlatformOperator) {
+      return (
+         <div className="details">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+               <div className="shrink-0">
+                  {loading ? (
+                     <Skeleton className="h-32 w-32 rounded-xl sm:h-40 sm:w-40" />
+                  ) : editable ? (
+                     <AvatarUploader name={user?.name} image={user?.image} />
+                  ) : (
+                     <UserAvatar name={user?.name} image={user?.image} size="xl" rounded="xl" />
+                  )}
+               </div>
+
+               <div className="grid min-w-0 flex-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+                  {field('Name', titleCase(user?.name || ''))}
+                  {field('Email', user?.email?.toLowerCase() || '')}
+                  {field('Present role', titleCase(user?.display_role || user?.role || ''))}
+               </div>
+            </div>
+         </div>
+      );
+   }
+
    return(
       <div className="details">
          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">

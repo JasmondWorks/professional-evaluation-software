@@ -84,21 +84,22 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    const tabs = [
       { key: 1, name: 'Dashboard', icon: Home3, href: '/dashboard', group: '', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 4, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: [ 'admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
+      // Platform-wide, not org-scoped: the only "Organization" item a super-admin sees.
       { key: 41, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: [ 'super-admin' ] },
-      { key: 5, name: 'Goals', icon: Setting4, href: '/goals', group: 'Organization', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
+      { key: 5, name: 'Goals', icon: Setting4, href: '/goals', group: 'Organization', role_access: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
       { key: 3, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 6, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['super-admin', 'admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
-      { key: 11, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['super-admin', 'admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
+      { key: 6, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
+      { key: 11, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
       { key: 7, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
       { key: 13, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
-      { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['super-admin', 'admin'] },
+      { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['admin'] },
       // The page existed and nothing linked to it, so the only way to change a
       // password was to know the URL. Every role gets this one: it is the
       // account you are signed in as, whoever you are.
       { key: 13, name: 'Change Password', icon: Lock1, href: '/change-password', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'super-admin', 'admin'] },
-      { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['super-admin', 'admin'] }
+      { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
+      { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['admin'] }
    ]
 
    // Filter tabs by capability first, then role. Unknown/custom roles fall back

@@ -54,7 +54,9 @@ export default function Home() {
 
         document.cookie = `role=${res.role}; path=/; max-age=86400`;
 
-        router.push(res.role === "super-admin" ? "/admin/overview" : "/admin/dashboard");
+        // The platform console for super-admin now lives in the main app's own
+        // dashboard, not this legacy shell — same token, same auth, different UI.
+        router.push(res.role === "super-admin" ? "/dashboard" : "/admin/dashboard");
       } else if (res.status == 500) {
         setMessage({
           visibility: "visible",
@@ -69,7 +71,7 @@ export default function Home() {
   useEffect(() => {
     if (getAccessToken()) {
       const role = document.cookie.match(/(?:^|; )role=([^;]+)/)?.[1];
-      router.push(role === "super-admin" ? "/admin/overview" : "/admin/dashboard");
+      router.push(role === "super-admin" ? "/dashboard" : "/admin/dashboard");
     }
   }, [router]);
 

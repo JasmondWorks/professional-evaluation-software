@@ -22,6 +22,27 @@ async function main() {
 
   const hash = await bcrypt.hash(password, 10);
 
+  // A platform operator belongs to no single organization or department —
+  // explicitly nulled (not just omitted) so re-running this after someone
+  // else has edited the row in Neon/Studio always clears it back out.
+  const noOrgFields = {
+    org: null,
+    dept: null,
+    faculty_college: null,
+    address: null,
+    gsm: null,
+    dob: null,
+    doa: null,
+    poa: null,
+    doc: null,
+    post: null,
+    dopp: null,
+    level: null,
+    management_level: null,
+    category: null,
+    plan: null,
+  };
+
   const user = await prisma.pesuser.upsert({
     where: { email },
     create: {
@@ -30,14 +51,16 @@ async function main() {
       password: hash,
       role: 'super-admin',
       display_role: 'Super Admin',
+      ...noOrgFields,
     },
     update: {
       name,
       password: hash,
       role: 'super-admin',
       display_role: 'Super Admin',
+      ...noOrgFields,
     },
-    select: { id: true, email: true, role: true },
+    select: { id: true, email: true, role: true, org: true },
   });
 
   console.log('Super admin ready:', user);

@@ -29,12 +29,9 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
   const isActive = (href: string) => pathname === href || `/${pathname.split('/')[1]}` === href;
 
   const allTabs = [
-    { key: 1, name: 'Overview', href: '/admin/overview', role_access: ['super-admin'] },
-    { key: 2, name: 'Dashboard', href: '/admin/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
-    { key: 3, name: 'Organizations', href: '/admin/organizations', role_access: ['super-admin'] },
-    { key: 4, name: 'Subscriptions', href: '/admin/subscriptions', role_access: ['super-admin'] },
-    { key: 5, name: 'Admin users', href: '/admin/super', role_access: [ 'admin', 'hod'] },
-    { key: 6, name: 'Auditors', href: '/admin/auditor', role_access: [ 'super-admin' ] },
+    { key: 1, name: 'Dashboard', href: '/admin/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
+    { key: 2, name: 'Admin users', href: '/admin/super', role_access: [ 'admin', 'hod'] },
+    { key: 3, name: 'Auditors', href: '/admin/auditor', role_access: [ 'super-admin' ] },
   ]
 
   const tabs = allTabs.filter((t) => !role || t.role_access.includes(role));

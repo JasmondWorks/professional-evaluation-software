@@ -8,6 +8,7 @@ import Goalchunk from "@/app/components/goals/goalChunk";
 import PerformanceInsights from "@/app/components/performance/PerformanceInsights";
 import ProfileChunk from "@/app/components/Profilechunk";
 import Quickstats from "./Quickstats";
+import PlatformOverview from "./PlatformOverview";
 import StressCycleBanner from "@/app/components/StressCycleBanner";
 import AppraisalPeriodBanner from "@/app/components/AppraisalPeriodBanner";
 import ApprovalBanner from "@/app/components/ApprovalBanner";
@@ -67,6 +68,19 @@ export default function Dashboard() {
   }
 
   const isAdmin = user?.role == "admin";
+  const isPlatformOperator = user?.role == "super-admin";
+
+  // The super-admin belongs to no organization, so none of the org-scoped
+  // banners, goals or insights below apply — just the platform numbers.
+  if (isPlatformOperator) {
+    return (
+      <main className="w-full flex flex-col">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <PlatformOverview />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="w-full flex flex-col">

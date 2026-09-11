@@ -7,6 +7,7 @@ import { apiFetch } from '@/app/utils/apiFetch';
 import { PERMISSION_TREE, PermissionKey } from './utils/roles';
 import { usePermissions } from './usePermissions';
 import ProfileChunk from './Profilechunk';
+import { useCurrentUser } from './useCurrentUser';
 
 type ReportingLine = {
   reportsTo: { name: string; role: string | null; dept: string | null } | null;
@@ -14,11 +15,20 @@ type ReportingLine = {
 };
 
 export default function Profile() {
+  const { user } = useCurrentUser();
+  // A platform operator reports to no one and holds no org-scoped permission
+  // set — both cards below describe an org membership this role doesn't have.
+  const isPlatformOperator = user?.role === 'super-admin';
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
       <PageHeader
         title="Your profile"
-        subtitle="Your record as the organization holds it, and what your role lets you do."
+        subtitle={
+          isPlatformOperator
+            ? 'Your account on the platform console.'
+            : 'Your record as the organization holds it, and what your role lets you do.'
+        }
       />
 
       <div className="space-y-6">
@@ -31,8 +41,21 @@ export default function Profile() {
           </CardBody>
         </Card>
 
-        <ReportingLineCard />
-        <PermissionsCard />
+        {isPlatformOperator ? (
+          <Card>
+            <CardBody>
+              <p className="text-sm text-body">
+                Platform operator — full access across every organization on PES, not
+                scoped to any single one.
+              </p>
+            </CardBody>
+          </Card>
+        ) : (
+          <>
+            <ReportingLineCard />
+            <PermissionsCard />
+          </>
+        )}
       </div>
     </div>
   );
