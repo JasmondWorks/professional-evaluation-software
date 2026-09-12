@@ -40,8 +40,19 @@ async function remember(
   extra: { paymentReference?: string | null; org?: string | null } = {},
 ) {
   try {
-    await prisma.webhook_deliveries.create({
-      data: {
+    // upsert, not create: a refused call can be corrected and resent under the
+    // same key, which would otherwise collide on the unique index.
+    await prisma.webhook_deliveries.upsert({
+      where: {
+        source_idempotency_key: { source: SOURCE, idempotency_key: idempotencyKey },
+      },
+      update: {
+        payment_reference: extra.paymentReference ?? null,
+        status_code: statusCode,
+        response: body as any,
+        org: extra.org ?? null,
+      },
+      create: {
         source: SOURCE,
         idempotency_key: idempotencyKey,
         payment_reference: extra.paymentReference ?? null,
@@ -76,15 +87,23 @@ export async function POST(req: Request) {
   const tooMany = rateLimit(req, { key: 'provision', limit: 60, windowMs: 60 * 60_000 });
   if (tooMany) return tooMany;
 
-  // A retry replays the first answer rather than provisioning again.
+  // A retry of a call that SUCCEEDED replays the answer rather than
+  // provisioning a second time. A retry of one that failed is allowed through.
+  //
+  // Only successes are replayed, deliberately. A rejected call is a call the
+  // storefront is expected to correct and send again — a clashing organization
+  // name, a plan typo — and the natural way to send it again is with the same
+  // idempotency key. Replaying the refusal would cache it forever and make the
+  // collision unrecoverable without the caller knowing to invent a new key.
+  // Failures are still recorded, for diagnosis; they are just not final.
   const seen = await prisma.webhook_deliveries.findFirst({
-    where: { source: SOURCE, idempotency_key: idempotencyKey },
+    where: { source: SOURCE, idempotency_key: idempotencyKey, status_code: 201 },
     select: { status_code: true, response: true },
   });
   if (seen) {
     return NextResponse.json(
       { ...(seen.response as object), replayed: true },
-      { status: seen.status_code === 201 ? 200 : seen.status_code },
+      { status: 200 },
     );
   }
 
