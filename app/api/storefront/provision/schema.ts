@@ -7,7 +7,7 @@
  *
  *  FIELD_CONTRACT is returned with every 400, so the answer to "what fields
  *  does this need" is the error itself and cannot drift from the code that
- *  enforces it. docs/storefront-provisioning-webhook.md is the prose version of
+ *  enforces it. docs/storefront-provisioning.md is the prose version of
  *  the same thing.
  */
 

@@ -4,8 +4,12 @@
  *  are refusals after the money has moved otherwise — the worst possible moment
  *  for them, and a refund conversation caused by a missing form validation.
  *
- *  Signed like the provisioning call. A GET has no body, so the signature is
- *  over the query string, which is what identifies the request.
+ *  Not a webhook, despite sitting beside one: a person is typing into a form
+ *  and waiting for the answer. It is here because it shares the provisioning
+ *  call's caller and secret, which is what /api/storefront names.
+ *
+ *  Signed the same way. A GET has no body, so the signature is over the query
+ *  string, which is what identifies the request.
  */
 
 export const dynamic = 'force-dynamic';

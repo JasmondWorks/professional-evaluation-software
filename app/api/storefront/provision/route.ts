@@ -4,6 +4,12 @@
  *  calls this endpoint; the administrator never fills anything in, and receives
  *  a link to choose their own password.
  *
+ *  Lives under /api/storefront rather than /api/webhooks: the two endpoints
+ *  here share a caller and a shared secret, but only this one is a webhook in
+ *  the sense of being driven by an event with nobody waiting. Its neighbour is
+ *  a query somebody is sitting in front of. Naming the namespace after the
+ *  caller covers both honestly.
+ *
  *  The order of the checks is the order of their cost. A forged request is
  *  rejected on the signature before the body is parsed; a retry is answered
  *  from the ledger before PayPal is called; a name collision is found before

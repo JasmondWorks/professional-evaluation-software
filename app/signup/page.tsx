@@ -1,6 +1,6 @@
 // The signup form is retired.
 //
-// An organization is created by the storefront calling /api/webhooks/provision
+// An organization is created by the storefront calling /api/storefront/provision
 // after a payment completes: it creates the organization and its administrator
 // and emails a link to choose a password. There is nothing for a person to fill
 // in here any more, and a form that cannot succeed is worse than no form.
