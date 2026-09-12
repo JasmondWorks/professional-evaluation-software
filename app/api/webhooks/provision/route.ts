@@ -1,0 +1,326 @@
+/** Create an organization and its administrator from a completed payment.
+ *
+ *  This replaces the signup form. Payment happens on the storefront, which
+ *  calls this endpoint; the administrator never fills anything in, and receives
+ *  a link to choose their own password.
+ *
+ *  The order of the checks is the order of their cost. A forged request is
+ *  rejected on the signature before the body is parsed; a retry is answered
+ *  from the ledger before PayPal is called; a name collision is found before
+ *  anything is written.
+ */
+
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import prisma from '@/app/api/prisma.dev';
+import { verifySignedRequest } from '@/app/api/_lib/hmacGuard';
+import { rateLimit } from '@/app/api/_lib/rateLimit';
+import { provisionSchema } from './schema';
+import {
+  findPlan,
+  normalizeInstitution,
+  normalizePlan,
+  type InstitutionType,
+  type PlanType,
+} from '@/app/lib/billing/catalog';
+import { addInterval, verifyPayment, type VerifiedPayment } from '@/app/lib/billing/verify';
+import { issuePasswordToken, passwordLink } from '@/app/lib/auth/passwordToken';
+import { sendWelcomeEmail } from './email';
+import crypto from 'crypto';
+
+const SOURCE = 'provision';
+
+/** Record what we answered, so a retry can be answered identically. */
+async function remember(
+  idempotencyKey: string,
+  statusCode: number,
+  body: unknown,
+  extra: { paymentReference?: string | null; org?: string | null } = {},
+) {
+  try {
+    await prisma.webhook_deliveries.create({
+      data: {
+        source: SOURCE,
+        idempotency_key: idempotencyKey,
+        payment_reference: extra.paymentReference ?? null,
+        status_code: statusCode,
+        response: body as any,
+        org: extra.org ?? null,
+      },
+    });
+  } catch (err) {
+    // A duplicate key here means two identical calls raced. The organization is
+    // created inside a transaction keyed on unique columns, so only one of them
+    // can have succeeded; losing this ledger row is not worth failing over.
+    console.error('provision: could not record delivery', err);
+  }
+}
+
+export async function POST(req: Request) {
+  // Signature first: an unsigned request should not cost us a database read.
+  const signed = await verifySignedRequest(req);
+  if (!signed.ok) return signed.response;
+
+  const idempotencyKey = req.headers.get('x-idempotency-key')?.trim();
+  if (!idempotencyKey) {
+    return NextResponse.json(
+      { ok: false, error: 'Missing X-Idempotency-Key.' },
+      { status: 400 },
+    );
+  }
+
+  // Generous, because a legitimate storefront makes one call per sale — but
+  // finite, so a loop cannot be used to probe PayPal references through us.
+  const tooMany = rateLimit(req, { key: 'provision', limit: 60, windowMs: 60 * 60_000 });
+  if (tooMany) return tooMany;
+
+  // A retry replays the first answer rather than provisioning again.
+  const seen = await prisma.webhook_deliveries.findFirst({
+    where: { source: SOURCE, idempotency_key: idempotencyKey },
+    select: { status_code: true, response: true },
+  });
+  if (seen) {
+    return NextResponse.json(
+      { ...(seen.response as object), replayed: true },
+      { status: seen.status_code === 201 ? 200 : seen.status_code },
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(signed.raw);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Body is not valid JSON.' }, { status: 400 });
+  }
+
+  const validation = provisionSchema.safeParse(parsed);
+  if (!validation.success) {
+    const details = validation.error.issues.map((i) => ({
+      field: i.path.join('.'),
+      message: i.message,
+    }));
+    const body = { ok: false, error: 'Some fields are missing or malformed.', details };
+    await remember(idempotencyKey, 400, body);
+    return NextResponse.json(body, { status: 400 });
+  }
+
+  const input = validation.data;
+
+  const institutionType = normalizeInstitution(input.product_category);
+  const planName = normalizePlan(input.product_plan);
+  if (!institutionType || !planName || !findPlan(institutionType, planName)) {
+    const body = {
+      ok: false,
+      error: 'Unknown product_category or product_plan.',
+      details: [
+        { field: 'product_category', message: 'One of: academic, company, public.' },
+        { field: 'product_plan', message: 'One of: basic, standard, premium.' },
+      ],
+    };
+    await remember(idempotencyKey, 400, body);
+    return NextResponse.json(body, { status: 400 });
+  }
+
+  // Collisions before payment verification: both are cheap, and both are
+  // refusals the storefront should have caught with /availability.
+  const [orgTaken, emailTaken] = await Promise.all([
+    prisma.org.findUnique({ where: { name: input.organization_name }, select: { id: true } }),
+    prisma.pesuser.findUnique({ where: { email: input.admin_email }, select: { id: true } }),
+  ]);
+
+  if (orgTaken || emailTaken) {
+    const body = {
+      ok: false,
+      error: orgTaken
+        ? 'An organization with that name already exists.'
+        : 'That administrator email is already registered.',
+      field: orgTaken ? 'organization_name' : 'admin_email',
+    };
+    await remember(idempotencyKey, 409, body, { paymentReference: input.payment_reference });
+    return NextResponse.json(body, { status: 409 });
+  }
+
+  // One payment provisions one organization, whatever idempotency key it
+  // arrives under.
+  const referenceUsed = await prisma.subscriptions_info.findUnique({
+    where: { reference: input.payment_reference },
+    select: { org: true },
+  });
+  if (referenceUsed) {
+    const body = {
+      ok: false,
+      error: `That payment has already been used to create ${referenceUsed.org}.`,
+      organization: referenceUsed.org,
+    };
+    await remember(idempotencyKey, 409, body, { paymentReference: input.payment_reference });
+    return NextResponse.json(body, { status: 409 });
+  }
+
+  const payment = await confirmPayment(input.payment_reference, institutionType, planName);
+  if ('error' in payment) {
+    const body = { ok: false, error: payment.error };
+    await remember(idempotencyKey, 402, body, { paymentReference: input.payment_reference });
+    return NextResponse.json(body, { status: 402 });
+  }
+
+  if (input.amount_paid) {
+    const claimed = Math.round(parseFloat(input.amount_paid) * 100);
+    if (Number.isFinite(claimed) && claimed !== payment.amount) {
+      // Not a refusal: PayPal is authoritative and has already been believed.
+      // Worth a log, because a persistent mismatch means the storefront and the
+      // catalogue disagree about a price.
+      console.warn(
+        `provision: ${input.organization_name} claimed ${claimed} cents, PayPal says ${payment.amount}`,
+      );
+    }
+  }
+
+  // The maintenance model ships with the company product; every other sector
+  // buys it separately, which is what this flag records.
+  const maintenance = institutionType === 'COMPANY' || input.maintenance_model === true;
+
+  try {
+    const { userId } = await prisma.$transaction(async (tx) => {
+      await tx.org.create({
+        data: {
+          name: input.organization_name,
+          category: input.product_category.toLowerCase(),
+          plan: input.product_plan.toLowerCase(),
+          maintenance_model: maintenance,
+        },
+      });
+
+      // A password is set so the column is never empty, but it is random and
+      // discarded unread — nobody, including us, can sign in with it. The
+      // administrator chooses their own through the emailed link.
+      const unusable = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+
+      const user = await tx.pesuser.create({
+        data: {
+          name: input.admin_name,
+          email: input.admin_email,
+          password: unusable,
+          role: 'admin',
+          org: input.organization_name,
+          category: input.product_category.toLowerCase(),
+          plan: input.product_plan.toLowerCase(),
+          gsm: input.admin_phone ?? null,
+          image: input.organization_logo_url ?? null,
+          // They will choose their own password through the link, so there is
+          // nothing to force them to change afterwards.
+          must_change_password: false,
+        },
+        select: { id: true },
+      });
+
+      await tx.subscriptions_info.create({
+        data: {
+          pesuser_email: input.admin_email,
+          pesuser_name: input.admin_name,
+          org: input.organization_name,
+          plan_code: payment.plan,
+          plan_name: input.product_plan.toLowerCase(),
+          reference: payment.reference,
+          status: 'success',
+          amount: payment.amount / 100,
+          paid_at: payment.paidAt,
+          expires_at: payment.expiresAt,
+        },
+      });
+
+      return { userId: user.id };
+    });
+
+    // Outside the transaction: the preset roles are convenience, and a failure
+    // here must not undo a paid-for organization.
+    try {
+      const { seedPresetRoles } = await import('@/app/api/_lib/seedRoles');
+      await seedPresetRoles(input.organization_name, input.product_category.toLowerCase());
+    } catch (seedErr) {
+      console.error('provision: preset role seeding failed (non-fatal):', seedErr);
+    }
+
+    const { token, expiresAt: linkExpires } = await issuePasswordToken(userId, 'setup');
+
+    let emailed = true;
+    try {
+      await sendWelcomeEmail({
+        to: input.admin_email,
+        adminName: input.admin_name,
+        organization: input.organization_name,
+        institutionType,
+        plan: planName,
+        link: passwordLink(token, 'setup'),
+        linkExpiresAt: linkExpires,
+        accessExpiresAt: payment.expiresAt,
+      });
+    } catch (mailErr) {
+      // The organization exists and is paid for. A failed email is recoverable
+      // — they can request a new link — so it is reported, not rolled back.
+      console.error('provision: welcome email failed', mailErr);
+      emailed = false;
+    }
+
+    const body = {
+      ok: true,
+      organization: input.organization_name,
+      admin_email: input.admin_email,
+      plan: planName,
+      product_category: institutionType,
+      expires_at: payment.expiresAt.toISOString(),
+      welcome_email_sent: emailed,
+    };
+    await remember(idempotencyKey, 201, body, {
+      paymentReference: payment.reference,
+      org: input.organization_name,
+    });
+    return NextResponse.json(body, { status: 201 });
+  } catch (err: any) {
+    // Two identical calls racing past the collision check: only one can win the
+    // unique constraint, and the loser is a duplicate, not a failure.
+    if (err?.code === 'P2002') {
+      const body = {
+        ok: false,
+        error: 'That organization or administrator was created by a concurrent request.',
+      };
+      await remember(idempotencyKey, 409, body, { paymentReference: input.payment_reference });
+      return NextResponse.json(body, { status: 409 });
+    }
+    console.error('provision: failed', err);
+    return NextResponse.json(
+      { ok: false, error: 'Could not create the organization. The payment was not consumed.' },
+      { status: 500 },
+    );
+  }
+}
+
+/** Verify the reference with PayPal, or explain why not.
+ *
+ *  Mirrors /api/signup: BILLING_ENFORCED=false lets the client test the flow
+ *  without live credentials, and the moment it is unset or true an
+ *  unverifiable reference is refused. */
+async function confirmPayment(
+  reference: string,
+  institutionType: InstitutionType,
+  planName: PlanType,
+): Promise<VerifiedPayment | { error: string }> {
+  const enforced = process.env.BILLING_ENFORCED !== 'false';
+
+  const result = await verifyPayment(reference, { institutionType, plan: planName });
+  if (result.ok) return result.payment;
+  if (enforced) return { error: result.reason };
+
+  const plan = findPlan(institutionType, planName)!;
+  const paidAt = new Date();
+  return {
+    reference,
+    institutionType,
+    plan: planName,
+    amount: plan.price,
+    paidAt,
+    expiresAt: addInterval(paidAt, plan.interval, plan.intervalCount),
+    payerEmail: null,
+  };
+}

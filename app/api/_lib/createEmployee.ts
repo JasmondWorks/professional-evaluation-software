@@ -191,6 +191,10 @@ export async function createEmployee(
         name,
         email,
         password: await bcrypt.hash(password, 10),
+        // This password was generated for them and emailed in plain text, so
+        // they are held at the change-password screen until they choose their
+        // own. The administrator who created the account has seen it too.
+        must_change_password: true,
         gsm: gsm || null,
         role: functionalRole,
         display_role: displayRole || null,

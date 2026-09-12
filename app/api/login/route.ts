@@ -116,6 +116,10 @@ export async function POST(req: Request) {
       productCategory: user.category,
       productPlan: user.plan,
       maintenance_model: maintenance?.maintenance_model ?? false,
+      // Held in the token so the gate is a claim check rather than a database
+      // read on every navigation. Cleared by /api/changePassword, which issues
+      // a fresh token.
+      mustChangePassword: user.must_change_password === true,
       perms
     };
 
@@ -130,6 +134,19 @@ export async function POST(req: Request) {
       getRefreshSecret(),
       { expiresIn: remember ? '30d' : '1d' }
     );
+
+    // Stamped once. It separates "invited and never arrived" from "forgot their
+    // password", which are different problems with different fixes, and it is
+    // what decides whether a link email is worded as setup or as a reset.
+    if (!user.first_login_at) {
+      await prisma.pesuser.update({
+        where: { id: user.id },
+        data: { first_login_at: new Date() },
+      }).catch((err: unknown) => {
+        // Never block a successful sign-in over a timestamp.
+        console.error('login: could not stamp first_login_at', err);
+      });
+    }
 
     console.log('login successful');
 

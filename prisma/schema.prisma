@@ -572,6 +572,22 @@ model pesuser {
   plan                   String?         @db.VarChar(100)
   resettoken             String?         @db.VarChar(255)
   resettokenexpiry       DateTime?       @db.Timestamp(6)
+  // True whenever the password on this account was generated for the person
+  // rather than chosen by them — an employee added by an admin, or an admin
+  // resetting somebody. They are held at the change-password screen until they
+  // choose their own. Named for the intent, not the event: it is also correct
+  // after an admin-forced reset, which is not a first login.
+  must_change_password   Boolean         @default(false)
+  // When they first signed in. Null means invited and never arrived, which is
+  // a different problem from a forgotten password.
+  first_login_at         DateTime?       @db.Timestamp(6)
+  // A SHA-256 hash of the set-password / reset token, never the token itself:
+  // a leaked backup or query log would otherwise be a takeover of every
+  // account with one outstanding. Single pair of columns, with the purpose
+  // recorded, because the two flows differ only in wording and lifetime.
+  password_token         String?         @db.VarChar(64)
+  password_token_expiry  DateTime?       @db.Timestamp(6)
+  password_token_purpose String?         @db.VarChar(20)
   audit_count            Int?            @default(0)
   updated_at             DateTime?       @default(now()) @db.Timestamp(6)
   notifications          notifications[]
@@ -1385,6 +1401,30 @@ model hod_performance_result {
 // industrial/production engineer may enter data into the ones the admin has
 // switched on for them. Absence of a row means "not enabled" — access is opt-in,
 // so a model added later is closed until somebody opens it.
+/// One row per provisioning call accepted from the storefront.
+///
+/// The point is idempotency: the caller retries on a timeout, and a retry must
+/// return the first answer rather than create a second organization. The whole
+/// response is kept so the replay is byte-identical to what they got the first
+/// time.
+model webhook_deliveries {
+  id                Int      @id @default(autoincrement())
+  // Which integration sent it. One today ("provision"), named so a second one
+  // cannot collide on idempotency keys.
+  source            String   @db.VarChar(60)
+  idempotency_key   String   @db.VarChar(255)
+  // The PayPal id, so one payment cannot provision twice even if the caller
+  // invents a fresh idempotency key.
+  payment_reference String?  @db.VarChar(255)
+  status_code       Int
+  response          Json
+  org               String?  @db.VarChar(255)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([source, idempotency_key], map: "webhook_deliveries_key_unique")
+  @@index([payment_reference])
+}
+
 model org_entitlements {
   id              Int      @id @default(autoincrement())
   org             String   @db.VarChar(255)

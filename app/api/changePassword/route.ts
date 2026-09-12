@@ -75,7 +75,17 @@ export async function POST(request: NextRequest) {
     // Update password
     await prisma.pesuser.update({
       where: { id: user.id },
-      data: { password: hashedPassword }
+      data: {
+        password: hashedPassword,
+        // They have chosen this one themselves, so there is nothing left to
+        // force — this is what releases them from the change-password gate.
+        must_change_password: false,
+        // Any outstanding set-password or reset link is spent: the account is
+        // settled, and a link still sitting in an inbox should not reopen it.
+        password_token: null,
+        password_token_expiry: null,
+        password_token_purpose: null,
+      }
     })
 
     return NextResponse.json(

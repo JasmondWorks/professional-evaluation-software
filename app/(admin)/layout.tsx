@@ -14,6 +14,7 @@ import RoleCreated from "../components/modals/role_created";
 import Viewgoal from "../components/modals/viewgoal";
 import Failure from "../components/modals/failure";
 import SubscriptionGate from "../components/SubscriptionGate";
+import PasswordGate from "../components/PasswordGate";
 import { useState } from "react";
 
 export default function RootLayout({
@@ -52,7 +53,11 @@ export default function RootLayout({
           {/* Every signed-in page sits inside this. A lapsed subscription
               closes the platform to every role, not just to the admin who can
               renew it. */}
-          <SubscriptionGate>{children}</SubscriptionGate>
+          {/* Password first: a person whose password is not yet their own
+              should not be told about billing, or anything else. */}
+          <PasswordGate>
+            <SubscriptionGate>{children}</SubscriptionGate>
+          </PasswordGate>
         </div>
       </div>
     </Provider>
