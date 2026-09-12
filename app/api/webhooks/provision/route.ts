@@ -17,7 +17,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/app/api/prisma.dev';
 import { verifySignedRequest } from '@/app/api/_lib/hmacGuard';
 import { rateLimit } from '@/app/api/_lib/rateLimit';
-import { provisionSchema } from './schema';
+import { FIELD_CONTRACT, provisionSchema, unknownFields } from './schema';
 import {
   findPlan,
   normalizeInstitution,
@@ -96,28 +96,54 @@ export async function POST(req: Request) {
   }
 
   const validation = provisionSchema.safeParse(parsed);
+  const unknown = unknownFields(parsed);
+
   if (!validation.success) {
     const details = validation.error.issues.map((i) => ({
-      field: i.path.join('.'),
-      message: i.message,
+      field: i.path.join('.') || '(body)',
+      // Zod's own wording for a missing key is "Invalid input", which tells an
+      // integrator nothing. Say what the field is for instead.
+      message:
+        i.code === 'invalid_type' && (i as any).received === 'undefined'
+          ? 'Required.'
+          : i.message,
     }));
-    const body = { ok: false, error: 'Some fields are missing or malformed.', details };
+
+    const body = {
+      ok: false,
+      error: 'Some fields are missing or malformed.',
+      details,
+      // Reported rather than ignored: a field name we do not recognise is
+      // almost always a typo for one we do, and "organisation_name" would
+      // otherwise show up only as organization_name being absent.
+      ...(unknown.length ? { unknown_fields: unknown } : {}),
+      // The contract, returned with the refusal, so the answer to "what does
+      // this endpoint need" is the refusal itself.
+      expected: FIELD_CONTRACT,
+    };
     await remember(idempotencyKey, 400, body);
     return NextResponse.json(body, { status: 400 });
+  }
+
+  if (unknown.length) {
+    // Valid, but worth saying: these were dropped, and one of them may have
+    // been meant as something else.
+    console.warn(`provision: ignoring unknown fields: ${unknown.join(', ')}`);
   }
 
   const input = validation.data;
 
   const institutionType = normalizeInstitution(input.product_category);
   const planName = normalizePlan(input.product_plan);
+
+  // The schema has already checked both against the catalogue's lists, so this
+  // can only fire for a combination that exists as names but not as a sold
+  // plan — which is what findPlan answers.
   if (!institutionType || !planName || !findPlan(institutionType, planName)) {
     const body = {
       ok: false,
-      error: 'Unknown product_category or product_plan.',
-      details: [
-        { field: 'product_category', message: 'One of: academic, company, public.' },
-        { field: 'product_plan', message: 'One of: basic, standard, premium.' },
-      ],
+      error: `PES does not sell a ${input.product_plan} plan for ${input.product_category}.`,
+      expected: FIELD_CONTRACT,
     };
     await remember(idempotencyKey, 400, body);
     return NextResponse.json(body, { status: 400 });
