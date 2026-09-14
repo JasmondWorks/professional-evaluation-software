@@ -22,19 +22,17 @@ import { NextResponse } from 'next/server';
 const MAX_SKEW_SECONDS = 5 * 60;
 
 export type SignedBody = { ok: true; raw: string } | { ok: false; response: NextResponse };
+export type SignedCheck = { ok: true } | { ok: false; response: NextResponse };
 
 function refuse(message: string, status: number): { ok: false; response: NextResponse } {
   return { ok: false, response: NextResponse.json({ ok: false, error: message }, { status }) };
 }
 
-/** Read and verify the body of a signed request.
- *
- *  Returns the RAW body, deliberately: the signature is over exact bytes, so
- *  the caller must parse this string rather than call req.json() separately.
- *  Re-serialising a parsed object changes whitespace and key order and the
- *  signature would never match again.
- */
-export async function verifySignedRequest(req: Request): Promise<SignedBody> {
+/** The shared core: given whatever string was signed (raw body for a POST,
+ *  query string for a GET), check the headers and the signature. Both
+ *  verifySignedRequest and verifySignedQuery are this plus reading their own
+ *  signed content out of the request. */
+function verifySignature(req: Request, signedContent: string): SignedCheck {
   const secret = process.env.PROVISION_HMAC_SECRET;
   if (!secret) {
     // A missing secret is a broken deployment, not an open door.
@@ -56,10 +54,9 @@ export async function verifySignedRequest(req: Request): Promise<SignedBody> {
     return refuse('X-Timestamp is outside the accepted window.', 401);
   }
 
-  const raw = await req.text();
   const expected =
     'sha256=' +
-    crypto.createHmac('sha256', secret).update(`${timestamp}.${raw}`).digest('hex');
+    crypto.createHmac('sha256', secret).update(`${timestamp}.${signedContent}`).digest('hex');
 
   // Constant-time, and length-checked first: timingSafeEqual throws on a
   // length mismatch rather than returning false.
@@ -69,7 +66,28 @@ export async function verifySignedRequest(req: Request): Promise<SignedBody> {
     return refuse('Signature does not match.', 401);
   }
 
+  return { ok: true };
+}
+
+/** Read and verify the body of a signed request.
+ *
+ *  Returns the RAW body, deliberately: the signature is over exact bytes, so
+ *  the caller must parse this string rather than call req.json() separately.
+ *  Re-serialising a parsed object changes whitespace and key order and the
+ *  signature would never match again.
+ */
+export async function verifySignedRequest(req: Request): Promise<SignedBody> {
+  // Read before verifying: even a request rejected downstream needs the body
+  // consumed so we can sign it, and req.text() is what verifySignature signs.
+  const raw = await req.text();
+  const checked = verifySignature(req, raw);
+  if (!checked.ok) return checked;
   return { ok: true, raw };
+}
+
+/** Verify a signed GET, whose query string stands in for a body. */
+export function verifySignedQuery(req: Request, url: URL): SignedCheck {
+  return verifySignature(req, url.search);
 }
 
 /** The signing side, for tests and for documenting the contract by example. */

@@ -349,9 +349,9 @@ export async function POST(req: Request) {
 
 /** Verify the reference with PayPal, or explain why not.
  *
- *  Mirrors /api/signup: BILLING_ENFORCED=false lets the client test the flow
- *  without live credentials, and the moment it is unset or true an
- *  unverifiable reference is refused. */
+ *  BILLING_ENFORCED=false lets the client test the flow without live
+ *  credentials, and the moment it is unset or true an unverifiable
+ *  reference is refused. */
 async function confirmPayment(
   reference: string,
   institutionType: InstitutionType,
