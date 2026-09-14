@@ -12,7 +12,8 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), { anyOf: ['can_manage_user_roles'] })
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   const body = await req.json().catch(() => ({}))
   const { id, email, view_department_stress, view_faculty_stress } = body
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   try {
     // Scope to the caller's org so an admin can't touch another org's staff.
     const result = await prisma.pesuser.updateMany({
-      where: { org, ...(id ? { id: Number(id) } : { email }) },
+      where: { org_id: orgId, ...(id ? { id: Number(id) } : { email }) },
       data,
     })
     if (result.count === 0) {

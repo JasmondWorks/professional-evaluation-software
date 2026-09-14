@@ -27,7 +27,8 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
-  if (!org) {
+  const orgId = auth.user.orgId ?? null;
+  if (!org || !orgId) {
     return NextResponse.json(
       { message: 'This account is not attached to an organization.' },
       { status: 403 },
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
   const canonicalRole = async (role: string) => {
     const key = String(role ?? '').trim().toLowerCase();
     if (!roleCache.has(key)) {
-      roleCache.set(key, await resolveRoleName(org, role, productCategory));
+      roleCache.set(key, await resolveRoleName(org, role, productCategory, orgId));
     }
     return roleCache.get(key)!;
   };
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
     schema: employeeUploadSpec.schema,
     // The org comes from the verified token, never from the file, so a caller
     // cannot create employees in another organization.
-    context: { org },
+    context: { org, orgId },
     dedupeKey: employeeUploadSpec.dedupeKey,
     maxRows: employeeUploadSpec.maxRows,
 
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
       // Sent sequentially after creation, so a mail provider rate limit cannot
       // abort work that already succeeded. A failure is reported, not fatal:
       // the employee list has a resend action.
-      const replyTo = await orgAdminEmail(org);
+      const replyTo = await orgAdminEmail(org, orgId);
       let emailsSent = 0;
       const failedKeys: string[] = [];
       for (const { record } of created) {
@@ -135,13 +136,14 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
-  if (!org) return NextResponse.json({ existing: [], reference: { roles: [] } });
+  const orgId = auth.user.orgId ?? null;
+  if (!org || !orgId) return NextResponse.json({ existing: [], reference: { roles: [] } });
 
   const productCategory = auth.user.productCategory ?? auth.user.category ?? null;
 
   const [staff, roles] = await Promise.all([
-    prisma.pesuser.findMany({ where: { org }, select: { email: true } }),
-    prisma.roles.findMany({ where: { org }, select: { name: true } }),
+    prisma.pesuser.findMany({ where: { org_id: orgId }, select: { email: true } }),
+    prisma.roles.findMany({ where: { org_id: orgId }, select: { name: true } }),
   ]);
 
   // The filter goes on the union, not just the preset half. seedPresetRoles()

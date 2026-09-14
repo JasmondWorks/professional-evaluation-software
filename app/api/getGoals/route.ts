@@ -11,11 +11,11 @@ import { authorize, tokenFromRequest, verifyToken } from '../_lib/authGuard'
 // stored against the creator's user_id (no org column), so we resolve the org's
 // member ids and return goals created by any of them. Falls back to the caller's
 // own goals only when the org can't be determined.
-async function getData(org: string | null, fallbackUserId: string | null) {
-  console.log("getGoals -> org:", org, "fallbackUserId:", fallbackUserId);
-  if (org) {
+async function getData(orgId: number | null, fallbackUserId: string | null) {
+  console.log("getGoals -> orgId:", orgId, "fallbackUserId:", fallbackUserId);
+  if (orgId) {
     const orgUsers = await prisma.pesuser.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: { id: true },
     })
     const ids = orgUsers.map((u) => String(u.id))
@@ -52,13 +52,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const org = user.org ? String(user.org) : null;
+    const orgId = user.orgId ?? null;
 
-    if (!org && !userIdentifier) {
+    if (!orgId && !userIdentifier) {
       console.warn("Could not find org or user identifier in token");
     }
 
-    const goals = await getData(org, userIdentifier);
+    const goals = await getData(orgId, userIdentifier);
     return NextResponse.json(goals);
   } catch(err) {
     console.error(err);

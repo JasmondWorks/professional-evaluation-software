@@ -27,10 +27,11 @@ function viewerFrom(req: Request): ModelViewer {
   } catch {
     throw new ModelAccessError('Your session has expired. Sign in again.', 401);
   }
-  if (!claims?.org) {
+  if (!claims?.orgId) {
     throw new ModelAccessError('This account is not attached to an organization.', 403);
   }
   return {
+    orgId: claims.orgId,
     org: claims.org,
     role: claims.role,
     name: claims.name,
@@ -70,7 +71,7 @@ export async function GET(req: Request) {
         );
       }
       const role = url.searchParams.get('role') ?? MODEL_DATA_ENTRY_ROLE;
-      return NextResponse.json({ role, catalog: MODEL_CATALOG, access: await accessMatrix(viewer.org, role) });
+      return NextResponse.json({ role, catalog: MODEL_CATALOG, access: await accessMatrix(viewer.orgId, role) });
     }
 
     return NextResponse.json({ ...(await accessForViewer(viewer)), catalog: MODEL_CATALOG });

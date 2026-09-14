@@ -6,32 +6,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { verifyToken } from "../_lib/authGuard";
 
-async function getFacility( user: string | null ) {
-  if (!user) return []
-  return prisma.facilities.findMany({ where: { org: user } })
+async function getFacility( orgId: number | null ) {
+  if (!orgId) return []
+  return prisma.facilities.findMany({ where: { org_id: orgId } })
 }
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get("authorization")?.split(" ")[1];
-  
+
   if (!token) {
     return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
   }
 
-  let org;
+  let orgId;
   try {
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    org = decoded?.org;
+    orgId = decoded?.orgId;
   } catch (error) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  console.log('Fetched facility info:', org);
+  console.log('Fetched facility info:', orgId);
 
-  if (org) {
+  if (orgId) {
     try {
-        let userInfo = await getFacility(org)
+        let userInfo = await getFacility(orgId)
         console.log('Fetched facility info:', userInfo);
 
         const classes = new Set<string>();

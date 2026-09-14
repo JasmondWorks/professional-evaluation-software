@@ -16,16 +16,17 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ active: false })
 
-    const rows = await prisma.stress_scores.findMany({ where: { org, cycle_id: cycle.id } })
+    const rows = await prisma.stress_scores.findMany({ where: { org_id: orgId, cycle_id: cycle.id } })
 
     // If the setting was already run, the stored limits are the source of truth;
     // otherwise compute a live preview from whatever Form 5 data exists so far.

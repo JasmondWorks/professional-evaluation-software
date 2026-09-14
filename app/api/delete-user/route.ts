@@ -12,12 +12,12 @@ export async function POST(req: Request) {
     // the verified token's org so deletions are scoped to the caller's org.
     const auth = authorize(tokenFromRequest(req), { anyOf: ["can_manage_user_roles"] });
     if (!auth.ok) return auth.response;
-    const org = auth.user.org;
+    const orgId = auth.user.orgId;
 
     const body = await req.json();
     const { email } = body;
 
-    if (!org || !email) {
+    if (!orgId || !email) {
       return NextResponse.json(
         { success: false, message: "email is required" },
         { status: 400 }
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch matching users first so we can report exactly what was removed.
-    const result = await prisma.pesuser.findMany({ where: { org, email } });
+    const result = await prisma.pesuser.findMany({ where: { org_id: orgId, email } });
 
     if (result.length === 0) {
       return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    await prisma.pesuser.deleteMany({ where: { org, email } });
+    await prisma.pesuser.deleteMany({ where: { org_id: orgId, email } });
 
     return NextResponse.json({
       success: true,

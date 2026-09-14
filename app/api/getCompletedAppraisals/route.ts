@@ -15,13 +15,13 @@ export async function POST(req: NextRequest) {
 
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded?.org;
-    if (!org) {
+    const orgId = decoded?.orgId;
+    if (!orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
     const appraisals = await prisma.appraisal.findMany({
-      where: { org, pending: false },
+      where: { org_id: orgId, pending: false },
       select: {
         id: true,
         pesuser_name: true,

@@ -30,6 +30,7 @@ export async function POST(req: Request) {
   // Bind the new employee to the caller's own org — never trust the org sent in
   // the body, so a user can't create employees in another organization.
   if (auth.user.org) body.org = auth.user.org
+  body.orgId = auth.user.orgId ?? null
 
   const validation = validateData(addEmployeeSchema, body)
   if (!validation.success) {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     // The form hides roles that do not apply to this institution type, but that
     // is presentation only: a direct post could still name one.
     const productCategory = auth.user.productCategory ?? auth.user.category ?? null
-    const canonicalRole = await resolveRoleName(body.org, String(body.role), productCategory)
+    const canonicalRole = await resolveRoleName(body.org, String(body.role), productCategory, body.orgId)
     if (!canonicalRole) {
       return NextResponse.json(
         {
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       body.email,
       body.name,
       password,
-      await orgAdminEmail(body.org),
+      await orgAdminEmail(body.org, body.orgId),
     )
 
     if (!emailSent) {

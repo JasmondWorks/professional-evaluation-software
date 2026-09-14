@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Observations are the study's raw data — anyone able to write them can
     // move the utilisation figure the study produces.
     const owner = await orgOfPosition(Number(positionId));
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     // Check if an observation already exists for the same position, date, and time
     const existing = await prisma.workSamplingObservation.findFirst({
@@ -92,7 +92,7 @@ export async function DELETE(req: NextRequest) {
     if (!existing) return notYours();
 
     const owner = await orgOfPosition(existing.positionId);
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     await prisma.workSamplingObservation.delete({
       where: { id: Number(id) }

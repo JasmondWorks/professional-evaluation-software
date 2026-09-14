@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     // The study id arrives from the browser; it has to be the caller's own.
     const owner = await orgOfStudy(Number(studyId));
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     const result = await prisma.workSamplingPosition.create({
       data: {
@@ -60,7 +60,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const owner = await orgOfPosition(Number(id));
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
     
     // Explicitly delete observations first to be safe, then delete the position
     await prisma.workSamplingObservation.deleteMany({

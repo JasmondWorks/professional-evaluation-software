@@ -17,6 +17,7 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org;
+  const orgId = auth.user.orgId ?? null;
   const pesuser_name = auth.user.name || "Anonymous";
   const dept = auth.user.dept || "General";
 
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
 
     // The feeling phase must be open.
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org: org ?? undefined },
+      where: { org_id: orgId ?? undefined },
       orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
     if (!cycle || effectivePhase(cycle) !== "feeling_open") {
@@ -45,11 +46,11 @@ export async function POST(req: Request) {
     // re-submit by overwriting that same row (clearing the rejection). Only an
     // active (non-rejected) submission blocks re-submission.
     const rejectedRow = await prisma.stress.findFirst({
-      where: { pesuser_name, org: org ?? undefined, cycle_id: cycle.id, rejected: true },
+      where: { pesuser_name, org_id: orgId ?? undefined, cycle_id: cycle.id, rejected: true },
       select: { id: true },
     });
     const activeCount = await prisma.stress.count({
-      where: { pesuser_name, org: org ?? undefined, cycle_id: cycle.id, rejected: false },
+      where: { pesuser_name, org_id: orgId ?? undefined, cycle_id: cycle.id, rejected: false },
     });
     if (activeCount > 0) {
       return NextResponse.json(
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
       });
     } else {
       await prisma.stress.create({
-        data: { pesuser_name, org: org ?? undefined, dept, cycle_id: cycle.id, assessment_data },
+        data: { pesuser_name, org: org ?? undefined, org_id: orgId, dept, cycle_id: cycle.id, assessment_data },
       });
     }
 

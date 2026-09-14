@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     }
 
     const me = await prisma.pesuser.findFirst({
-      where: { name: claims.name, org: claims.org },
+      where: { name: claims.name, org_id: claims.orgId },
       select: { id: true, dept: true },
     });
     if (!me) return NextResponse.json({ reportsTo: null, dept: null });
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
     if (!assignment) return NextResponse.json({ reportsTo: null, dept: me.dept });
 
     const head = await prisma.pesuser.findFirst({
-      where: { id: assignment.hod_id, org: claims.org },
+      where: { id: assignment.hod_id, org_id: claims.orgId },
       select: { name: true, role: true, display_role: true, dept: true },
     });
 

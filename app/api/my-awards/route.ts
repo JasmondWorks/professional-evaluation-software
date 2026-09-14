@@ -25,13 +25,14 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
     const email = auth.user?.email ? String(auth.user.email) : null;
-    if (!org || !email) {
+    if (!org || !orgId || !email) {
       return NextResponse.json({ error: 'Sign in again to continue.' }, { status: 400 });
     }
 
     const me = await prisma.pesuser.findFirst({
-      where: { email, org },
+      where: { email, org_id: orgId },
       select: { name: true, dept: true },
     });
     if (!me) {
@@ -43,14 +44,14 @@ export async function GET(req: NextRequest) {
     const period = PERIODS.some((p) => p.key === asked) ? asked : 'annual';
 
     const [rows, scheme, recorded] = await Promise.all([
-      staffPerformance({ org, names: [me.name] }),
+      staffPerformance({ orgId, names: [me.name] }),
       prisma.motivation_scheme.findFirst({
-        where: { org, active: true },
+        where: { org_id: orgId, active: true },
         orderBy: { created_at: 'desc' },
       }),
       // Anything the admin has already handed over and written down.
       prisma.motivation_award.findMany({
-        where: { org, staff_name: me.name },
+        where: { org_id: orgId, staff_name: me.name },
         orderBy: { awarded_at: 'desc' },
       }),
     ]);

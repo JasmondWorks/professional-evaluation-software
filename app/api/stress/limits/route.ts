@@ -14,10 +14,11 @@ export async function GET(req: Request) {
   })
   if (!auth.ok) return auth.response
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org: org ?? undefined },
+      where: { org_id: orgId ?? undefined },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     return NextResponse.json({

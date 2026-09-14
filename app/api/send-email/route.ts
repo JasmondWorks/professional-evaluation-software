@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     // The invite carries the inviting org, so accepting it lands the auditor in
     // the right tenant rather than wherever the accept form happens to say.
-    const token = jwt.sign({ email, org: auth.user.org }, getJWTSecret(), {
+    const token = jwt.sign({ email, orgId: auth.user.orgId, org: auth.user.org }, getJWTSecret(), {
       expiresIn: "7d",
     });
     // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,

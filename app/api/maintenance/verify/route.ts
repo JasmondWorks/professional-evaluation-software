@@ -26,8 +26,9 @@ export async function POST(req: Request) {
     }
 
     const org = String(decoded?.org ?? '').trim();
+    const orgId: number | null = decoded?.orgId ?? null;
     const { orderId } = await req.json();
-    if (!orderId || !org) {
+    if (!orderId || !orgId) {
       return NextResponse.json({ message: 'Missing the order or the organization.' }, { status: 400 });
     }
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
     const affected = Number(await prisma.$executeRaw`
       UPDATE "org"
       SET "maintenance_model" = true
-      WHERE LOWER("name") = LOWER(${org})
+      WHERE "id" = ${orgId}
     `);
 
     if (affected === 0) {

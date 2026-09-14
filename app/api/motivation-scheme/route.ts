@@ -16,16 +16,17 @@ export async function GET(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
     const active = await prisma.motivation_scheme.findFirst({
-      where: { org, active: true },
+      where: { org_id: orgId, active: true },
       orderBy: { created_at: 'desc' },
     });
     const past = await prisma.motivation_scheme.findMany({
-      where: { org, active: false },
+      where: { org_id: orgId, active: false },
       orderBy: { created_at: 'desc' },
       take: 20,
     });
@@ -43,8 +44,9 @@ export async function POST(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), { roles: [] });
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
     const role = auth.user?.role ?? '';
-    if (!org) {
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
     if (!['admin', 'super-admin'].includes(role)) {
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
     const merged = Array.from(new Set(selections));
 
     const existing = await prisma.motivation_scheme.findFirst({
-      where: { org, active: true },
+      where: { org_id: orgId, active: true },
       orderBy: { created_at: 'desc' },
     });
 
@@ -97,6 +99,7 @@ export async function POST(req: NextRequest) {
     const created = await prisma.motivation_scheme.create({
       data: {
         org,
+        org_id: orgId,
         tenure,
         selections: merged,
         additions,

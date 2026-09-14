@@ -26,11 +26,28 @@ const ADMIN_TIERS = ['super-admin', 'admin'];
 export type DecodedUser = {
   userID?: string | number;
   role?: string | null;
+  // The authorization claim — every tenant-scoping check should compare this,
+  // never `org` below.
+  orgId?: number | null;
+  // Display text only (org.name is not unique). Never compare this for
+  // access control.
   org?: string | null;
   email?: string | null;
   perms?: Partial<Record<PermissionKey, true>>;
   [k: string]: any;
 };
+
+/** The org id from a verified token, or the forbidden() response if it's
+ *  missing — every org-scoped route needs one or the other. */
+export function requireOrgId(
+  user: DecodedUser,
+): { ok: true; orgId: number } | { ok: false; response: NextResponse } {
+  const orgId = typeof user.orgId === 'number' ? user.orgId : Number(user.orgId);
+  if (!Number.isFinite(orgId)) {
+    return { ok: false, response: forbidden('No organization on this account.') };
+  }
+  return { ok: true, orgId };
+}
 
 export function verifyToken(token?: string | null): DecodedUser | null {
   if (!token) return null;

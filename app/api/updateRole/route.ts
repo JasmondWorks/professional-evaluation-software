@@ -16,12 +16,13 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const body = await req.json()
   const roleName: string = body.roleName
   const base_role: string | undefined = body.base_role
   const permissions: Partial<Record<PermissionKey, boolean>> = body.permissions || {}
 
-  if (!roleName || !org) {
+  if (!roleName || !org || !orgId) {
     return NextResponse.json({ error: 'roleName is required' }, { status: 400 })
   }
 
@@ -32,10 +33,10 @@ export async function POST(req: Request) {
       PERMISSION_KEYS.map((k) => [k, Boolean(permissions[k])]),
     ) as Record<PermissionKey, boolean>
 
-    // 1) Update the role's permission template (keyed role:org:name).
-    await prisma.permission.deleteMany({ where: { user_id: `role:${org}:${roleName}` } })
+    // 1) Update the role's permission template (keyed role:orgId:name).
+    await prisma.permission.deleteMany({ where: { user_id: `role:${orgId}:${roleName}` } })
     await prisma.permission.create({
-      data: { ...permData, user_id: `role:${org}:${roleName}`, org },
+      data: { ...permData, user_id: `role:${orgId}:${roleName}`, org, org_id: orgId },
     })
 
     // 2) Custom roles may also change which preset they behave as.
@@ -43,17 +44,17 @@ export async function POST(req: Request) {
     if (!isPreset && base_role) {
       const resolved = resolveBaseRole(base_role)
       newFunctionalRole = resolved
-      await prisma.roles.updateMany({ where: { name: roleName, org }, data: { base_role: resolved } })
+      await prisma.roles.updateMany({ where: { name: roleName, org_id: orgId }, data: { base_role: resolved } })
     }
 
     // 3) Propagate to current holders so the edit takes effect immediately.
     const holders = await prisma.pesuser.findMany({
-      where: { org, display_role: roleName },
+      where: { org_id: orgId, display_role: roleName },
       select: { id: true },
     })
     for (const h of holders) {
       await prisma.permission.deleteMany({ where: { user_id: String(h.id) } })
-      await prisma.permission.create({ data: { ...permData, user_id: String(h.id), org } })
+      await prisma.permission.create({ data: { ...permData, user_id: String(h.id), org, org_id: orgId } })
       if (newFunctionalRole) {
         await prisma.pesuser.update({ where: { id: h.id }, data: { role: newFunctionalRole } })
       }

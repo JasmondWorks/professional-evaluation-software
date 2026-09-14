@@ -57,17 +57,18 @@ export async function POST(req: Request) {
     if (!auth.ok) return auth.response
 
     const org = auth.user.org
+    const orgId = auth.user.orgId ?? null
     const body = await req.json()
     const user_name: string | undefined = body.user_name || auth.user.name
     const scores: Scores = body.scores || {}
 
-    if (!user_name || !org) {
+    if (!user_name || !org || !orgId) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 })
     }
 
     // There must be an open settings phase to accept a Form 5 submission.
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle || effectivePhase(cycle) !== 'settings_open') {
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
 
     // One submission per staff member per cycle — enforced here (not just in the UI).
     const already = await prisma.stress_scores.count({
-      where: { user_name, org, cycle_id: cycle.id },
+      where: { user_name, org_id: orgId, cycle_id: cycle.id },
     })
     if (already > 0) {
       return NextResponse.json(
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
 
     // Department comes from the staff member's profile, not the client.
     const profile = await prisma.pesuser.findFirst({
-      where: { name: user_name, org },
+      where: { name: user_name, org_id: orgId },
       select: { dept: true },
     })
     const dept = profile?.dept ?? null
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
       negative_public_attitude: scores.negative_public_attitude ?? 0,
       misc: scores.misc ?? 0,
       org,
+      org_id: orgId,
       dept,
       user_name,
       cycle_id: cycle.id,

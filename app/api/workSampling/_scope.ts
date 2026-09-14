@@ -6,22 +6,22 @@
 import { NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 
-/** The study's org, or null if the study does not exist. */
-export async function orgOfStudy(studyId: number): Promise<string | null> {
+/** The study's org id, or null if the study does not exist. */
+export async function orgOfStudy(studyId: number): Promise<number | null> {
   const study = await prisma.workSamplingStudy.findUnique({
     where: { id: studyId },
-    select: { org: true },
+    select: { org_id: true },
   });
-  return study?.org ?? null;
+  return study?.org_id ?? null;
 }
 
-/** The org owning the study a position belongs to. */
-export async function orgOfPosition(positionId: number): Promise<string | null> {
+/** The org id owning the study a position belongs to. */
+export async function orgOfPosition(positionId: number): Promise<number | null> {
   const position = await prisma.workSamplingPosition.findUnique({
     where: { id: positionId },
-    select: { study: { select: { org: true } } },
+    select: { study: { select: { org_id: true } } },
   });
-  return position?.study?.org ?? null;
+  return position?.study?.org_id ?? null;
 }
 
 /** Same body whether the row is absent or belongs to another org: which study

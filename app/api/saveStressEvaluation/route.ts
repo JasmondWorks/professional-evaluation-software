@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
-    if (!org) {
+    const orgId = decoded?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     const { stress, pressure, conflict, anovaResult } = body;
 
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
 
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
       record = await prisma.stress_analysis_results.create({
         data: {
           org,
+          org_id: orgId,
           cycle_id: cycle.id,
           session_id: feelingTransition.sessionId,
           f_statistic: anovaResult.fStatistic ? Number(anovaResult.fStatistic) : null,

@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
-    if (!org) {
+    const orgId = decoded?.orgId;
+    if (!org || !orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
     const record = await prisma.staff_appraisal_results.create({
       data: {
         org,
+        org_id: orgId,
         cwh: num(shared?.Cwh),
         cbh: num(shared?.Cbh),
         hd: num(shared?.Hd),

@@ -15,25 +15,26 @@ export async function POST(req: Request) {
   })
   if (!auth.ok) return auth.response
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const approver = auth.user.name || String(auth.user.userID ?? '')
 
   try {
     const me = auth.user.name
-      ? await prisma.pesuser.findFirst({ where: { name: auth.user.name, org: org ?? undefined }, select: { faculty_college: true } })
+      ? await prisma.pesuser.findFirst({ where: { name: auth.user.name, org_id: orgId ?? undefined }, select: { faculty_college: true } })
       : null
     const faculty = me?.faculty_college
     if (!faculty) return NextResponse.json({ error: 'No faculty/division on your account.' }, { status: 400 })
 
     const { dept } = await req.json().catch(() => ({}))
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org: org ?? undefined },
+      where: { org_id: orgId ?? undefined },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
     // Which staff are in this faculty (optionally a single department).
     const staff = await prisma.pesuser.findMany({
-      where: { org: org ?? undefined, faculty_college: faculty, ...(dept ? { dept } : {}) },
+      where: { org_id: orgId ?? undefined, faculty_college: faculty, ...(dept ? { dept } : {}) },
       select: { name: true },
     })
     const names = staff.map((s) => s.name).filter((n): n is string => !!n)
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
     // submitted responses are HOD-approved. Block if any submission in scope is
     // still awaiting its HOD.
     const awaitingHod = await prisma.stress.count({
-      where: { org: org ?? undefined, cycle_id: cycle.id, pesuser_name: { in: names }, hod_approved: false },
+      where: { org_id: orgId ?? undefined, cycle_id: cycle.id, pesuser_name: { in: names }, hod_approved: false },
     })
     if (awaitingHod > 0) {
       return NextResponse.json(
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
     // Approve (tier 2) only rows already HOD-approved.
     const result = await prisma.stress.updateMany({
       where: {
-        org: org ?? undefined,
+        org_id: orgId ?? undefined,
         cycle_id: cycle.id,
         hod_approved: true,
         approved: false,

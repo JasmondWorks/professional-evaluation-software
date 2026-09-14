@@ -12,12 +12,12 @@ import { authorize, tokenFromRequest } from '../_lib/authGuard'
 export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), { anyOf: ['can_manage_user_roles', 'can_access_employee_data'] })
   if (!auth.ok) return auth.response
-  const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const heads = await prisma.pesuser.findMany({
-      where: { org, role: { in: ['hod', 'unit-head'] } },
+      where: { org_id: orgId, role: { in: ['hod', 'unit-head'] } },
       select: { id: true, name: true, role: true, dept: true, faculty_college: true },
     })
 

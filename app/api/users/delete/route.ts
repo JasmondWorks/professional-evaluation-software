@@ -15,12 +15,12 @@ export async function POST(req: Request) {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded.org;
+    const orgId = decoded.orgId;
 
     const body = await req.json();
     const { email, id } = body;
 
-    if (!org) {
+    if (!orgId) {
       return NextResponse.json(
         { success: false, message: "Your session has no organization — please log in again." },
         { status: 400 }
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     // Prefer the id (always available from the profile route); fall back to email.
-    const where = id ? { org, id: Number(id) } : { org, email };
+    const where = id ? { org_id: orgId, id: Number(id) } : { org_id: orgId, email };
 
     // Fetch matching users first so we can report exactly what was removed.
     const result = await prisma.pesuser.findMany({ where });

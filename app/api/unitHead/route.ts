@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
     const parsed = validateData(unitHeadSchema, body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -40,12 +41,13 @@ export async function POST(req: NextRequest) {
       status,
     } = body;
 
-    if (!org)
+    if (!org || !orgId)
       return NextResponse.json({ error: "Missing org" }, { status: 400 });
 
     await prisma.unit_head_overloading.create({
       data: {
         org,
+        org_id: orgId,
         actual_hours: actualHours,
         num_subordinates: numSubs,
         extra_complexity: extraComplexity,

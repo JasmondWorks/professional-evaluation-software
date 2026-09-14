@@ -14,6 +14,6 @@ export async function GET(req: Request) {
     if (!ORG_ADMIN_ROLES.includes(viewer.role)) {
       return NextResponse.json({ error: 'Not available for this account.' }, { status: 403 });
     }
-    return NextResponse.json({ overview: await performanceOverview(viewer.org) });
+    return NextResponse.json({ overview: await performanceOverview(viewer.orgId) });
   } catch (err) { return fail(err); }
 }

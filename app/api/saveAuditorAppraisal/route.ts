@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const { pesuser_name, isCounter = false, isAuditor = false, ...payload } = body;
 
-    if (!pesuser_name || !org || Object.keys(payload).length === 0) {
+    if (!pesuser_name || !org || !orgId || Object.keys(payload).length === 0) {
       return NextResponse.json(
         { message: "Missing required fields or empty payload" },
         { status: 400 }
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     // Fetch dept from pesuser
     const user = await prisma.pesuser.findFirst({
-      where: { name: pesuser_name, org },
+      where: { name: pesuser_name, org_id: orgId },
       select: { dept: true },
     });
 
@@ -50,25 +51,25 @@ export async function POST(req: NextRequest) {
     // counter_appraisal has no unique on (pesuser_name, org, dept), so we can't
     // rely on upsert — do a constraint-independent find-then-write.
     const existing = await targetDelegate.findFirst({
-      where: { pesuser_name, org, dept },
+      where: { pesuser_name, org_id: orgId, dept },
       select: { id: true },
     });
 
     if (existing) {
       await targetDelegate.updateMany({
-        where: { pesuser_name, org, dept },
+        where: { pesuser_name, org_id: orgId, dept },
         data: { ...payload },
       });
     } else {
       await targetDelegate.create({
-        data: { pesuser_name, org, dept, ...payload },
+        data: { pesuser_name, org, org_id: orgId, dept, ...payload },
       });
     }
 
     // ✅ If this is a main appraisal, delete matching counter_appraisal scores
     if (!isCounter && isAuditor) {
       await prisma.counter_appraisal.deleteMany({
-        where: { pesuser_name, org, dept },
+        where: { pesuser_name, org_id: orgId, dept },
       });
       console.log(`Deleted counter_appraisal scores for ${pesuser_name} (${org} / ${dept})`);
     }

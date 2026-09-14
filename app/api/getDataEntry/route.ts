@@ -14,8 +14,9 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const userOrg = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
 
-    if (!userOrg) {
+    if (!userOrg || !orgId) {
         return NextResponse.json([], { status: 200 });
     }
 
@@ -25,18 +26,18 @@ export async function POST(req: NextRequest) {
     // across appraisal/stress/userperformance), so counts are consistent
     // everywhere and never double-count across models or past cycles (#12).
     const roster = await prisma.pesuser.findMany({
-      where: rosterWhere(userOrg),
+      where: rosterWhere(orgId),
       select: { name: true, dept: true },
     });
 
     // Distinct staff who have submitted ANY evaluation for this org.
     const submitterRows: { pesuser_name: string | null }[] = await prisma.$queryRaw`
-        SELECT DISTINCT pesuser_name FROM appraisal WHERE org = ${userOrg}
-        UNION SELECT DISTINCT pesuser_name FROM stress WHERE org = ${userOrg}
+        SELECT DISTINCT pesuser_name FROM appraisal WHERE org_id = ${orgId}
+        UNION SELECT DISTINCT pesuser_name FROM stress WHERE org_id = ${orgId}
         `;
     // Performance submitters come from the performance model, which has a
     // period and a draft state — a half-filled form is not a submission.
-    const performanceSubmitterNames = await performanceSubmitters(userOrg);
+    const performanceSubmitterNames = await performanceSubmitters(orgId);
     const submitters = new Set([
       ...submitterRows.map((r) => r.pesuser_name).filter((n): n is string => !!n),
       ...performanceSubmitterNames,

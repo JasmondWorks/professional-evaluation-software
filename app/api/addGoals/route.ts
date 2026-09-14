@@ -42,20 +42,22 @@ async function updateData(entry: Goals) {
   // Resolve the goal owner's org, then notify every user in that org.
   const owner = await prisma.pesuser.findUnique({
     where: { id: userIdNum },
-    select: { org: true },
+    select: { org: true, org_id: true },
   })
   const orgName = owner?.org ?? null
+  const orgId = owner?.org_id ?? null
 
   if (orgName) {
     const orgUsers = await prisma.pesuser.findMany({
-      where: { org: orgName },
-      select: { id: true, org: true },
+      where: orgId != null ? { org_id: orgId } : { org: orgName },
+      select: { id: true, org: true, org_id: true },
     })
 
     await prisma.notifications.createMany({
       data: orgUsers.map((u) => ({
         user_id: u.id,
         org: u.org,
+        org_id: u.org_id,
         title,
         message,
       })),

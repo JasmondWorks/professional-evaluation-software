@@ -18,7 +18,7 @@ type Facility = {
    remark: string,
 }
 
-async function updateData( entry: Facility, org:string ) {
+async function updateData( entry: Facility, org:string, orgId: number | null ) {
    await prisma.facilities.create({
      data: {
        identification_symbol: entry.symbol,
@@ -29,6 +29,7 @@ async function updateData( entry: Facility, org:string ) {
        priority_rating: String(entry.rating),
        remarks: entry.remark,
        org,
+       org_id: orgId,
      },
    })
 
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
   }
   
   const org = payload.org as string;
+  const orgId = payload.orgId ?? null;
 
   const { data } = await request.json();
   console.log(data, org)
@@ -65,10 +67,10 @@ export async function POST(request: NextRequest) {
     }
     
     try {
-      let goals = await updateData(data, org)
+      let goals = await updateData(data, org, orgId)
       console.log(goals)
       const adminUser = await prisma.pesuser.findFirst({
-        where: { org, role: "admin" },
+        where: { org_id: orgId, role: "admin" },
         select: { email: true },
       })
 

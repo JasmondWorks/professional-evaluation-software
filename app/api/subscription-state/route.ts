@@ -16,15 +16,15 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user?.org ? String(auth.user.org) : null;
-  if (!org) {
+  const orgId = auth.user?.orgId ?? null;
+  if (!orgId) {
     return NextResponse.json(
       { error: 'This account is not attached to an organization.' },
       { status: 403 },
     );
   }
 
-  const state = await orgSubscription(org);
+  const state = await orgSubscription(orgId);
 
   return NextResponse.json({
     active: state.active,

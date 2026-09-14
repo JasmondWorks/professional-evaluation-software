@@ -17,23 +17,24 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const role = auth.user.role
   const rejecter = auth.user.name || String(auth.user.userID ?? '')
   const { userName, reason } = await req.json().catch(() => ({}))
-  if (!org || !userName || !reason || !String(reason).trim()) {
+  if (!org || !orgId || !userName || !reason || !String(reason).trim()) {
     return NextResponse.json({ error: 'A staff member and a reason are required.' }, { status: 400 })
   }
 
   try {
     const target = await prisma.pesuser.findFirst({
-      where: { name: userName, org },
+      where: { name: userName, org_id: orgId },
       select: { id: true, dept: true, faculty_college: true },
     })
     if (!target) return NextResponse.json({ error: 'Staff member not found' }, { status: 404 })
 
     // Authorization by scope.
     const me = auth.user.name
-      ? await prisma.pesuser.findFirst({ where: { name: auth.user.name, org }, select: { dept: true, faculty_college: true } })
+      ? await prisma.pesuser.findFirst({ where: { name: auth.user.name, org_id: orgId }, select: { dept: true, faculty_college: true } })
       : null
     if (role === 'hod' && target.dept !== me?.dept) {
       return NextResponse.json({ error: 'That submission is outside your department.' }, { status: 403 })
@@ -42,11 +43,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'That submission is outside your faculty/division.' }, { status: 403 })
     }
 
-    const cycle = await prisma.stressCycle.findFirst({ where: { org }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
+    const cycle = await prisma.stressCycle.findFirst({ where: { org_id: orgId }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
     const result = await prisma.stress.updateMany({
-      where: { org, cycle_id: cycle.id, pesuser_name: userName, rejected: false },
+      where: { org_id: orgId, cycle_id: cycle.id, pesuser_name: userName, rejected: false },
       data: {
         rejected: true,
         rejection_reason: String(reason).trim(),
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
         data: {
           user_id: target.id,
           org,
+          org_id: orgId,
           title: 'Stress submission returned',
           message: `Your theme & feeling form was sent back for re-entry. Reason: ${String(reason).trim()}`,
         },

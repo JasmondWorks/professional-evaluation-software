@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     if (!plan.ok) return plan.response;
     
     const records = await prisma.student_teacher_ratio.findMany({
-      where: { org: decoded.org },
+      where: { org_id: decoded.orgId },
       orderBy: { created_at: "desc" },
     });
 

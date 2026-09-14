@@ -18,11 +18,12 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     // Only this cycle's Form 5 submissions feed the setting.
-    const rows = await prisma.stress_scores.findMany({ where: { org, cycle_id: cycle.id } })
+    const rows = await prisma.stress_scores.findMany({ where: { org_id: orgId, cycle_id: cycle.id } })
     if (rows.length === 0) {
       return NextResponse.json(
         { error: 'No Form 5 (stress category) submissions yet for this cycle.' },

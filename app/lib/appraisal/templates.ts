@@ -47,6 +47,7 @@ export class TemplateError extends Error {
 }
 
 export type Viewer = {
+  orgId: number;
   org: string;
   name: string;
   role: string;
@@ -198,14 +199,14 @@ export async function listTemplates(viewer: Viewer, scope: TemplateScope) {
     where: {
       scope,
       status: { not: 'archived' },
-      OR: [{ is_system: true }, { org: viewer.org }],
+      OR: [{ is_system: true }, { org_id: viewer.orgId }],
     },
     orderBy: [{ is_system: 'desc' }, { created_at: 'asc' }],
     include: { _count: { select: { targets: true } } },
   });
 
   const choice = await prisma.org_template_choice.findFirst({
-    where: { org: viewer.org, scope },
+    where: { org_id: viewer.orgId, scope },
   });
 
   // An organization that has never chosen is scored against the standard, so
@@ -247,7 +248,7 @@ export async function templateTargets(viewer: Viewer, templateId: string) {
 
 async function loadVisible(viewer: Viewer, templateId: string) {
   const t = await prisma.appraisal_template.findFirst({
-    where: { id: templateId, OR: [{ is_system: true }, { org: viewer.org }] },
+    where: { id: templateId, OR: [{ is_system: true }, { org_id: viewer.orgId }] },
   });
   if (!t) throw new TemplateError('Template not found.', 404);
   return t;
@@ -257,12 +258,12 @@ async function loadVisible(viewer: Viewer, templateId: string) {
  *
  *  Client note, 26 Aug 2026: this is for the organization admin and
  *  Establishment only. Callers must gate on the role before showing it. */
-export async function inForceFor(org: string, scopes: TemplateScope[]) {
+export async function inForceFor(orgId: number, scopes: TemplateScope[]) {
   const out = [];
   for (const scope of scopes) {
     // Falls back to the standard, which is what an organization that has never
     // chosen is actually scored against.
-    const t = await templateInForce(org, scope);
+    const t = await templateInForce(orgId, scope);
     out.push({
       scope,
       id: t.id,
@@ -294,7 +295,7 @@ export async function duplicateTemplate(
   if (name.length < 3) throw new TemplateError('Give the template a name.', 400);
 
   const clash = await prisma.appraisal_template.findFirst({
-    where: { org: viewer.org, scope: source.scope, name, status: { not: 'archived' } },
+    where: { org_id: viewer.orgId, scope: source.scope, name, status: { not: 'archived' } },
   });
   if (clash) throw new TemplateError(`This organization already has a template called "${name}".`, 409);
 
@@ -306,7 +307,7 @@ export async function duplicateTemplate(
     data: {
       scope: source.scope,
       name,
-      org: viewer.org,
+      org_id: viewer.orgId,
       is_system: false,
       status: 'draft',
       version: 1,
@@ -353,7 +354,7 @@ export async function setTemplateTarget(
       403,
     );
   }
-  if (template.org !== viewer.org) {
+  if (template.org_id !== viewer.orgId) {
     throw new TemplateError('That template belongs to another organization.', 403);
   }
   if (template.status !== 'draft') {
@@ -410,7 +411,7 @@ export async function markTemplateReady(viewer: Viewer, templateId: string) {
   const template = await loadVisible(viewer, templateId);
 
   if (template.is_system) throw new TemplateError('The PES standard is already the standard.', 400);
-  if (template.org !== viewer.org) throw new TemplateError('That template belongs to another organization.', 403);
+  if (template.org_id !== viewer.orgId) throw new TemplateError('That template belongs to another organization.', 403);
   if (template.status !== 'draft') throw new TemplateError('This template is not a draft.', 409);
 
   const missing = await missingFrom(template.id, template.scope as TemplateScope);
@@ -433,7 +434,7 @@ export async function approveTemplate(viewer: Viewer, templateId: string) {
   requireEstab(viewer);
   const template = await loadVisible(viewer, templateId);
 
-  if (template.org !== viewer.org) throw new TemplateError('That template belongs to another organization.', 403);
+  if (template.org_id !== viewer.orgId) throw new TemplateError('That template belongs to another organization.', 403);
   if (template.status !== 'ready') throw new TemplateError('Only a template marked ready can be approved.', 409);
   if (template.approved_at) throw new TemplateError('This template has already been approved.', 409);
   if (template.ready_by && template.ready_by === viewer.name) {
@@ -459,18 +460,18 @@ export async function newTemplateVersion(viewer: Viewer, templateId: string) {
   if (source.is_system) {
     throw new TemplateError('Duplicate the PES standard instead of versioning it.', 400);
   }
-  if (source.org !== viewer.org) throw new TemplateError('That template belongs to another organization.', 403);
+  if (source.org_id !== viewer.orgId) throw new TemplateError('That template belongs to another organization.', 403);
   if (source.status === 'draft') throw new TemplateError('This template is already a draft.', 409);
 
   const openDraft = await prisma.appraisal_template.findFirst({
-    where: { org: viewer.org, name: source.name, scope: source.scope, status: 'draft' },
+    where: { org_id: viewer.orgId, name: source.name, scope: source.scope, status: 'draft' },
   });
   if (openDraft) {
     throw new TemplateError('A draft of this template already exists. Finish or discard it first.', 409);
   }
 
   const latest = await prisma.appraisal_template.findFirst({
-    where: { org: viewer.org, name: source.name, scope: source.scope },
+    where: { org_id: viewer.orgId, name: source.name, scope: source.scope },
     orderBy: { version: 'desc' },
     select: { version: true },
   });
@@ -483,7 +484,7 @@ export async function newTemplateVersion(viewer: Viewer, templateId: string) {
     data: {
       scope: source.scope,
       name: source.name,
-      org: viewer.org,
+      org_id: viewer.orgId,
       is_system: false,
       status: 'draft',
       version: (latest?.version ?? source.version) + 1,
@@ -533,15 +534,18 @@ export async function putInForce(viewer: Viewer, input: { scope: TemplateScope; 
   }
 
   const openPeriod = await prisma.appraisal_period.findFirst({
-    where: { org: viewer.org, status: 'open' },
+    where: { org_id: viewer.orgId, status: 'open' },
     select: { id: true },
   });
 
   await prisma.org_template_choice.upsert({
+    // The composite unique key is still ([org, scope]) at the schema level —
+    // org_id is populated but hasn't replaced org in the constraint yet.
     where: { org_scope: { org: viewer.org, scope: input.scope } },
     update: { template_id: template.id, chosen_by: viewer.name, chosen_at: new Date() },
     create: {
       org: viewer.org,
+      org_id: viewer.orgId,
       scope: input.scope,
       template_id: template.id,
       chosen_by: viewer.name,
@@ -558,9 +562,9 @@ export async function putInForce(viewer: Viewer, input: { scope: TemplateScope; 
 
 /** The template an organization scores a scheme against, falling back to the
  *  system standard when it has never chosen. */
-export async function templateInForce(org: string, scope: TemplateScope) {
+export async function templateInForce(orgId: number, scope: TemplateScope) {
   const choice = await prisma.org_template_choice.findFirst({
-    where: { org, scope },
+    where: { org_id: orgId, scope },
     include: { template: true },
   });
   if (choice?.template) return choice.template;

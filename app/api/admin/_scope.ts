@@ -22,6 +22,8 @@ export type ConsoleViewer = {
   isPlatform: boolean;
   /** The org an org-admin is confined to; null for the platform operator. */
   org: string | null;
+  /** The id of the org an org-admin is confined to; null for the platform operator. */
+  orgId: number | null;
 };
 
 export function consoleViewer(
@@ -38,19 +40,20 @@ export function consoleViewer(
   // An org admin whose token carries no org has nothing it can safely be scoped
   // to, so it gets nothing rather than everything.
   const org = isPlatform ? null : user.org ? String(user.org) : null;
-  if (!isPlatform && !org) {
+  const orgId = isPlatform ? null : typeof user.orgId === 'number' ? user.orgId : null;
+  if (!isPlatform && (!org || orgId == null)) {
     return {
       ok: false,
       response: forbidden('This account is not attached to an organization'),
     };
   }
 
-  return { ok: true, viewer: { user, isPlatform, org } };
+  return { ok: true, viewer: { user, isPlatform, org, orgId } };
 }
 
 /** Refuse an org named in the URL that is not the caller's own. */
-export function canReachOrg(viewer: ConsoleViewer, org: string): boolean {
-  return viewer.isPlatform || viewer.org === org;
+export function canReachOrg(viewer: ConsoleViewer, orgId: number): boolean {
+  return viewer.isPlatform || viewer.orgId === orgId;
 }
 
 // Columns of `pesuser` that may leave the API. Named explicitly because the

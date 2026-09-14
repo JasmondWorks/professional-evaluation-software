@@ -59,7 +59,7 @@ export async function GET(req: Request) {
           approvedBy: template.approved_by,
           // The screen shows read-only cells and a "Duplicate to edit" action
           // rather than inputs nobody can explain.
-          editable: !template.is_system && template.org === viewer.org && template.status === 'draft',
+          editable: !template.is_system && template.org_id === viewer.orgId && template.status === 'draft',
         },
         targets: targets.map((t) => ({
           id: t.id,

@@ -15,22 +15,22 @@ export async function POST(req: Request) {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded.org;
+    const orgId = decoded.orgId;
 
     const body = await req.json();
     const { user_name } = body;
 
-    if (!user_name || !org) {
+    if (!user_name || !orgId) {
       return NextResponse.json(
         { error: "user_name and org are required" },
         { status: 400 }
       );
     }
 
-    console.log("Fetching stress scores for:", { user_name, org });
+    console.log("Fetching stress scores for:", { user_name, orgId });
 
     const row = await prisma.stress_scores.findFirst({
-      where: { user_name, org },
+      where: { user_name, org_id: orgId },
       select: {
         organizational: true,
         student: true,

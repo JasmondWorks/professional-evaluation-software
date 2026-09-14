@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       where:
         auth.user.role === "super-admin"
           ? {}
-          : { name: auth.user.org ? String(auth.user.org) : " " },
+          : { id: auth.user.orgId ?? -1 },
       select: { id: true, name: true },
     });
     return NextResponse.json(orgs);

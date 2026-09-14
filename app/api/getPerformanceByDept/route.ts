@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
 
   const token = req.headers.get("authorization")?.split(" ")[1];
   const decoded = token ? (verifyToken(token) as any) : null;
-  if (!decoded?.org) {
+  if (!decoded?.org || !decoded?.orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const rows = await staffPerformance({ org: decoded.org, dept });
+    const rows = await staffPerformance({ orgId: decoded.orgId, dept });
 
     return NextResponse.json(
       rows.map((r) => ({

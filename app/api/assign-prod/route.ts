@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
     const { email, dept } = await req.json();
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existingUser = await prisma.pesuser.findUnique({ where: { email } });
-    if (!existingUser || existingUser.org !== org) {
+    if (!existingUser || existingUser.org_id !== orgId) {
       return NextResponse.json({ error: "User not found or unauthorized" }, { status: 404 });
     }
 

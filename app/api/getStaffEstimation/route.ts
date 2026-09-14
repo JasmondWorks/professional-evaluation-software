@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const records = await prisma.staffEstimation.findMany({
-      where: { org: auth.user.org ?? undefined },
+      where: { org_id: auth.user.orgId ?? undefined },
       orderBy: { createdAt: "desc" },
     });
 

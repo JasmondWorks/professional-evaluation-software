@@ -31,7 +31,8 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org;
-  if (!org) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
+  const orgId = auth.user.orgId ?? null;
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
 
   const { id } = await req.json().catch(() => ({ id: null }));
   const numericId = Number(id);
@@ -41,21 +42,21 @@ export async function POST(req: Request) {
 
   try {
     const staff = await prisma.pesuser.findFirst({
-      where: { id: numericId, org },
+      where: { id: numericId, org_id: orgId },
       select: { id: true, name: true, dept: true },
     });
     if (!staff) {
       return NextResponse.json({ error: 'Staff member not found in your organization.' }, { status: 404 });
     }
 
-    const byName = { pesuser_name: staff.name, org };
+    const byName = { pesuser_name: staff.name, org_id: orgId };
 
     const [appraisal, performance, stress, stressScores] = await Promise.all([
       prisma.appraisal.findFirst({ where: byName, orderBy: { id: 'desc' } }),
-      onePerformance(org, staff.name),
+      onePerformance(orgId, staff.name),
       prisma.stress.findFirst({ where: byName, orderBy: { id: 'desc' } }),
       prisma.stress_scores.findFirst({
-        where: { user_name: staff.name, org },
+        where: { user_name: staff.name, org_id: orgId },
         orderBy: { id: 'desc' },
       }),
     ]);

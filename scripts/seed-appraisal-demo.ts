@@ -19,9 +19,9 @@ const ORG = '__demo__';
 const DEPT = 'Mechanical Engineering';
 const PASSWORD = 'Demo1234!';
 
-const admin: Viewer = { org: ORG, name: 'Demo Estab', role: 'admin', dept: DEPT };
-const deptAdmin: Viewer = { org: ORG, name: 'Demo Dept Officer', role: 'dept-admin', dept: DEPT };
-const staff: Viewer = { org: ORG, name: 'Demo Lecturer', role: 'lecturer', dept: DEPT };
+const admin: Viewer = { orgId: 0, org: ORG, name: 'Demo Estab', role: 'admin', dept: DEPT };
+const deptAdmin: Viewer = { orgId: 0, org: ORG, name: 'Demo Dept Officer', role: 'dept-admin', dept: DEPT };
+const staff: Viewer = { orgId: 0, org: ORG, name: 'Demo Lecturer', role: 'lecturer', dept: DEPT };
 
 async function upsertUser(name: string, role: string, email: string) {
   const hash = await bcrypt.hash(PASSWORD, 10);
@@ -42,9 +42,12 @@ async function main() {
   await prisma.pesuser.deleteMany({ where: { org: ORG } });
   await prisma.org.deleteMany({ where: { name: ORG } });
 
-  await prisma.org.create({
+  const newOrg = await prisma.org.create({
     data: { name: ORG, category: 'academic', plan: 'premium', evaluation: [] },
   });
+  for (const viewer of [admin, deptAdmin, staff]) {
+    viewer.orgId = newOrg.id;
+  }
   await upsertUser(admin.name, 'admin', 'demo.admin@pes.test');
   await upsertUser(deptAdmin.name, 'dept-admin', 'demo.deptadmin@pes.test');
   await upsertUser('Demo Head', 'hod', 'demo.hod@pes.test');

@@ -25,9 +25,9 @@ import { openPeriod, closePeriod } from '../app/lib/appraisal/service';
 const prisma = new PrismaClient();
 const ORG = '__templates__';
 
-const estab: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'academic' };
-const second: Viewer = { org: ORG, name: 'Second Officer', role: 'admin', productCategory: 'academic' };
-const company: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'company' };
+const estab: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'academic' };
+const second: Viewer = { orgId: 0, org: ORG, name: 'Second Officer', role: 'admin', productCategory: 'academic' };
+const company: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'company' };
 
 let pass = 0;
 let fail = 0;
@@ -65,7 +65,10 @@ async function cleanup() {
 
 async function main() {
   await cleanup();
-  await prisma.org.create({ data: { name: ORG, category: 'academic', plan: 'premium', evaluation: [] } });
+  const newOrg = await prisma.org.create({ data: { name: ORG, category: 'academic', plan: 'premium', evaluation: [] } });
+  for (const viewer of [estab, second, company]) {
+    viewer.orgId = newOrg.id;
+  }
   await ensureSystemTemplates();
 
   // -------------------------------------------------------------------------
@@ -164,7 +167,7 @@ async function main() {
 
   // -------------------------------------------------------------------------
   say('System', 'The non-academic scheme is untouched by that choice.');
-  const nonAcad = await templateInForce(ORG, 'non_academic');
+  const nonAcad = await templateInForce(estab.orgId, 'non_academic');
   expect('still the standard', nonAcad.is_system, true);
 
   // -------------------------------------------------------------------------

@@ -16,17 +16,17 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(
       token,
       getJWTSecret()
-    ) as { org: string; role: string }
+    ) as { org: string; orgId: number; role: string }
 
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const orgName = decoded.org
+    const orgId = decoded.orgId
 
     // Fetch current evaluation array
-    const org = await prisma.org.findFirst({
-      where: { name: orgName },
+    const org = await prisma.org.findUnique({
+      where: { id: orgId },
       select: { id: true, evaluation: true },
     })
 

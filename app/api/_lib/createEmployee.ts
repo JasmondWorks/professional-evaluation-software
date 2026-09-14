@@ -51,6 +51,7 @@ export type EmployeeInput = {
    *  Section 21 counts these as the real head count per level. */
   management_level?: number | string | null;
   org: string;
+  orgId?: number | null;
 } & Partial<Record<PermissionKey, boolean>>;
 
 export type CreateOutcome =
@@ -115,6 +116,7 @@ export async function resolveRoleName(
   org: string,
   role: string,
   productCategory?: string | null,
+  orgId?: number | null,
 ): Promise<string | null> {
   const wanted = String(role ?? '').trim().toLowerCase();
   if (wanted === '') return null;
@@ -127,7 +129,10 @@ export async function resolveRoleName(
   // Custom roles are per-org and stored with the casing their creator chose,
   // so compare case-insensitively and return what is actually in the table.
   const row = await prisma.roles.findFirst({
-    where: { org, name: { equals: role.trim(), mode: 'insensitive' } },
+    where: {
+      ...(orgId != null ? { org_id: orgId } : { org }),
+      name: { equals: role.trim(), mode: 'insensitive' },
+    },
     select: { name: true },
   });
   return row?.name ?? null;
@@ -137,8 +142,9 @@ export async function roleExists(
   org: string,
   role: string,
   productCategory?: string | null,
+  orgId?: number | null,
 ): Promise<boolean> {
-  return (await resolveRoleName(org, role, productCategory)) !== null;
+  return (await resolveRoleName(org, role, productCategory, orgId)) !== null;
 }
 
 export async function createEmployee(
@@ -147,7 +153,7 @@ export async function createEmployee(
 ): Promise<CreateOutcome> {
   const {
     name, email, gsm, role, address, dept, faculty_college,
-    dob, doa, poa, doc, post, dopp, level, management_level, org,
+    dob, doa, poa, doc, post, dopp, level, management_level, org, orgId,
   } = input;
 
   try {
@@ -168,7 +174,7 @@ export async function createEmployee(
       functionalRole = role;
     } else {
       const roleRow = await prisma.roles.findFirst({
-        where: { name: role, org },
+        where: { ...(orgId != null ? { org_id: orgId } : { org }), name: role },
         select: { base_role: true },
       });
       functionalRole = resolveBaseRole(roleRow?.base_role);
@@ -178,6 +184,7 @@ export async function createEmployee(
     // faculty/division head for the faculty, within this org.
     const headCheck = await checkSingleHead(prisma, {
       org,
+      orgId,
       role: functionalRole,
       dept,
       faculty_college,
@@ -217,6 +224,7 @@ export async function createEmployee(
             : Math.trunc(Number(management_level)),
         image: null,
         org: org || null,
+        org_id: orgId ?? null,
       },
       select: { id: true },
     });
@@ -230,11 +238,12 @@ export async function createEmployee(
         ...permissionData,
         user_id: String(user.id),
         org: org || null,
+        org_id: orgId ?? null,
       } as any,
     });
 
     await prisma.roles.updateMany({
-      where: { name: role, org },
+      where: { name: role, ...(orgId != null ? { org_id: orgId } : { org }) },
       data: { assigned: { increment: 1 } },
     });
 
@@ -277,9 +286,9 @@ export async function sendLoginEmail(
 }
 
 /** The org admin, used as reply-to on credential emails. */
-export async function orgAdminEmail(org: string): Promise<string | undefined> {
+export async function orgAdminEmail(org: string, orgId?: number | null): Promise<string | undefined> {
   const admin = await prisma.pesuser.findFirst({
-    where: { org, role: { in: ['admin', 'Super user'] } },
+    where: { ...(orgId != null ? { org_id: orgId } : { org }), role: { in: ['admin', 'Super user'] } },
     select: { email: true },
   });
   return admin?.email ?? undefined;

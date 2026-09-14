@@ -7,9 +7,9 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getRoles( user: string | null ) {
-  if (!user) return []
-  return prisma.roles.findMany({ where: { org: user } })
+async function getRoles( orgId: number | null ) {
+  if (!orgId) return []
+  return prisma.roles.findMany({ where: { org_id: orgId } })
 }
 
 export async function POST(request: NextRequest) {
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const userOrg = auth.user.org ? String(auth.user.org) : null;
-    let userInfo = await getRoles(userOrg);
+    const userOrgId = auth.user.orgId ?? null;
+    let userInfo = await getRoles(userOrgId);
     return NextResponse.json(userInfo);
   } catch(err) {
     console.error(err)

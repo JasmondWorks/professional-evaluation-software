@@ -7,9 +7,9 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getUser( user: string | null ) {
-  if (!user) return []
-  return prisma.pesuser.findMany({ where: { org: user } })
+async function getUser( orgId: number | null ) {
+  if (!orgId) return []
+  return prisma.pesuser.findMany({ where: { org_id: orgId } })
 }
 
 export async function POST(request: NextRequest) {
@@ -17,10 +17,8 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    // The previous code passed decoded.name into getUsers, which filtered by { org: user }
-    // It should clearly be the org.
-    const userOrg = auth.user.org ? String(auth.user.org) : null;
-    let userInfo = await getUser(userOrg)
+    const userOrgId = auth.user.orgId ?? null;
+    let userInfo = await getUser(userOrgId)
     return NextResponse.json(userInfo)
   } catch(err) {
     console.error(err)

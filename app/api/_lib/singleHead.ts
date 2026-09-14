@@ -26,13 +26,14 @@ export async function checkSingleHead(
   prisma: any,
   opts: {
     org: string
+    orgId?: number | null
     role: string
     dept?: string | null
     faculty_college?: string | null
     excludeUserId?: number
   },
 ): Promise<HeadCheck> {
-  const { org, role, excludeUserId } = opts
+  const { org, orgId, role, excludeUserId } = opts
   if (!isHeadRole(role)) return { ok: true }
 
   const { field, noun } = HEAD_ROLE_CONFIG[role]
@@ -49,7 +50,7 @@ export async function checkSingleHead(
 
   const existing = await prisma.pesuser.findFirst({
     where: {
-      org,
+      ...(orgId != null ? { org_id: orgId } : { org }),
       role,
       [field]: scope,
       ...(excludeUserId ? { id: { not: excludeUserId } } : {}),

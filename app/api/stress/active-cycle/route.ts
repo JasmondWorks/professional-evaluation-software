@@ -20,11 +20,12 @@ export async function GET(req: Request) {
   })
   if (!auth.ok) return auth.response
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const userName = auth.user.name
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org: org ?? undefined },
+      where: { org_id: orgId ?? undefined },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
 
@@ -62,19 +63,19 @@ export async function GET(req: Request) {
     // Has this staff member already submitted Form 5 / Form 6 for THIS cycle?
     const submitted = userName
       ? (await prisma.stress_scores.count({
-          where: { org: org ?? undefined, user_name: userName, cycle_id: cycle.id },
+          where: { org_id: orgId ?? undefined, user_name: userName, cycle_id: cycle.id },
         })) > 0
       : false
     const form6Submitted = userName
       ? (await prisma.stress.count({
-          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: false },
+          where: { org_id: orgId ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: false },
         })) > 0
       : false
     // If this staff member's submission was sent back, surface the reason so they
     // see it right where they re-enter.
     const returned = userName
       ? await prisma.stress.findFirst({
-          where: { org: org ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: true },
+          where: { org_id: orgId ?? undefined, pesuser_name: userName, cycle_id: cycle.id, rejected: true },
           select: { rejection_reason: true },
         })
       : null

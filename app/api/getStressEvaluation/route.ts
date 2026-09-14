@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
-  if (!org) {
+  const orgId = auth.user.orgId ?? null;
+  if (!orgId) {
     return NextResponse.json(
       { error: "This account is not attached to an organization" },
       { status: 403 }
@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    
+
     const records = await prisma.stress_evaluation_history.findMany({
       where: {
-        org,
+        org_id: orgId,
       },
       orderBy: {
         created_at: "desc",

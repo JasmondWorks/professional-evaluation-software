@@ -59,7 +59,7 @@ function claimsFrom(req: Request): any {
 export async function DELETE(req: Request) {
   try {
     const claims = claimsFrom(req);
-    const org = claims.org as string;
+    const orgId = claims.orgId as number;
     const url = new URL(req.url);
     const source = url.searchParams.get('source') as HistoryKey | null;
     const id = Number(url.searchParams.get('id'));
@@ -77,7 +77,7 @@ export async function DELETE(req: Request) {
     // deleteMany, not delete, so the org is part of the match rather than a
     // check made after the fact — a row belonging to another organization
     // matches nothing instead of being read and then refused.
-    const { count } = await (DELETABLE[source]() as any).deleteMany({ where: { id, org } });
+    const { count } = await (DELETABLE[source]() as any).deleteMany({ where: { id, org_id: orgId } });
 
     if (count === 0) {
       return NextResponse.json({ error: 'That record no longer exists.' }, { status: 404 });

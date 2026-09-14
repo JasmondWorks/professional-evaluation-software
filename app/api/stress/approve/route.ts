@@ -17,16 +17,17 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const dept = auth.user.dept
   const approver = auth.user.name || String(auth.user.userID ?? '')
-  if (!org || !dept) {
+  if (!org || !orgId || !dept) {
     return NextResponse.json({ error: 'No department on your account.' }, { status: 400 })
   }
 
   try {
     const { userName } = await req.json().catch(() => ({}))
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     // signs off (tier 2) on top of this.
     const result = await prisma.stress.updateMany({
       where: {
-        org,
+        org_id: orgId,
         dept,
         cycle_id: cycle.id,
         hod_approved: false,
@@ -48,11 +49,11 @@ export async function POST(req: Request) {
     // head that it's ready for their sign-off (no-op for non-academic orgs, which
     // have no faculty head).
     const stillAwaitingHod = await prisma.stress.count({
-      where: { org, dept, cycle_id: cycle.id, hod_approved: false },
+      where: { org_id: orgId, dept, cycle_id: cycle.id, hod_approved: false },
     })
     if (stillAwaitingHod === 0) {
       const anyStaff = await prisma.pesuser.findFirst({
-        where: { org, dept },
+        where: { org_id: orgId, dept },
         select: { faculty_college: true },
       })
       if (anyStaff?.faculty_college) {

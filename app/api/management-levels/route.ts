@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
     const plan = await requireEntitlement(auth.user, 'org-structure.management-levels');
     if (!plan.ok) return plan.response;
 
-    const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!orgId) {
       return NextResponse.json(
         { error: 'Organization not found in token' },
         { status: 400 },
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     const rows = await prisma.pesuser.groupBy({
       by: ['management_level'],
-      where: { org, management_level: { not: null } },
+      where: { org_id: orgId, management_level: { not: null } },
       _count: { _all: true },
     });
 

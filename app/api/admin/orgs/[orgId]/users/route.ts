@@ -9,13 +9,16 @@ import { consoleViewer, canReachOrg, PUBLIC_USER_COLUMNS } from "../../../_scope
 // only about their own org; the platform operator may ask about any.
 export async function GET(
   req: NextRequest,
-  { params }: { params: { org: string } }
+  { params }: { params: { orgId: string } }
 ) {
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
-  const org = decodeURIComponent(params.org);
-  if (!canReachOrg(auth.viewer, org)) {
+  const orgId = Number(params.orgId);
+  if (!Number.isFinite(orgId)) {
+    return NextResponse.json({ error: "Invalid org id" }, { status: 400 });
+  }
+  if (!canReachOrg(auth.viewer, orgId)) {
     return NextResponse.json(
       { error: "You do not have permission to view this organization" },
       { status: 403 }
@@ -24,7 +27,7 @@ export async function GET(
 
   try {
     const users = await prisma.pesuser.findMany({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: { name: "asc" },
       select: PUBLIC_USER_COLUMNS,
     });

@@ -21,14 +21,15 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const { email, role } = await req.json()
-  if (!email || !role || !org) {
+  if (!email || !role || !org || !orgId) {
     return NextResponse.json({ error: 'email and role are required' }, { status: 400 })
   }
 
   try {
     const user = await prisma.pesuser.findFirst({
-      where: { email, org },
+      where: { email, org_id: orgId },
       select: { id: true, display_role: true, dept: true, faculty_college: true },
     })
     if (!user) {
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
 
     if (!isPreset) {
       const roleRow = await prisma.roles.findFirst({
-        where: { name: role, org },
+        where: { name: role, org_id: orgId },
         select: { base_role: true },
       })
       functionalRole = resolveBaseRole(roleRow?.base_role)
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
     // the employee themselves, so re-assigning the same person is fine).
     const headCheck = await checkSingleHead(prisma, {
       org,
+      orgId,
       role: functionalRole,
       dept: user.dept,
       faculty_college: user.faculty_college,
@@ -65,7 +67,7 @@ export async function POST(req: Request) {
     }
 
     const tpl = await prisma.permission.findFirst({
-      where: { user_id: `role:${org}:${role}` },
+      where: { user_id: `role:${orgId}:${role}` },
     })
     if (tpl) {
       template = Object.fromEntries(
@@ -83,18 +85,18 @@ export async function POST(req: Request) {
     if (template) {
       await prisma.permission.deleteMany({ where: { user_id: String(user.id) } })
       await prisma.permission.create({
-        data: { ...template, user_id: String(user.id), org },
+        data: { ...template, user_id: String(user.id), org, org_id: orgId },
       })
     }
 
     // Keep the roles' assigned counters in step (all roles are real rows now).
     if (user.display_role && user.display_role !== role) {
       await prisma.roles.updateMany({
-        where: { name: user.display_role, org },
+        where: { name: user.display_role, org_id: orgId },
         data: { assigned: { decrement: 1 } },
       })
       await prisma.roles.updateMany({
-        where: { name: role, org },
+        where: { name: role, org_id: orgId },
         data: { assigned: { increment: 1 } },
       })
     }

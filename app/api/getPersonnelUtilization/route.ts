@@ -14,14 +14,14 @@ export async function POST(request: NextRequest) {
     const plan = await requireModel(auth.user, 'personnel-utilization');
     if (!plan.ok) return plan.response;
 
-    const orgName = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
 
-    if (!orgName) {
+    if (!orgId) {
       return NextResponse.json({ error: "Organization not found in token" }, { status: 400 });
     }
 
     const records = await prisma.personnel_utilization.findMany({
-      where: { org: orgName },
+      where: { org_id: orgId },
       orderBy: { created_at: "desc" },
     });
 

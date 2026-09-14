@@ -39,11 +39,11 @@ function normalize(input: Partial<Record<string, boolean>>): PermMap {
 }
 
 // Resolve the target employee inside the caller's org (never outside it).
-async function findStaff(id: unknown, org: string) {
+async function findStaff(id: unknown, orgId: number) {
   const numericId = Number(id);
   if (!numericId || Number.isNaN(numericId)) return null;
   return prisma.pesuser.findFirst({
-    where: { id: numericId, org },
+    where: { id: numericId, org_id: orgId },
     select: { id: true, name: true, role: true, display_role: true },
   });
 }
@@ -55,16 +55,17 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org;
-  if (!org) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
+  const orgId = auth.user.orgId ?? null;
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
 
   const { id } = await req.json().catch(() => ({ id: null }));
-  const staff = await findStaff(id, org);
+  const staff = await findStaff(id, orgId);
   if (!staff) {
     return NextResponse.json({ error: 'Staff member not found in your organization.' }, { status: 404 });
   }
 
   try {
-    const row = await prisma.permission.findFirst({ where: { user_id: String(staff.id), org } });
+    const row = await prisma.permission.findFirst({ where: { user_id: String(staff.id), org_id: orgId } });
     return NextResponse.json({
       permissions: toMap(row),
       // No row yet means the employee predates permission storage — the UI says
@@ -84,10 +85,11 @@ export async function PUT(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org;
-  if (!org) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
+  const orgId = auth.user.orgId ?? null;
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
 
   const body = await req.json().catch(() => ({}));
-  const staff = await findStaff(body.id, org);
+  const staff = await findStaff(body.id, orgId);
   if (!staff) {
     return NextResponse.json({ error: 'Staff member not found in your organization.' }, { status: 404 });
   }
@@ -98,7 +100,7 @@ export async function PUT(req: Request) {
     // One row per user: replace rather than accumulate (mirrors updateRole).
     await prisma.permission.deleteMany({ where: { user_id: String(staff.id) } });
     await prisma.permission.create({
-      data: { ...permissions, user_id: String(staff.id), org },
+      data: { ...permissions, user_id: String(staff.id), org, org_id: orgId },
     });
     return NextResponse.json({ success: true, permissions, configured: true });
   } catch (err) {

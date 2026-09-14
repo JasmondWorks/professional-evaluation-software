@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     if (!auth.ok) return auth.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org)
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId)
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
 
     const body = await req.json();
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     };
 
     await prisma.non_academic_appraisal.create({
-      data: { org, ...fields },
+      data: { org, org_id: orgId, ...fields },
     });
 
     return NextResponse.json({ success: true, message: "Appraisal saved successfully." });

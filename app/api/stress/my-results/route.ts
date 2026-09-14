@@ -16,13 +16,14 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const name = auth.user.name
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const me = name
       ? await prisma.pesuser.findFirst({
-          where: { name, org },
+          where: { name, org_id: orgId },
           select: { dept: true, faculty_college: true, view_department_stress: true, view_faculty_stress: true },
         })
       : null
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
 
     // Effective settings cycle = the latest cycle that actually collected Form 5.
     const withScores = await prisma.stress_scores.findMany({
-      where: { org, cycle_id: { not: null } },
+      where: { org_id: orgId, cycle_id: { not: null } },
       select: { cycle_id: true },
       distinct: ['cycle_id'],
       orderBy: { cycle_id: 'desc' },
@@ -44,7 +45,7 @@ export async function GET(req: Request) {
     const cycleId = withScores.length ? withScores[0].cycle_id : null
 
     const rows = await prisma.stress_scores.findMany({
-      where: { org, ...(cycleId != null ? { cycle_id: cycleId } : {}) },
+      where: { org_id: orgId, ...(cycleId != null ? { cycle_id: cycleId } : {}) },
     })
 
     // Per-staff stress factor, then per-department mean.
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
     for (const [d, arr] of Object.entries(byDept)) deptStress[d] = mean(arr)
 
     // Which faculty each department belongs to.
-    const staff = await prisma.pesuser.findMany({ where: { org }, select: { dept: true, faculty_college: true } })
+    const staff = await prisma.pesuser.findMany({ where: { org_id: orgId }, select: { dept: true, faculty_college: true } })
     const facultyOfDept: Record<string, string> = {}
     for (const s of staff) {
       const d = s.dept || 'Unspecified'

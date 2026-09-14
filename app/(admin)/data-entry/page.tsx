@@ -70,14 +70,14 @@ export default function DataEntryPage() {
   const terms = orgTerms(user?.productCategory ?? user?.category);
 
   useEffect(() => {
-    if (!user?.org) return;
-    apiFetch(`/api/org/${encodeURIComponent(user.org)}`)
+    if (user?.orgId == null) return;
+    apiFetch(`/api/org/${user.orgId}`)
       .then((res) => res.json())
       .then((res) => {
         if (res?.data?.evaluation) setEvaluation(res.data.evaluation);
       })
       .catch(console.error);
-  }, [user?.org]);
+  }, [user?.orgId]);
 
   const has = (key: EvaluationType) => evaluation.includes(key);
   const role = user?.role;

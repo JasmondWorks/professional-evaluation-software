@@ -233,13 +233,16 @@ export async function POST(req: Request) {
   const maintenance = institutionType === 'COMPANY' || input.maintenance_model === true;
 
   try {
-    const { userId } = await prisma.$transaction(async (tx) => {
-      await tx.org.create({
+    const { userId, orgId } = await prisma.$transaction(async (tx) => {
+      const newOrg = await tx.org.create({
         data: {
           name: input.organization_name,
           category: input.product_category.toLowerCase(),
           plan: input.product_plan.toLowerCase(),
           maintenance_model: maintenance,
+          // The org's own logo — not the admin's. pesuser.image is left free
+          // for the admin's own picture, if they ever set one.
+          logo_url: input.organization_logo_url ?? null,
         },
       });
 
@@ -255,10 +258,10 @@ export async function POST(req: Request) {
           password: unusable,
           role: 'admin',
           org: input.organization_name,
+          org_id: newOrg.id,
           category: input.product_category.toLowerCase(),
           plan: input.product_plan.toLowerCase(),
           gsm: input.admin_phone ?? null,
-          image: input.organization_logo_url ?? null,
           // They will choose their own password through the link, so there is
           // nothing to force them to change afterwards.
           must_change_password: false,
@@ -271,6 +274,7 @@ export async function POST(req: Request) {
           pesuser_email: input.admin_email,
           pesuser_name: input.admin_name,
           org: input.organization_name,
+          org_id: newOrg.id,
           plan_code: payment.plan,
           plan_name: input.product_plan.toLowerCase(),
           reference: payment.reference,
@@ -281,14 +285,14 @@ export async function POST(req: Request) {
         },
       });
 
-      return { userId: user.id };
+      return { userId: user.id, orgId: newOrg.id };
     });
 
     // Outside the transaction: the preset roles are convenience, and a failure
     // here must not undo a paid-for organization.
     try {
       const { seedPresetRoles } = await import('@/app/api/_lib/seedRoles');
-      await seedPresetRoles(input.organization_name, input.product_category.toLowerCase());
+      await seedPresetRoles(input.organization_name, orgId, input.product_category.toLowerCase());
     } catch (seedErr) {
       console.error('provision: preset role seeding failed (non-fatal):', seedErr);
     }

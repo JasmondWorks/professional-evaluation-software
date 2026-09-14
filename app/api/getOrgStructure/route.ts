@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     
     const records = await prisma.org_structure_results.findMany({
       where: {
-        org: decoded.org,
+        org_id: decoded.orgId,
       },
       orderBy: {
         created_at: "desc",

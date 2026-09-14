@@ -11,12 +11,13 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const cycles = await prisma.stressCycle.findMany({
-      where: { 
-        org,
+      where: {
+        org_id: orgId,
         category_limits: { not: Prisma.DbNull }
       },
       orderBy: { created_at: 'desc' },

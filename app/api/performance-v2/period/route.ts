@@ -9,7 +9,7 @@ import { fail, viewerFrom } from '../_auth';
 export async function GET(req: Request) {
   try {
     const viewer = viewerFrom(req);
-    return NextResponse.json({ period: await currentPeriod(viewer.org) });
+    return NextResponse.json({ period: await currentPeriod(viewer.orgId) });
   } catch (err) { return fail(err); }
 }
 

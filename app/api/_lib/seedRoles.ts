@@ -10,8 +10,8 @@ import { roleAllowedForCategory } from './createEmployee'
 // company put it back in that org's role list even after the preset list had
 // filtered it out. Callers that do not know the category get the academic set,
 // which is the superset, so nothing that used to be seeded goes missing.
-export async function seedPresetRoles(org: string, productCategory?: string | null) {
-  if (!org) return
+export async function seedPresetRoles(org: string, orgId: number, productCategory?: string | null) {
+  if (!org || !orgId) return
 
   const presets = productCategory
     ? PRESET_ROLES.filter((p) => roleAllowedForCategory(p, productCategory))
@@ -22,15 +22,16 @@ export async function seedPresetRoles(org: string, productCategory?: string | nu
     await prisma.roles.upsert({
       where: { name_org: { name: preset, org } },
       update: {},
-      create: { name: preset, org, base_role: preset, assigned: 0 },
+      create: { name: preset, org, org_id: orgId, base_role: preset, assigned: 0 },
     })
 
-    // Its permission template, keyed the same way custom roles are.
-    const templateUserId = `role:${org}:${preset}`
+    // Its permission template, keyed the same way custom roles are — by org
+    // id now, not name, to match every other reader/writer of this key.
+    const templateUserId = `role:${orgId}:${preset}`
     const existing = await prisma.permission.findFirst({ where: { user_id: templateUserId } })
     if (!existing) {
       await prisma.permission.create({
-        data: { ...presetPermissionMap(preset), user_id: templateUserId, org },
+        data: { ...presetPermissionMap(preset), user_id: templateUserId, org, org_id: orgId },
       })
     }
   }

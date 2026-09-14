@@ -33,7 +33,7 @@ export class ModelAccessError extends Error {
 // The category and plan ride along so the guard can ask what the organization
 // bought as well as what the caller's role is. Both are optional on the type
 // because they are optional claims; the org row fills either gap.
-export type ModelViewer = PlanViewer & { org: string; role: string; name?: string | null };
+export type ModelViewer = PlanViewer & { orgId: number; org: string; role: string; name?: string | null };
 
 export function isModelAdmin(role: string | null | undefined): boolean {
   return MODEL_ADMIN_ROLES.includes(resolveEffectiveRole(role));
@@ -44,9 +44,9 @@ function isDataEntryRole(role: string | null | undefined): boolean {
 }
 
 /** Every model key this org has switched on for a role. */
-export async function enabledModelsFor(org: string, role: string): Promise<ModelKey[]> {
+export async function enabledModelsFor(orgId: number, role: string): Promise<ModelKey[]> {
   const rows = await prisma.model_access.findMany({
-    where: { org, role: resolveEffectiveRole(role), enabled: true },
+    where: { org_id: orgId, role: resolveEffectiveRole(role), enabled: true },
     select: { model_key: true },
   });
   return rows.map((r) => r.model_key).filter(isModelKey);
@@ -87,7 +87,7 @@ export async function accessForViewer(
   }
 
   // Data entry only: the engineer saves figures, the admin runs the model.
-  const enabled = await enabledModelsFor(viewer.org, role);
+  const enabled = await enabledModelsFor(viewer.orgId, role);
   return {
     role,
     canRunModels: false,
@@ -114,7 +114,7 @@ export async function assertModelAccess(viewer: ModelViewer, model: ModelKey): P
     throw new ModelAccessError('The models are only available to the organization administrator.');
   }
 
-  const enabled = await enabledModelsFor(viewer.org, viewer.role);
+  const enabled = await enabledModelsFor(viewer.orgId, viewer.role);
   if (!enabled.includes(model)) {
     throw new ModelAccessError(
       'Your organization administrator has not given your role access to this model.',
@@ -133,9 +133,9 @@ export function assertMayRunModels(viewer: ModelViewer): void {
 }
 
 /** The whole grid the admin edits: one row per model, per managed role. */
-export async function accessMatrix(org: string, role: string = MODEL_DATA_ENTRY_ROLE) {
+export async function accessMatrix(orgId: number, role: string = MODEL_DATA_ENTRY_ROLE) {
   const rows = await prisma.model_access.findMany({
-    where: { org, role },
+    where: { org_id: orgId, role },
     select: { model_key: true, enabled: true, updated_at: true, updated_by: true },
   });
   const byKey = new Map(rows.map((r) => [r.model_key, r]));
@@ -167,9 +167,12 @@ export async function setModelAccess(
   }
 
   await prisma.model_access.upsert({
+    // The composite unique key is still ([org, role, model_key]) at the schema
+    // level — org_id is populated but hasn't replaced org in the constraint yet.
     where: { org_role_model_key: { org: viewer.org, role, model_key: input.model } },
     create: {
       org: viewer.org,
+      org_id: viewer.orgId,
       role,
       model_key: input.model,
       enabled: input.enabled,
@@ -178,5 +181,5 @@ export async function setModelAccess(
     update: { enabled: input.enabled, updated_by: viewer.name ?? null, updated_at: new Date() },
   });
 
-  return accessMatrix(viewer.org, role);
+  return accessMatrix(viewer.orgId, role);
 }

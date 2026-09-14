@@ -15,13 +15,13 @@ import { rosterWhere } from "../_lib/roster";
  *  Returning both from one query is what stops the two pages contradicting
  *  each other: they are different measures of one roster, not two roster
  *  counts that happen to disagree. */
-async function getStats(org: string) {
+async function getStats(orgId: number) {
   const [employees, assessable, completedAppraisals, pendingAppraisals] =
     await Promise.all([
-      prisma.pesuser.count({ where: { org } }),
-      prisma.pesuser.count({ where: rosterWhere(org) }),
-      prisma.appraisal.count({ where: { org, pending: false } }),
-      prisma.appraisal.count({ where: { org, pending: true } }),
+      prisma.pesuser.count({ where: { org_id: orgId } }),
+      prisma.pesuser.count({ where: rosterWhere(orgId) }),
+      prisma.appraisal.count({ where: { org_id: orgId, pending: false } }),
+      prisma.appraisal.count({ where: { org_id: orgId, pending: true } }),
     ]);
 
   return { employees, assessable, completedAppraisals, pendingAppraisals };
@@ -34,15 +34,15 @@ export async function POST(request: NextRequest) {
   const auth = authorize(tokenFromRequest(request), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
-  if (!org) {
+  const orgId = auth.user.orgId ?? null;
+  if (!orgId) {
     return NextResponse.json({
       employees: 0, assessable: 0, completedAppraisals: 0, pendingAppraisals: 0,
     });
   }
 
   try {
-    return NextResponse.json(await getStats(org));
+    return NextResponse.json(await getStats(orgId));
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to load stats" }, { status: 500 });

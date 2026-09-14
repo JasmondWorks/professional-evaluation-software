@@ -9,13 +9,13 @@ export async function GET(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
     const rawResult = await prisma.$queryRaw`
       SELECT dept, COUNT(DISTINCT pesuser_name) as total_users
       FROM appraisal
-      WHERE org = ${org}
+      WHERE org_id = ${orgId}
       GROUP BY dept
     `;
     

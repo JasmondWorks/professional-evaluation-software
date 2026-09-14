@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user?.org;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json(
         { error: "No organisation on this account" },
         { status: 403 },
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
     const saved = await prisma.supervision_cost.create({
       data: {
         org,
+        org_id: orgId,
         a_ij,
         a_cost,
         b_cost,
@@ -94,7 +96,8 @@ export async function GET(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user?.org;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json(
         { error: "No organisation on this account" },
         { status: 403 },
@@ -108,7 +111,7 @@ export async function GET(req: NextRequest) {
     const latestOnly = req.nextUrl.searchParams.get("latest") === "1";
 
     const rows = await prisma.supervision_cost.findMany({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: { created_at: "desc" },
       ...(latestOnly ? { take: 1 } : {}),
     });

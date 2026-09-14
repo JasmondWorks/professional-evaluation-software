@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
     const body = await req.json();
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     const result = await prisma.stress_analysis_results.create({
       data: {
         org,
+        org_id: orgId,
         group_by,
         ssto,
         sstr,

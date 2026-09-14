@@ -15,20 +15,49 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const users = await prisma.pesuser.findMany({
-    where: auth.viewer.isPlatform ? {} : { org: auth.viewer.org },
+    where: auth.viewer.isPlatform ? {} : { org_id: auth.viewer.orgId },
     orderBy: { org: "asc" },
-    select: PUBLIC_USER_COLUMNS,
+    select: { ...PUBLIC_USER_COLUMNS, org_id: true },
   });
 
-  // Group users by org (equivalent to json_agg + GROUP BY org).
-  const grouped = new Map<string | null, typeof users>();
+  // Group users by org_id (equivalent to json_agg + GROUP BY org_id).
+  const grouped = new Map<number | null, typeof users>();
   for (const user of users) {
-    const list = grouped.get(user.org) ?? [];
+    const list = grouped.get(user.org_id) ?? [];
     list.push(user);
-    grouped.set(user.org, list);
+    grouped.set(user.org_id, list);
   }
 
-  const data = Array.from(grouped, ([org, users]) => ({ org, users }));
+  const orgIds = Array.from(grouped.keys()).filter(
+    (id): id is number => id !== null,
+  );
+  const orgs = await prisma.org.findMany({
+    where: { id: { in: orgIds } },
+    select: { id: true, name: true, logo_url: true, category: true, plan: true },
+  });
+  const orgById = new Map(orgs.map((org) => [org.id, org]));
+
+  const data = Array.from(grouped, ([orgId, users]) => {
+    if (orgId === null) {
+      return {
+        orgId: null,
+        orgName: "(unassigned)",
+        logoUrl: null,
+        category: null,
+        plan: null,
+        users,
+      };
+    }
+    const org = orgById.get(orgId);
+    return {
+      orgId,
+      orgName: org?.name ?? "(unknown org)",
+      logoUrl: org?.logo_url ?? null,
+      category: org?.category ?? null,
+      plan: org?.plan ?? null,
+      users,
+    };
+  });
 
   return NextResponse.json(data);
 }

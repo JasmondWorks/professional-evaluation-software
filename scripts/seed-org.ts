@@ -79,7 +79,7 @@ async function seed(spec: Spec) {
   await prisma.subscriptions_info.deleteMany({ where: { org: spec.org } });
   await prisma.org.deleteMany({ where: { name: spec.org } });
 
-  await prisma.org.create({
+  const newOrg = await prisma.org.create({
     data: {
       name: spec.org,
       category: spec.category,
@@ -98,6 +98,7 @@ async function seed(spec: Spec) {
       password: await bcrypt.hash(password, 10),
       role: 'admin',
       org: spec.org,
+      org_id: newOrg.id,
       category: spec.category,
       plan: spec.plan,
     },
@@ -109,6 +110,7 @@ async function seed(spec: Spec) {
       pesuser_email: spec.email,
       pesuser_name: spec.adminName,
       org: spec.org,
+      org_id: newOrg.id,
       plan_code: planName,
       plan_name: spec.plan,
       reference: `SEED_${spec.key}_${randomBytes(6).toString('hex')}`,
@@ -121,7 +123,7 @@ async function seed(spec: Spec) {
 
   // Same preset roles a real signup would create, so the org can add staff.
   const { seedPresetRoles } = await import('../app/api/_lib/seedRoles');
-  await seedPresetRoles(spec.org, spec.category);
+  await seedPresetRoles(spec.org, newOrg.id, spec.category);
 
   return { ...spec, password, expiresAt: addInterval(paidAt, plan.interval, plan.intervalCount) };
 }

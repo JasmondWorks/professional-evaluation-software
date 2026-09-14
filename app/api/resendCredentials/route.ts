@@ -66,15 +66,15 @@ export async function POST(req: Request) {
     // Check user exists
     const user = await prisma.pesuser.findUnique({
       where: { email },
-      select: { id: true, name: true, org: true },
+      select: { id: true, name: true, org: true, org_id: true },
     })
 
     // A super-admin operates across organizations; an org admin does not. The
     // reply is the same either way, so the route cannot be used to test which
     // addresses hold accounts elsewhere.
-    const callerOrg = auth.user.org ? String(auth.user.org) : null
+    const callerOrgId = auth.user.orgId ?? null
     const reachable =
-      auth.user.role === 'super-admin' || (!!callerOrg && user?.org === callerOrg)
+      auth.user.role === 'super-admin' || (!!callerOrgId && user?.org_id === callerOrgId)
 
     if (!user || !reachable) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 })

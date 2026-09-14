@@ -8,13 +8,11 @@ import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
 export async function POST(req: Request) {
   try {
-    // jwtDecode parses a token without checking its signature, so this org was
-    // whatever the caller wrote into one.
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
 
-    const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    const orgId = auth.user.orgId ?? null;
+    if (!orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
     const { pesuser_name, responses } = await req.json();
 
@@ -25,7 +23,8 @@ export async function POST(req: Request) {
     await prisma.auditor_survey_responses.createMany({
       data: responses.map((r: { section: string; question: string; response: string }) => ({
         pesuser_name,
-        org,
+        org_id: orgId,
+        org: auth.user.org ?? null,
         section: r.section,
         question: r.question,
         response: r.response,

@@ -24,7 +24,7 @@ export async function GET(
     // The study id comes off the URL, so it has to be checked against the
     // caller's org before any of the study is handed back.
     const owner = await orgOfStudy(id);
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     const [study, positions, observations] = await Promise.all([
       prisma.workSamplingStudy.findUnique({ where: { id } }),
@@ -66,7 +66,7 @@ export async function PATCH(
     const id = Number(params.id);
 
     const owner = await orgOfStudy(id);
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     const body = await req.json();
 
@@ -128,7 +128,7 @@ export async function DELETE(
     }
 
     const owner = await orgOfStudy(id);
-    if (!owner || owner !== auth.user.org) return notYours();
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     // Since schema has onDelete: Cascade, deleting the study is sufficient,
     // but we can explicitly delete dependents first to be absolutely sure.

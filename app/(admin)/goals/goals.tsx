@@ -79,7 +79,7 @@ export default function Goals() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loadingGoals, setLoadingGoals] = useState(true);
   const dispatch = useDispatch();
-  const [user, setUser] = useState({ name: "", role: "", org: "", id: "" });
+  const [user, setUser] = useState({ name: "", role: "", org: "", id: "", orgId: null as number | null });
   const [evaluation, setEvaluation] = useState<EvaluationType[]>([]);
   const [orgData, setOrgData] = useState<any>(null);
   const [toggling, setToggling] = useState<EvaluationType | null>(null);
@@ -111,6 +111,7 @@ export default function Goals() {
         role: tokenData.role ?? "",
         org: tokenData.org ?? "",
         id: tokenData.id ?? "",
+        orgId: typeof tokenData.orgId === "number" ? tokenData.orgId : null,
       });
     }
 
@@ -136,16 +137,16 @@ export default function Goals() {
 
   // Fetch current org evaluation state for admin
   useEffect(() => {
-    if (!user.org || user.role !== "admin") return;
+    if (user.orgId == null || user.role !== "admin") return;
 
-    apiFetch(`/api/org/${encodeURIComponent(user.org)}`)
+    apiFetch(`/api/org/${user.orgId}`)
       .then((r) => r.json())
       .then((res) => {
         if (res?.data?.evaluation) setEvaluation(res.data.evaluation);
         if (res?.data) setOrgData(res.data);
       })
       .catch(console.error);
-  }, [user.org, user.role]);
+  }, [user.orgId, user.role]);
 
   async function handleToggle(type: EvaluationType, currentlyEnabled: boolean) {
     setToggling(type);

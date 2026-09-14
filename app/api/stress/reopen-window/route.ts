@@ -15,14 +15,15 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const body = await req.json().catch(() => ({}))
     const closesAt = body.closesAt ? new Date(body.closesAt) : null
 
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })

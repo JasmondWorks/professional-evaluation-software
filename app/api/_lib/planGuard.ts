@@ -34,6 +34,7 @@ export function planViewer(user: DecodedUser | null): PlanViewer | null {
   if (!user?.org) return null;
   return {
     org: user.org,
+    orgId: user.orgId ?? null,
     productCategory: user.productCategory ?? user.category ?? null,
     productPlan: user.productPlan ?? user.plan ?? null,
   };

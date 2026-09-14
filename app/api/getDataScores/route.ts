@@ -11,8 +11,9 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
-  if (!org) {
+  if (!org || !orgId) {
     return NextResponse.json(
       { error: "Missing org parameter" },
       { status: 400 }
@@ -30,24 +31,26 @@ export async function GET(req: Request) {
 
     // appraisal values
     const appraisal = await prisma.appraisal.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: appraisalSelect,
     });
 
     // counter appraisal values
     const counterAppraisal = await prisma.counter_appraisal.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: appraisalSelect,
     });
 
     // Performance now comes from the model rather than the old flat tables:
     // the four criteria as settled, and the heads' objections beside them.
-    const userperformance = await staffPerformance({ org });
-    const counterUserperformance = await hodCounterScores({ org });
+    // staffPerformance/hodCounterScores live in app/lib and still filter by
+    // the org name string (out of scope for this pass).
+    const userperformance = await staffPerformance({ orgId });
+    const counterUserperformance = await hodCounterScores({ orgId });
 
     // stress values
     const stress = await prisma.stress.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: {
         stress_category: true,
         stress_theme_form: true,
@@ -58,7 +61,7 @@ export async function GET(req: Request) {
 
     // counter stress values
     const counterStress = await prisma.counter_stress.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: {
         stress_theme_form: true,
         stress_feeling_frequency_form: true,

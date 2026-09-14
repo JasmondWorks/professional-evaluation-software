@@ -12,25 +12,25 @@ export async function POST(req: NextRequest) {
     const token = req.headers.get("authorization")?.split(" ")[1];
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let org;
-    // Kept alongside `org` because the plan lookup needs the category and tier
+    let orgId;
+    // Kept alongside `orgId` because the plan lookup needs the category and tier
     // claims too, and `decoded` does not outlive the block below.
     let claims: any = null;
     try {
       const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
       claims = decoded;
-      org = decoded?.org;
+      orgId = decoded?.orgId;
     } catch {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    if (!orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
     const plan = await requireEntitlement(claims, 'redundancy.real-percentage');
     if (!plan.ok) return plan.response;
 
-    if (!org) {
+    if (!orgId) {
       return NextResponse.json(
         { error: "Organization name is required" },
         { status: 400 }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const records = await prisma.personnel_redundancy.findMany({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: { created_at: "desc" },
     });
 

@@ -15,9 +15,10 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return auth.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
-    const where = { pending: true, ...(org ? { org } : {}) };
+    const where = { pending: true, ...(orgId ? { org_id: orgId } : {}) };
     const appraisalSelect = {
       pesuser_name: true,
       dept: true,
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
     // From the performance model rather than the old flat tables. `where` is
     // the org (and department, where the caller scoped it).
     const [mainPerformances, counterPerformances] = await Promise.all([
-      staffPerformance({ org: where.org as string, dept: (where as any).dept ?? null }),
-      hodCounterScores({ org: where.org as string, dept: (where as any).dept ?? null }),
+      staffPerformance({ orgId: orgId as number, dept: (where as any).dept ?? null }),
+      hodCounterScores({ orgId: orgId as number, dept: (where as any).dept ?? null }),
     ]);
     const performances = [
       ...withSource(mainPerformances, "main"),

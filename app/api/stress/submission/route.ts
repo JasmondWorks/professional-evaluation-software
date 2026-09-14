@@ -16,17 +16,18 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const role = auth.user.role
   const url = new URL(req.url)
   const name = url.searchParams.get('name')
-  if (!org || !name) {
+  if (!org || !orgId || !name) {
     return NextResponse.json({ error: 'Missing org or name' }, { status: 400 })
   }
 
   try {
     // The staff member being viewed.
     const target = await prisma.pesuser.findFirst({
-      where: { name, org },
+      where: { name, org_id: orgId },
       select: { name: true, dept: true, faculty_college: true },
     })
     if (!target) return NextResponse.json({ error: 'Staff member not found' }, { status: 404 })
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
     // Authorization by scope.
     const me = auth.user.name
       ? await prisma.pesuser.findFirst({
-          where: { name: auth.user.name, org },
+          where: { name: auth.user.name, org_id: orgId },
           select: { dept: true, faculty_college: true },
         })
       : null
@@ -45,11 +46,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'That submission is outside your faculty/division.' }, { status: 403 })
     }
 
-    const cycle = await prisma.stressCycle.findFirst({ where: { org }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
+    const cycle = await prisma.stressCycle.findFirst({ where: { org_id: orgId }, orderBy: [{ created_at: 'desc' }, { id: 'desc' }] })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
     const row = await prisma.stress.findFirst({
-      where: { org, cycle_id: cycle.id, pesuser_name: name },
+      where: { org_id: orgId, cycle_id: cycle.id, pesuser_name: name },
       select: { assessment_data: true, hod_approved: true, approved: true, dept: true },
     })
     if (!row) return NextResponse.json({ error: 'No submission for this staff member in the current cycle.' }, { status: 404 })

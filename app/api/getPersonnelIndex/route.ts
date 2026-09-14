@@ -23,16 +23,16 @@ export async function GET(req: NextRequest) {
 
     const plan = await requireModel(decoded, 'personnel-utilization');
     if (!plan.ok) return plan.response;
-    const org = decoded.org;
-    
-    if (!org) {
+    const orgId = decoded.orgId;
+
+    if (!orgId) {
       return NextResponse.json({ error: "Organization missing" }, { status: 400 });
     }
 
     const searchParams = req.nextUrl.searchParams;
     const type = searchParams.get('type');
 
-    let whereClause: any = { org };
+    let whereClause: any = { org_id: orgId };
     if (type === 'productivity') whereClause.productivity = { not: null };
     if (type === 'redundancy') whereClause.redundancy = { not: null };
     if (type === 'utility') whereClause.utility = { not: null };

@@ -15,7 +15,8 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), { roles: ['admin', 'super-admin'] })
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   const approver = auth.user.name || String(auth.user.userID ?? '')
   const { dept, faculty } = await req.json().catch(() => ({}))
@@ -25,14 +26,14 @@ export async function POST(req: Request) {
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ error: 'No active cycle.' }, { status: 400 })
 
     // Which staff are in scope (a department, or a whole faculty).
     const staff = await prisma.pesuser.findMany({
-      where: { org, ...(dept ? { dept } : {}), ...(faculty ? { faculty_college: faculty } : {}) },
+      where: { org_id: orgId, ...(dept ? { dept } : {}), ...(faculty ? { faculty_college: faculty } : {}) },
       select: { name: true },
     })
     const names = staff.map((s) => s.name).filter((n): n is string => !!n)
@@ -43,14 +44,14 @@ export async function POST(req: Request) {
       // HOD tier only — stand in for the department's HOD. Does NOT touch the
       // faculty tier, which stays independently pending.
       result = await prisma.stress.updateMany({
-        where: { org, cycle_id: cycle.id, rejected: false, hod_approved: false, pesuser_name: { in: names } },
+        where: { org_id: orgId, cycle_id: cycle.id, rejected: false, hod_approved: false, pesuser_name: { in: names } },
         data: { hod_approved: true, hod_approved_by: approver, hod_approved_at: now },
       })
     } else {
       // Faculty tier only — stand in for the Dean/Manager. Only rows already
       // HOD-approved can be faculty-approved.
       result = await prisma.stress.updateMany({
-        where: { org, cycle_id: cycle.id, rejected: false, hod_approved: true, approved: false, pesuser_name: { in: names } },
+        where: { org_id: orgId, cycle_id: cycle.id, rejected: false, hod_approved: true, approved: false, pesuser_name: { in: names } },
         data: { approved: true, approved_by: approver, approved_at: now },
       })
     }

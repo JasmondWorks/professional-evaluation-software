@@ -14,18 +14,19 @@ type User = {
   org: string
 }
 
-export default function Page({ params }: { params: { org: string } }) {
+export default function Page({ params }: { params: { orgId: string } }) {
   const [auditors, setAuditors] = useState<User[]>([])
   const router = useRouter()
+  const orgId = Number(params.orgId)
 
   useEffect(() => {
     async function fetchAuditors() {
-      const res = await apiFetch(`/api/admin/orgs/${params.org}/auditors`)
+      const res = await apiFetch(`/api/admin/orgs/${orgId}/auditors`)
       const data = await res.json()
       setAuditors(data)
     }
     fetchAuditors()
-  }, [params.org])
+  }, [orgId])
 
   return (
     <div className="flex flex-col min-h-screen bg-canvas">
@@ -33,7 +34,7 @@ export default function Page({ params }: { params: { org: string } }) {
       {/* Header */}
       <div className="flex justify-between items-center p-6 bg-white shadow-sm">
         <h1 className="text-2xl font-semibold">
-          Auditors — {params.org}
+          Auditors — {auditors[0]?.org ?? `Org #${orgId}`}
         </h1>
       </div>
 
@@ -48,7 +49,7 @@ export default function Page({ params }: { params: { org: string } }) {
 
         {auditors.map((user) => (
           <Link
-            href={`/admin/${user.org}/${user.id}`}
+            href={`/admin/${orgId}/${user.id}`}
             key={user.id}
             className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm hover:bg-line/50 transition"
           >

@@ -19,9 +19,10 @@ export function viewerFrom(req: Request): Viewer {
   } catch {
     throw new AppraisalError('Your session has expired. Sign in again.', 401);
   }
-  if (!claims?.org) throw new AppraisalError('This account is not attached to an organization.', 403);
+  if (!claims?.orgId) throw new AppraisalError('This account is not attached to an organization.', 403);
 
   return {
+    orgId: claims.orgId,
     org: claims.org,
     name: claims.name,
     role: claims.role,

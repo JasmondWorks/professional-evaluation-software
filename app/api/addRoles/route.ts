@@ -12,11 +12,12 @@ type reqInfo = {
     role_name: string
     description: string
     org: string
+    orgId: number
     base_role: string
 } & Partial<Record<PermissionKey, boolean>>
 
 async function addUser(info: reqInfo) {
-    const { role_name, org, base_role } = info
+    const { role_name, org, orgId, base_role } = info
 
     // Which system preset this custom role behaves as (defaults to baseline).
     const baseRole = resolveBaseRole(base_role)
@@ -28,7 +29,7 @@ async function addUser(info: reqInfo) {
 
     try {
         await prisma.roles.create({
-            data: { name: role_name, assigned: 1, org, base_role: baseRole },
+            data: { name: role_name, assigned: 1, org, org_id: orgId, base_role: baseRole },
         })
 
         // Store this role's permission TEMPLATE, namespaced by role name so it
@@ -36,8 +37,9 @@ async function addUser(info: reqInfo) {
         await prisma.permission.create({
             data: {
                 ...permissionData,
-                user_id: `role:${org}:${role_name}`,
+                user_id: `role:${orgId}:${role_name}`,
                 org,
+                org_id: orgId,
             },
         })
 
@@ -68,8 +70,8 @@ export async function POST(req: Request) {
   }
 
   // The org is not the caller's to choose.
-  const reqInfo = { ...(body as reqInfo), org: String(auth.user.org ?? '') };
-  if (!reqInfo.org) {
+  const reqInfo = { ...(body as reqInfo), org: String(auth.user.org ?? ''), orgId: auth.user.orgId ?? undefined as any };
+  if (!reqInfo.org || !reqInfo.orgId) {
     return NextResponse.json(
       { message: 'This account is not attached to an organization' },
       { status: 403 },

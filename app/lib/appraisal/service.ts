@@ -55,6 +55,7 @@ import {
 } from './scoring';
 
 export type Viewer = {
+  orgId: number;
   org: string;
   name: string;
   role: string;
@@ -80,7 +81,7 @@ export async function openPeriod(
   requireOrgAdmin(viewer);
 
   const existing = await prisma.appraisal_period.findFirst({
-    where: { org: viewer.org, status: 'open' },
+    where: { org_id: viewer.orgId, status: 'open' },
   });
   if (existing) {
     throw new AppraisalError(
@@ -98,12 +99,13 @@ export async function openPeriod(
   const scopes = scopesForCategory(viewer.productCategory);
   const bound: Partial<Record<TemplateScope, string>> = {};
   for (const scope of scopes) {
-    bound[scope] = (await templateInForce(viewer.org, scope)).id;
+    bound[scope] = (await templateInForce(viewer.orgId, scope)).id;
   }
 
   const period = await prisma.appraisal_period.create({
     data: {
       org: viewer.org,
+      org_id: viewer.orgId,
       frequency: input.frequency,
       starts_on: input.startsOn,
       ends_on: input.endsOn,
@@ -115,13 +117,13 @@ export async function openPeriod(
     },
   });
 
-  await seedTargets(viewer.org, period.id, bound);
+  await seedTargets(viewer.org, viewer.orgId, period.id, bound);
   return period;
 }
 
-export async function currentPeriod(org: string) {
+export async function currentPeriod(orgId: number) {
   return prisma.appraisal_period.findFirst({
-    where: { org, status: 'open' },
+    where: { org_id: orgId, status: 'open' },
     orderBy: { starts_on: 'desc' },
   });
 }
@@ -131,7 +133,7 @@ export async function currentPeriod(org: string) {
 export async function closePeriod(viewer: Viewer, periodId: number) {
   requireOrgAdmin(viewer);
   return prisma.appraisal_period.updateMany({
-    where: { id: periodId, org: viewer.org, status: 'open' },
+    where: { id: periodId, org_id: viewer.orgId, status: 'open' },
     data: { status: 'closed' },
   });
 }
@@ -141,7 +143,7 @@ export async function closePeriod(viewer: Viewer, periodId: number) {
 export async function releaseResults(viewer: Viewer, periodId: number) {
   requireOrgAdmin(viewer);
   const period = await prisma.appraisal_period.findFirst({
-    where: { id: periodId, org: viewer.org },
+    where: { id: periodId, org_id: viewer.orgId },
   });
   if (!period) throw new AppraisalError('Period not found.', 404);
   if (period.status !== 'closed') {
@@ -165,7 +167,7 @@ export async function listEntries(viewer: Viewer, periodId: number) {
 
   const entries = await prisma.appraisal_entry.findMany({
     where: {
-      org: viewer.org,
+      org_id: viewer.orgId,
       period_id: periodId,
       // A head sees their own department. Everyone else sees only themselves.
       ...(isAdmin ? {} : isHead ? { dept: viewer.dept } : { pesuser_name: viewer.name }),
@@ -205,6 +207,7 @@ export async function listEntries(viewer: Viewer, periodId: number) {
  *  numbers it was scored against for good. */
 async function seedTargets(
   org: string,
+  orgId: number,
   periodId: number,
   templateIds: Partial<Record<TemplateScope, string>>,
 ) {
@@ -218,6 +221,7 @@ async function seedTargets(
     for (const t of targets) {
       rows.push({
         org,
+        org_id: orgId,
         period_id: periodId,
         model: scope,
         position: t.position,
@@ -264,8 +268,8 @@ export async function setTarget(
   );
 }
 
-async function targetsFor(org: string, periodId: number, model: AppraisalModel) {
-  return prisma.appraisal_target.findMany({ where: { org, period_id: periodId, model } });
+async function targetsFor(orgId: number, periodId: number, model: AppraisalModel) {
+  return prisma.appraisal_target.findMany({ where: { org_id: orgId, period_id: periodId, model } });
 }
 
 // ---------------------------------------------------------------------------
@@ -303,7 +307,7 @@ export async function expectedModelFor(viewer: Viewer, pesuserName: string) {
  *  post decides: only the industrial/production engineer is non-academic staff. */
 async function modelForStaff(viewer: Viewer, pesuserName: string): Promise<AppraisalModel> {
   const staff = await prisma.pesuser.findFirst({
-    where: { org: viewer.org, name: pesuserName },
+    where: { org_id: viewer.orgId, name: pesuserName },
     select: { role: true, category: true },
   });
   if (!staff) {
@@ -328,7 +332,7 @@ export async function ensureEntry(
     dept?: string;
   },
 ) {
-  const period = await currentPeriod(viewer.org);
+  const period = await currentPeriod(viewer.orgId);
   if (!period) throw new AppraisalError('No appraisal period is open.', 409);
 
   // The model is decided by the appraisee's own post, never by the request.
@@ -359,6 +363,7 @@ export async function ensureEntry(
   return prisma.appraisal_entry.create({
     data: {
       org: viewer.org,
+      org_id: viewer.orgId,
       dept: input.dept ?? viewer.dept ?? null,
       period_id: period.id,
       pesuser_name: input.pesuserName,
@@ -605,7 +610,7 @@ export async function evaluateEntry(viewer: Viewer, entryId: number) {
   const entry = await loadEntry(viewer, entryId);
 
   const scores = await prisma.appraisal_category_score.findMany({ where: { entry_id: entry.id } });
-  const targets = await targetsFor(viewer.org, entry.period_id, entry.model as AppraisalModel);
+  const targets = await targetsFor(viewer.orgId, entry.period_id, entry.model as AppraisalModel);
 
   // Both models now follow the same method. They differ only in how the target
   // is looked up: academic sums four category targets, non-academic uses one
@@ -873,7 +878,7 @@ function requireOrgAdmin(viewer: Viewer) {
 
 async function loadEntry(viewer: Viewer, entryId: number) {
   const entry = await prisma.appraisal_entry.findFirst({
-    where: { id: entryId, org: viewer.org },
+    where: { id: entryId, org_id: viewer.orgId },
   });
   if (!entry) throw new AppraisalError('Appraisal not found.', 404);
   return entry;
@@ -887,7 +892,7 @@ export { MIN_STUDENT_EVALUATIONS, questionnaireFor };
 
 export async function listCourses(viewer: Viewer, periodId: number) {
   return prisma.appraisal_course.findMany({
-    where: { org: viewer.org, period_id: periodId },
+    where: { org_id: viewer.orgId, period_id: periodId },
     orderBy: { code: 'asc' },
   });
 }
@@ -911,13 +916,14 @@ export async function addCourse(
   if (!(input.unit > 0)) throw new AppraisalError('Course units must be greater than zero.', 400);
 
   const existing = await prisma.appraisal_course.findFirst({
-    where: { org: viewer.org, period_id: input.periodId, code: input.code.trim() },
+    where: { org_id: viewer.orgId, period_id: input.periodId, code: input.code.trim() },
   });
   if (existing) throw new AppraisalError(`Course ${input.code} is already registered.`, 409);
 
   return prisma.appraisal_course.create({
     data: {
       org: viewer.org,
+      org_id: viewer.orgId,
       period_id: input.periodId,
       dept: input.dept ?? viewer.dept ?? null,
       title: input.title.trim(),
@@ -934,12 +940,12 @@ export async function removeCourse(viewer: Viewer, courseId: number) {
       403,
     );
   }
-  return prisma.appraisal_course.deleteMany({ where: { id: courseId, org: viewer.org } });
+  return prisma.appraisal_course.deleteMany({ where: { id: courseId, org_id: viewer.orgId } });
 }
 
 export async function listIndicators(viewer: Viewer, periodId: number, pesuserName: string) {
   return prisma.appraisal_indicator.findMany({
-    where: { org: viewer.org, period_id: periodId, pesuser_name: pesuserName },
+    where: { org_id: viewer.orgId, period_id: periodId, pesuser_name: pesuserName },
     orderBy: { category: 'asc' },
   });
 }
@@ -955,12 +961,13 @@ export async function setIndicators(
   },
 ) {
   await prisma.appraisal_indicator.deleteMany({
-    where: { org: viewer.org, period_id: input.periodId, pesuser_name: input.pesuserName },
+    where: { org_id: viewer.orgId, period_id: input.periodId, pesuser_name: input.pesuserName },
   });
   if (input.indicators.length === 0) return [];
   await prisma.appraisal_indicator.createMany({
     data: input.indicators.map((i) => ({
       org: viewer.org,
+      org_id: viewer.orgId,
       period_id: input.periodId,
       pesuser_name: input.pesuserName,
       category: i.category,
@@ -1008,11 +1015,11 @@ export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
     scope = {};
   } else if (viewer.role === 'unit-head') {
     const me = await prisma.pesuser.findFirst({
-      where: { org: viewer.org, name: viewer.name },
+      where: { org_id: viewer.orgId, name: viewer.name },
       select: { faculty_college: true },
     });
     const peers = await prisma.pesuser.findMany({
-      where: { org: viewer.org, faculty_college: me?.faculty_college ?? undefined },
+      where: { org_id: viewer.orgId, faculty_college: me?.faculty_college ?? undefined },
       select: { dept: true },
     });
     const depts = [...new Set(peers.map((p) => p.dept).filter(Boolean))] as string[];
@@ -1021,7 +1028,7 @@ export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
 
   const entries = await prisma.appraisal_entry.findMany({
     where: {
-      org: viewer.org,
+      org_id: viewer.orgId,
       period_id: periodId,
       ...scope,
     },
@@ -1055,7 +1062,7 @@ export async function deanApproveDepartment(
   if (!allowed) throw new AppraisalError('Only a Dean or the organization admin can approve a department.', 403);
 
   const unsubmitted = await prisma.appraisal_entry.count({
-    where: { org: viewer.org, period_id: input.periodId, dept: input.dept, submitted_at: null },
+    where: { org_id: viewer.orgId, period_id: input.periodId, dept: input.dept, submitted_at: null },
   });
   if (unsubmitted > 0) {
     throw new AppraisalError(
@@ -1067,7 +1074,7 @@ export async function deanApproveDepartment(
   // Submitted is not enough: the departmental administrator has to have checked
   // Forms 8 and 9 against the paper originals first.
   const unverified = await prisma.appraisal_entry.count({
-    where: { org: viewer.org, period_id: input.periodId, dept: input.dept, verified_at: null },
+    where: { org_id: viewer.orgId, period_id: input.periodId, dept: input.dept, verified_at: null },
   });
   if (unverified > 0) {
     throw new AppraisalError(
@@ -1077,7 +1084,7 @@ export async function deanApproveDepartment(
   }
 
   return prisma.appraisal_entry.updateMany({
-    where: { org: viewer.org, period_id: input.periodId, dept: input.dept },
+    where: { org_id: viewer.orgId, period_id: input.periodId, dept: input.dept },
     data: { dean_approved_at: new Date(), dean_approved_by: viewer.name },
   });
 }
@@ -1090,7 +1097,7 @@ export async function auditorQueue(viewer: Viewer) {
     throw new AppraisalError('Restricted to the appraisal auditor.', 403);
   }
   const entries = await prisma.appraisal_entry.findMany({
-    where: { org: viewer.org, status: 'referred_to_auditor' },
+    where: { org_id: viewer.orgId, status: 'referred_to_auditor' },
     include: {
       categories: {
         where: { reconciliation: 'referred_to_auditor' },
@@ -1122,7 +1129,7 @@ export async function departmentAdminStatus(viewer: Viewer, dept?: string | null
   if (!target) return { dept: null, hasAdmin: false, names: [] as string[] };
 
   const admins = await prisma.pesuser.findMany({
-    where: { org: viewer.org, dept: target, role: { in: DEPARTMENT_ADMIN_ROLES } },
+    where: { org_id: viewer.orgId, dept: target, role: { in: DEPARTMENT_ADMIN_ROLES } },
     select: { name: true },
   });
   return { dept: target, hasAdmin: admins.length > 0, names: admins.map((a) => a.name) };
@@ -1147,13 +1154,13 @@ export type AppraisalNotice = {
  *  scores to review, a contested score to rule on, or departments to chase.
  */
 export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> {
-  const period = await currentPeriod(viewer.org);
+  const period = await currentPeriod(viewer.orgId);
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
 
   // No open period. Only staff need to hear about released results.
   if (!period) {
     const latest = await prisma.appraisal_period.findFirst({
-      where: { org: viewer.org, released_at: { not: null } },
+      where: { org_id: viewer.orgId, released_at: { not: null } },
       orderBy: { released_at: 'desc' },
       select: { id: true },
     });
@@ -1183,12 +1190,12 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
   if (isAdmin) {
     const [total, submitted, verified] = await Promise.all([
-      prisma.appraisal_entry.count({ where: { org: viewer.org, period_id: period.id } }),
+      prisma.appraisal_entry.count({ where: { org_id: viewer.orgId, period_id: period.id } }),
       prisma.appraisal_entry.count({
-        where: { org: viewer.org, period_id: period.id, submitted_at: { not: null } },
+        where: { org_id: viewer.orgId, period_id: period.id, submitted_at: { not: null } },
       }),
       prisma.appraisal_entry.count({
-        where: { org: viewer.org, period_id: period.id, verified_at: { not: null } },
+        where: { org_id: viewer.orgId, period_id: period.id, verified_at: { not: null } },
       }),
     ]);
     return {
@@ -1207,7 +1214,7 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
   if (DEPARTMENT_ADMIN_ROLES.includes(viewer.role)) {
     const waiting = await prisma.appraisal_entry.count({
-      where: { org: viewer.org, period_id: period.id, dept: viewer.dept, status: 'submitted' },
+      where: { org_id: viewer.orgId, period_id: period.id, dept: viewer.dept, status: 'submitted' },
     });
     if (waiting > 0) {
       return {
@@ -1228,7 +1235,7 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
   if (viewer.role === 'hod') {
     const toReview = await prisma.appraisal_entry.count({
-      where: { org: viewer.org, period_id: period.id, dept: viewer.dept, status: 'verified' },
+      where: { org_id: viewer.orgId, period_id: period.id, dept: viewer.dept, status: 'verified' },
     });
     if (toReview > 0) {
       return {
@@ -1245,7 +1252,7 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
   if (viewer.role === 'auditor') {
     const referred = await prisma.appraisal_entry.count({
-      where: { org: viewer.org, period_id: period.id, status: 'referred_to_auditor' },
+      where: { org_id: viewer.orgId, period_id: period.id, status: 'referred_to_auditor' },
     });
     if (referred > 0) {
       return {
@@ -1262,7 +1269,7 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
 
   // Everyone else: their own appraisal.
   const mine = await prisma.appraisal_entry.findFirst({
-    where: { org: viewer.org, period_id: period.id, pesuser_name: viewer.name },
+    where: { org_id: viewer.orgId, period_id: period.id, pesuser_name: viewer.name },
     select: { id: true, status: true },
   });
 
@@ -1272,10 +1279,10 @@ export async function appraisalNotice(viewer: Viewer): Promise<AppraisalNotice> 
     if (DEPARTMENT_SCOPED_ROLES.includes(viewer.role)) {
       const [total, outstanding] = await Promise.all([
         prisma.appraisal_entry.count({
-          where: { org: viewer.org, period_id: period.id, dept: viewer.dept },
+          where: { org_id: viewer.orgId, period_id: period.id, dept: viewer.dept },
         }),
         prisma.appraisal_entry.count({
-          where: { org: viewer.org, period_id: period.id, dept: viewer.dept, submitted_at: null },
+          where: { org_id: viewer.orgId, period_id: period.id, dept: viewer.dept, submitted_at: null },
         }),
       ]);
       return {
@@ -1343,12 +1350,12 @@ export async function runAppraisalIntegrity(viewer: Viewer, periodId: number): P
   }
 
   const period = await prisma.appraisal_period.findFirst({
-    where: { id: periodId, org: viewer.org },
+    where: { id: periodId, org_id: viewer.orgId },
   });
   if (!period) throw new AppraisalError('Appraisal period not found.', 404);
 
   const entries = await prisma.appraisal_entry.findMany({
-    where: { org: viewer.org, period_id: periodId, status: { not: 'draft' } },
+    where: { org_id: viewer.orgId, period_id: periodId, status: { not: 'draft' } },
     include: { categories: { select: { recorded_score: true, appraisal_score: true } } },
   });
 

@@ -22,13 +22,14 @@ export async function GET(req: NextRequest) {
     const plan = await requireModel(auth.user, 'maintenance');
     if (!plan.ok) return plan.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
     const facility = new URL(req.url).searchParams.get('facility');
     const runs = await prisma.maintenance_run.findMany({
-      where: { org, ...(facility ? { facility } : {}) },
+      where: { org_id: orgId, ...(facility ? { facility } : {}) },
       orderBy: { created_at: 'desc' },
       take: 100,
     });
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
     const plan = await requireModel(auth.user, 'maintenance');
     if (!plan.ok) return plan.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
@@ -74,6 +76,7 @@ export async function POST(req: NextRequest) {
     const saved = await prisma.maintenance_run.create({
       data: {
         org,
+        org_id: orgId,
         facility,
         facility_id:
           num(body.facility_id) == null ? null : Math.trunc(Number(body.facility_id)),

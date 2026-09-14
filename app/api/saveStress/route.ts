@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
   const pesuser_name = auth.user.name ? String(auth.user.name) : null;
   const dept = auth.user.dept ? String(auth.user.dept) : null;
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
   const value = body[payload];
 
   const allowedFields = [
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     // Check if user stress already exists
     const existing = await prisma.stress.findFirst({
-      where: { pesuser_name, dept, org },
+      where: { pesuser_name, dept, org_id: orgId },
     });
 
     // `payload` is validated against allowedFields above, so the dynamic key is safe.

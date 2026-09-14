@@ -76,6 +76,7 @@ export async function POST(req: Request) {
         annualManHours,
         standardManHours,
         org: auth.user.org ?? undefined,
+        org_id: auth.user.orgId ?? undefined,
       },
     });
 

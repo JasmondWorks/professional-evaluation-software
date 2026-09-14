@@ -31,19 +31,20 @@ export async function POST(req: Request) {
     const admin = await prisma.pesuser.findFirst({
       where: {
         role: 'admin',
-        org: user.org
+        org_id: user.org_id
       },
       select: { image: true }
     });
 
-    const maintenance = user.org
-      ? await prisma.org.findFirst({
-          where: { name: user.org },
-          select: { maintenance_model: true },
+    const org = user.org_id
+      ? await prisma.org.findUnique({
+          where: { id: user.org_id },
+          select: { name: true, logo_url: true, maintenance_model: true },
         })
       : null;
+    const maintenance = org;
 
-    const logo = admin?.image || user.image || null;
+    const logo = org?.logo_url || admin?.image || user.image || null;
 
     const permissionRow = await prisma.permission.findFirst({
       where: { user_id: String(user.id) },
@@ -55,7 +56,8 @@ export async function POST(req: Request) {
       name: user.name,
       role: user.role,
       displayRole: user.display_role || user.role,
-      org: user.org,
+      orgId: user.org_id,
+      org: org?.name ?? user.org,
       email: user.email,
       logo,
       dept: user.dept,

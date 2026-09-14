@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     // compute until that model has been run at least once for this org.
     // Client-side gating alone is bypassable by posting here directly.
     const utilisation = await prisma.personnel_utilization.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       select: { id: true },
     });
     if (!utilisation) {
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     const record = await prisma.org_structure_results.create({
       data: {
         org,
+        org_id: orgId,
         section: Number(section),
         result: Number(result),
         numerator: numerator.map(Number),
@@ -89,8 +91,8 @@ export async function GET(req: NextRequest) {
     const plan = await requireModel(auth.user, 'org-structure');
     if (!plan.ok) return plan.response;
 
-    const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user.orgId ?? null;
+    if (!orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -101,7 +103,7 @@ export async function GET(req: NextRequest) {
     }
 
     const rows = await prisma.org_structure_results.findMany({
-      where: { org, ...(section == null ? {} : { section }) },
+      where: { org_id: orgId, ...(section == null ? {} : { section }) },
       orderBy: { created_at: "desc" },
       take: 50,
     });

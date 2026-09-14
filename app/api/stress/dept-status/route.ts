@@ -16,27 +16,28 @@ export async function GET(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const dept = auth.user.dept
-  if (!org || !dept) {
+  if (!org || !orgId || !dept) {
     return NextResponse.json({ error: 'No department on your account.' }, { status: 400 })
   }
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ active: false, roster: [] })
 
     // Everyone in the department.
     const staff = await prisma.pesuser.findMany({
-      where: { org, dept },
+      where: { org_id: orgId, dept },
       select: { name: true },
     })
 
     // Their Form 6/7 submissions for this cycle. The HOD tier is `hod_approved`.
     const submissions = await prisma.stress.findMany({
-      where: { org, dept, cycle_id: cycle.id, rejected: false },
+      where: { org_id: orgId, dept, cycle_id: cycle.id, rejected: false },
       select: { pesuser_name: true, hod_approved: true },
     })
     const byName = new Map(submissions.map((s) => [s.pesuser_name, s]))

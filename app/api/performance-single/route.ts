@@ -21,7 +21,8 @@ export async function POST(req: Request) {
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    const orgId = decoded?.orgId;
+    if (!org || !orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
     const { pesuser_name } = await req.json();
 
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const performance = await onePerformance(org, name);
 
     const appraisal = await prisma.appraisal.findFirst({
-      where: { pesuser_name: name, org },
+      where: { pesuser_name: name, org_id: orgId },
       select: {
         teaching_quality_evaluation: true,
         research_quality_evaluation: true,

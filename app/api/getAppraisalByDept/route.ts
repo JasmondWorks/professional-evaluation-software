@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   const dept = new URL(req.url).searchParams.get("dept");
   if (!dept) {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await prisma.appraisal.findMany({
-      where: { dept, org },
+      where: { dept, org_id: orgId },
       select: {
         pesuser_name: true,
         dept: true,

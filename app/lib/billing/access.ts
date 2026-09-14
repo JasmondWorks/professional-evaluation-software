@@ -56,6 +56,7 @@ export class SubscriptionExpiredError extends EntitlementError {
  *  either case. */
 export type PlanViewer = {
   org: string;
+  orgId?: number | null;
   productCategory?: string | null;
   productPlan?: string | null;
 };
@@ -77,6 +78,7 @@ export type ResolvedPlan = {
 /** Read category and plan from the token, falling back to the org row for
  *  anything missing or unrecognised. */
 async function identify(viewer: PlanViewer): Promise<{
+  orgId: number;
   institution: InstitutionType;
   plan: PlanType;
   maintenanceGranted: boolean;
@@ -88,10 +90,15 @@ async function identify(viewer: PlanViewer): Promise<{
   // maintenance_model is always read from the database rather than the token:
   // it is granted mid-session by /api/maintenance/verify, and the token the
   // caller is holding predates that grant.
-  const row = await prisma.org.findFirst({
-    where: { name: viewer.org },
-    select: { category: true, plan: true, maintenance_model: true },
-  });
+  const row = viewer.orgId != null
+    ? await prisma.org.findUnique({
+        where: { id: viewer.orgId },
+        select: { id: true, category: true, plan: true, maintenance_model: true },
+      })
+    : await prisma.org.findFirst({
+        where: { name: viewer.org },
+        select: { id: true, category: true, plan: true, maintenance_model: true },
+      });
 
   if (!row) {
     throw new EntitlementError('This organization is not registered.', 404);
@@ -114,6 +121,7 @@ async function identify(viewer: PlanViewer): Promise<{
   }
 
   return {
+    orgId: row.id,
     institution: institution ?? 'ACADEMIC',
     plan: plan ?? 'BASIC',
     maintenanceGranted: row.maintenance_model === true,
@@ -123,8 +131,8 @@ async function identify(viewer: PlanViewer): Promise<{
 
 /** Everything this organization may use right now. */
 export async function resolveEntitlements(viewer: PlanViewer): Promise<ResolvedPlan> {
-  const { institution, plan, maintenanceGranted, degraded } = await identify(viewer);
-  const subscription = await orgSubscription(viewer.org);
+  const { orgId, institution, plan, maintenanceGranted, degraded } = await identify(viewer);
+  const subscription = await orgSubscription(orgId);
 
   // A lapsed subscription is not a smaller plan, it is no plan. Returning an
   // empty set here means every model route already guarded refuses without
@@ -154,7 +162,7 @@ export async function resolveEntitlements(viewer: PlanViewer): Promise<ResolvedP
 
   // Per-org exceptions last, so they can both add and take away.
   const overrides = await prisma.org_entitlements.findMany({
-    where: { org: viewer.org },
+    where: viewer.orgId != null ? { org_id: viewer.orgId } : { org: viewer.org },
     select: { entitlement_key: true, granted: true },
   });
   for (const o of overrides) {

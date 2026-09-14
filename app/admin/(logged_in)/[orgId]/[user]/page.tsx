@@ -10,10 +10,11 @@ import { apiFetch } from '@/app/utils/apiFetch';
 type user = {
   id: number
   name: string
-  email: string 
+  email: string
   gsm: string
   role: string
   org: string
+  org_id: number | null
 }
 
 const init = {
@@ -23,6 +24,7 @@ const init = {
   gsm: '',
   role: '',
   org: '',
+  org_id: null,
 }
 
 export default function Page({ params }: { params: { user: string } }) {
@@ -62,7 +64,7 @@ export default function Page({ params }: { params: { user: string } }) {
     })
 
     // redirect back to org page after deletion
-    router.push(`/admin/${user.org}`)
+    router.push(`/admin/${user.org_id}`)
   }
 
   return (

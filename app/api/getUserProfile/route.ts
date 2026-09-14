@@ -6,11 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { verifyToken } from "../_lib/authGuard";
 
-async function getUser(id: number | null, name: string | null) {
-  if (id === null || name === null) return null;
+async function getUser(id: number | null, orgId: number | null) {
+  if (id === null || orgId === null) return null;
 
   const u = await prisma.pesuser.findFirst({
-    where: { id: Number(id), org: name },
+    where: { id: Number(id), org_id: orgId },
   });
 
   if (!u) return null;
@@ -30,21 +30,21 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get("authorization")?.split(" ")[1];
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let org;
+    let orgId;
     try {
       const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-      org = decoded?.org;
+      orgId = decoded?.orgId;
     } catch {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    if (!org) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+    if (!orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
 
     const { user } = await request.json();
 
 
-    const userInfo = await getUser(user, org);
+    const userInfo = await getUser(user, orgId);
 
     if (!userInfo) {
       return NextResponse.json({ data: ['no data'] });

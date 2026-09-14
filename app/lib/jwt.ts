@@ -8,7 +8,13 @@ export interface JWTPayload {
   userID: string | number;
   name: string;
   role: string;
-  org: string;
+  // The authorization claim. Every tenant-scoping check compares this, never
+  // `org` below — org.name is display text, not required to be unique, and
+  // two organizations may legitimately share a name.
+  orgId: number | null;
+  // Display text only, kept so the UI can show an org name without a round
+  // trip. Never compare this for access control.
+  org: string | null;
   email: string;
   logo?: string;
   dept?: string;

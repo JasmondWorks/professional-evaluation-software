@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   if (!plan.ok) return plan.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
     const body = await req.json();
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
     await prisma.personnel_redundancy.create({
       data: {
         org,
+        org_id: orgId,
         actual_staff: Number(actual_staff),
         optimal_staff: Number(optimal_staff),
         low_threshold: Number(low_threshold),

@@ -12,11 +12,11 @@ export async function POST(req: Request) {
 
   const user = verifyToken(token);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!role || !user.org) return NextResponse.json({});
+  if (!role || !user.org || !user.orgId) return NextResponse.json({});
 
   try {
     const row = await prisma.permission.findFirst({
-      where: { user_id: `role:${user.org}:${role}` },
+      where: { user_id: `role:${user.orgId}:${role}` },
     });
 
     // Return the permission flags as a boolean map the form can bind to.

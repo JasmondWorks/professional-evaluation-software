@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json(
         { error: "This account is not attached to an organization" },
         { status: 403 },
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     const saved = await prisma.personnel_utilization.create({
       data: {
         org,
+        org_id: orgId,
         a_ij,
         lambda,
         mu,
@@ -111,7 +113,8 @@ export async function GET(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json(
         { error: "Organization not found in token" },
         { status: 400 },
@@ -119,7 +122,7 @@ export async function GET(req: NextRequest) {
     }
 
     const latest = await prisma.personnel_utilization.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: { created_at: "desc" },
     });
 
@@ -164,7 +167,8 @@ export async function PATCH(req: NextRequest) {
     if (!plan.ok) return plan.response;
 
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json(
         { error: "Organization not found in token" },
         { status: 400 },
@@ -180,7 +184,7 @@ export async function PATCH(req: NextRequest) {
     // Scoped by org as well as id, so a run belonging to another organization
     // cannot be written to by guessing its number.
     const updated = await prisma.personnel_utilization.updateMany({
-      where: { id, org },
+      where: { id, org_id: orgId },
       data: {
         staff_number:
           body.staff_number == null ? null : Number(body.staff_number),

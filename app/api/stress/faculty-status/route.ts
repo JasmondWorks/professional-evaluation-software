@@ -16,11 +16,12 @@ export async function GET(req: Request) {
   })
   if (!auth.ok) return auth.response
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const name = auth.user.name
 
   try {
     const me = name
-      ? await prisma.pesuser.findFirst({ where: { name, org: org ?? undefined }, select: { faculty_college: true } })
+      ? await prisma.pesuser.findFirst({ where: { name, org_id: orgId ?? undefined }, select: { faculty_college: true } })
       : null
     const faculty = me?.faculty_college
     if (!faculty) {
@@ -28,17 +29,17 @@ export async function GET(req: Request) {
     }
 
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org: org ?? undefined },
+      where: { org_id: orgId ?? undefined },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ active: false, faculty })
 
     const staff = await prisma.pesuser.findMany({
-      where: { org: org ?? undefined, faculty_college: faculty },
+      where: { org_id: orgId ?? undefined, faculty_college: faculty },
       select: { name: true, dept: true },
     })
     const submissions = await prisma.stress.findMany({
-      where: { org: org ?? undefined, cycle_id: cycle.id, rejected: false },
+      where: { org_id: orgId ?? undefined, cycle_id: cycle.id, rejected: false },
       select: { pesuser_name: true, hod_approved: true, approved: true },
     })
     const subByName = new Map(submissions.map((s) => [s.pesuser_name, s]))

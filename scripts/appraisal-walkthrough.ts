@@ -37,14 +37,14 @@ import {
 const prisma = new PrismaClient();
 const ORG = '__walkthrough__';
 
-const admin: Viewer = { org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering', productCategory: 'academic' };
-const hod: Viewer = { org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
+const admin: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering', productCategory: 'academic' };
+const hod: Viewer = { orgId: 0, org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
 // Records Forms 8 and 9 from paper. A different person from the HOD, who scores.
-const deptAdmin: Viewer = { org: ORG, name: 'Dept Officer', role: 'dept-admin', dept: 'Mechanical Engineering' };
-const staff: Viewer = { org: ORG, name: 'Dr. Adeolla', role: 'lecturer', dept: 'Mechanical Engineering' };
+const deptAdmin: Viewer = { orgId: 0, org: ORG, name: 'Dept Officer', role: 'dept-admin', dept: 'Mechanical Engineering' };
+const staff: Viewer = { orgId: 0, org: ORG, name: 'Dr. Adeolla', role: 'lecturer', dept: 'Mechanical Engineering' };
 // A template needs a second person to approve it before it can be put in force.
-const approver: Viewer = { org: ORG, name: 'Second Officer', role: 'admin', dept: null, productCategory: 'academic' };
-const auditor: Viewer = { org: ORG, name: 'External Auditor', role: 'auditor' };
+const approver: Viewer = { orgId: 0, org: ORG, name: 'Second Officer', role: 'admin', dept: null, productCategory: 'academic' };
+const auditor: Viewer = { orgId: 0, org: ORG, name: 'External Auditor', role: 'auditor' };
 
 let step = 0;
 const say = (who: string, what: string) => console.log(`\n${String(++step).padStart(2, '0')}. [${who}]  ${what}`);
@@ -66,9 +66,12 @@ async function cleanup() {
 /** The appraisee has to exist on the roster: which appraisal they belong in is
  *  read from their post, not taken from the request. */
 async function seedStaff() {
-  await prisma.org.create({
+  const newOrg = await prisma.org.create({
     data: { name: ORG, category: 'academic', plan: 'premium', evaluation: [] },
   });
+  for (const viewer of [admin, hod, deptAdmin, staff, approver, auditor]) {
+    viewer.orgId = newOrg.id;
+  }
   await prisma.pesuser.create({
     data: {
       name: staff.name,

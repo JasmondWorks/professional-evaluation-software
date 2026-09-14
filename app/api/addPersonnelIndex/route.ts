@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const { payload } = body;
   const value = body[payload];
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
   const dept = auth.user.dept ? String(auth.user.dept) : null;
 
   const allowedFields = [
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
   try {
     // Always create a new record for historical tracking
     await prisma.index.create({
-      data: { org, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
+      data: { org, org_id: orgId, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
     });
 
     return NextResponse.json({ message: 'saved successfully' }, { status: 201 });

@@ -7,9 +7,9 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getInventory( user: string | null ) {
-  if (!user) return []
-  return prisma.facilities.findMany({ where: { org: user } })
+async function getInventory( orgId: number | null ) {
+  if (!orgId) return []
+  return prisma.facilities.findMany({ where: { org_id: orgId } })
 }
 
 // Facilities for an organization. The client posted the org it wanted, which is
@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
   const auth = authorize(tokenFromRequest(request), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
-  if (org) {
+  if (orgId) {
     try {
-      const userInfo = await getInventory(org)
+      const userInfo = await getInventory(orgId)
       return NextResponse.json(userInfo)
     } catch(err) {
       console.error(err)

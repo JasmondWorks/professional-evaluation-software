@@ -13,12 +13,12 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
     const { pesuser_name } = await req.json();
     const results = await prisma.appraisal.findMany({
-      where: { org, ...(pesuser_name ? { pesuser_name } : {}) },
+      where: { org_id: orgId, ...(pesuser_name ? { pesuser_name } : {}) },
       select: {
         pesuser_name: true,
         dept: true,

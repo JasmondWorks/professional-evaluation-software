@@ -12,34 +12,35 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
   const org = auth.user.org
-  if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+  const orgId = auth.user.orgId ?? null
+  if (!org || !orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
   try {
     const cycle = await prisma.stressCycle.findFirst({
-      where: { org },
+      where: { org_id: orgId },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
     })
     if (!cycle) return NextResponse.json({ active: false, departments: [], faculties: [] })
 
     const staff = await prisma.pesuser.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: { name: true, dept: true, faculty_college: true },
     })
     const submissions = await prisma.stress.findMany({
-      where: { org, cycle_id: cycle.id, rejected: false },
+      where: { org_id: orgId, cycle_id: cycle.id, rejected: false },
       select: { pesuser_name: true, hod_approved: true, approved: true },
     })
     const subByName = new Map(submissions.map((s) => [s.pesuser_name, s]))
 
     // The faculty/Dean tier only exists for ACADEMIC organizations. For any other
     // sector the HOD approval IS the final approval (no forced Dean/Manager gate).
-    const orgRecord = await prisma.org.findFirst({ where: { name: org }, select: { category: true } })
+    const orgRecord = await prisma.org.findUnique({ where: { id: orgId }, select: { category: true } })
     const isAcademic = (orgRecord?.category || '').toLowerCase() === 'academic'
 
     // Which departments have an HOD, and which faculties have a head — so the
     // admin can be warned where approvals can't happen and offered an override.
     const heads = await prisma.pesuser.findMany({
-      where: { org, role: { in: ['hod', 'unit-head'] } },
+      where: { org_id: orgId, role: { in: ['hod', 'unit-head'] } },
       select: { role: true, dept: true, faculty_college: true },
     })
     const deptsWithHead = new Set(heads.filter((h) => h.role === 'hod' && h.dept).map((h) => h.dept as string))

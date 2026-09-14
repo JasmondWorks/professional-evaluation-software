@@ -15,11 +15,11 @@ export async function POST(req: Request) {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded.org;
+    const orgId = decoded.orgId;
 
     const body = await req.json();
 
-    if (!org) {
+    if (!orgId) {
       return NextResponse.json(
         { error: "org is required" },
         { status: 400 }
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     // (no new Form 5, no reset) reuses the previous settings cycle's values
     // rather than showing empty or blended data. Data is always org-isolated.
     const cyclesWithScores = await prisma.stress_scores.findMany({
-      where: { org, cycle_id: { not: null } },
+      where: { org_id: orgId, cycle_id: { not: null } },
       select: { cycle_id: true },
       distinct: ["cycle_id"],
       orderBy: { cycle_id: "desc" },
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     const data = await prisma.stress_scores.findMany({
       where: {
-        org,
+        org_id: orgId,
         ...(effectiveCycleId != null ? { cycle_id: effectiveCycleId } : {}),
       },
       select: {
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     // aggregated at faculty level (stress_scores itself only stores dept).
     // Matched by name within the org; unmatched fall into "Unknown Faculty".
     const users = await prisma.pesuser.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: { name: true, faculty_college: true },
     });
     const facultyByName = new Map<string, string>(

@@ -84,6 +84,9 @@ export async function POST(req: Request) {
         name: user.name,
         role: user.role,
         email: user.email,
+        // super-admin is platform-wide and typically has no org_id; admin
+        // console accounts scoped to one org carry it here as usual.
+        orgId: user.org_id,
         org: user.org,
       },
       getJWTSecret(),

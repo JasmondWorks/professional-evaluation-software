@@ -15,17 +15,17 @@ export async function POST(req: Request) {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded.org;
+    const orgId = decoded.orgId;
 
     const body = await req.json();
 
     // Validate input
-    if (!org || typeof org !== 'string') {
+    if (!orgId || typeof orgId !== 'number') {
       return NextResponse.json({ error: "Invalid org parameter" }, { status: 400 });
     }
 
     const results = await prisma.stress.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: {
         pesuser_name: true,
         dept: true,

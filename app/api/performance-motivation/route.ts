@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
@@ -37,13 +38,13 @@ export async function GET(req: NextRequest) {
     const period = PERIODS.some((p) => p.key === periodParam) ? periodParam : 'annual';
 
     const [reporting, rows, scheme, people] = await Promise.all([
-      reportingPeriod(org),
-      staffPerformance({ org }),
+      reportingPeriod(orgId),
+      staffPerformance({ orgId }),
       prisma.motivation_scheme.findFirst({
-        where: { org, active: true },
+        where: { org_id: orgId, active: true },
         orderBy: { created_at: 'desc' },
       }),
-      prisma.pesuser.findMany({ where: { org }, select: { name: true, role: true } }),
+      prisma.pesuser.findMany({ where: { org_id: orgId }, select: { name: true, role: true } }),
     ]);
 
     const roleOf = new Map(people.map((p) => [p.name, p.role ?? '']));

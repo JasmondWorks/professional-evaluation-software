@@ -12,13 +12,14 @@ export async function GET(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
     const periodLabel = new URL(req.url).searchParams.get('period_label');
     const rows = await prisma.motivation_award.findMany({
-      where: { org, ...(periodLabel ? { period_label: periodLabel } : {}) },
+      where: { org_id: orgId, ...(periodLabel ? { period_label: periodLabel } : {}) },
       orderBy: { awarded_at: 'desc' },
       take: 200,
     });
@@ -35,8 +36,9 @@ export async function POST(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
     const role = auth.user?.role ?? '';
-    if (!org) {
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
     if (!['admin', 'super-admin'].includes(role)) {
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
     const created = await prisma.motivation_award.create({
       data: {
         org,
+        org_id: orgId,
         user_id: Number.isFinite(Number(body.user_id)) ? Number(body.user_id) : null,
         staff_name: String(body.staff_name),
         dept: body.dept ? String(body.dept) : null,

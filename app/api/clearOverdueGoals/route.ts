@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
     const auth = authorize(tokenFromRequest(request), {});
     if (!auth.ok) return auth.response;
 
-    const org = auth.user.org ? String(auth.user.org) : null;
-    if (!org) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
+    const orgId = auth.user.orgId ?? null;
+    if (!orgId) return NextResponse.json({ error: 'Missing org' }, { status: 400 })
 
     const { goalIds } = await request.json().catch(() => ({}))
     if (!Array.isArray(goalIds) || goalIds.length === 0) {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure the goals being deleted belong to the user's org to prevent unauthorized deletion
-    const members = await prisma.pesuser.findMany({ where: { org }, select: { id: true } })
+    const members = await prisma.pesuser.findMany({ where: { org_id: orgId }, select: { id: true } })
     const ids = members.map((m) => String(m.id))
     if (ids.length === 0) return NextResponse.json({ cleared: 0 })
 

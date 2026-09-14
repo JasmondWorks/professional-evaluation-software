@@ -12,14 +12,14 @@ export async function POST(req: Request) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
     const body = await req.json();
     const { name } = body;
 
     const results = await prisma.counter_stress.findMany({
-      where: { org, ...(name ? { pesuser_name: name } : {}) },
+      where: { org_id: orgId, ...(name ? { pesuser_name: name } : {}) },
       select: {
         pesuser_name: true,
         dept: true,

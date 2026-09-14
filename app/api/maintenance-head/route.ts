@@ -19,13 +19,13 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) return auth.response;
     const plan = await requireModel(auth.user, 'maintenance');
     if (!plan.ok) return plan.response;
-    const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
     const heads = await prisma.pesuser.findMany({
-      where: { org, role: MAINTENANCE_HEAD_ROLE },
+      where: { org_id: orgId, role: MAINTENANCE_HEAD_ROLE },
       select: { name: true, dept: true },
       take: 10,
     });

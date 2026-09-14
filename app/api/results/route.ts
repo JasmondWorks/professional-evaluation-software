@@ -24,8 +24,8 @@ export async function GET(req: Request) {
   if (!readPlan.ok) return readPlan.response;
 
   const results = await prisma.optimizationResult.findMany({
-    where: { 
-      org: decoded.org,
+    where: {
+      org_id: decoded.orgId,
       ...(mode ? { mode } : {})
     },
     orderBy: { createdAt: "desc" },
@@ -102,6 +102,7 @@ export async function POST(req: Request) {
       t4: t4 ?? null,
       S0: S0 ?? null,
       org: decoded.org,
+      org_id: decoded.orgId,
     },
   });
 

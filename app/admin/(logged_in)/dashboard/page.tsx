@@ -23,6 +23,7 @@ import { ArrowRight, LucideDatabase } from 'lucide-react';
 import { useEffect, useState } from "react";
 import LoadingButton from '../../../components/ui/LoadingButton';
 import { apiFetch } from '@/app/utils/apiFetch';
+import UserAvatar from '@/app/components/ui/UserAvatar';
 
 export default function AdminPage() {
   const [orgs, setOrgs] = useState<any[]>([]);
@@ -70,11 +71,14 @@ export default function AdminPage() {
 
       <div className="flex flex-col w-full">
           {orgs.map((org) => (
-          <Link href={`/admin/${org.org}`} key={org.org} className='flex bg-canvas p-5 rounded-lg w-full m-4 justify-between'>
-              <p>{org.org}</p>
+          <Link href={`/admin/${org.orgId}`} key={org.orgId} className='flex items-center bg-canvas p-5 rounded-lg w-full m-4 justify-between'>
+              <div className='flex items-center gap-3'>
+                <UserAvatar name={org.orgName} image={org.logoUrl} size="sm" rounded="xl" />
+                <p>{org.orgName}</p>
+              </div>
               <ArrowRight2/>
           </Link>
-          ))} 
+          ))}
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ import {
 } from './scoring';
 
 export type Viewer = {
+  orgId: number;
   org: string;
   name: string;
   role: string;
@@ -66,7 +67,7 @@ export async function openPeriod(
 ) {
   requireOrgAdmin(viewer);
 
-  const open = await currentPeriod(viewer.org);
+  const open = await currentPeriod(viewer.orgId);
   if (open) throw new PerformanceError('A performance period is already open.', 409);
   if (input.endsOn <= input.startsOn) {
     throw new PerformanceError('The period must end after it starts.', 400);
@@ -84,6 +85,7 @@ export async function openPeriod(
   return prisma.performance_period.create({
     data: {
       org: viewer.org,
+      org_id: viewer.orgId,
       frequency: input.frequency,
       starts_on: input.startsOn,
       ends_on: input.endsOn,
@@ -95,9 +97,9 @@ export async function openPeriod(
   });
 }
 
-export async function currentPeriod(org: string) {
+export async function currentPeriod(orgId: number) {
   return prisma.performance_period.findFirst({
-    where: { org, status: 'open' },
+    where: { org_id: orgId, status: 'open' },
     orderBy: { starts_on: 'desc' },
   });
 }
@@ -150,7 +152,7 @@ export async function releaseResults(viewer: Viewer, periodId: number) {
  *  can be ignored later, whereas never collecting it cannot be undone. Flagged
  *  to the client. */
 export async function ensureEntry(viewer: Viewer, pesuserName?: string) {
-  const period = await currentPeriod(viewer.org);
+  const period = await currentPeriod(viewer.orgId);
   if (!period) throw new PerformanceError('No performance period is open.', 409);
 
   const name = pesuserName ?? viewer.name;
@@ -164,7 +166,7 @@ export async function ensureEntry(viewer: Viewer, pesuserName?: string) {
   if (existing) return existing;
 
   const staff = await prisma.pesuser.findFirst({
-    where: { name, org: viewer.org },
+    where: { name, org_id: viewer.orgId },
     select: { dept: true },
   });
   if (!staff) {
@@ -174,6 +176,7 @@ export async function ensureEntry(viewer: Viewer, pesuserName?: string) {
   return prisma.performance_entry.create({
     data: {
       org: viewer.org,
+      org_id: viewer.orgId,
       dept: staff.dept ?? null,
       period_id: period.id,
       pesuser_name: name,
@@ -295,7 +298,7 @@ export async function listEntries(viewer: Viewer, periodId: number) {
 
   const entries = await prisma.performance_entry.findMany({
     where: {
-      org: viewer.org,
+      org_id: viewer.orgId,
       period_id: periodId,
       ...(isAdmin ? {} : isDeptScoped ? { dept: viewer.dept } : { pesuser_name: viewer.name }),
     },
@@ -371,7 +374,7 @@ export async function evaluatePeriod(viewer: Viewer, periodId: number) {
   requireOrgAdmin(viewer);
   await loadPeriod(viewer, periodId);
   const entries = await prisma.performance_entry.findMany({
-    where: { org: viewer.org, period_id: periodId },
+    where: { org_id: viewer.orgId, period_id: periodId },
     select: { id: true },
   });
 
@@ -598,7 +601,7 @@ export async function auditorQueue(viewer: Viewer) {
   // cannot be hidden by whatever the entry's status happens to say.
   return prisma.performance_entry.findMany({
     where: {
-      org: viewer.org,
+      org_id: viewer.orgId,
       criteria: { some: { reconciliation: 'referred_to_auditor' } },
     },
     include: {
@@ -626,7 +629,7 @@ export async function drawHodRaters(viewer: Viewer, periodId: number) {
   const period = await loadPeriod(viewer, periodId);
 
   const heads = await prisma.pesuser.findMany({
-    where: { org: viewer.org, role: { in: HEAD_ROLES }, dept: { not: null } },
+    where: { org_id: viewer.orgId, role: { in: HEAD_ROLES }, dept: { not: null } },
     select: { name: true, dept: true },
   });
 
@@ -643,7 +646,7 @@ export async function drawHodRaters(viewer: Viewer, periodId: number) {
 
     const pool = await prisma.pesuser.findMany({
       where: {
-        org: viewer.org,
+        org_id: viewer.orgId,
         dept,
         name: { not: head.name },
         role: { notIn: [...HEAD_ROLES, ...ORG_ADMIN_ROLES] },
@@ -660,6 +663,7 @@ export async function drawHodRaters(viewer: Viewer, periodId: number) {
     await prisma.hod_performance_rater.createMany({
       data: sample.map((rater) => ({
         org: viewer.org,
+        org_id: viewer.orgId,
         period_id: period.id,
         dept,
         hod_name: head.name,
@@ -695,7 +699,7 @@ function shuffle<T>(xs: T[]): T[] {
 /** The heads this viewer has been drawn to score, and whether they have done it. */
 export async function myHodAssignments(viewer: Viewer) {
   const rows = await prisma.hod_performance_rater.findMany({
-    where: { org: viewer.org, rater_name: viewer.name },
+    where: { org_id: viewer.orgId, rater_name: viewer.name },
     include: { period: { select: { id: true, status: true, starts_on: true, ends_on: true } } },
     orderBy: { created_at: 'desc' },
   });
@@ -738,7 +742,7 @@ export async function submitHodRating(
   },
 ) {
   const row = await prisma.hod_performance_rater.findFirst({
-    where: { id: input.assignmentId, org: viewer.org },
+    where: { id: input.assignmentId, org_id: viewer.orgId },
   });
   if (!row) throw new PerformanceError('That assignment does not exist.', 404);
   if (row.rater_name !== viewer.name) {
@@ -790,6 +794,7 @@ export async function evaluateHod(viewer: Viewer, periodId: number, hodName: str
 
   const data = {
     org: viewer.org,
+    org_id: viewer.orgId,
     period_id: period.id,
     dept,
     hod_name: hodName,
@@ -820,7 +825,7 @@ export async function evaluateHod(viewer: Viewer, periodId: number, hodName: str
 export async function evaluateAllHods(viewer: Viewer, periodId: number) {
   requireOrgAdmin(viewer);
   const heads = await prisma.hod_performance_rater.findMany({
-    where: { org: viewer.org, period_id: periodId },
+    where: { org_id: viewer.orgId, period_id: periodId },
     select: { hod_name: true },
     distinct: ['hod_name'],
   });
@@ -842,7 +847,7 @@ export async function hodResults(viewer: Viewer, periodId: number) {
 
   const rows = await prisma.hod_performance_result.findMany({
     where: {
-      org: viewer.org,
+      org_id: viewer.orgId,
       period_id: periodId,
       ...(isAdmin ? {} : { hod_name: viewer.name }),
     },
@@ -962,9 +967,9 @@ export type PerformanceNotice = {
 
 export async function performanceNotice(viewer: Viewer): Promise<PerformanceNotice> {
   const period =
-    (await currentPeriod(viewer.org)) ??
+    (await currentPeriod(viewer.orgId)) ??
     (await prisma.performance_period.findFirst({
-      where: { org: viewer.org },
+      where: { org_id: viewer.orgId },
       orderBy: { starts_on: 'desc' },
     }));
 
@@ -989,7 +994,7 @@ export async function performanceNotice(viewer: Viewer): Promise<PerformanceNoti
   ).length;
 
   const pending = await prisma.hod_performance_rater.count({
-    where: { org: viewer.org, period_id: period.id, rater_name: viewer.name, submitted_at: null },
+    where: { org_id: viewer.orgId, period_id: period.id, rater_name: viewer.name, submitted_at: null },
   });
 
   return {
@@ -1014,7 +1019,7 @@ function requireOrgAdmin(viewer: Viewer) {
 
 async function loadPeriod(viewer: Viewer, periodId: number) {
   const period = await prisma.performance_period.findFirst({
-    where: { id: periodId, org: viewer.org },
+    where: { id: periodId, org_id: viewer.orgId },
   });
   if (!period) throw new PerformanceError('Performance period not found.', 404);
   return period;
@@ -1022,7 +1027,7 @@ async function loadPeriod(viewer: Viewer, periodId: number) {
 
 async function loadEntry(viewer: Viewer, entryId: number) {
   const entry = await prisma.performance_entry.findFirst({
-    where: { id: entryId, org: viewer.org },
+    where: { id: entryId, org_id: viewer.orgId },
   });
   if (!entry) throw new PerformanceError('Performance record not found.', 404);
   return entry;
@@ -1044,12 +1049,12 @@ export async function runPerformanceIntegrity(viewer: Viewer, periodId: number):
   }
 
   const period = await prisma.performance_period.findFirst({
-    where: { id: periodId, org: viewer.org },
+    where: { id: periodId, org_id: viewer.orgId },
   });
   if (!period) throw new PerformanceError('Performance period not found.', 404);
 
   const entries = await prisma.performance_entry.findMany({
-    where: { org: viewer.org, period_id: periodId, status: { not: 'draft' } },
+    where: { org_id: viewer.orgId, period_id: periodId, status: { not: 'draft' } },
     include: { criteria: { select: { recorded_score: true, staff_score: true } } },
   });
 

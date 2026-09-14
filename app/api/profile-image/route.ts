@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const claims: any = auth.user;
     const me = await prisma.pesuser.findFirst({
       where: {
-        org: claims.org ?? undefined,
+        org_id: claims.orgId ?? undefined,
         OR: [{ name: claims.name }, { email: claims.email }],
       },
       select: { id: true, image: true },
@@ -113,7 +113,7 @@ export async function DELETE(req: Request) {
     const claims: any = auth.user;
     const me = await prisma.pesuser.findFirst({
       where: {
-        org: claims.org ?? undefined,
+        org_id: claims.orgId ?? undefined,
         OR: [{ name: claims.name }, { email: claims.email }],
       },
       select: { id: true },

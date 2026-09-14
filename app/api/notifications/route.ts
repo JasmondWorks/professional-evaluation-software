@@ -20,9 +20,9 @@ async function handleRequest(request: NextRequest) {
     const token = authHeader.split(" ")[1];
     const decoded = verifyToken(token) as any;
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const org = decoded.org;
+    const orgId = decoded.orgId;
 
-    if (!org) {
+    if (!orgId) {
       return NextResponse.json(
         { error: "Missing org" },
         { status: 400 }
@@ -35,7 +35,7 @@ async function handleRequest(request: NextRequest) {
 
     const notifications = await prisma.notifications.findMany({
       where: {
-        org,
+        org_id: orgId,
         ...(Number.isFinite(userId) ? { user_id: userId } : {}),
       },
       select: {

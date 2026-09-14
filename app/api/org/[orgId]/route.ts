@@ -8,14 +8,20 @@ import { authorize, tokenFromRequest } from '../../_lib/authGuard'
 // were readable by name.
 export async function GET(
   req: Request,
-  { params }: { params: { org: string } }
+  { params }: { params: { orgId: string } }
 ) {
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
 
-  const orgName = decodeURIComponent(params.org)
+  const orgId = Number(params.orgId)
+  if (!Number.isFinite(orgId)) {
+    return NextResponse.json(
+      { status: 400, message: 'Invalid org id' },
+      { status: 400 }
+    )
+  }
 
-  if (auth.user.role !== 'super-admin' && orgName !== auth.user.org) {
+  if (auth.user.role !== 'super-admin' && auth.user.orgId !== orgId) {
     return NextResponse.json(
       { status: 404, message: 'Org not found' },
       { status: 404 }
@@ -23,8 +29,8 @@ export async function GET(
   }
 
   try {
-    const org = await prisma.org.findFirst({
-      where: { name: orgName },
+    const org = await prisma.org.findUnique({
+      where: { id: orgId },
       select: { id: true, name: true, evaluation: true, ongoing: true },
     })
     console.log("Org fetched:", org)
@@ -37,7 +43,7 @@ export async function GET(
     }
 
     const latestStressCycle = await prisma.stressCycle.findFirst({
-      where: { org: orgName, phase: { not: 'evaluated' } },
+      where: { org_id: orgId, phase: { not: 'evaluated' } },
       orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
       select: {
         settings_closes_at: true,

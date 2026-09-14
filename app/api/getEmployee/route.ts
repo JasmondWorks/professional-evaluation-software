@@ -7,11 +7,11 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getUser(user: string | null) {
-  if (!user) return []
+async function getUser(orgId: number | null) {
+  if (!orgId) return []
 
   return prisma.pesuser.findMany({
-    where: { org: user },
+    where: { org_id: orgId },
     select: {
       id: true,
       name: true,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const userInfo = await getUser(auth.user.org ?? null)
+    const userInfo = await getUser(auth.user.orgId ?? null)
     return NextResponse.json(userInfo)
   } catch (err) {
     console.error(err)

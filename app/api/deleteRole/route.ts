@@ -17,8 +17,9 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response
 
   const org = auth.user.org
+  const orgId = auth.user.orgId ?? null
   const { roleName, replacementRole } = await req.json()
-  if (!roleName || !org) {
+  if (!roleName || !org || !orgId) {
     return NextResponse.json({ error: 'roleName is required' }, { status: 400 })
   }
   if ((PRESET_ROLES as readonly string[]).includes(roleName)) {
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
   try {
     // Who currently holds this role (by display label).
     const holders = await prisma.pesuser.findMany({
-      where: { org, display_role: roleName },
+      where: { org_id: orgId, display_role: roleName },
       select: { id: true },
     })
 
@@ -44,18 +45,18 @@ export async function POST(req: Request) {
       }
       // Reassign every holder to the replacement role.
       for (const h of holders) {
-        await applyRoleToUser(h.id, replacementRole, org)
+        await applyRoleToUser(h.id, replacementRole, org, orgId)
       }
       // Credit the replacement role's assigned counter.
       await prisma.roles.updateMany({
-        where: { name: replacementRole, org },
+        where: { name: replacementRole, org_id: orgId },
         data: { assigned: { increment: holders.length } },
       })
     }
 
     // Remove the role and its permission template.
-    await prisma.permission.deleteMany({ where: { user_id: `role:${org}:${roleName}` } })
-    await prisma.roles.deleteMany({ where: { name: roleName, org } })
+    await prisma.permission.deleteMany({ where: { user_id: `role:${orgId}:${roleName}` } })
+    await prisma.roles.deleteMany({ where: { name: roleName, org_id: orgId } })
 
     return NextResponse.json(
       { message: `Role "${roleName}" deleted.`, reassigned: holders.length },

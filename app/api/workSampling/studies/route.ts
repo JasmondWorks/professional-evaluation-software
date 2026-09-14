@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
     const {
       department,
       analyst,
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     const study = await prisma.workSamplingStudy.create({
       data: {
         org: org ?? null,
+        org_id: orgId,
         department: department ?? null,
         analyst: analyst ?? null,
         authorizedBy: authorizedBy ?? null,
@@ -82,7 +84,7 @@ export async function GET(req: NextRequest) {
   const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
   if (!plan.ok) return plan.response;
 
-  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
       const results = await prisma.$queryRaw`
@@ -92,7 +94,7 @@ export async function GET(req: NextRequest) {
           JOIN "WorkSamplingPosition" p ON o."positionId" = p.id
           WHERE p."studyId" = s.id) AS "observationCount"
       FROM "WorkSamplingStudy" s
-      WHERE s."org" = ${org}
+      WHERE s."org_id" = ${orgId}
       ORDER BY s."createdAt" DESC
     `;
     return NextResponse.json({ success: true, data: results });

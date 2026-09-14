@@ -17,21 +17,22 @@ type User = {
   org: string
 }
 
-export default function Page({ params }: { params: { org: string } }) {
+export default function Page({ params }: { params: { orgId: string } }) {
   const [users, setUsers] = useState<User[]>([])
   const router = useRouter()
+  const orgId = Number(params.orgId)
 
   useEffect(() => {
     async function fetchUsers() {
       const access_token = getAccessToken() as string
       jwtDecode(access_token) // assuming you check auth elsewhere
 
-      const res = await apiFetch(`/api/admin/orgs/${params.org}/users`)
+      const res = await apiFetch(`/api/admin/orgs/${orgId}/users`)
       const data = await res.json()
       setUsers(data)
     }
     fetchUsers()
-  }, [params.org])
+  }, [orgId])
 
   function logout() {
     localStorage.removeItem('access_token')
@@ -59,7 +60,7 @@ export default function Page({ params }: { params: { org: string } }) {
       {/* Header */}
       <div className="flex justify-between items-center p-6 bg-white shadow-sm">
         <h1 className="text-2xl font-semibold">
-          Users — {params.org}
+          Users — {users[0]?.org ?? `Org #${orgId}`}
         </h1>
 
         <button
@@ -85,7 +86,7 @@ export default function Page({ params }: { params: { org: string } }) {
             <div className="flex flex-col gap-3">
               {roleUsers.map((user) => (
                 <Link
-                  href={`/admin/${user.org}/${user.id}`}
+                  href={`/admin/${orgId}/${user.id}`}
                   key={user.id}
                   className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm hover:bg-line/50 transition"
                 >

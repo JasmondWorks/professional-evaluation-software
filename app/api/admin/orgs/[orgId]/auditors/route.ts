@@ -7,13 +7,16 @@ import { consoleViewer, canReachOrg } from "../../../_scope";
 // Org named in the URL — same reasoning as ./users.
 export async function GET(
   req: NextRequest,
-  { params }: { params: { org: string } }
+  { params }: { params: { orgId: string } }
 ) {
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
-  const org = decodeURIComponent(params.org);
-  if (!canReachOrg(auth.viewer, org)) {
+  const orgId = Number(params.orgId);
+  if (!Number.isFinite(orgId)) {
+    return NextResponse.json({ error: "Invalid org id" }, { status: 400 });
+  }
+  if (!canReachOrg(auth.viewer, orgId)) {
     return NextResponse.json(
       { error: "You do not have permission to view this organization" },
       { status: 403 }
@@ -21,7 +24,7 @@ export async function GET(
   }
 
   const auditors = await prisma.pesuser.findMany({
-    where: { org, role: "auditor" },
+    where: { org_id: orgId, role: "auditor" },
     select: { id: true, name: true, email: true, role: true, org: true },
   });
 

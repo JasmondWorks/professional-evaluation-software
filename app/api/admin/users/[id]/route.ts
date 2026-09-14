@@ -23,7 +23,7 @@ async function resolve(req: NextRequest, rawId: string) {
 
   const target = await prisma.pesuser.findUnique({
     where: { id },
-    select: PUBLIC_USER_COLUMNS,
+    select: { ...PUBLIC_USER_COLUMNS, org_id: true },
   });
   if (!target) {
     return {
@@ -32,7 +32,7 @@ async function resolve(req: NextRequest, rawId: string) {
     };
   }
 
-  if (!canReachOrg(auth.viewer, target.org ?? "")) {
+  if (!canReachOrg(auth.viewer, target.org_id ?? -1)) {
     // Same body as "not found": which ids exist in another org is not something
     // this caller should be able to learn either.
     return {

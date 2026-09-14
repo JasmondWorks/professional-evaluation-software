@@ -30,14 +30,15 @@ export async function GET(req: NextRequest) {
     const auth = authorize(tokenFromRequest(req), {});
     if (!auth.ok) return auth.response;
     const org = auth.user?.org ? String(auth.user.org) : null;
-    if (!org) {
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
       return NextResponse.json({ error: 'Organization not found in token' }, { status: 400 });
     }
 
     // Only released periods: an award drawn from results the staff have not
     // been shown would leak a grade before the admin meant to publish it.
     const periods = await prisma.appraisal_period.findMany({
-      where: { org, released_at: { not: null } },
+      where: { org_id: orgId, released_at: { not: null } },
       orderBy: { ends_on: 'desc' },
       select: { id: true, starts_on: true, ends_on: true },
     });
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     const latest = periods[0];
     const entries = await prisma.appraisal_entry.findMany({
-      where: { org, period_id: latest.id },
+      where: { org_id: orgId, period_id: latest.id },
       select: {
         id: true,
         pesuser_name: true,
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
     // Faculty lives on the staff record, not the entry, and half the awards are
     // scoped by it.
     const people = await prisma.pesuser.findMany({
-      where: { org },
+      where: { org_id: orgId },
       select: { name: true, faculty_college: true },
     });
     const facultyOf = new Map(people.map((p) => [p.name, p.faculty_college ?? null]));
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
     // Streaks, for the Books of Records and the Hall of Fame: how many of the
     // most recent released periods in a row a person held a grade.
     const priorEntries = await prisma.appraisal_entry.findMany({
-      where: { org, period_id: { in: periods.map((p) => p.id) } },
+      where: { org_id: orgId, period_id: { in: periods.map((p) => p.id) } },
       select: { pesuser_name: true, period_id: true, grade: true },
     });
     const orderedPeriodIds = periods.map((p) => p.id);

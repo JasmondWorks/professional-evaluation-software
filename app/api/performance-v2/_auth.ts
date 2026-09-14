@@ -19,11 +19,12 @@ export function viewerFrom(req: Request): Viewer {
   } catch {
     throw new PerformanceError('Your session has expired. Sign in again.', 401);
   }
-  if (!claims?.org) {
+  if (!claims?.orgId) {
     throw new PerformanceError('This account is not attached to an organization.', 403);
   }
 
   return {
+    orgId: claims.orgId,
     org: claims.org,
     name: claims.name,
     role: claims.role,

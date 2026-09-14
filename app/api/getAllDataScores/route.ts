@@ -13,6 +13,7 @@ export async function POST(req: Request) {
   if (!auth.ok) return auth.response;
 
   const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
 
   try {
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     const { name } = body;
 
     const where = {
-      ...(org ? { org } : {}),
+      ...(orgId ? { org_id: orgId } : {}),
       ...(name ? { pesuser_name: name } : {}),
     };
     const appraisalSelect = {
@@ -50,8 +51,8 @@ export async function POST(req: Request) {
     // From the performance model rather than the old flat tables. `where` is
     // the org (and department, where the caller scoped it).
     const [mainPerformances, counterPerformances] = await Promise.all([
-      staffPerformance({ org: where.org as string, dept: (where as any).dept ?? null }),
-      hodCounterScores({ org: where.org as string, dept: (where as any).dept ?? null }),
+      staffPerformance({ orgId: orgId as number, dept: (where as any).dept ?? null }),
+      hodCounterScores({ orgId: orgId as number, dept: (where as any).dept ?? null }),
     ]);
     const performances = [...withSource(mainPerformances, "main"), ...withSource(counterPerformances, "counter")];
 
