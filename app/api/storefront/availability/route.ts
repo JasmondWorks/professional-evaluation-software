@@ -1,12 +1,20 @@
-/** Is this organization name and administrator email free?
+/** Is this administrator email free?
  *
- *  Called from the storefront checkout form, before payment. Both collisions
- *  are refusals after the money has moved otherwise — the worst possible moment
- *  for them, and a refund conversation caused by a missing form validation.
+ *  Called from the storefront checkout form, before payment. An email
+ *  collision is a refusal after the money has moved otherwise — the worst
+ *  possible moment for it, and a refund conversation caused by a missing
+ *  form validation.
  *
- *  Both fields are required: /provision needs both to succeed, so a check
- *  that only covers one would let the form move on to payment with the
- *  other collision still undiscovered.
+ *  Organization name is NOT checked for uniqueness: two organizations may
+ *  legitimately share a name (unrelated companies/schools around the world
+ *  coincidentally named the same), and each org is identified by its own
+ *  `org.id`, not its name. Only the administrator's email — which really is
+ *  meant to be globally unique, since it's their sign-in credential —
+ *  blocks provisioning.
+ *
+ *  organization_name is still a required parameter here (the caller sends
+ *  the full pair it's about to submit to /provision), it is just never
+ *  looked up or refused on.
  *
  *  Not a webhook, despite sitting beside one: a person is typing into a form
  *  and waiting for the answer. It is here because it shares the provisioning
@@ -43,13 +51,12 @@ export async function GET(req: Request) {
     );
   }
 
-  const [org, user] = await Promise.all([
-    prisma.org.findUnique({ where: { name: organizationName }, select: { id: true } }),
-    prisma.pesuser.findUnique({ where: { email: adminEmail }, select: { id: true } }),
-  ]);
+  const user = await prisma.pesuser.findUnique({
+    where: { email: adminEmail },
+    select: { id: true },
+  });
 
   return NextResponse.json({
-    organization_name_available: !org,
     admin_email_available: !user,
   });
 }

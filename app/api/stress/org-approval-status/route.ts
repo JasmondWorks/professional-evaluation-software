@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
     // The faculty/Dean tier only exists for ACADEMIC organizations. For any other
     // sector the HOD approval IS the final approval (no forced Dean/Manager gate).
-    const orgRecord = await prisma.org.findUnique({ where: { name: org }, select: { category: true } })
+    const orgRecord = await prisma.org.findFirst({ where: { name: org }, select: { category: true } })
     const isAcademic = (orgRecord?.category || '').toLowerCase() === 'academic'
 
     // Which departments have an HOD, and which faculties have a head — so the

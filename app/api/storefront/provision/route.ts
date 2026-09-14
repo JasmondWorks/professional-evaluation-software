@@ -174,20 +174,20 @@ export async function POST(req: Request) {
     return NextResponse.json(body, { status: 400 });
   }
 
-  // Collisions before payment verification: both are cheap, and both are
-  // refusals the storefront should have caught with /availability.
-  const [orgTaken, emailTaken] = await Promise.all([
-    prisma.org.findUnique({ where: { name: input.organization_name }, select: { id: true } }),
-    prisma.pesuser.findUnique({ where: { email: input.admin_email }, select: { id: true } }),
-  ]);
+  // Email collision before payment verification: cheap, and a refusal the
+  // storefront should have caught with /availability. Organization name is
+  // NOT checked — two orgs may legitimately share a name (each is identified
+  // by org.id, not name), so there is nothing to collide on here.
+  const emailTaken = await prisma.pesuser.findUnique({
+    where: { email: input.admin_email },
+    select: { id: true },
+  });
 
-  if (orgTaken || emailTaken) {
+  if (emailTaken) {
     const body = {
       ok: false,
-      error: orgTaken
-        ? 'An organization with that name already exists.'
-        : 'That administrator email is already registered.',
-      field: orgTaken ? 'organization_name' : 'admin_email',
+      error: 'That administrator email is already registered.',
+      field: 'admin_email',
     };
     await remember(idempotencyKey, 409, body, { paymentReference: input.payment_reference });
     return NextResponse.json(body, { status: 409 });

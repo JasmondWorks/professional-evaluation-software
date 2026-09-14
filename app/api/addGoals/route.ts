@@ -61,9 +61,9 @@ async function updateData(entry: Goals) {
       })),
     })
 
-    const orgRecord = await prisma.org.findUnique({
+    const orgRecord = await prisma.org.findFirst({
       where: { name: orgName },
-      select: { name: true, evaluation: true },
+      select: { id: true, evaluation: true },
     })
 
     if (orgRecord) {
@@ -73,7 +73,7 @@ async function updateData(entry: Goals) {
         : [...evaluations, entry.evaluation_type]
 
       await prisma.org.update({
-        where: { name: orgRecord.name },
+        where: { id: orgRecord.id },
         data: {
           evaluation: updatedEvaluations,
           ongoing: true,

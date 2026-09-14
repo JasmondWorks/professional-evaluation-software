@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     const orgName = decoded.org
 
     // Fetch current evaluation array
-    const org = await prisma.org.findUnique({
+    const org = await prisma.org.findFirst({
       where: { name: orgName },
-      select: { evaluation: true },
+      select: { id: true, evaluation: true },
     })
 
     if (!org) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.org.update({
-      where: { name: orgName },
+      where: { id: org.id },
       data: { evaluation: updated, updated_at: new Date() },
     })
 

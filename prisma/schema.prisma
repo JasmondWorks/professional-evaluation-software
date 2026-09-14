@@ -406,7 +406,9 @@ model notifications {
 
 model org {
   id                Int       @id @default(autoincrement())
-  name              String    @unique @db.VarChar(255)
+  // Display text only — not unique. org.id is the real tenant identifier;
+  // two organizations may legitimately share a name.
+  name              String    @db.VarChar(255)
   category          String    @db.VarChar(100)
   plan              String    @db.VarChar(100)
   created_at        DateTime? @default(now()) @db.Timestamp(6)

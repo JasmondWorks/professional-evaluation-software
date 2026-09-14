@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     });
 
     const maintenance = user.org
-      ? await prisma.org.findUnique({
+      ? await prisma.org.findFirst({
           where: { name: user.org },
           select: { maintenance_model: true },
         })

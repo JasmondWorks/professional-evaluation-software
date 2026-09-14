@@ -23,7 +23,7 @@ export async function GET(
   }
 
   try {
-    const org = await prisma.org.findUnique({
+    const org = await prisma.org.findFirst({
       where: { name: orgName },
       select: { id: true, name: true, evaluation: true, ongoing: true },
     })

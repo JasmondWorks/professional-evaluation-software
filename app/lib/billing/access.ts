@@ -88,7 +88,7 @@ async function identify(viewer: PlanViewer): Promise<{
   // maintenance_model is always read from the database rather than the token:
   // it is granted mid-session by /api/maintenance/verify, and the token the
   // caller is holding predates that grant.
-  const row = await prisma.org.findUnique({
+  const row = await prisma.org.findFirst({
     where: { name: viewer.org },
     select: { category: true, plan: true, maintenance_model: true },
   });
