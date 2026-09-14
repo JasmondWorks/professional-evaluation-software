@@ -25,7 +25,7 @@ export async function GET(
 
   const auditors = await prisma.pesuser.findMany({
     where: { org_id: orgId, role: "auditor" },
-    select: { id: true, name: true, email: true, role: true, org: true },
+    select: { id: true, name: true, email: true, role: true, org_id: true },
   });
 
   return NextResponse.json(auditors);

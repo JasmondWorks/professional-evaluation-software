@@ -59,7 +59,7 @@ function newPassword(length = 16): string {
 
 async function main() {
   const users = await prisma.pesuser.findMany({
-    select: { id: true, name: true, email: true, password: true, org: true },
+    select: { id: true, name: true, email: true, password: true, org_id: true },
     orderBy: { id: 'asc' },
   });
 
@@ -81,7 +81,7 @@ async function main() {
 
   if (DRY_RUN) {
     for (const u of targets) {
-      console.log(`  would rotate: ${u.email}  (${u.org ?? 'no org'})`);
+      console.log(`  would rotate: ${u.email}  (org_id ${u.org_id ?? 'none'})`);
     }
     console.log('\nDry run: nothing was written.');
     return;

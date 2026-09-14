@@ -31,7 +31,6 @@ model OptimizationResult {
   t4                 Float?
   S0                 Float?
   createdAt          DateTime? @default(now()) @db.Timestamp(6)
-  org                String?   @db.VarChar(255)
   org_id             Int?
 }
 
@@ -40,8 +39,7 @@ model OptimizationResult {
 // Form 5 across all staff), which Form 6 then uses as its category maxes.
 model StressCycle {
   id                 Int       @id @default(autoincrement())
-  org                String    @db.VarChar(255)
-  org_id             Int?
+  org_id             Int
   // settings_open | settings_closed | feeling_open | evaluated
   phase              String    @default("settings_open") @db.VarChar(30)
   mode               String    @default("once") @db.VarChar(20)
@@ -75,7 +73,7 @@ model StressCycle {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
-  @@index([org])
+  @@index([org_id])
   @@index([session_id])
 }
 
@@ -85,8 +83,7 @@ model StressCycle {
 // history recall. See docs/stress-sessions.md.
 model WellbeingSession {
   id                 Int       @id @default(autoincrement())
-  org                String    @db.VarChar(255)
-  org_id             Int?
+  org_id             Int
   // active | reset | closed
   status             String    @default("active") @db.VarChar(20)
   // Iteration of the latest cycle (0 = just started / just reset).
@@ -104,7 +101,7 @@ model WellbeingSession {
   cycles         StressCycle[]
   feelingResults FeelingResult[]
 
-  @@index([org])
+  @@index([org_id])
 }
 
 // The feeling side of a cycle's outcome. Kept separate from the stress side
@@ -148,14 +145,12 @@ model StaffEstimation {
   utilizationFactor       Float?
   annualManHours          Float?
   standardManHours        Float?
-  org                     String?   @db.VarChar(255)
   org_id                  Int?
 }
 
 model appraisal {
   id                                Int      @id @default(autoincrement())
   pesuser_name                      String   @db.VarChar(255)
-  org                               String?  @db.VarChar(255)
   org_id                            Int?
   teaching_quality_evaluation       Decimal? @db.Decimal
   research_quality_evaluation       Decimal? @db.Decimal
@@ -166,7 +161,7 @@ model appraisal {
   pending                           Boolean? @default(false)
   resolve                           Boolean? @default(false)
 
-  @@unique([pesuser_name, org, dept], map: "appraisal_unique")
+  @@unique([pesuser_name, org_id, dept], map: "appraisal_unique")
   @@unique([pesuser_name, dept], map: "appraisal_user_dept_unique")
 }
 
@@ -186,7 +181,6 @@ model auditor_responses {
 model auditor_survey_responses {
   id           Int       @id @default(autoincrement())
   pesuser_name String?   @db.VarChar(255)
-  org          String?   @db.VarChar(255)
   org_id       Int?
   section      String?   @db.VarChar(100)
   question     String?   @db.VarChar(255)
@@ -207,7 +201,6 @@ model badges {
 model counter_appraisal {
   id                                Int      @id @default(autoincrement())
   pesuser_name                      String   @db.VarChar(255)
-  org                               String?  @db.VarChar(255)
   org_id                            Int?
   teaching_quality_evaluation       Decimal? @db.Decimal(5, 2)
   research_quality_evaluation       Decimal? @db.Decimal(5, 2)
@@ -221,7 +214,6 @@ model counter_appraisal {
 model counter_stress {
   id                            Int       @id @default(autoincrement())
   pesuser_name                  String    @db.VarChar(255)
-  org                           String?   @db.VarChar(255)
   org_id                        Int?
   dept                          String?   @db.VarChar(255)
   created_at                    DateTime? @default(now()) @db.Timestamp(6)
@@ -240,7 +232,6 @@ model facilities {
   type                    String?   @db.VarChar(100)
   priority_rating         String?   @db.VarChar(50)
   remarks                 String?
-  org                     String?   @default("DevSquad inc") @db.VarChar(255)
   org_id                  Int?
   created_at              DateTime? @default(now()) @db.Timestamp(6)
 }
@@ -298,7 +289,6 @@ model index {
   output_resources Decimal?  @db.Decimal
   input_resources  Decimal?  @db.Decimal
   dept             String?   @db.VarChar(255)
-  org              String?
   org_id           Int?
   created_at       DateTime? @default(now()) @db.Timestamp(6)
 }
@@ -316,8 +306,7 @@ model lead_scores {
 
 model motivation {
   id          Int       @id @default(autoincrement())
-  org         String
-  org_id      Int?
+  org_id      Int
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -331,8 +320,7 @@ model motivation {
 // A saved maintenance computation and the preventive schedule it produced.
 model maintenance_run {
   id               Int       @id @default(autoincrement())
-  org              String    @db.VarChar(255)
-  org_id           Int?
+  org_id           Int
   /// The facility's description, kept as it read on the day of the run.
   facility         String    @db.VarChar(255)
   /// The registered machine this run belongs to. The description can be edited;
@@ -352,14 +340,13 @@ model maintenance_run {
   run_by           String?   @db.VarChar(255)
   created_at       DateTime? @default(now()) @db.Timestamp(6)
 
-  @@index([org, created_at(sort: Desc)], map: "maintenance_run_org_created_idx")
-  @@index([org, facility_id], map: "maintenance_run_facility_idx")
+  @@index([org_id, created_at(sort: Desc)], map: "maintenance_run_org_created_idx")
+  @@index([org_id, facility_id], map: "maintenance_run_facility_idx")
 }
 
 model motivation_scheme {
   id         Int       @id @default(autoincrement())
-  org        String    @db.VarChar(255)
-  org_id     Int?
+  org_id     Int
   tenure     String    @db.VarChar(255)
   selections Json      @default("[]")
   additions  Json      @default("[]")
@@ -368,14 +355,13 @@ model motivation_scheme {
   created_at DateTime? @default(now()) @db.Timestamp(6)
   closed_at  DateTime? @db.Timestamp(6)
 
-  @@index([org, active], map: "motivation_scheme_org_active_idx")
+  @@index([org_id, active], map: "motivation_scheme_org_active_idx")
 }
 
 // Every award given and who received it — page 109 requires the record.
 model motivation_award {
   id           Int       @id @default(autoincrement())
-  org          String    @db.VarChar(255)
-  org_id       Int?
+  org_id       Int
   user_id      Int?
   staff_name   String    @db.VarChar(255)
   dept         String?   @db.VarChar(255)
@@ -388,13 +374,12 @@ model motivation_award {
   awarded_by   String?   @db.VarChar(255)
   awarded_at   DateTime? @default(now()) @db.Timestamp(6)
 
-  @@index([org, period_label], map: "motivation_award_org_period_idx")
+  @@index([org_id, period_label], map: "motivation_award_org_period_idx")
 }
 
 model non_academic_appraisal {
   id          Int       @id @default(autoincrement())
-  org         String
-  org_id      Int?
+  org_id      Int
   output      Decimal   @db.Decimal(10, 2)
   quality     Decimal   @db.Decimal(10, 2)
   efficiency  Decimal   @db.Decimal(10, 2)
@@ -411,7 +396,6 @@ model non_academic_appraisal {
 model notifications {
   id         Int       @id @default(autoincrement())
   user_id    Int
-  org        String?   @db.VarChar(255)
   org_id     Int?
   title      String
   message    String
@@ -437,8 +421,7 @@ model org {
 
 model org_structure_results {
   id          Int       @id @default(autoincrement())
-  org         String
-  org_id      Int?
+  org_id      Int
   section     Int
   result      Decimal?  @db.Decimal(10, 4)
   numerator   Decimal[] @db.Decimal
@@ -457,8 +440,7 @@ model performance {
 
 model performance_result {
   id          Int       @id @default(autoincrement())
-  org         String
-  org_id      Int?
+  org_id      Int
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -484,13 +466,11 @@ model permission {
   manage_reviews_subordinates     Boolean @default(false)
   manage_reviews_selected         Boolean @default(false)
   user_id                         String? @db.VarChar(255)
-  org                             String? @db.VarChar(255)
   org_id                          Int?
 }
 
 model personnel_redundancy {
   id                 Int       @id @default(autoincrement())
-  org                String?
   org_id             Int?
   actual_staff       Int
   optimal_staff      Int
@@ -503,8 +483,7 @@ model personnel_redundancy {
 
 model personnel_utilization {
   id                Int       @id @default(autoincrement())
-  org               String
-  org_id            Int?
+  org_id            Int
   a_ij              Decimal?  @db.Decimal(10, 4)
   lambda            Decimal?  @db.Decimal(10, 6)
   mu                Decimal?  @db.Decimal(10, 6)
@@ -540,8 +519,7 @@ model personnel_utilization {
 
 model supervision_cost {
   id         Int       @id @default(autoincrement())
-  org        String
-  org_id     Int?
+  org_id     Int
   a_ij       Decimal?  @db.Decimal(10, 4)
   a_cost     Decimal?  @db.Decimal(12, 4)
   b_cost     Decimal?  @db.Decimal(12, 4)
@@ -590,7 +568,6 @@ model pesuser {
   // Section 21 counts these to get the real head count per level.
   management_level       Int?
   image                  String?         @db.VarChar(255)
-  org                    String?         @db.VarChar(255)
   org_id                 Int?
   dept                   String?         @db.VarChar(255)
   tier                   String?         @default("bronze") @db.VarChar(50)
@@ -619,7 +596,7 @@ model pesuser {
   notifications          notifications[]
   subscriptions          subscriptions[]
 
-  @@unique([name, dept, org], map: "unique_user_per_dept_org")
+  @@unique([name, dept, org_id], map: "unique_user_per_dept_org")
   @@index([resettoken], map: "idx_pesuser_resettoken")
   @@index([resettokenexpiry], map: "idx_pesuser_resettokenexpiry")
 }
@@ -640,10 +617,9 @@ model plans {
 }
 
 model roles {
-  id       Int     @id @default(autoincrement())
-  name     String  @db.VarChar(255)
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(255)
   assigned Int?
-  org      String? @db.VarChar(255)
   org_id   Int?
 
   // Which system preset this custom role behaves as for role-based UI
@@ -653,7 +629,7 @@ model roles {
 
   // Role names are unique PER ORG, not globally — otherwise one org creating
   // "Paginator" blocks every other org from ever using that name.
-  @@unique([name, org])
+  @@unique([name, org_id])
 }
 
 model second_book_of_record {
@@ -674,8 +650,7 @@ model second_book_of_record {
 
 model staff_appraisal_results {
   id                           Int       @id @default(autoincrement())
-  org                          String
-  org_id                       Int?
+  org_id                       Int
   cwh                          Decimal?  @db.Decimal(10, 2)
   cbh                          Decimal?  @db.Decimal(10, 2)
   hd                           Decimal?  @db.Decimal(10, 2)
@@ -698,8 +673,7 @@ model staff_appraisal_results {
 
 model staff_motivation {
   id          Int       @id @default(autoincrement())
-  org         Int
-  org_id      Int?
+  org_id      Int
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -712,7 +686,6 @@ model staff_survey_responses {
   id            Int       @id @default(autoincrement())
   pesuser_name  String    @db.VarChar(255)
   pesuser_email String    @db.VarChar(255)
-  org           String?   @db.VarChar(255)
   org_id        Int?
   dept          String?   @db.VarChar(255)
   responses     Json
@@ -722,7 +695,6 @@ model staff_survey_responses {
 model stress {
   id                            Int       @id @default(autoincrement())
   pesuser_name                  String    @db.VarChar(255)
-  org                           String?   @db.VarChar(255)
   org_id                        Int?
   stress_theme                  Int?
   stress_feeling_frequency      Int?
@@ -754,7 +726,6 @@ model stress {
 
 model stress_analysis_results {
   id             Int       @id @default(autoincrement())
-  org            String?   @db.VarChar(255)
   org_id         Int?
   group_by       String?   @db.VarChar(50)
   ssto           Float?
@@ -792,7 +763,6 @@ model stress_scores {
   academic_program         Decimal? @default(0) @db.Decimal
   negative_public_attitude Decimal? @default(0) @db.Decimal
   misc                     Decimal? @default(0) @db.Decimal
-  org                      String?  @db.VarChar(255)
   org_id                   Int?
   dept                     String?  @db.VarChar(255)
   user_id                  String?  @db.Uuid
@@ -836,7 +806,6 @@ model subscriptions_info {
   id            Int       @id @default(autoincrement())
   pesuser_email String    @db.VarChar(255)
   pesuser_name  String?   @db.VarChar(255)
-  org           String?   @db.VarChar(255)
   org_id        Int?
   plan_code     String    @db.VarChar(100)
   plan_name     String?   @db.VarChar(100)
@@ -850,8 +819,7 @@ model subscriptions_info {
 
 model unit_head_overloading {
   id                Int       @id @default(autoincrement())
-  org               String
-  org_id            Int?
+  org_id            Int
   actual_hours      Decimal   @db.Decimal(10, 2)
   num_subordinates  Int
   extra_complexity  Decimal   @db.Decimal(10, 2)
@@ -865,7 +833,6 @@ model unit_head_overloading {
 
 model student_teacher_ratio {
   id               Int       @id @default(autoincrement())
-  org              String?   @db.VarChar(255)
   org_id           Int?
   dept             String?   @db.VarChar(255)
   optimalK         Int?
@@ -883,7 +850,6 @@ model student_teacher_ratio {
 
 model stress_evaluation_history {
   id              Int       @id @default(autoincrement())
-  org             String?   @db.VarChar(255)
   org_id          Int?
   stress_factor   Float?
   pressure_factor Float?
@@ -917,7 +883,6 @@ model hod_assignments {
 // fresh databases; modelled here so `db push` provisions them everywhere.
 model WorkSamplingStudy {
   id                          Int                    @id @default(autoincrement())
-  org                         String?
   org_id                      Int?
   department                  String?
   analyst                     String?
@@ -976,8 +941,7 @@ model WorkSamplingObservation {
 // periods.
 model appraisal_period {
   id          Int       @id @default(autoincrement())
-  org         String    @db.VarChar(255)
-  org_id      Int?
+  org_id      Int
   frequency   String    @db.VarChar(20)
   starts_on   DateTime  @db.Date
   ends_on     DateTime  @db.Date
@@ -1005,7 +969,7 @@ model appraisal_period {
   academic_template     appraisal_template? @relation("period_academic_template", fields: [academic_template_id], references: [id], onDelete: SetNull)
   non_academic_template appraisal_template? @relation("period_non_academic_template", fields: [non_academic_template_id], references: [id], onDelete: SetNull)
 
-  @@index([org, status])
+  @@index([org_id, status])
 }
 
 // Annual targets, per org and per period so an institution can adjust them
@@ -1033,7 +997,6 @@ model appraisal_template {
   name               String  @db.VarChar(160)
   /// null for a system template, which every organization can see and none can
   /// edit. Otherwise the owning organization.
-  org                String? @db.VarChar(255)
   org_id             Int?
   is_system          Boolean @default(false)
   /// draft   — still being filled in, cannot be put in force
@@ -1060,7 +1023,7 @@ model appraisal_template {
   academic_periods     appraisal_period[]          @relation("period_academic_template")
   non_academic_periods appraisal_period[]          @relation("period_non_academic_template")
 
-  @@index([org, scope, status])
+  @@index([org_id, scope, status])
   @@index([is_system, scope])
 }
 
@@ -1085,8 +1048,7 @@ model appraisal_template_target {
 /// academic staff while running its own for non-academic staff (client answer 7).
 model org_template_choice {
   id          Int      @id @default(autoincrement())
-  org         String   @db.VarChar(255)
-  org_id      Int?
+  org_id      Int
   scope       String   @db.VarChar(20)
   template_id String   @db.Uuid
   chosen_by   String?  @db.VarChar(255)
@@ -1094,13 +1056,12 @@ model org_template_choice {
 
   template appraisal_template @relation(fields: [template_id], references: [id], onDelete: Restrict)
 
-  @@unique([org, scope], map: "org_template_choice_unique")
+  @@unique([org_id, scope], map: "org_template_choice_unique")
 }
 
 model appraisal_target {
   id        Int     @id @default(autoincrement())
-  org       String  @db.VarChar(255)
-  org_id    Int?
+  org_id    Int
   period_id Int?
   // 'academic' | 'non_academic'
   model     String  @db.VarChar(20)
@@ -1116,16 +1077,15 @@ model appraisal_target {
 
   period appraisal_period? @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
-  @@unique([org, period_id, model, position, post, cadre, category], map: "appraisal_target_unique")
-  @@index([org, model])
+  @@unique([org_id, period_id, model, position, post, cadre, category], map: "appraisal_target_unique")
+  @@index([org_id, model])
 }
 
 // One staff member's appraisal within a period: the five category results and
 // the reconciliation state. `flagged` is visible only to the organization admin.
 model appraisal_entry {
   id           Int     @id @default(autoincrement())
-  org          String  @db.VarChar(255)
-  org_id       Int?
+  org_id       Int
   dept         String? @db.VarChar(255)
   period_id    Int
   pesuser_name String  @db.VarChar(255)
@@ -1167,8 +1127,8 @@ model appraisal_entry {
   evidence   appraisal_evidence[]
 
   @@unique([period_id, pesuser_name], map: "appraisal_entry_unique")
-  @@index([org, status])
-  @@index([org, flagged])
+  @@index([org_id, status])
+  @@index([org_id, flagged])
 }
 
 // One category result within an entry, holding both the appraisee's figures and
@@ -1239,8 +1199,7 @@ model appraisal_evidence {
 // course must exist before a lecturer can be appraised on it.
 model appraisal_course {
   id         Int       @id @default(autoincrement())
-  org        String    @db.VarChar(255)
-  org_id     Int?
+  org_id     Int
   period_id  Int
   dept       String?   @db.VarChar(255)
   title      String    @db.VarChar(255)
@@ -1250,16 +1209,15 @@ model appraisal_course {
 
   period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
-  @@unique([org, period_id, code], map: "appraisal_course_unique")
-  @@index([org, period_id])
+  @@unique([org_id, period_id, code], map: "appraisal_course_unique")
+  @@index([org_id, period_id])
 }
 
 // Form 4: which departmental indicators apply to a given staff member. This is
 // what defines the work a person will actually be appraised on.
 model appraisal_indicator {
   id           Int       @id @default(autoincrement())
-  org          String    @db.VarChar(255)
-  org_id       Int?
+  org_id       Int
   period_id    Int
   pesuser_name String    @db.VarChar(255)
   // Which achievement category the indicator belongs to.
@@ -1271,7 +1229,7 @@ model appraisal_indicator {
 
   period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
-  @@index([org, period_id, pesuser_name])
+  @@index([org_id, period_id, pesuser_name])
 }
 
 // ---------------------------------------------------------------------------
@@ -1290,8 +1248,7 @@ model appraisal_indicator {
 
 model performance_period {
   id            Int       @id @default(autoincrement())
-  org           String    @db.VarChar(255)
-  org_id        Int?
+  org_id        Int
   frequency     String    @db.VarChar(20)
   starts_on     DateTime  @db.Date
   ends_on       DateTime  @db.Date
@@ -1312,15 +1269,14 @@ model performance_period {
   hod_results hod_performance_result[]
   assignments hod_performance_rater[]
 
-  @@index([org, status])
+  @@index([org_id, status])
 }
 
 // One staff member's performance within a period: the fifth result, its RTP and
 // grade, and the workflow state. `flagged` is visible only to the org admin.
 model performance_entry {
   id           Int     @id @default(autoincrement())
-  org          String  @db.VarChar(255)
-  org_id       Int?
+  org_id       Int
   dept         String? @db.VarChar(255)
   period_id    Int
   pesuser_name String  @db.VarChar(255)
@@ -1351,8 +1307,8 @@ model performance_entry {
   criteria performance_criterion_score[]
 
   @@unique([period_id, pesuser_name], map: "performance_entry_unique")
-  @@index([org, status])
-  @@index([org, flagged])
+  @@index([org_id, status])
+  @@index([org_id, flagged])
 }
 
 // One criterion's result within an entry, holding the staff member's own figure,
@@ -1390,8 +1346,7 @@ model performance_criterion_score {
 // rater). The draw happens once, when the org admin closes data collection.
 model hod_performance_rater {
   id         Int    @id @default(autoincrement())
-  org        String @db.VarChar(255)
-  org_id     Int?
+  org_id     Int
   period_id  Int
   dept       String @db.VarChar(255)
   hod_name   String @db.VarChar(255)
@@ -1409,7 +1364,7 @@ model hod_performance_rater {
   period performance_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
   @@unique([period_id, hod_name, rater_name], map: "hod_performance_rater_unique")
-  @@index([org, period_id, hod_name])
+  @@index([org_id, period_id, hod_name])
   @@index([rater_name])
 }
 
@@ -1417,8 +1372,7 @@ model hod_performance_rater {
 // the staff drawn to score them.
 model hod_performance_result {
   id        Int    @id @default(autoincrement())
-  org       String @db.VarChar(255)
-  org_id    Int?
+  org_id    Int
   period_id Int
   dept      String @db.VarChar(255)
   hod_name  String @db.VarChar(255)
@@ -1441,7 +1395,7 @@ model hod_performance_result {
   period performance_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
 
   @@unique([period_id, hod_name], map: "hod_performance_result_unique")
-  @@index([org, period_id])
+  @@index([org_id, period_id])
 }
 
 // Which models a non-admin role may reach, per organization.
@@ -1467,7 +1421,6 @@ model webhook_deliveries {
   payment_reference String?  @db.VarChar(255)
   status_code       Int
   response          Json
-  org               String?  @db.VarChar(255)
   org_id            Int?
   created_at        DateTime @default(now()) @db.Timestamp(6)
 
@@ -1477,8 +1430,7 @@ model webhook_deliveries {
 
 model org_entitlements {
   id              Int      @id @default(autoincrement())
-  org             String   @db.VarChar(255)
-  org_id          Int?
+  org_id          Int
   // A key from ENTITLEMENTS in app/lib/billing/entitlements.ts.
   entitlement_key String   @db.VarChar(80)
   // true grants a key the plan does not include, false withdraws one it does.
@@ -1487,14 +1439,13 @@ model org_entitlements {
   updated_by      String?  @db.VarChar(255)
   updated_at      DateTime @default(now()) @db.Timestamp(6)
 
-  @@unique([org, entitlement_key], map: "org_entitlements_unique")
-  @@index([org])
+  @@unique([org_id, entitlement_key], map: "org_entitlements_unique")
+  @@index([org_id])
 }
 
 model model_access {
   id         Int      @id @default(autoincrement())
-  org        String   @db.VarChar(255)
-  org_id     Int?
+  org_id     Int
   role       String   @db.VarChar(60)
   // A key from MODEL_CATALOG in app/lib/models/catalog.ts.
   model_key  String   @db.VarChar(60)
@@ -1502,6 +1453,6 @@ model model_access {
   updated_by String?  @db.VarChar(255)
   updated_at DateTime @default(now()) @db.Timestamp(6)
 
-  @@unique([org, role, model_key], map: "model_access_unique")
-  @@index([org, role])
+  @@unique([org_id, role, model_key], map: "model_access_unique")
+  @@index([org_id, role])
 }

@@ -36,6 +36,7 @@ import {
 
 const prisma = new PrismaClient();
 const ORG = '__walkthrough__';
+let ORG_ID = 0;
 
 const admin: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', dept: 'Mechanical Engineering', productCategory: 'academic' };
 const hod: Viewer = { orgId: 0, org: ORG, name: 'Prof. Head', role: 'hod', dept: 'Mechanical Engineering' };
@@ -55,11 +56,16 @@ const expect = (label: string, got: unknown, want: unknown) => {
 };
 
 async function cleanup() {
-  const periods = await prisma.appraisal_period.findMany({ where: { org: ORG }, select: { id: true } });
-  for (const p of periods) await prisma.appraisal_period.delete({ where: { id: p.id } });
-  await prisma.pesuser.deleteMany({ where: { org: ORG } });
-  await prisma.org_template_choice.deleteMany({ where: { org: ORG } });
-  await prisma.appraisal_template.deleteMany({ where: { org: ORG } });
+  // A previous run's org (if any) — looked up by name, since this runs before
+  // ORG_ID is known for this process.
+  const existing = await prisma.org.findFirst({ where: { name: ORG }, select: { id: true } });
+  if (existing) {
+    const periods = await prisma.appraisal_period.findMany({ where: { org_id: existing.id }, select: { id: true } });
+    for (const p of periods) await prisma.appraisal_period.delete({ where: { id: p.id } });
+    await prisma.pesuser.deleteMany({ where: { org_id: existing.id } });
+    await prisma.org_template_choice.deleteMany({ where: { org_id: existing.id } });
+    await prisma.appraisal_template.deleteMany({ where: { org_id: existing.id } });
+  }
   await prisma.org.deleteMany({ where: { name: ORG } });
 }
 
@@ -78,7 +84,7 @@ async function seedStaff() {
       email: `walkthrough.${Date.now()}@pes.test`,
       password: 'not-a-real-login',
       role: 'lecturer',
-      org: ORG,
+      org_id: ORG_ID,
       dept: staff.dept ?? null,
       category: 'academic',
     },
@@ -115,7 +121,7 @@ async function main() {
   });
   show('period id', period.id);
   show('status', period.status);
-  const seeded = await prisma.appraisal_target.count({ where: { org: ORG, period_id: period.id } });
+  const seeded = await prisma.appraisal_target.count({ where: { org_id: ORG_ID, period_id: period.id } });
   show('targets seeded automatically', seeded);
 
   // -------------------------------------------------------------------------
@@ -131,7 +137,7 @@ async function main() {
   say('Estab./Personnel', 'The period carries the template it was opened against.');
   expect('bound to the scheme', period.academic_template_id, scheme.id);
   const teaching = await prisma.appraisal_target.findFirst({
-    where: { org: ORG, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
+    where: { org_id: ORG_ID, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
   });
   expect('teaching target for Lecturer I', Number(teaching?.target), 192);
 
@@ -159,7 +165,7 @@ async function main() {
   // -------------------------------------------------------------------------
   say('Appraisee', 'Tries to open the NON-ACADEMIC appraisal as academic staff.');
   {
-    await prisma.appraisal_entry.deleteMany({ where: { id: entry.id, org: '__never__' } });
+    await prisma.appraisal_entry.deleteMany({ where: { id: entry.id, org_id: -1 } });
     let refused = false;
     let message = '';
     try {
@@ -167,7 +173,7 @@ async function main() {
       await prisma.pesuser.create({
         data: {
           name: 'Dr. Crossover', email: `crossover.${Date.now()}@pes.test`,
-          password: 'x', role: 'lecturer', org: ORG, dept: staff.dept ?? null, category: 'academic',
+          password: 'x', role: 'lecturer', org_id: ORG_ID, dept: staff.dept ?? null, category: 'academic',
         },
       });
       await ensureEntry(admin, { pesuserName: 'Dr. Crossover', model: 'non_academic' as any });
@@ -350,7 +356,7 @@ async function main() {
   // -------------------------------------------------------------------------
   say('Auditor', 'Sees the referred case and rules on it.');
   const referred = await prisma.appraisal_entry.findMany({
-    where: { org: ORG, status: 'referred_to_auditor' }, select: { id: true, pesuser_name: true },
+    where: { org_id: ORG_ID, status: 'referred_to_auditor' }, select: { id: true, pesuser_name: true },
   });
   show('referred to auditor', referred);
   await recordAuditorScore(auditor, { entryId: entry.id, category: 'research' as const, score: 68, note: 'Split the difference after review.' });

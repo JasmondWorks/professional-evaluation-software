@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
     
     const record = await prisma.student_teacher_ratio.create({
       data: {
-        org: decoded.org,
         org_id: decoded.orgId,
         dept: decoded.dept,
         optimalK: body.optimalK,

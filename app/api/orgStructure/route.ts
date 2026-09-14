@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
 
     const record = await prisma.org_structure_results.create({
       data: {
-        org,
         org_id: orgId,
         section: Number(section),
         result: Number(result),

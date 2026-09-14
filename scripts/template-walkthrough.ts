@@ -24,6 +24,7 @@ import { openPeriod, closePeriod } from '../app/lib/appraisal/service';
 
 const prisma = new PrismaClient();
 const ORG = '__templates__';
+let ORG_ID = 0;
 
 const estab: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'academic' };
 const second: Viewer = { orgId: 0, org: ORG, name: 'Second Officer', role: 'admin', productCategory: 'academic' };
@@ -55,11 +56,16 @@ async function refused(label: string, fn: () => Promise<unknown>) {
 }
 
 async function cleanup() {
-  for (const p of await prisma.appraisal_period.findMany({ where: { org: ORG }, select: { id: true } })) {
-    await prisma.appraisal_period.delete({ where: { id: p.id } });
+  // A previous run's org (if any) — looked up by name, since this runs before
+  // ORG_ID is known for this process.
+  const existing = await prisma.org.findFirst({ where: { name: ORG }, select: { id: true } });
+  if (existing) {
+    for (const p of await prisma.appraisal_period.findMany({ where: { org_id: existing.id }, select: { id: true } })) {
+      await prisma.appraisal_period.delete({ where: { id: p.id } });
+    }
+    await prisma.org_template_choice.deleteMany({ where: { org_id: existing.id } });
+    await prisma.appraisal_template.deleteMany({ where: { org_id: existing.id } });
   }
-  await prisma.org_template_choice.deleteMany({ where: { org: ORG } });
-  await prisma.appraisal_template.deleteMany({ where: { org: ORG } });
   await prisma.org.deleteMany({ where: { name: ORG } });
 }
 
@@ -181,7 +187,7 @@ async function main() {
   expect('bound to the standard for non-academic', period.non_academic_template_id, nonAcad.id);
 
   const seeded = await prisma.appraisal_target.findFirst({
-    where: { org: ORG, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
+    where: { org_id: ORG_ID, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
   });
   expect('the period got the edited figure', Number(seeded?.target), 200);
 
@@ -191,7 +197,7 @@ async function main() {
   const swap = await putInForce(estab, { scope: 'academic', templateId: systemAcademic.id });
   expect('applies from', swap.appliesFrom, 'next_period');
   const stillThere = await prisma.appraisal_target.findFirst({
-    where: { org: ORG, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
+    where: { org_id: ORG_ID, period_id: period.id, position: 'lecturer_i', category: 'teaching' },
   });
   expect('open period keeps its target', Number(stillThere?.target), 200);
 

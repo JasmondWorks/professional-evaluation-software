@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
 
     await prisma.personnel_redundancy.create({
       data: {
-        org,
         org_id: orgId,
         actual_staff: Number(actual_staff),
         optimal_staff: Number(optimal_staff),

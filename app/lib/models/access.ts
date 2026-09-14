@@ -167,11 +167,8 @@ export async function setModelAccess(
   }
 
   await prisma.model_access.upsert({
-    // The composite unique key is still ([org, role, model_key]) at the schema
-    // level — org_id is populated but hasn't replaced org in the constraint yet.
-    where: { org_role_model_key: { org: viewer.org, role, model_key: input.model } },
+    where: { org_id_role_model_key: { org_id: viewer.orgId, role, model_key: input.model } },
     create: {
-      org: viewer.org,
       org_id: viewer.orgId,
       role,
       model_key: input.model,

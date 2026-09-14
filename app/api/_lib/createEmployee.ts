@@ -223,7 +223,6 @@ export async function createEmployee(
             ? null
             : Math.trunc(Number(management_level)),
         image: null,
-        org: org || null,
         org_id: orgId ?? null,
       },
       select: { id: true },

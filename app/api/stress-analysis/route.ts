@@ -46,7 +46,6 @@ export async function POST(req: NextRequest) {
 
     const result = await prisma.stress_analysis_results.create({
       data: {
-        org,
         org_id: orgId,
         group_by,
         ssto,

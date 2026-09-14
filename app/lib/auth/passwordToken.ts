@@ -80,17 +80,21 @@ export async function findPasswordTokenHolder(token: string): Promise<TokenHolde
       id: true,
       name: true,
       email: true,
-      org: true,
+      org_id: true,
       password_token_purpose: true,
     },
   });
   if (!user) return null;
 
+  const org = user.org_id
+    ? await prisma.org.findUnique({ where: { id: user.org_id }, select: { name: true } })
+    : null;
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    org: user.org,
+    org: org?.name ?? null,
     purpose: (user.password_token_purpose as TokenPurpose) ?? 'reset',
   };
 }

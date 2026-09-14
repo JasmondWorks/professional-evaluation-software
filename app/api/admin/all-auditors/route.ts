@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const auditors = await prisma.pesuser.findMany({
     where: auth.viewer.isPlatform
       ? { role: "auditor" }
-      : { role: "auditor", org: auth.viewer.org },
+      : { role: "auditor", org_id: auth.viewer.orgId },
     select: PUBLIC_USER_COLUMNS,
   });
 

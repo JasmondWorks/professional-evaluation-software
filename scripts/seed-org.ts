@@ -73,10 +73,13 @@ async function seed(spec: Spec) {
   const plan = findPlan(institution, planName);
   if (!plan) throw new Error(`No ${spec.plan} plan for ${spec.category}`);
 
-  // Remove any previous run. org.name is globally unique and 37 tables key off
-  // it by name, so the user rows must go with it or they would be orphaned.
-  await prisma.pesuser.deleteMany({ where: { org: spec.org } });
-  await prisma.subscriptions_info.deleteMany({ where: { org: spec.org } });
+  // Remove any previous run. Look the org up by name first (it runs before
+  // this process knows the id) and clean dependents by org_id.
+  const existing = await prisma.org.findFirst({ where: { name: spec.org }, select: { id: true } });
+  if (existing) {
+    await prisma.pesuser.deleteMany({ where: { org_id: existing.id } });
+    await prisma.subscriptions_info.deleteMany({ where: { org_id: existing.id } });
+  }
   await prisma.org.deleteMany({ where: { name: spec.org } });
 
   const newOrg = await prisma.org.create({
@@ -97,7 +100,6 @@ async function seed(spec: Spec) {
       email: spec.email,
       password: await bcrypt.hash(password, 10),
       role: 'admin',
-      org: spec.org,
       org_id: newOrg.id,
       category: spec.category,
       plan: spec.plan,
@@ -109,7 +111,6 @@ async function seed(spec: Spec) {
     data: {
       pesuser_email: spec.email,
       pesuser_name: spec.adminName,
-      org: spec.org,
       org_id: newOrg.id,
       plan_code: planName,
       plan_name: spec.plan,
@@ -123,7 +124,7 @@ async function seed(spec: Spec) {
 
   // Same preset roles a real signup would create, so the org can add staff.
   const { seedPresetRoles } = await import('../app/api/_lib/seedRoles');
-  await seedPresetRoles(spec.org, newOrg.id, spec.category);
+  await seedPresetRoles(newOrg.id, spec.category);
 
   return { ...spec, password, expiresAt: addInterval(paidAt, plan.interval, plan.intervalCount) };
 }

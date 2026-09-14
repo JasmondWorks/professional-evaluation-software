@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       .update({
         where: { email },
         data: { role: "hod" },
-        select: { name: true, email: true, role: true, org: true, dept: true },
+        select: { name: true, email: true, role: true, org_id: true, dept: true },
       })
       .catch(() => null);
 

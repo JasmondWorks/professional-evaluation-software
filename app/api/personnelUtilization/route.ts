@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
 
     const saved = await prisma.personnel_utilization.create({
       data: {
-        org,
         org_id: orgId,
         a_ij,
         lambda,

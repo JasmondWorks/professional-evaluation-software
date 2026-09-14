@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const users = await prisma.pesuser.findMany({
     where: auth.viewer.isPlatform ? {} : { org_id: auth.viewer.orgId },
-    orderBy: { org: "asc" },
+    orderBy: { org_id: "asc" },
     select: { ...PUBLIC_USER_COLUMNS, org_id: true },
   });
 

@@ -30,7 +30,7 @@ async function getUser(orgId: number | null) {
       dopp: true,
       level: true,
       image: true,
-      org: true,
+      org_id: true,
       email_status: true,
     },
   })

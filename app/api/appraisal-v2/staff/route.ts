@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const viewer = viewerFrom(req);
     const isAdmin = ['super-admin', 'admin'].includes(viewer.role);
     const staff = await prisma.pesuser.findMany({
-      where: { org: viewer.org, ...(isAdmin ? {} : { dept: viewer.dept ?? undefined }) },
+      where: { org_id: viewer.orgId, ...(isAdmin ? {} : { dept: viewer.dept ?? undefined }) },
       select: { id: true, name: true, role: true, dept: true, post: true, level: true },
       orderBy: { name: 'asc' },
     });

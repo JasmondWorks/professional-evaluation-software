@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
 
     const saved = await prisma.maintenance_run.create({
       data: {
-        org,
         org_id: orgId,
         facility,
         facility_id:

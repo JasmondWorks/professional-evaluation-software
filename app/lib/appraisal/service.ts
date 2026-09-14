@@ -104,7 +104,6 @@ export async function openPeriod(
 
   const period = await prisma.appraisal_period.create({
     data: {
-      org: viewer.org,
       org_id: viewer.orgId,
       frequency: input.frequency,
       starts_on: input.startsOn,
@@ -362,7 +361,6 @@ export async function ensureEntry(
 
   return prisma.appraisal_entry.create({
     data: {
-      org: viewer.org,
       org_id: viewer.orgId,
       dept: input.dept ?? viewer.dept ?? null,
       period_id: period.id,
@@ -922,7 +920,6 @@ export async function addCourse(
 
   return prisma.appraisal_course.create({
     data: {
-      org: viewer.org,
       org_id: viewer.orgId,
       period_id: input.periodId,
       dept: input.dept ?? viewer.dept ?? null,
@@ -966,7 +963,6 @@ export async function setIndicators(
   if (input.indicators.length === 0) return [];
   await prisma.appraisal_indicator.createMany({
     data: input.indicators.map((i) => ({
-      org: viewer.org,
       org_id: viewer.orgId,
       period_id: input.periodId,
       pesuser_name: input.pesuserName,

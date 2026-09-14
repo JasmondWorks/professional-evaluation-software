@@ -71,7 +71,6 @@ export async function POST(req: Request) {
       await prisma.notifications.create({
         data: {
           user_id: target.id,
-          org,
           org_id: orgId,
           title: 'Stress submission returned',
           message: `Your theme & feeling form was sent back for re-entry. Reason: ${String(reason).trim()}`,

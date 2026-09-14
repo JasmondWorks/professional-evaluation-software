@@ -46,7 +46,6 @@ export async function POST(req: NextRequest) {
 
     await prisma.unit_head_overloading.create({
       data: {
-        org,
         org_id: orgId,
         actual_hours: actualHours,
         num_subordinates: numSubs,

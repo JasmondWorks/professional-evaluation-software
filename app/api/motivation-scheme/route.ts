@@ -98,7 +98,6 @@ export async function POST(req: NextRequest) {
 
     const created = await prisma.motivation_scheme.create({
       data: {
-        org,
         org_id: orgId,
         tenure,
         selections: merged,

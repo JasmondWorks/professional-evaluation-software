@@ -51,7 +51,6 @@ export async function POST(req: NextRequest) {
 
     const record = await prisma.staff_appraisal_results.create({
       data: {
-        org,
         org_id: orgId,
         cwh: num(shared?.Cwh),
         cbh: num(shared?.Cbh),

@@ -16,6 +16,7 @@ import { ACADEMIC_FORMS } from '../app/lib/appraisal/instrument';
 
 const prisma = new PrismaClient();
 const ORG = '__demo__';
+let ORG_ID = 0;
 const DEPT = 'Mechanical Engineering';
 const PASSWORD = 'Demo1234!';
 
@@ -29,17 +30,22 @@ async function upsertUser(name: string, role: string, email: string) {
   if (existing) return existing;
   return prisma.pesuser.create({
     data: {
-      name, email, password: hash, role, org: ORG, dept: DEPT,
+      name, email, password: hash, role, org_id: ORG_ID, dept: DEPT,
       faculty_college: 'Engineering', gsm: '08000000000',
     },
   });
 }
 
 async function main() {
-  for (const p of await prisma.appraisal_period.findMany({ where: { org: ORG } })) {
-    await prisma.appraisal_period.delete({ where: { id: p.id } });
+  // A previous run's org (if any) — looked up by name, since this runs before
+  // ORG_ID is known for this process.
+  const existing = await prisma.org.findFirst({ where: { name: ORG }, select: { id: true } });
+  if (existing) {
+    for (const p of await prisma.appraisal_period.findMany({ where: { org_id: existing.id } })) {
+      await prisma.appraisal_period.delete({ where: { id: p.id } });
+    }
+    await prisma.pesuser.deleteMany({ where: { org_id: existing.id } });
   }
-  await prisma.pesuser.deleteMany({ where: { org: ORG } });
   await prisma.org.deleteMany({ where: { name: ORG } });
 
   const newOrg = await prisma.org.create({

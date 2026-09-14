@@ -78,6 +78,10 @@ export async function POST(req: Request) {
     // Was signed with the literal 'oti', which is both a secret committed to the
     // repo and a secret nothing else verifies with — so the token this route
     // issued was rejected by every guarded route it was meant to open.
+    const org = user.org_id
+      ? await prisma.org.findUnique({ where: { id: user.org_id }, select: { name: true } })
+      : null;
+
     const token = jwt.sign(
       {
         userID: user.id,
@@ -87,7 +91,7 @@ export async function POST(req: Request) {
         // super-admin is platform-wide and typically has no org_id; admin
         // console accounts scoped to one org carry it here as usual.
         orgId: user.org_id,
-        org: user.org,
+        org: org?.name ?? null,
       },
       getJWTSecret(),
       { expiresIn: '15m' }

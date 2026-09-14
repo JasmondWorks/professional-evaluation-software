@@ -64,7 +64,7 @@ export const PUBLIC_USER_COLUMNS = {
   email: true,
   role: true,
   display_role: true,
-  org: true,
+  org_id: true,
   dept: true,
   gsm: true,
   address: true,

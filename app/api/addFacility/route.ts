@@ -28,7 +28,6 @@ async function updateData( entry: Facility, org:string, orgId: number | null ) {
        type: entry.type,
        priority_rating: String(entry.rating),
        remarks: entry.remark,
-       org,
        org_id: orgId,
      },
    })

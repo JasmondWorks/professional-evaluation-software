@@ -14,9 +14,8 @@ export async function POST(req: NextRequest) {
       anyOf: ["can_define_performance_metrics"],
     });
     if (!auth.ok) return auth.response;
-    const org = auth.user.org;
     const orgId = auth.user.orgId ?? null;
-    if (!org) {
+    if (!orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.performance_result.create({
-      data: { org, org_id: orgId, total_score, rating, thresholds, criteria },
+      data: { org_id: orgId, total_score, rating, thresholds, criteria },
     });
 
     return NextResponse.json({ success: true, message: "Performance result saved" });

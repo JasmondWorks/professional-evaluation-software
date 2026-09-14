@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       role: user.role,
       displayRole: user.display_role || user.role,
       orgId: user.org_id,
-      org: org?.name ?? user.org,
+      org: org?.name ?? null,
       email: user.email,
       logo,
       dept: user.dept,

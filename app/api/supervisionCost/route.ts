@@ -60,7 +60,6 @@ export async function POST(req: NextRequest) {
 
     const saved = await prisma.supervision_cost.create({
       data: {
-        org,
         org_id: orgId,
         a_ij,
         a_cost,

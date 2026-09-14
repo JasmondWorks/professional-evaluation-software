@@ -29,7 +29,7 @@ async function addUser(info: reqInfo) {
 
     try {
         await prisma.roles.create({
-            data: { name: role_name, assigned: 1, org, org_id: orgId, base_role: baseRole },
+            data: { name: role_name, assigned: 1, org_id: orgId, base_role: baseRole },
         })
 
         // Store this role's permission TEMPLATE, namespaced by role name so it
@@ -38,7 +38,6 @@ async function addUser(info: reqInfo) {
             data: {
                 ...permissionData,
                 user_id: `role:${orgId}:${role_name}`,
-                org,
                 org_id: orgId,
             },
         })

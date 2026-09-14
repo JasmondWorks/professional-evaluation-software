@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   try {
     // Always create a new record for historical tracking
     await prisma.index.create({
-      data: { org, org_id: orgId, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
+      data: { org_id: orgId, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
     });
 
     return NextResponse.json({ message: 'saved successfully' }, { status: 201 });

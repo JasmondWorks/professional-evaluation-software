@@ -162,7 +162,7 @@ export async function resolveEntitlements(viewer: PlanViewer): Promise<ResolvedP
 
   // Per-org exceptions last, so they can both add and take away.
   const overrides = await prisma.org_entitlements.findMany({
-    where: viewer.orgId != null ? { org_id: viewer.orgId } : { org: viewer.org },
+    where: { org_id: orgId },
     select: { entitlement_key: true, granted: true },
   });
   for (const o of overrides) {

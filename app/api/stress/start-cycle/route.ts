@@ -69,7 +69,6 @@ export async function POST(req: Request) {
 
     const cycle = await prisma.stressCycle.create({
       data: {
-        org,
         org_id: orgId,
         session_id: session.id,
         iteration: session.current_iteration + 1,

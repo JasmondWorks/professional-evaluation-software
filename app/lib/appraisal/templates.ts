@@ -157,7 +157,6 @@ export async function ensureSystemTemplates(): Promise<Record<TemplateScope, str
       data: {
         scope,
         name: SYSTEM_TEMPLATE_NAMES[scope],
-        org: null,
         is_system: true,
         status: 'ready',
         created_by: 'PES',
@@ -539,12 +538,9 @@ export async function putInForce(viewer: Viewer, input: { scope: TemplateScope; 
   });
 
   await prisma.org_template_choice.upsert({
-    // The composite unique key is still ([org, scope]) at the schema level —
-    // org_id is populated but hasn't replaced org in the constraint yet.
-    where: { org_scope: { org: viewer.org, scope: input.scope } },
+    where: { org_id_scope: { org_id: viewer.orgId, scope: input.scope } },
     update: { template_id: template.id, chosen_by: viewer.name, chosen_at: new Date() },
     create: {
-      org: viewer.org,
       org_id: viewer.orgId,
       scope: input.scope,
       template_id: template.id,

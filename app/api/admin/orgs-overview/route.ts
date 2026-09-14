@@ -6,8 +6,8 @@ import { consoleViewer } from "../_scope";
 export const dynamic = "force-dynamic";
 
 // Every org, with its user count. `org` carries no FK to `pesuser` — the link
-// is the `org` string column — so the count is a groupBy joined in memory,
-// not a relation count.
+// is the `org_id` column — so the count is a groupBy joined in memory, not a
+// relation count.
 export async function GET(req: NextRequest) {
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
@@ -15,14 +15,14 @@ export async function GET(req: NextRequest) {
 
   const [orgs, userCounts] = await Promise.all([
     prisma.org.findMany({ orderBy: { name: "asc" } }),
-    prisma.pesuser.groupBy({ by: ["org"], _count: { org: true } }),
+    prisma.pesuser.groupBy({ by: ["org_id"], _count: { org_id: true } }),
   ]);
 
-  const counts = new Map(userCounts.map((c) => [c.org, c._count.org]));
+  const counts = new Map(userCounts.map((c) => [c.org_id, c._count.org_id]));
 
   const data = orgs.map((org) => ({
     ...org,
-    userCount: counts.get(org.name) ?? 0,
+    userCount: counts.get(org.id) ?? 0,
   }));
 
   return NextResponse.json(data);

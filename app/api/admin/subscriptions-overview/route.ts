@@ -21,13 +21,23 @@ export async function GET(req: NextRequest) {
       next_billing_time: true,
       failed_payment_count: true,
       created_at: true,
-      pesuser: { select: { name: true, email: true, org: true } },
+      pesuser: { select: { name: true, email: true, org_id: true } },
       plans: { select: { name: true, price_cents: true, currency_code: true } },
     },
   });
 
+  const orgIds = [...new Set(subs.map((s) => s.pesuser?.org_id).filter((id): id is number => id != null))];
+  const orgs = await prisma.org.findMany({ where: { id: { in: orgIds } }, select: { id: true, name: true } });
+  const orgNameById = new Map(orgs.map((o) => [o.id, o.name]));
+
   // BigInt `id` doesn't survive JSON.stringify.
-  const data = subs.map((s) => ({ ...s, id: s.id.toString() }));
+  const data = subs.map((s) => ({
+    ...s,
+    id: s.id.toString(),
+    pesuser: s.pesuser
+      ? { name: s.pesuser.name, email: s.pesuser.email, org: orgNameById.get(s.pesuser.org_id!) ?? null }
+      : null,
+  }));
 
   return NextResponse.json(data);
 }

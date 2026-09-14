@@ -68,9 +68,15 @@ const FACILITIES = [
 ];
 
 async function main() {
-  const org = process.argv[2];
-  if (!org) {
+  const orgName = process.argv[2];
+  if (!orgName) {
     console.error('Usage: npx tsx scripts/seed-maintenance.ts "Org Name"');
+    process.exit(1);
+  }
+
+  const org = await prisma.org.findFirst({ where: { name: orgName }, select: { id: true } });
+  if (!org) {
+    console.error(`No organization named "${orgName}".`);
     process.exit(1);
   }
 
@@ -78,23 +84,23 @@ async function main() {
   // still needs the rest of the register populated, and re-running should never
   // duplicate a symbol it already holds.
   const existing = await prisma.facilities.findMany({
-    where: { org },
+    where: { org_id: org.id },
     select: { identification_symbol: true },
   });
   const held = new Set(existing.map((f) => f.identification_symbol));
   const missing = FACILITIES.filter((f) => !held.has(f.identification_symbol));
 
   if (missing.length === 0) {
-    console.log(`${org} already holds all ${FACILITIES.length} sample facilities.`);
+    console.log(`${orgName} already holds all ${FACILITIES.length} sample facilities.`);
     return;
   }
 
   await prisma.facilities.createMany({
-    data: missing.map((f) => ({ ...f, org })),
+    data: missing.map((f) => ({ ...f, org_id: org.id })),
   });
 
   console.log(
-    `Added ${missing.length} facilities to ${org} (it already had ${existing.length}).`,
+    `Added ${missing.length} facilities to ${orgName} (it already had ${existing.length}).`,
   );
 }
 

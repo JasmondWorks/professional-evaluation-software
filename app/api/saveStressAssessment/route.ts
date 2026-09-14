@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       });
     } else {
       await prisma.stress.create({
-        data: { pesuser_name, org: org ?? undefined, org_id: orgId, dept, cycle_id: cycle.id, assessment_data },
+        data: { pesuser_name, org_id: orgId, dept, cycle_id: cycle.id, assessment_data },
       });
     }
 

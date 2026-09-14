@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     };
 
     await prisma.non_academic_appraisal.create({
-      data: { org, org_id: orgId, ...fields },
+      data: { org_id: orgId, ...fields },
     });
 
     return NextResponse.json({ success: true, message: "Appraisal saved successfully." });

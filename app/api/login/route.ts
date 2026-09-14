@@ -112,7 +112,7 @@ export async function POST(req: Request) {
       displayRole: user.display_role || user.role,
       // orgId is the authorization claim; org is display text only.
       orgId: user.org_id,
-      org: org?.name ?? user.org,
+      org: org?.name ?? null,
       email: user.email,
       logo,
       dept: user.dept,

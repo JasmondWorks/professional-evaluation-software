@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     // 1) Update the role's permission template (keyed role:orgId:name).
     await prisma.permission.deleteMany({ where: { user_id: `role:${orgId}:${roleName}` } })
     await prisma.permission.create({
-      data: { ...permData, user_id: `role:${orgId}:${roleName}`, org, org_id: orgId },
+      data: { ...permData, user_id: `role:${orgId}:${roleName}`, org_id: orgId },
     })
 
     // 2) Custom roles may also change which preset they behave as.
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     })
     for (const h of holders) {
       await prisma.permission.deleteMany({ where: { user_id: String(h.id) } })
-      await prisma.permission.create({ data: { ...permData, user_id: String(h.id), org, org_id: orgId } })
+      await prisma.permission.create({ data: { ...permData, user_id: String(h.id), org_id: orgId } })
       if (newFunctionalRole) {
         await prisma.pesuser.update({ where: { id: h.id }, data: { role: newFunctionalRole } })
       }

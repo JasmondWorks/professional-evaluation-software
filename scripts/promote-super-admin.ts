@@ -30,7 +30,7 @@ async function main() {
 
   const user = await prisma.pesuser.findUnique({
     where: { email },
-    select: { id: true, name: true, email: true, role: true, org: true },
+    select: { id: true, name: true, email: true, role: true, org_id: true },
   });
 
   if (!user) {

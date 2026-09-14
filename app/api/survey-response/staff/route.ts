@@ -29,8 +29,14 @@ export async function POST(req: Request) {
     }
 
     // === 1. Save to DB ===
+    // org is a plain string from the request body, same as before this
+    // endpoint had org_id — this link is unauthenticated, so it was never
+    // verified either way. Resolved to an id for storage, not for trust.
+    const orgRow = org
+      ? await prisma.org.findFirst({ where: { name: org }, select: { id: true } })
+      : null;
     await prisma.staff_survey_responses.create({
-      data: { pesuser_name, pesuser_email, org, dept, responses },
+      data: { pesuser_name, pesuser_email, dept, responses, org_id: orgRow?.id ?? null },
     });
 
     // === 2. Send email to admin ===

@@ -61,13 +61,13 @@ async function main() {
   }
 
   // ---- 2. organizations with edited targets --------------------------------
-  const orgs = await prisma.org.findMany({ select: { name: true, category: true } });
+  const orgs = await prisma.org.findMany({ select: { id: true, name: true, category: true } });
   console.log(`\nChecking ${orgs.length} organization(s) for edited targets:\n`);
 
   for (const org of orgs) {
     // The most recent period is what its current targets reflect.
     const period = await prisma.appraisal_period.findFirst({
-      where: { org: org.name },
+      where: { org_id: org.id },
       orderBy: { starts_on: 'desc' },
       select: { id: true, starts_on: true },
     });
@@ -76,7 +76,7 @@ async function main() {
       continue;
     }
 
-    const rows = await prisma.appraisal_target.findMany({ where: { org: org.name, period_id: period.id } });
+    const rows = await prisma.appraisal_target.findMany({ where: { org_id: org.id, period_id: period.id } });
     if (rows.length === 0) {
       console.log(`  ${org.name}: no targets recorded, nothing to migrate`);
       continue;
@@ -103,9 +103,9 @@ async function main() {
         console.log(`  ${org.name} / ${scope}: matches the standard`);
         if (APPLY) {
           await prisma.org_template_choice.upsert({
-            where: { org_scope: { org: org.name, scope } },
+            where: { org_id_scope: { org_id: org.id, scope } },
             update: {},
-            create: { org: org.name, scope, template_id: systemIds[scope], chosen_by: 'backfill' },
+            create: { org_id: org.id, scope, template_id: systemIds[scope], chosen_by: 'backfill' },
           });
         }
         continue;
@@ -118,7 +118,7 @@ async function main() {
       if (!APPLY) continue;
 
       const existing = await prisma.appraisal_template.findFirst({
-        where: { org: org.name, scope, name: MIGRATED_NAME },
+        where: { org_id: org.id, scope, name: MIGRATED_NAME },
       });
       if (existing) {
         console.log('      already migrated, left alone');
@@ -132,7 +132,7 @@ async function main() {
         data: {
           scope,
           name: MIGRATED_NAME,
-          org: org.name,
+          org_id: org.id,
           is_system: false,
           status: 'ready',
           created_by: 'backfill',
@@ -156,9 +156,9 @@ async function main() {
       });
 
       await prisma.org_template_choice.upsert({
-        where: { org_scope: { org: org.name, scope } },
+        where: { org_id_scope: { org_id: org.id, scope } },
         update: { template_id: created.id, chosen_by: 'backfill' },
-        create: { org: org.name, scope, template_id: created.id, chosen_by: 'backfill' },
+        create: { org_id: org.id, scope, template_id: created.id, chosen_by: 'backfill' },
       });
 
       console.log(`      created "${MIGRATED_NAME}" with ${mine.length} targets and put it in force`);
@@ -167,14 +167,14 @@ async function main() {
     // Bind past periods to what they were actually scored against, so the badge
     // can show it and history stays truthful.
     if (APPLY) {
-      const choices = await prisma.org_template_choice.findMany({ where: { org: org.name } });
+      const choices = await prisma.org_template_choice.findMany({ where: { org_id: org.id } });
       const byScope = Object.fromEntries(choices.map((c) => [c.scope, c.template_id]));
       await prisma.appraisal_period.updateMany({
-        where: { org: org.name, academic_template_id: null },
+        where: { org_id: org.id, academic_template_id: null },
         data: { academic_template_id: byScope.academic ?? null },
       });
       await prisma.appraisal_period.updateMany({
-        where: { org: org.name, non_academic_template_id: null },
+        where: { org_id: org.id, non_academic_template_id: null },
         data: { non_academic_template_id: byScope.non_academic ?? null },
       });
     }

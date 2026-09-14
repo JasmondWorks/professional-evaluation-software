@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
     if (anovaResult) {
       record = await prisma.stress_analysis_results.create({
         data: {
-          org,
           org_id: orgId,
           cycle_id: cycle.id,
           session_id: feelingTransition.sessionId,

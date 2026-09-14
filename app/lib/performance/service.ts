@@ -84,7 +84,6 @@ export async function openPeriod(
 
   return prisma.performance_period.create({
     data: {
-      org: viewer.org,
       org_id: viewer.orgId,
       frequency: input.frequency,
       starts_on: input.startsOn,
@@ -175,7 +174,6 @@ export async function ensureEntry(viewer: Viewer, pesuserName?: string) {
 
   return prisma.performance_entry.create({
     data: {
-      org: viewer.org,
       org_id: viewer.orgId,
       dept: staff.dept ?? null,
       period_id: period.id,
@@ -662,7 +660,6 @@ export async function drawHodRaters(viewer: Viewer, periodId: number) {
     const sample = shuffle(pool.map((p) => p.name)).slice(0, period.rater_sample);
     await prisma.hod_performance_rater.createMany({
       data: sample.map((rater) => ({
-        org: viewer.org,
         org_id: viewer.orgId,
         period_id: period.id,
         dept,
@@ -793,7 +790,6 @@ export async function evaluateHod(viewer: Viewer, periodId: number, hodName: str
     '';
 
   const data = {
-    org: viewer.org,
     org_id: viewer.orgId,
     period_id: period.id,
     dept,

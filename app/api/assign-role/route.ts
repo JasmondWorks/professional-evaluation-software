@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     if (template) {
       await prisma.permission.deleteMany({ where: { user_id: String(user.id) } })
       await prisma.permission.create({
-        data: { ...template, user_id: String(user.id), org, org_id: orgId },
+        data: { ...template, user_id: String(user.id), org_id: orgId },
       })
     }
 

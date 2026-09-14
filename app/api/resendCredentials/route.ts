@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     // Check user exists
     const user = await prisma.pesuser.findUnique({
       where: { email },
-      select: { id: true, name: true, org: true, org_id: true },
+      select: { id: true, name: true, org_id: true },
     })
 
     // A super-admin operates across organizations; an org admin does not. The

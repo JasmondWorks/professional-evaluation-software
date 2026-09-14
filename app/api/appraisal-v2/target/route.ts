@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const viewer = viewerFrom(req);
     const periodId = Number(new URL(req.url).searchParams.get('periodId'));
     const targets = await prisma.appraisal_target.findMany({
-      where: { org: viewer.org, period_id: periodId },
+      where: { org_id: viewer.orgId, period_id: periodId },
       orderBy: [{ model: 'asc' }, { position: 'asc' }, { category: 'asc' }],
     });
     return NextResponse.json({ targets });

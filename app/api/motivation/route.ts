@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
 
     const record = await prisma.motivation.create({
       data: {
-        org,
         org_id: orgId,
         total_score: Number(total_score),
         rating,

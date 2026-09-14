@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
     // type error (42804) that broke study creation and, in turn, Add Position.
     const study = await prisma.workSamplingStudy.create({
       data: {
-        org: org ?? null,
         org_id: orgId,
         department: department ?? null,
         analyst: analyst ?? null,

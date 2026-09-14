@@ -107,7 +107,6 @@ export async function POST(req: Request) {
       academic_program: scores.academic_program ?? 0,
       negative_public_attitude: scores.negative_public_attitude ?? 0,
       misc: scores.misc ?? 0,
-      org,
       org_id: orgId,
       dept,
       user_name,

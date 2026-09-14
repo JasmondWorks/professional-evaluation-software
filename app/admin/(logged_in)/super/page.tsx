@@ -9,21 +9,19 @@ type SuperAdmin = {
   id: number
   name: string
   email: string
-  org: string
 }
 
 // Server Action to fetch super-admins
 async function getSuperAdmins(): Promise<SuperAdmin[]> {
   const users = await prisma.pesuser.findMany({
     where: { role: 'super-admin' },
-    select: { id: true, name: true, email: true, org: true },
+    select: { id: true, name: true, email: true },
     orderBy: { name: 'asc' }
   });
-  
+
   // Cast back to number if ID is returned as BigInt (Prisma usually returns BigInt as bigint)
   return users.map(u => ({
     ...u,
-    org: u.org || '',
     id: Number(u.id)
   }));
 }

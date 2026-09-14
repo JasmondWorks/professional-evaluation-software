@@ -43,7 +43,7 @@ async function remember(
   idempotencyKey: string,
   statusCode: number,
   body: unknown,
-  extra: { paymentReference?: string | null; org?: string | null } = {},
+  extra: { paymentReference?: string | null; orgId?: number | null } = {},
 ) {
   try {
     // upsert, not create: a refused call can be corrected and resent under the
@@ -56,7 +56,7 @@ async function remember(
         payment_reference: extra.paymentReference ?? null,
         status_code: statusCode,
         response: body as any,
-        org: extra.org ?? null,
+        org_id: extra.orgId ?? null,
       },
       create: {
         source: SOURCE,
@@ -64,7 +64,7 @@ async function remember(
         payment_reference: extra.paymentReference ?? null,
         status_code: statusCode,
         response: body as any,
-        org: extra.org ?? null,
+        org_id: extra.orgId ?? null,
       },
     });
   } catch (err) {
@@ -197,13 +197,16 @@ export async function POST(req: Request) {
   // arrives under.
   const referenceUsed = await prisma.subscriptions_info.findUnique({
     where: { reference: input.payment_reference },
-    select: { org: true },
+    select: { org_id: true },
   });
   if (referenceUsed) {
+    const usedOrg = referenceUsed.org_id
+      ? await prisma.org.findUnique({ where: { id: referenceUsed.org_id }, select: { name: true } })
+      : null;
     const body = {
       ok: false,
-      error: `That payment has already been used to create ${referenceUsed.org}.`,
-      organization: referenceUsed.org,
+      error: `That payment has already been used to create ${usedOrg?.name ?? 'another organization'}.`,
+      organization: usedOrg?.name ?? null,
     };
     await remember(idempotencyKey, 409, body, { paymentReference: input.payment_reference });
     return NextResponse.json(body, { status: 409 });
@@ -257,7 +260,6 @@ export async function POST(req: Request) {
           email: input.admin_email,
           password: unusable,
           role: 'admin',
-          org: input.organization_name,
           org_id: newOrg.id,
           category: input.product_category.toLowerCase(),
           plan: input.product_plan.toLowerCase(),
@@ -273,7 +275,6 @@ export async function POST(req: Request) {
         data: {
           pesuser_email: input.admin_email,
           pesuser_name: input.admin_name,
-          org: input.organization_name,
           org_id: newOrg.id,
           plan_code: payment.plan,
           plan_name: input.product_plan.toLowerCase(),
@@ -292,7 +293,7 @@ export async function POST(req: Request) {
     // here must not undo a paid-for organization.
     try {
       const { seedPresetRoles } = await import('@/app/api/_lib/seedRoles');
-      await seedPresetRoles(input.organization_name, orgId, input.product_category.toLowerCase());
+      await seedPresetRoles(orgId, input.product_category.toLowerCase());
     } catch (seedErr) {
       console.error('provision: preset role seeding failed (non-fatal):', seedErr);
     }
@@ -329,7 +330,7 @@ export async function POST(req: Request) {
     };
     await remember(idempotencyKey, 201, body, {
       paymentReference: payment.reference,
-      org: input.organization_name,
+      orgId,
     });
     return NextResponse.json(body, { status: 201 });
   } catch (err: any) {

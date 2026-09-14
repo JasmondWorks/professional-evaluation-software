@@ -100,7 +100,7 @@ export async function PUT(req: Request) {
     // One row per user: replace rather than accumulate (mirrors updateRole).
     await prisma.permission.deleteMany({ where: { user_id: String(staff.id) } });
     await prisma.permission.create({
-      data: { ...permissions, user_id: String(staff.id), org, org_id: orgId },
+      data: { ...permissions, user_id: String(staff.id), org_id: orgId },
     });
     return NextResponse.json({ success: true, permissions, configured: true });
   } catch (err) {

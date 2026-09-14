@@ -101,7 +101,6 @@ export async function POST(req: Request) {
       t3: t3 ?? null,
       t4: t4 ?? null,
       S0: S0 ?? null,
-      org: decoded.org,
       org_id: decoded.orgId,
     },
   });

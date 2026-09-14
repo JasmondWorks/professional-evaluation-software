@@ -41,7 +41,7 @@ async function handleRequest(request: NextRequest) {
       select: {
         id: true,
         user_id: true,
-        org: true,
+        org_id: true,
         title: true,
         message: true,
         is_read: true,

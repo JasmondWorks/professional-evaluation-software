@@ -28,6 +28,6 @@ export async function applyRoleToUser(userId: number, roleName: string, org: str
       PERMISSION_KEYS.map((k) => [k, (tpl as any)[k] === true]),
     )
     await prisma.permission.deleteMany({ where: { user_id: String(userId) } })
-    await prisma.permission.create({ data: { ...template, user_id: String(userId), org, org_id: orgId ?? null } })
+    await prisma.permission.create({ data: { ...template, user_id: String(userId), org_id: orgId ?? null } })
   }
 }

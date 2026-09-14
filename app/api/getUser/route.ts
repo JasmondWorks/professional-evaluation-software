@@ -32,7 +32,7 @@ async function getUser(userNameOrEmail: string | null, userId: number | null) {
         id: true, name: true, email: true, gsm: true, role: true,
         display_role: true, address: true, faculty_college: true,
         dob: true, doa: true, poa: true, doc: true, post: true, dopp: true,
-        level: true, image: true, org: true, dept: true, tier: true,
+        level: true, image: true, org_id: true, dept: true, tier: true,
         category: true, plan: true,
       },
     })

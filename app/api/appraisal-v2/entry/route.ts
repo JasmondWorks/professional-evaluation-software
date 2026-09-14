@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     const entryId = Number(url.searchParams.get('entryId'));
 
     const entry = await prisma.appraisal_entry.findFirst({
-      where: { id: entryId, org: viewer.org },
+      where: { id: entryId, org_id: viewer.orgId },
       include: { categories: true },
     });
     if (!entry) return NextResponse.json({ error: 'Appraisal not found.' }, { status: 404 });
