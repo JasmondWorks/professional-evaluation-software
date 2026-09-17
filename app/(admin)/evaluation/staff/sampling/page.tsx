@@ -655,7 +655,7 @@ const WorkSamplingPageInner: React.FC = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            positionId: Number(newObservation.positionId),
+            positionId: newObservation.positionId,
             date: newObservation.date,
             time: newObservation.time,
             isBusy: newObservation.isBusy,
@@ -697,7 +697,7 @@ const WorkSamplingPageInner: React.FC = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          positionId: Number(optimistic.positionId),
+          positionId: optimistic.positionId,
           date: optimistic.date,
           time: optimistic.time,
           isBusy: optimistic.isBusy,

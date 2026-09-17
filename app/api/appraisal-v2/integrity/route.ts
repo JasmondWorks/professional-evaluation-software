@@ -10,8 +10,8 @@ import { fail, viewerFrom } from '../_auth';
 export async function GET(req: Request) {
   try {
     const viewer = viewerFrom(req);
-    const periodId = Number(new URL(req.url).searchParams.get('periodId'));
-    if (!Number.isFinite(periodId) || periodId <= 0) {
+    const periodId = new URL(req.url).searchParams.get('periodId') ?? '';
+    if (!periodId) {
       return NextResponse.json({ error: 'A period is needed to run the test.' }, { status: 400 });
     }
     return NextResponse.json({ report: await runAppraisalIntegrity(viewer, periodId) });

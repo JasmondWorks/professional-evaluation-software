@@ -5,7 +5,7 @@ import { PRESET_ROLES, PERMISSION_KEYS, resolveBaseRole } from '@/app/components
 // PRESET into pesuser.role, the selected name into display_role, and copy the
 // role's permission template onto the user. Shared by assign-role and the
 // role-deletion reassignment flow.
-export async function applyRoleToUser(userId: number, roleName: string, org: string, orgId?: number | null) {
+export async function applyRoleToUser(userId: string, roleName: string, org: string, orgId?: string | null) {
   const isPreset = (PRESET_ROLES as readonly string[]).includes(roleName)
 
   let functionalRole = roleName
@@ -27,7 +27,7 @@ export async function applyRoleToUser(userId: number, roleName: string, org: str
     const template = Object.fromEntries(
       PERMISSION_KEYS.map((k) => [k, (tpl as any)[k] === true]),
     )
-    await prisma.permission.deleteMany({ where: { user_id: String(userId) } })
-    await prisma.permission.create({ data: { ...template, user_id: String(userId), org_id: orgId ?? null } })
+    await prisma.permission.deleteMany({ where: { user_id: userId } })
+    await prisma.permission.create({ data: { ...template, user_id: userId, org_id: orgId ?? null } })
   }
 }

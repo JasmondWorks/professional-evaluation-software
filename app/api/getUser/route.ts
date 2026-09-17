@@ -7,7 +7,7 @@ import prisma from '../prisma.dev'
 import type { Prisma } from '@prisma/client'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
-async function getUser(userNameOrEmail: string | null, userId: number | null) {
+async function getUser(userNameOrEmail: string | null, userId: string | null) {
   if (!userNameOrEmail && userId === null) {
     return null
   }
@@ -18,7 +18,7 @@ async function getUser(userNameOrEmail: string | null, userId: number | null) {
     or.push({ name: userNameOrEmail }, { email: userNameOrEmail })
   }
 
-  if (userId !== null && !isNaN(userId)) {
+  if (userId !== null) {
     or.push({ id: userId })
   }
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const decoded = auth.user;
 
     let identifier: string | null = null;
-    let userId: number | null = null;
+    let userId: string | null = null;
 
     if (decoded && typeof decoded === 'object') {
       // Direct fields
@@ -60,10 +60,10 @@ export async function POST(request: NextRequest) {
         identifier = decoded.email;
       }
 
-      if ('userID' in decoded && (typeof decoded.userID === 'number' || typeof decoded.userID === 'string')) {
-        userId = Number(decoded.userID);
-      } else if ('id' in decoded && (typeof decoded.id === 'number' || typeof decoded.id === 'string')) {
-        userId = Number(decoded.id);
+      if ('userID' in decoded && typeof decoded.userID === 'string') {
+        userId = decoded.userID;
+      } else if ('id' in decoded && typeof decoded.id === 'string') {
+        userId = decoded.id;
       }
 
       // Check nested "sub" claim
@@ -74,14 +74,9 @@ export async function POST(request: NextRequest) {
             identifier = (sub as any).name;
           } else if ('email' in sub && typeof (sub as any).email === 'string') {
             identifier = (sub as any).email;
-          } else if ('user_id' in sub && (typeof (sub as any).user_id === 'number' || typeof (sub as any).user_id === 'string')) {
-            const subUserId = Number((sub as any).user_id);
-            if (!isNaN(subUserId)) {
-              userId = subUserId;
-            } else if (typeof (sub as any).user_id === 'string') {
-              // If it's a UUID string, we can try matching it as a general identifier
-              identifier = (sub as any).user_id;
-            }
+          } else if ('user_id' in sub && typeof (sub as any).user_id === 'string') {
+            // A UUID string; we can try matching it as a general identifier.
+            userId = (sub as any).user_id;
           }
         } else if (typeof sub === 'string') {
           identifier = sub;

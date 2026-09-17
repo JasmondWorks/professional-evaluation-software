@@ -10,7 +10,7 @@ import { roleAllowedForCategory } from './createEmployee'
 // company put it back in that org's role list even after the preset list had
 // filtered it out. Callers that do not know the category get the academic set,
 // which is the superset, so nothing that used to be seeded goes missing.
-export async function seedPresetRoles(orgId: number, productCategory?: string | null) {
+export async function seedPresetRoles(orgId: string, productCategory?: string | null) {
   if (!orgId) return
 
   const presets = productCategory

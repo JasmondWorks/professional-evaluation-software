@@ -12,7 +12,7 @@ type reqInfo = {
     role_name: string
     description: string
     org: string
-    orgId: number
+    orgId: string
     base_role: string
 } & Partial<Record<PermissionKey, boolean>>
 

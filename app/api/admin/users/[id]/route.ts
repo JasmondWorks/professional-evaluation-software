@@ -13,8 +13,8 @@ async function resolve(req: NextRequest, rawId: string) {
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return { ok: false as const, response: auth.response };
 
-  const id = Number(rawId);
-  if (!Number.isInteger(id)) {
+  const id = rawId;
+  if (!id) {
     return {
       ok: false as const,
       response: NextResponse.json({ error: "Invalid user id" }, { status: 400 }),
@@ -32,7 +32,7 @@ async function resolve(req: NextRequest, rawId: string) {
     };
   }
 
-  if (!canReachOrg(auth.viewer, target.org_id ?? -1)) {
+  if (!canReachOrg(auth.viewer, target.org_id ?? "")) {
     // Same body as "not found": which ids exist in another org is not something
     // this caller should be able to learn either.
     return {

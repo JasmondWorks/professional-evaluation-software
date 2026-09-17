@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     // Prefer the id (always available from the profile route); fall back to email.
-    const where = id ? { org_id: orgId, id: Number(id) } : { org_id: orgId, email };
+    const where = id ? { org_id: orgId, id: String(id) } : { org_id: orgId, email };
 
     // Fetch matching users first so we can report exactly what was removed.
     const result = await prisma.pesuser.findMany({ where });

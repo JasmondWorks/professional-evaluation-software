@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(
       token,
       getJWTSecret()
-    ) as { org: string; orgId: number; role: string }
+    ) as { org: string; orgId: string; role: string }
 
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

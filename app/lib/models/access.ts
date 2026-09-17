@@ -33,7 +33,7 @@ export class ModelAccessError extends Error {
 // The category and plan ride along so the guard can ask what the organization
 // bought as well as what the caller's role is. Both are optional on the type
 // because they are optional claims; the org row fills either gap.
-export type ModelViewer = PlanViewer & { orgId: number; org: string; role: string; name?: string | null };
+export type ModelViewer = PlanViewer & { orgId: string; org: string; role: string; name?: string | null };
 
 export function isModelAdmin(role: string | null | undefined): boolean {
   return MODEL_ADMIN_ROLES.includes(resolveEffectiveRole(role));
@@ -44,7 +44,7 @@ function isDataEntryRole(role: string | null | undefined): boolean {
 }
 
 /** Every model key this org has switched on for a role. */
-export async function enabledModelsFor(orgId: number, role: string): Promise<ModelKey[]> {
+export async function enabledModelsFor(orgId: string, role: string): Promise<ModelKey[]> {
   const rows = await prisma.model_access.findMany({
     where: { org_id: orgId, role: resolveEffectiveRole(role), enabled: true },
     select: { model_key: true },
@@ -133,7 +133,7 @@ export function assertMayRunModels(viewer: ModelViewer): void {
 }
 
 /** The whole grid the admin edits: one row per model, per managed role. */
-export async function accessMatrix(orgId: number, role: string = MODEL_DATA_ENTRY_ROLE) {
+export async function accessMatrix(orgId: string, role: string = MODEL_DATA_ENTRY_ROLE) {
   const rows = await prisma.model_access.findMany({
     where: { org_id: orgId, role },
     select: { model_key: true, enabled: true, updated_at: true, updated_by: true },

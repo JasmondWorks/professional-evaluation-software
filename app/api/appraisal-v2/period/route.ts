@@ -28,7 +28,7 @@ export async function PATCH(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { periodId } = await req.json();
-    await closePeriod(viewer, Number(periodId));
+    await closePeriod(viewer, periodId);
     return NextResponse.json({ closed: true });
   } catch (err) { return fail(err); }
 }

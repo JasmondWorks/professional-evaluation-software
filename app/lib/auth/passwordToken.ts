@@ -39,7 +39,7 @@ export function hashToken(token: string): string {
  *  plaintext, which exists only in this function's return value and the email
  *  built from it — it is never stored and cannot be recovered afterwards. */
 export async function issuePasswordToken(
-  userId: number,
+  userId: string,
   purpose: TokenPurpose,
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = crypto.randomBytes(32).toString('hex');
@@ -58,7 +58,7 @@ export async function issuePasswordToken(
 }
 
 export type TokenHolder = {
-  id: number;
+  id: string;
   name: string | null;
   email: string;
   org: string | null;
@@ -102,7 +102,7 @@ export async function findPasswordTokenHolder(token: string): Promise<TokenHolde
 /** Spend the token and set the password. Clears must_change_password: they have
  *  just chosen this one themselves, so there is nothing to force. */
 export async function consumePasswordToken(
-  userId: number,
+  userId: string,
   hashedPassword: string,
 ): Promise<void> {
   await prisma.pesuser.update({

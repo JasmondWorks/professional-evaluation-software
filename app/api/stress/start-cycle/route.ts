@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const needsReset = !!(latest && latest.needs_reset)
     
     // Determine the source of the settings for this cycle
-    const historyCycleId = body.historyCycleId ? Number(body.historyCycleId) : null;
+    const historyCycleId = body.historyCycleId ? String(body.historyCycleId) : null;
     const full = !historyCycleId && (!hasAdoptedSetting || needsReset || body.forceSettings === true)
 
     let session = await getActiveSession(prisma, org);

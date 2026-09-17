@@ -7,7 +7,7 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getInventory( orgId: number | null ) {
+async function getInventory( orgId: string | null ) {
   if (!orgId) return []
   return prisma.facilities.findMany({ where: { org_id: orgId } })
 }

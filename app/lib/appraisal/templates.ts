@@ -47,7 +47,7 @@ export class TemplateError extends Error {
 }
 
 export type Viewer = {
-  orgId: number;
+  orgId: string;
   org: string;
   name: string;
   role: string;
@@ -257,7 +257,7 @@ async function loadVisible(viewer: Viewer, templateId: string) {
  *
  *  Client note, 26 Aug 2026: this is for the organization admin and
  *  Establishment only. Callers must gate on the role before showing it. */
-export async function inForceFor(orgId: number, scopes: TemplateScope[]) {
+export async function inForceFor(orgId: string, scopes: TemplateScope[]) {
   const out = [];
   for (const scope of scopes) {
     // Falls back to the standard, which is what an organization that has never
@@ -558,7 +558,7 @@ export async function putInForce(viewer: Viewer, input: { scope: TemplateScope; 
 
 /** The template an organization scores a scheme against, falling back to the
  *  system standard when it has never chosen. */
-export async function templateInForce(orgId: number, scope: TemplateScope) {
+export async function templateInForce(orgId: string, scope: TemplateScope) {
   const choice = await prisma.org_template_choice.findFirst({
     where: { org_id: orgId, scope },
     include: { template: true },

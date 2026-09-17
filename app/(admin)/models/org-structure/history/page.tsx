@@ -9,7 +9,7 @@ import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink } from '@/app/components/ui';
 
 interface OrgStructureRun {
-  id: number;
+  id: string;
   section: number;
   result: number;
   numerator: number[];
@@ -30,7 +30,7 @@ export default function OrgStructureHistory() {
     const byRun = new Map<string, OrgStructureRun[]>();
     const ordered = [...history].sort((a, b) => {
       const t = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      return t !== 0 ? t : b.id - a.id;
+      return t !== 0 ? t : b.id.localeCompare(a.id);
     });
     for (const run of ordered) {
       // To the minute: three rows written by one Save share a timestamp to the

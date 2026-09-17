@@ -16,7 +16,7 @@ export async function GET(
   if (!plan.ok) return plan.response;
 
   try {
-    const id = Number(params.id);
+    const id = params.id;
     if (!id) {
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }
@@ -63,7 +63,7 @@ export async function PATCH(
   if (!plan.ok) return plan.response;
 
   try {
-    const id = Number(params.id);
+    const id = params.id;
 
     const owner = await orgOfStudy(id);
     if (!owner || owner !== auth.user.orgId) return notYours();
@@ -122,7 +122,7 @@ export async function DELETE(
   if (!plan.ok) return plan.response;
 
   try {
-    const id = Number(params.id);
+    const id = params.id;
     if (!id) {
       return NextResponse.json({ success: false, error: "Invalid id" }, { status: 400 });
     }

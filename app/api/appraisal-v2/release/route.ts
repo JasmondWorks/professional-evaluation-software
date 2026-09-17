@@ -12,6 +12,6 @@ export async function POST(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { periodId } = await req.json();
-    return NextResponse.json({ period: await releaseResults(viewer, Number(periodId)) });
+    return NextResponse.json({ period: await releaseResults(viewer, periodId) });
   } catch (err) { return fail(err); }
 }

@@ -14,7 +14,6 @@ type Goals = {
 
 async function updateData(entry: Goals) {
   const userId = entry.user_id
-  const userIdNum = Number(userId)
 
   if (!entry.user_id) {
     throw new Error('Invalid user_id: must be provided')
@@ -41,7 +40,7 @@ async function updateData(entry: Goals) {
 
   // Resolve the goal owner's org, then notify every user in that org.
   const owner = await prisma.pesuser.findUnique({
-    where: { id: userIdNum },
+    where: { id: userId },
     select: { org_id: true },
   })
   const orgId = owner?.org_id ?? null

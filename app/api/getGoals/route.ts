@@ -11,7 +11,7 @@ import { authorize, tokenFromRequest, verifyToken } from '../_lib/authGuard'
 // stored against the creator's user_id (no org column), so we resolve the org's
 // member ids and return goals created by any of them. Falls back to the caller's
 // own goals only when the org can't be determined.
-async function getData(orgId: number | null, fallbackUserId: string | null) {
+async function getData(orgId: string | null, fallbackUserId: string | null) {
   console.log("getGoals -> orgId:", orgId, "fallbackUserId:", fallbackUserId);
   if (orgId) {
     const orgUsers = await prisma.pesuser.findMany({

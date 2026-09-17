@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // Validate input
-    if (!orgId || typeof orgId !== 'number') {
+    if (!orgId || typeof orgId !== 'string') {
       return NextResponse.json({ error: "Invalid org parameter" }, { status: 400 });
     }
 

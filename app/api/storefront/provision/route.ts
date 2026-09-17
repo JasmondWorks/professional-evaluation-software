@@ -43,7 +43,7 @@ async function remember(
   idempotencyKey: string,
   statusCode: number,
   body: unknown,
-  extra: { paymentReference?: string | null; orgId?: number | null } = {},
+  extra: { paymentReference?: string | null; orgId?: string | null } = {},
 ) {
   try {
     // upsert, not create: a refused call can be corrected and resent under the

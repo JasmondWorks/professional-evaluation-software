@@ -23,7 +23,7 @@ export type ConsoleViewer = {
   /** The org an org-admin is confined to; null for the platform operator. */
   org: string | null;
   /** The id of the org an org-admin is confined to; null for the platform operator. */
-  orgId: number | null;
+  orgId: string | null;
 };
 
 export function consoleViewer(
@@ -40,7 +40,7 @@ export function consoleViewer(
   // An org admin whose token carries no org has nothing it can safely be scoped
   // to, so it gets nothing rather than everything.
   const org = isPlatform ? null : user.org ? String(user.org) : null;
-  const orgId = isPlatform ? null : typeof user.orgId === 'number' ? user.orgId : null;
+  const orgId = isPlatform ? null : typeof user.orgId === 'string' ? user.orgId : null;
   if (!isPlatform && (!org || orgId == null)) {
     return {
       ok: false,
@@ -52,7 +52,7 @@ export function consoleViewer(
 }
 
 /** Refuse an org named in the URL that is not the caller's own. */
-export function canReachOrg(viewer: ConsoleViewer, orgId: number): boolean {
+export function canReachOrg(viewer: ConsoleViewer, orgId: string): boolean {
   return viewer.isPlatform || viewer.orgId === orgId;
 }
 

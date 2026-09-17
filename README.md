@@ -6,6 +6,29 @@
 
 ---
 
+## 🐳 Run it locally with one command
+
+For low-bandwidth setups: install [Docker Desktop](https://www.docker.com/products/docker-desktop/), then:
+
+```bash
+npm install
+npm run dev:local
+```
+
+`dev:local` brings up Postgres in Docker (exposed on `localhost:5434`), waits
+for it to accept connections, and applies `prisma/schema.prisma` to it, then
+starts the dev server. Once it's running, open
+[localhost:3000/local-seed](http://localhost:3000/local-seed) — a form to
+create the organization, its admin account, and any starting employees. It
+only ever runs once: submit it, and it redirects to sign-in from then on. The
+route refuses to do anything outside local development (checked by
+`NODE_ENV` and by `DATABASE_URL` pointing at `localhost`), so it's safe to
+leave in the codebase.
+
+Everyday runs after the first: same command, `npm run dev:local`.
+
+---
+
 ## 📋 Table of Contents
 
 1. [Quick Start](#quick-start)

@@ -33,7 +33,7 @@ const DAY = 24 * 60 * 60 * 1000;
  *  regression dressed as a feature, so no row means no opinion — `unknown`,
  *  and treated as active. Once real customers exist, every one of them has a
  *  row from the moment they sign up. */
-export async function orgSubscription(orgId: number): Promise<SubscriptionState> {
+export async function orgSubscription(orgId: string): Promise<SubscriptionState> {
   const row = await prisma.subscriptions_info.findFirst({
     where: { org_id: orgId },
     orderBy: [{ expires_at: 'desc' }, { id: 'desc' }],

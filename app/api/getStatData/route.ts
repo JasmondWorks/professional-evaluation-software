@@ -15,7 +15,7 @@ import { rosterWhere } from "../_lib/roster";
  *  Returning both from one query is what stops the two pages contradicting
  *  each other: they are different measures of one roster, not two roster
  *  counts that happen to disagree. */
-async function getStats(orgId: number) {
+async function getStats(orgId: string) {
   const [employees, assessable, completedAppraisals, pendingAppraisals] =
     await Promise.all([
       prisma.pesuser.count({ where: { org_id: orgId } }),

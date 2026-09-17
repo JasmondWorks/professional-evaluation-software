@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react'
 import { apiFetch } from '@/app/utils/apiFetch';
 
 type User = {
-  id: number
+  id: string
   name: string
   email: string 
   gsm: string
@@ -20,7 +20,7 @@ type User = {
 export default function Page({ params }: { params: { orgId: string } }) {
   const [users, setUsers] = useState<User[]>([])
   const router = useRouter()
-  const orgId = Number(params.orgId)
+  const orgId = params.orgId
 
   useEffect(() => {
     async function fetchUsers() {

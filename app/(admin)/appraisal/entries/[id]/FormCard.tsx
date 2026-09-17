@@ -122,7 +122,7 @@ export default function FormCard({
   onSaved,
 }: {
   form: CategoryForm;
-  entryId: number;
+  entryId: string;
   locked: boolean;
   /** Why this form is read-only for this viewer, when it is not simply submitted. */
   lockedReason?: string;

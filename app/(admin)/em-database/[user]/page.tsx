@@ -73,7 +73,7 @@ export default function Page({ params }: { params: { user: string } }) {
       const res = await apiFetch('/api/users/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: user.id || Number(params.user), email: user.email }),
+        body: JSON.stringify({ id: user.id || params.user, email: user.email }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || `Request failed (${res.status})`);

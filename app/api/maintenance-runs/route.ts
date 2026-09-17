@@ -77,8 +77,7 @@ export async function POST(req: NextRequest) {
       data: {
         org_id: orgId,
         facility,
-        facility_id:
-          num(body.facility_id) == null ? null : Math.trunc(Number(body.facility_id)),
+        facility_id: body.facility_id ? String(body.facility_id) : null,
         facility_symbol: body.facility_symbol ? String(body.facility_symbol) : null,
         mtbf: num(body.mtbf),
         inputs: body.inputs ?? {},

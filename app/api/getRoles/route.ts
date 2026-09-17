@@ -7,7 +7,7 @@ import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getRoles( orgId: number | null ) {
+async function getRoles( orgId: string | null ) {
   if (!orgId) return []
   return prisma.roles.findMany({ where: { org_id: orgId } })
 }

@@ -39,11 +39,10 @@ function normalize(input: Partial<Record<string, boolean>>): PermMap {
 }
 
 // Resolve the target employee inside the caller's org (never outside it).
-async function findStaff(id: unknown, orgId: number) {
-  const numericId = Number(id);
-  if (!numericId || Number.isNaN(numericId)) return null;
+async function findStaff(id: unknown, orgId: string) {
+  if (typeof id !== 'string' || !id) return null;
   return prisma.pesuser.findFirst({
-    where: { id: numericId, org_id: orgId },
+    where: { id, org_id: orgId },
     select: { id: true, name: true, role: true, display_role: true },
   });
 }
@@ -65,7 +64,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const row = await prisma.permission.findFirst({ where: { user_id: String(staff.id), org_id: orgId } });
+    const row = await prisma.permission.findFirst({ where: { user_id: staff.id, org_id: orgId } });
     return NextResponse.json({
       permissions: toMap(row),
       // No row yet means the employee predates permission storage — the UI says
@@ -98,9 +97,9 @@ export async function PUT(req: Request) {
 
   try {
     // One row per user: replace rather than accumulate (mirrors updateRole).
-    await prisma.permission.deleteMany({ where: { user_id: String(staff.id) } });
+    await prisma.permission.deleteMany({ where: { user_id: staff.id } });
     await prisma.permission.create({
-      data: { ...permissions, user_id: String(staff.id), org_id: orgId },
+      data: { ...permissions, user_id: staff.id, org_id: orgId },
     });
     return NextResponse.json({ success: true, permissions, configured: true });
   } catch (err) {

@@ -53,7 +53,7 @@ type Entry = {
 
 export default function EntryPage() {
   const params = useParams<{ id: string }>();
-  const entryId = Number(params.id);
+  const entryId = params.id;
 
   const [entry, setEntry] = useState<Entry | null>(null);
   // Naming the model only tells a reader something where both kinds exist.
@@ -400,7 +400,7 @@ function ReviewPanel({
   canScore,
   isAppraisee,
 }: {
-  entryId: number;
+  entryId: string;
   formKey: string;
   score: CategoryScore;
   onChange: () => void;

@@ -12,9 +12,9 @@ export async function GET(req: Request) {
     const viewer = viewerFrom(req);
     const url = new URL(req.url);
     const entryId = url.searchParams.get('entryId');
-    if (entryId) return NextResponse.json({ entry: await getEntry(viewer, Number(entryId)) });
+    if (entryId) return NextResponse.json({ entry: await getEntry(viewer, entryId) });
 
-    const periodId = Number(url.searchParams.get('periodId'));
+    const periodId = url.searchParams.get('periodId') ?? '';
     return NextResponse.json({ entries: await listEntries(viewer, periodId) });
   } catch (err) { return fail(err); }
 }

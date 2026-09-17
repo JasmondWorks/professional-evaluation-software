@@ -55,7 +55,7 @@ import {
 } from './scoring';
 
 export type Viewer = {
-  orgId: number;
+  orgId: string;
   org: string;
   name: string;
   role: string;
@@ -120,7 +120,7 @@ export async function openPeriod(
   return period;
 }
 
-export async function currentPeriod(orgId: number) {
+export async function currentPeriod(orgId: string) {
   return prisma.appraisal_period.findFirst({
     where: { org_id: orgId, status: 'open' },
     orderBy: { starts_on: 'desc' },
@@ -129,7 +129,7 @@ export async function currentPeriod(orgId: number) {
 
 /** Close a period. Results only become visible to staff at this point — see the
  *  binary-search note at the top of this file. */
-export async function closePeriod(viewer: Viewer, periodId: number) {
+export async function closePeriod(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   return prisma.appraisal_period.updateMany({
     where: { id: periodId, org_id: viewer.orgId, status: 'open' },
@@ -139,7 +139,7 @@ export async function closePeriod(viewer: Viewer, periodId: number) {
 
 /** Release results. Separate from closing, and restricted to the organization
  *  admin: closing ends data entry, releasing is when staff finally see a grade. */
-export async function releaseResults(viewer: Viewer, periodId: number) {
+export async function releaseResults(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   const period = await prisma.appraisal_period.findFirst({
     where: { id: periodId, org_id: viewer.orgId },
@@ -158,7 +158,7 @@ export async function releaseResults(viewer: Viewer, periodId: number) {
 
 /** Everyone being appraised in a period, with just enough to drive a list.
  *  Grades stay hidden from staff and heads until results are released. */
-export async function listEntries(viewer: Viewer, periodId: number) {
+export async function listEntries(viewer: Viewer, periodId: string) {
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
   // Includes the departmental administrator, who records Forms 8 and 9 for the
   // whole department and so must be able to see it.
@@ -206,8 +206,8 @@ export async function listEntries(viewer: Viewer, periodId: number) {
  *  numbers it was scored against for good. */
 async function seedTargets(
   org: string,
-  orgId: number,
-  periodId: number,
+  orgId: string,
+  periodId: string,
   templateIds: Partial<Record<TemplateScope, string>>,
 ) {
   const rows: any[] = [];
@@ -249,7 +249,7 @@ async function seedTargets(
 export async function setTarget(
   viewer: Viewer,
   _input: {
-    periodId: number;
+    periodId: string;
     model: AppraisalModel;
     position?: string;
     post?: string;
@@ -267,7 +267,7 @@ export async function setTarget(
   );
 }
 
-async function targetsFor(orgId: number, periodId: number, model: AppraisalModel) {
+async function targetsFor(orgId: string, periodId: string, model: AppraisalModel) {
   return prisma.appraisal_target.findMany({ where: { org_id: orgId, period_id: periodId, model } });
 }
 
@@ -458,7 +458,7 @@ function assertWithinMaxima(formKey: FormKey, scores: number[]) {
 export async function recordCategoryScore(
   viewer: Viewer,
   input: {
-    entryId: number;
+    entryId: string;
     category: FormKey;
     lineItems: number[];
     /** Student evaluation only: one array per completed copy. */
@@ -543,7 +543,7 @@ export async function recordCategoryScore(
 }
 
 /** Lock an entry for HOD review. After this the appraisee cannot edit. */
-export async function submitEntry(viewer: Viewer, entryId: number) {
+export async function submitEntry(viewer: Viewer, entryId: string) {
   const entry = await loadEntry(viewer, entryId);
   assertEntryOpen(entry);
 
@@ -564,7 +564,7 @@ export async function submitEntry(viewer: Viewer, entryId: number) {
  *  department. The H.O.D/DEAN still needs to [APPROVE/SUBMIT] all entries." */
 export async function verifyEntry(
   viewer: Viewer,
-  input: { entryId: number; note?: string },
+  input: { entryId: string; note?: string },
 ) {
   if (!DEPARTMENT_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError(
@@ -603,7 +603,7 @@ export async function verifyEntry(
 /** Compute an entry's result. Worth and observed are written to the row so a
  *  historic result stays reproducible, but redactEntry strips them on the way
  *  out. */
-export async function evaluateEntry(viewer: Viewer, entryId: number) {
+export async function evaluateEntry(viewer: Viewer, entryId: string) {
   requireOrgAdmin(viewer);
   const entry = await loadEntry(viewer, entryId);
 
@@ -675,7 +675,7 @@ export async function evaluateEntry(viewer: Viewer, entryId: number) {
 }
 
 async function persistOutcome(
-  entryId: number,
+  entryId: string,
   o: { totalObserved: number; totalTarget: number; rtp: number | null; partial: boolean; grade?: string | null },
 ) {
   const { gradeOf } = await import('./scoring');
@@ -701,7 +701,7 @@ async function persistOutcome(
 /** The HOD records their own score with a mandatory justification. */
 export async function recordHodScore(
   viewer: Viewer,
-  input: { entryId: number; category: FormKey; hodScore: number; justification: string },
+  input: { entryId: string; category: FormKey; hodScore: number; justification: string },
 ) {
   if (!input.justification?.trim()) {
     throw new AppraisalError('A written justification is required before a score can be changed.', 400);
@@ -753,7 +753,7 @@ export async function recordHodScore(
 /** The appraisee accepts or contests the HOD's adjustment. */
 export async function respondToHod(
   viewer: Viewer,
-  input: { entryId: number; category: FormKey; accepted: boolean },
+  input: { entryId: string; category: FormKey; accepted: boolean },
 ) {
   const entry = await loadEntry(viewer, input.entryId);
   if (viewer.name !== entry.pesuser_name) {
@@ -798,7 +798,7 @@ export async function respondToHod(
 /** The external auditor's figure is final. */
 export async function recordAuditorScore(
   viewer: Viewer,
-  input: { entryId: number; category: FormKey; score: number; note?: string },
+  input: { entryId: string; category: FormKey; score: number; note?: string },
 ) {
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError('Only the appraisal auditor can resolve a referred score.', 403);
@@ -874,7 +874,7 @@ function requireOrgAdmin(viewer: Viewer) {
   }
 }
 
-async function loadEntry(viewer: Viewer, entryId: number) {
+async function loadEntry(viewer: Viewer, entryId: string) {
   const entry = await prisma.appraisal_entry.findFirst({
     where: { id: entryId, org_id: viewer.orgId },
   });
@@ -888,7 +888,7 @@ export { MIN_STUDENT_EVALUATIONS, questionnaireFor };
 // Forms 2 and 4: the course and indicator registries
 // ---------------------------------------------------------------------------
 
-export async function listCourses(viewer: Viewer, periodId: number) {
+export async function listCourses(viewer: Viewer, periodId: string) {
   return prisma.appraisal_course.findMany({
     where: { org_id: viewer.orgId, period_id: periodId },
     orderBy: { code: 'asc' },
@@ -900,7 +900,7 @@ export async function listCourses(viewer: Viewer, periodId: number) {
  *  themselves", which also follows from the admin entering no data at all. */
 export async function addCourse(
   viewer: Viewer,
-  input: { periodId: number; title: string; code: string; unit: number; dept?: string },
+  input: { periodId: string; title: string; code: string; unit: number; dept?: string },
 ) {
   if (ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError(
@@ -930,7 +930,7 @@ export async function addCourse(
   });
 }
 
-export async function removeCourse(viewer: Viewer, courseId: number) {
+export async function removeCourse(viewer: Viewer, courseId: string) {
   if (ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError(
       'Courses are managed by the staff who teach them.',
@@ -940,7 +940,7 @@ export async function removeCourse(viewer: Viewer, courseId: number) {
   return prisma.appraisal_course.deleteMany({ where: { id: courseId, org_id: viewer.orgId } });
 }
 
-export async function listIndicators(viewer: Viewer, periodId: number, pesuserName: string) {
+export async function listIndicators(viewer: Viewer, periodId: string, pesuserName: string) {
   return prisma.appraisal_indicator.findMany({
     where: { org_id: viewer.orgId, period_id: periodId, pesuser_name: pesuserName },
     orderBy: { category: 'asc' },
@@ -952,9 +952,9 @@ export async function listIndicators(viewer: Viewer, periodId: number, pesuserNa
 export async function setIndicators(
   viewer: Viewer,
   input: {
-    periodId: number;
+    periodId: string;
     pesuserName: string;
-    indicators: { category: string; label: string; courseId?: number }[];
+    indicators: { category: string; label: string; courseId?: string }[];
   },
 ) {
   await prisma.appraisal_indicator.deleteMany({
@@ -981,7 +981,7 @@ export async function setIndicators(
 
 export async function saveQuestionnaire(
   viewer: Viewer,
-  input: { entryId: number; answers: Record<string, { answer?: boolean | null; note?: string }> },
+  input: { entryId: string; answers: Record<string, { answer?: boolean | null; note?: string }> },
 ) {
   const entry = await loadEntry(viewer, input.entryId);
   if (viewer.name !== entry.pesuser_name && !ORG_ADMIN_ROLES.includes(viewer.role)) {
@@ -1001,7 +1001,7 @@ export async function saveQuestionnaire(
 
 /** Who has not yet submitted. The model requires an HOD to see this for their
  *  department, and Estab./Personnel to see which departments are outstanding. */
-export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
+export async function outstandingSubmissions(viewer: Viewer, periodId: string) {
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
 
   // A Dean or Division head oversees a faculty, which is several departments,
@@ -1052,7 +1052,7 @@ export async function outstandingSubmissions(viewer: Viewer, periodId: number) {
 /** The Dean approves a department's submissions. They do not score individuals. */
 export async function deanApproveDepartment(
   viewer: Viewer,
-  input: { periodId: number; dept: string },
+  input: { periodId: string; dept: string },
 ) {
   const allowed = ORG_ADMIN_ROLES.includes(viewer.role) || viewer.role === 'dean';
   if (!allowed) throw new AppraisalError('Only a Dean or the organization admin can approve a department.', 403);
@@ -1340,7 +1340,7 @@ function stageLabel(status: string) {
  *
  *  Only the organization admin may run it: it names individuals whose figures sit
  *  outside their department's band, which is not something a colleague should see. */
-export async function runAppraisalIntegrity(viewer: Viewer, periodId: number): Promise<IntegrityReport> {
+export async function runAppraisalIntegrity(viewer: Viewer, periodId: string): Promise<IntegrityReport> {
   if (!ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError('Only the organization administrator can run the data integrity test.', 403);
   }

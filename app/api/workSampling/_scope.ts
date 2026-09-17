@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 
 /** The study's org id, or null if the study does not exist. */
-export async function orgOfStudy(studyId: number): Promise<number | null> {
+export async function orgOfStudy(studyId: string): Promise<string | null> {
   const study = await prisma.workSamplingStudy.findUnique({
     where: { id: studyId },
     select: { org_id: true },
@@ -16,7 +16,7 @@ export async function orgOfStudy(studyId: number): Promise<number | null> {
 }
 
 /** The org id owning the study a position belongs to. */
-export async function orgOfPosition(positionId: number): Promise<number | null> {
+export async function orgOfPosition(positionId: string): Promise<string | null> {
   const position = await prisma.workSamplingPosition.findUnique({
     where: { id: positionId },
     select: { study: { select: { org_id: true } } },

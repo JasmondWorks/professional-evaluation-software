@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     return NextResponse.json(
       await respondToHod(viewer, {
-        entryId: Number(body.entryId),
+        entryId: body.entryId,
         criterion: body.criterion,
         accepted: Boolean(body.accepted),
       }),

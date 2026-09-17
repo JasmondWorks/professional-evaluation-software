@@ -17,7 +17,7 @@ export default function Questionnaire({
   initial,
   model,
 }: {
-  entryId: number;
+  entryId: string;
   locked: boolean;
   model: AppraisalModel;
   initial: Record<string, Answer> | null;

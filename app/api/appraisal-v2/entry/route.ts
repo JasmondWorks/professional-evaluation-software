@@ -15,10 +15,10 @@ export async function GET(req: Request) {
 
     // Listing mode: everyone being appraised in a period.
     if (periodId && !url.searchParams.get('entryId')) {
-      return NextResponse.json({ entries: await listEntries(viewer, Number(periodId)) });
+      return NextResponse.json({ entries: await listEntries(viewer, periodId) });
     }
 
-    const entryId = Number(url.searchParams.get('entryId'));
+    const entryId = url.searchParams.get('entryId') ?? '';
 
     const entry = await prisma.appraisal_entry.findFirst({
       where: { id: entryId, org_id: viewer.orgId },

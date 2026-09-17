@@ -13,9 +13,9 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Automatically initialize the database with backup schema/data and migrations
-      - ./backup.sql:/docker-entrypoint-initdb.d/01-backup.sql
-      - ./DATABASE_MIGRATION.sql:/docker-entrypoint-initdb.d/02-migration.sql
+      # Schema is applied by `prisma db push` (see package.json: dev:local),
+      # not by init SQL here — backup.sql predates most current models and
+      # would leave the database out of sync with prisma/schema.prisma.
 
   # Optional/Full-stack configuration:
   # web:

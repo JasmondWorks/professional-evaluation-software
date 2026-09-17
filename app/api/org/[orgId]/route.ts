@@ -13,8 +13,8 @@ export async function GET(
   const auth = authorize(tokenFromRequest(req), {})
   if (!auth.ok) return auth.response
 
-  const orgId = Number(params.orgId)
-  if (!Number.isFinite(orgId)) {
+  const orgId = params.orgId
+  if (!orgId) {
     return NextResponse.json(
       { status: 400, message: 'Invalid org id' },
       { status: 400 }

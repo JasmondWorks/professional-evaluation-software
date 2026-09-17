@@ -12,6 +12,6 @@ export async function POST(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { entryId, note } = await req.json();
-    return NextResponse.json({ entry: await verifyEntry(viewer, { entryId: Number(entryId), note }) });
+    return NextResponse.json({ entry: await verifyEntry(viewer, { entryId: entryId, note }) });
   } catch (err) { return fail(err); }
 }

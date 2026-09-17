@@ -24,11 +24,11 @@ import { openPeriod, closePeriod } from '../app/lib/appraisal/service';
 
 const prisma = new PrismaClient();
 const ORG = '__templates__';
-let ORG_ID = 0;
+let ORG_ID = '';
 
-const estab: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'academic' };
-const second: Viewer = { orgId: 0, org: ORG, name: 'Second Officer', role: 'admin', productCategory: 'academic' };
-const company: Viewer = { orgId: 0, org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'company' };
+const estab: Viewer = { orgId: '', org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'academic' };
+const second: Viewer = { orgId: '', org: ORG, name: 'Second Officer', role: 'admin', productCategory: 'academic' };
+const company: Viewer = { orgId: '', org: ORG, name: 'Estab Officer', role: 'admin', productCategory: 'company' };
 
 let pass = 0;
 let fail = 0;
@@ -75,6 +75,7 @@ async function main() {
   for (const viewer of [estab, second, company]) {
     viewer.orgId = newOrg.id;
   }
+  ORG_ID = newOrg.id;
   await ensureSystemTemplates();
 
   // -------------------------------------------------------------------------

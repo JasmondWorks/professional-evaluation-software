@@ -8,7 +8,7 @@ datasource db {
 }
 
 model OptimizationResult {
-  id                 Int       @id @default(autoincrement())
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   mode               String    @db.VarChar(50)
   optimalK           Int
   efficiencyValue    Float?
@@ -31,15 +31,15 @@ model OptimizationResult {
   t4                 Float?
   S0                 Float?
   createdAt          DateTime? @default(now()) @db.Timestamp(6)
-  org_id             Int?
+  org_id             String?   @db.Uuid
 }
 
 // A stress evaluation cycle for an org: the two collection windows, the current
 // phase, and the per-category limits computed by "Run Setting" (the mean of
 // Form 5 across all staff), which Form 6 then uses as its category maxes.
 model StressCycle {
-  id                 Int       @id @default(autoincrement())
-  org_id             Int
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id             String    @db.Uuid
   // settings_open | settings_closed | feeling_open | evaluated
   phase              String    @default("settings_open") @db.VarChar(30)
   mode               String    @default("once") @db.VarChar(20)
@@ -57,7 +57,7 @@ model StressCycle {
 
   // --- WellbeingSession linkage (see docs/stress-sessions.md) ---
   // The session (a run of iterations sharing one F1 baseline) this cycle is in.
-  session_id              Int?
+  session_id              String?           @db.Uuid
   session                 WellbeingSession? @relation(fields: [session_id], references: [id])
   // Iteration `i` within the session. First real cycle = 1.
   iteration               Int?
@@ -65,7 +65,7 @@ model StressCycle {
   limits_source           String?           @db.VarChar(30)
   // Soft reference (no FK, to avoid a self-relation) to the cycle whose limits
   // were reused/loaded. `category_limits` above is the resolved snapshot.
-  inherited_from_cycle_id Int?
+  inherited_from_cycle_id String?           @db.Uuid
 
   feelingResults FeelingResult[]
 
@@ -82,8 +82,8 @@ model StressCycle {
 // and a new one begins. Nothing is deleted — old sessions/cycles stay for
 // history recall. See docs/stress-sessions.md.
 model WellbeingSession {
-  id                 Int       @id @default(autoincrement())
-  org_id             Int
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id             String    @db.Uuid
   // active | reset | closed
   status             String    @default("active") @db.VarChar(20)
   // Iteration of the latest cycle (0 = just started / just reset).
@@ -107,10 +107,10 @@ model WellbeingSession {
 // The feeling side of a cycle's outcome. Kept separate from the stress side
 // (stress_analysis_results / ANOVA) — the two are never mixed in one row.
 model FeelingResult {
-  id              Int               @id @default(autoincrement())
-  cycle_id        Int
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cycle_id        String            @db.Uuid
   cycle           StressCycle       @relation(fields: [cycle_id], references: [id])
-  session_id      Int?
+  session_id      String?           @db.Uuid
   session         WellbeingSession? @relation(fields: [session_id], references: [id])
   // Mean feeling across all staff who took part in this cycle.
   feeling_mean    Float?
@@ -125,7 +125,7 @@ model FeelingResult {
 }
 
 model StaffEstimation {
-  id                      Int       @id @default(autoincrement())
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   methodType              String    @db.VarChar(50)
   staffNeeded             Float?
   createdAt               DateTime? @default(now()) @db.Timestamp(6)
@@ -145,13 +145,13 @@ model StaffEstimation {
   utilizationFactor       Float?
   annualManHours          Float?
   standardManHours        Float?
-  org_id                  Int?
+  org_id                  String?   @db.Uuid
 }
 
 model appraisal {
-  id                                Int      @id @default(autoincrement())
+  id                                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name                      String   @db.VarChar(255)
-  org_id                            Int?
+  org_id                            String?  @db.Uuid
   teaching_quality_evaluation       Decimal? @db.Decimal
   research_quality_evaluation       Decimal? @db.Decimal
   administrative_quality_evaluation Decimal? @db.Decimal
@@ -166,7 +166,7 @@ model appraisal {
 }
 
 model auditor_responses {
-  id         Int       @id @default(autoincrement())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String    @db.VarChar(255)
   email      String    @unique @db.VarChar(255)
   gsm        String    @db.VarChar(50)
@@ -179,9 +179,9 @@ model auditor_responses {
 }
 
 model auditor_survey_responses {
-  id           Int       @id @default(autoincrement())
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name String?   @db.VarChar(255)
-  org_id       Int?
+  org_id       String?   @db.Uuid
   section      String?   @db.VarChar(100)
   question     String?   @db.VarChar(255)
   response     String?   @db.VarChar(255)
@@ -189,7 +189,7 @@ model auditor_survey_responses {
 }
 
 model badges {
-  id           Int       @id @default(autoincrement())
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String    @db.VarChar(255)
   category     String?   @db.VarChar(100)
   sub_category String?   @db.VarChar(100)
@@ -199,9 +199,9 @@ model badges {
 }
 
 model counter_appraisal {
-  id                                Int      @id @default(autoincrement())
+  id                                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name                      String   @db.VarChar(255)
-  org_id                            Int?
+  org_id                            String?  @db.Uuid
   teaching_quality_evaluation       Decimal? @db.Decimal(5, 2)
   research_quality_evaluation       Decimal? @db.Decimal(5, 2)
   administrative_quality_evaluation Decimal? @db.Decimal(5, 2)
@@ -212,9 +212,9 @@ model counter_appraisal {
 }
 
 model counter_stress {
-  id                            Int       @id @default(autoincrement())
+  id                            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name                  String    @db.VarChar(255)
-  org_id                        Int?
+  org_id                        String?   @db.Uuid
   dept                          String?   @db.VarChar(255)
   created_at                    DateTime? @default(now()) @db.Timestamp(6)
   stress_theme                  Int?
@@ -224,7 +224,7 @@ model counter_stress {
 }
 
 model facilities {
-  id                      Int       @id @default(autoincrement())
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   identification_symbol   String?   @db.VarChar(100)
   description_of_facility String
   location                String?
@@ -232,12 +232,12 @@ model facilities {
   type                    String?   @db.VarChar(100)
   priority_rating         String?   @db.VarChar(50)
   remarks                 String?
-  org_id                  Int?
+  org_id                  String?   @db.Uuid
   created_at              DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model first_book_of_record {
-  id            Int       @id @default(autoincrement())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String    @db.VarChar(255)
   achievement   String    @db.VarChar(255)
   category      String?   @db.VarChar(100)
@@ -253,7 +253,7 @@ model first_book_of_record {
 }
 
 model goals {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   description String
   status      Int?
@@ -264,7 +264,7 @@ model goals {
 }
 
 model hall_of_fame {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String    @db.VarChar(255)
   title       String?   @db.VarChar(255)
   image_url   String?   @db.VarChar(500)
@@ -278,7 +278,7 @@ model hall_of_fame {
 }
 
 model index {
-  id               Int       @id @default(autoincrement())
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   redundancy       Decimal?  @db.Decimal
   productivity     Decimal?  @db.Decimal
   utility          Decimal?  @db.Decimal
@@ -289,7 +289,7 @@ model index {
   output_resources Decimal?  @db.Decimal
   input_resources  Decimal?  @db.Decimal
   dept             String?   @db.VarChar(255)
-  org_id           Int?
+  org_id           String?   @db.Uuid
   created_at       DateTime? @default(now()) @db.Timestamp(6)
 }
 
@@ -301,12 +301,12 @@ model lead_scores {
   compatibility    Float?
   use_of_resources Float?
 
-  @@id([pesuser_name, dept])
+  @@unique([pesuser_name, dept])
 }
 
 model motivation {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -319,13 +319,13 @@ model motivation {
 // the current row and opens a new one, so each tenure's scheme stays on record.
 // A saved maintenance computation and the preventive schedule it produced.
 model maintenance_run {
-  id               Int       @id @default(autoincrement())
-  org_id           Int
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id           String    @db.Uuid
   /// The facility's description, kept as it read on the day of the run.
   facility         String    @db.VarChar(255)
   /// The registered machine this run belongs to. The description can be edited;
   /// the register entry is what a run is actually against.
-  facility_id      Int?
+  facility_id      String?   @db.Uuid
   facility_symbol  String?   @db.VarChar(100)
   /// Mean time between failures, the figure the whole plan rests on.
   mtbf             Float?
@@ -345,8 +345,8 @@ model maintenance_run {
 }
 
 model motivation_scheme {
-  id         Int       @id @default(autoincrement())
-  org_id     Int
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String    @db.Uuid
   tenure     String    @db.VarChar(255)
   selections Json      @default("[]")
   additions  Json      @default("[]")
@@ -360,9 +360,9 @@ model motivation_scheme {
 
 // Every award given and who received it — page 109 requires the record.
 model motivation_award {
-  id           Int       @id @default(autoincrement())
-  org_id       Int
-  user_id      Int?
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id       String    @db.Uuid
+  user_id      String?   @db.Uuid
   staff_name   String    @db.VarChar(255)
   dept         String?   @db.VarChar(255)
   period       String    @db.VarChar(20)
@@ -378,8 +378,8 @@ model motivation_award {
 }
 
 model non_academic_appraisal {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   output      Decimal   @db.Decimal(10, 2)
   quality     Decimal   @db.Decimal(10, 2)
   efficiency  Decimal   @db.Decimal(10, 2)
@@ -394,9 +394,9 @@ model non_academic_appraisal {
 }
 
 model notifications {
-  id         Int       @id @default(autoincrement())
-  user_id    Int
-  org_id     Int?
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  org_id     String?   @db.Uuid
   title      String
   message    String
   is_read    Boolean?  @default(false)
@@ -405,7 +405,7 @@ model notifications {
 }
 
 model org {
-  id                Int       @id @default(autoincrement())
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // Display text only — not unique. org.id is the real tenant identifier;
   // two organizations may legitimately share a name.
   name              String    @db.VarChar(255)
@@ -420,8 +420,8 @@ model org {
 }
 
 model org_structure_results {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   section     Int
   result      Decimal?  @db.Decimal(10, 4)
   numerator   Decimal[] @db.Decimal
@@ -431,7 +431,7 @@ model org_structure_results {
 }
 
 model performance {
-  id      Int    @id @default(autoincrement())
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   dept    String
   type    String
   yield   String
@@ -439,8 +439,8 @@ model performance {
 }
 
 model performance_result {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -450,7 +450,7 @@ model performance_result {
 }
 
 model permission {
-  id                              Int     @id @default(autoincrement())
+  id                              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   can_manage_user_roles           Boolean @default(false)
   can_access_employee_data        Boolean @default(false)
   access_employee_all             Boolean @default(false)
@@ -466,12 +466,12 @@ model permission {
   manage_reviews_subordinates     Boolean @default(false)
   manage_reviews_selected         Boolean @default(false)
   user_id                         String? @db.VarChar(255)
-  org_id                          Int?
+  org_id                          String? @db.Uuid
 }
 
 model personnel_redundancy {
-  id                 Int       @id @default(autoincrement())
-  org_id             Int?
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id             String?   @db.Uuid
   actual_staff       Int
   optimal_staff      Int
   low_threshold      Int
@@ -482,8 +482,8 @@ model personnel_redundancy {
 }
 
 model personnel_utilization {
-  id                Int       @id @default(autoincrement())
-  org_id            Int
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String    @db.Uuid
   a_ij              Decimal?  @db.Decimal(10, 4)
   lambda            Decimal?  @db.Decimal(10, 6)
   mu                Decimal?  @db.Decimal(10, 6)
@@ -518,8 +518,8 @@ model personnel_utilization {
 }
 
 model supervision_cost {
-  id         Int       @id @default(autoincrement())
-  org_id     Int
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String    @db.Uuid
   a_ij       Decimal?  @db.Decimal(10, 4)
   a_cost     Decimal?  @db.Decimal(12, 4)
   b_cost     Decimal?  @db.Decimal(12, 4)
@@ -536,7 +536,7 @@ model supervision_cost {
 }
 
 model pesuser {
-  id                     Int             @id @unique(map: "pesuser_id_unique") @default(autoincrement())
+  id                     String          @id @unique(map: "pesuser_id_unique") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                   String          @db.VarChar(255)
   email                  String          @unique @db.VarChar(255)
   password               String          @db.VarChar(255)
@@ -568,7 +568,7 @@ model pesuser {
   // Section 21 counts these to get the real head count per level.
   management_level       Int?
   image                  String?         @db.VarChar(255)
-  org_id                 Int?
+  org_id                 String?         @db.Uuid
   dept                   String?         @db.VarChar(255)
   tier                   String?         @default("bronze") @db.VarChar(50)
   category               String?         @db.VarChar(100)
@@ -617,10 +617,10 @@ model plans {
 }
 
 model roles {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(255)
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String  @db.VarChar(255)
   assigned Int?
-  org_id   Int?
+  org_id   String? @db.Uuid
 
   // Which system preset this custom role behaves as for role-based UI
   // (sidebar, conditional components). Employees created with this role get
@@ -633,7 +633,7 @@ model roles {
 }
 
 model second_book_of_record {
-  id            Int       @id @default(autoincrement())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String    @db.VarChar(255)
   achievement   String    @db.VarChar(255)
   category      String?   @db.VarChar(100)
@@ -649,8 +649,8 @@ model second_book_of_record {
 }
 
 model staff_appraisal_results {
-  id                           Int       @id @default(autoincrement())
-  org_id                       Int
+  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                       String    @db.Uuid
   cwh                          Decimal?  @db.Decimal(10, 2)
   cbh                          Decimal?  @db.Decimal(10, 2)
   hd                           Decimal?  @db.Decimal(10, 2)
@@ -672,8 +672,8 @@ model staff_appraisal_results {
 }
 
 model staff_motivation {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   total_score Decimal   @db.Decimal(10, 2)
   rating      String
   thresholds  Json
@@ -683,19 +683,19 @@ model staff_motivation {
 }
 
 model staff_survey_responses {
-  id            Int       @id @default(autoincrement())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name  String    @db.VarChar(255)
   pesuser_email String    @db.VarChar(255)
-  org_id        Int?
+  org_id        String?   @db.Uuid
   dept          String?   @db.VarChar(255)
   responses     Json
   submitted_at  DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model stress {
-  id                            Int       @id @default(autoincrement())
+  id                            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_name                  String    @db.VarChar(255)
-  org_id                        Int?
+  org_id                        String?   @db.Uuid
   stress_theme                  Int?
   stress_feeling_frequency      Int?
   stress_category               Int?
@@ -704,7 +704,7 @@ model stress {
   assessment_data               Json?
   dept                          String?   @db.VarChar(255)
   // Which cycle this Form 6/7 submission belongs to (one submission per cycle).
-  cycle_id                      Int?
+  cycle_id                      String?   @db.Uuid
   // Two-tier approval. Tier 1: the department head (HOD) verifies & approves
   // their department's submissions (hod_approved). Tier 2: the faculty/division
   // head (Dean/Manager) then signs off the faculty — but only submissions that
@@ -725,8 +725,8 @@ model stress {
 }
 
 model stress_analysis_results {
-  id             Int       @id @default(autoincrement())
-  org_id         Int?
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id         String?   @db.Uuid
   group_by       String?   @db.VarChar(50)
   ssto           Float?
   sstr           Float?
@@ -743,8 +743,8 @@ model stress_analysis_results {
   // Per-cycle linkage (the stress side of a cycle's outcome; the feeling side
   // lives in FeelingResult). Nullable — soft FK for legacy rows. See
   // docs/stress-sessions.md.
-  cycle_id       Int?
-  session_id     Int?
+  cycle_id       String?   @db.Uuid
+  session_id     String?   @db.Uuid
   created_at     DateTime? @default(now()) @db.Timestamp(6)
 
   @@index([cycle_id])
@@ -752,7 +752,7 @@ model stress_analysis_results {
 }
 
 model stress_scores {
-  id                       Int      @id @default(autoincrement())
+  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizational           Decimal? @default(0) @db.Decimal
   student                  Decimal? @default(0) @db.Decimal
   administrative           Decimal? @default(0) @db.Decimal
@@ -763,13 +763,13 @@ model stress_scores {
   academic_program         Decimal? @default(0) @db.Decimal
   negative_public_attitude Decimal? @default(0) @db.Decimal
   misc                     Decimal? @default(0) @db.Decimal
-  org_id                   Int?
+  org_id                   String?  @db.Uuid
   dept                     String?  @db.VarChar(255)
   user_id                  String?  @db.Uuid
   user_name                String?  @db.VarChar(255)
   // Which stress cycle this Form 5 submission belongs to (scopes "Run Setting"
   // and enforces one submission per staff per cycle).
-  cycle_id                 Int?
+  cycle_id                 String?  @db.Uuid
 }
 
 model subscription_events {
@@ -783,7 +783,7 @@ model subscription_events {
 }
 
 model subscriptions {
-  pesuser_id             Int
+  pesuser_id             String                @db.Uuid
   plan_id                String                @db.Uuid
   paypal_subscription_id String                @unique
   status                 String                @db.VarChar(50)
@@ -803,10 +803,10 @@ model subscriptions {
 }
 
 model subscriptions_info {
-  id            Int       @id @default(autoincrement())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pesuser_email String    @db.VarChar(255)
   pesuser_name  String?   @db.VarChar(255)
-  org_id        Int?
+  org_id        String?   @db.Uuid
   plan_code     String    @db.VarChar(100)
   plan_name     String?   @db.VarChar(100)
   reference     String    @unique @db.VarChar(100)
@@ -818,8 +818,8 @@ model subscriptions_info {
 }
 
 model unit_head_overloading {
-  id                Int       @id @default(autoincrement())
-  org_id            Int
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id            String    @db.Uuid
   actual_hours      Decimal   @db.Decimal(10, 2)
   num_subordinates  Int
   extra_complexity  Decimal   @db.Decimal(10, 2)
@@ -832,8 +832,8 @@ model unit_head_overloading {
 }
 
 model student_teacher_ratio {
-  id               Int       @id @default(autoincrement())
-  org_id           Int?
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id           String?   @db.Uuid
   dept             String?   @db.VarChar(255)
   optimalK         Int?
   totalStaffNeeded Int?
@@ -849,8 +849,8 @@ model student_teacher_ratio {
 }
 
 model stress_evaluation_history {
-  id              Int       @id @default(autoincrement())
-  org_id          Int?
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id          String?   @db.Uuid
   stress_factor   Float?
   pressure_factor Float?
   conflict_factor Float?
@@ -860,7 +860,7 @@ model stress_evaluation_history {
 
 // Counter-appraisal totals (used by /api/counterTotals).
 model counter_totals {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   section     Int
   result      Decimal?  @db.Decimal
   numerator   Decimal[] @db.Decimal
@@ -870,9 +870,9 @@ model counter_totals {
 
 // HOD → user data-entry assignments (used by /api/hod-assign).
 model hod_assignments {
-  id         Int       @id @default(autoincrement())
-  hod_id     Int
-  user_id    Int
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hod_id     String    @db.Uuid
+  user_id    String    @db.Uuid
   created_at DateTime? @default(now()) @db.Timestamp(6)
 
   @@unique([hod_id, user_id])
@@ -882,8 +882,8 @@ model hod_assignments {
 // These tables were previously created via ad-hoc raw DDL and are absent from
 // fresh databases; modelled here so `db push` provisions them everywhere.
 model WorkSamplingStudy {
-  id                          Int                    @id @default(autoincrement())
-  org_id                      Int?
+  id                          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id                      String?                @db.Uuid
   department                  String?
   analyst                     String?
   authorizedBy                String?
@@ -908,8 +908,8 @@ model WorkSamplingStudy {
 }
 
 model WorkSamplingPosition {
-  id                   Int                       @id @default(autoincrement())
-  studyId              Int
+  id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studyId              String                    @db.Uuid
   name                 String
   department           String?
   performanceAllowance Float?
@@ -918,8 +918,8 @@ model WorkSamplingPosition {
 }
 
 model WorkSamplingObservation {
-  id                Int                  @id @default(autoincrement())
-  positionId        Int
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  positionId        String               @db.Uuid
   date              String
   time              String
   isBusy            Boolean?
@@ -940,8 +940,8 @@ model WorkSamplingObservation {
 // Every score belongs to exactly one period so figures can never mix across
 // periods.
 model appraisal_period {
-  id          Int       @id @default(autoincrement())
-  org_id      Int
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String    @db.Uuid
   frequency   String    @db.VarChar(20)
   starts_on   DateTime  @db.Date
   ends_on     DateTime  @db.Date
@@ -997,7 +997,7 @@ model appraisal_template {
   name               String  @db.VarChar(160)
   /// null for a system template, which every organization can see and none can
   /// edit. Otherwise the owning organization.
-  org_id             Int?
+  org_id             String? @db.Uuid
   is_system          Boolean @default(false)
   /// draft   — still being filled in, cannot be put in force
   /// ready   — complete and frozen, awaiting a second person's approval
@@ -1030,7 +1030,7 @@ model appraisal_template {
 /// One target inside a template. Mirrors appraisal_target's keying exactly, so
 /// copying a template into a period is a straight field-for-field copy.
 model appraisal_template_target {
-  id          Int     @id @default(autoincrement())
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   template_id String  @db.Uuid
   position    String? @db.VarChar(60)
   post        String? @db.VarChar(60)
@@ -1047,8 +1047,8 @@ model appraisal_template_target {
 /// organization per scope, so an academic institution can keep the standard for
 /// academic staff while running its own for non-academic staff (client answer 7).
 model org_template_choice {
-  id          Int      @id @default(autoincrement())
-  org_id      Int
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id      String   @db.Uuid
   scope       String   @db.VarChar(20)
   template_id String   @db.Uuid
   chosen_by   String?  @db.VarChar(255)
@@ -1060,9 +1060,9 @@ model org_template_choice {
 }
 
 model appraisal_target {
-  id        Int     @id @default(autoincrement())
-  org_id    Int
-  period_id Int?
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id    String  @db.Uuid
+  period_id String? @db.Uuid
   // 'academic' | 'non_academic'
   model     String  @db.VarChar(20)
   // Academic positions key on position; administration keys on post held;
@@ -1084,10 +1084,10 @@ model appraisal_target {
 // One staff member's appraisal within a period: the five category results and
 // the reconciliation state. `flagged` is visible only to the organization admin.
 model appraisal_entry {
-  id           Int     @id @default(autoincrement())
-  org_id       Int
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id       String  @db.Uuid
   dept         String? @db.VarChar(255)
-  period_id    Int
+  period_id    String  @db.Uuid
   pesuser_name String  @db.VarChar(255)
   model        String  @db.VarChar(20)
   position     String? @db.VarChar(60)
@@ -1138,8 +1138,8 @@ model appraisal_entry {
 // must never be sent to the browser: the client confirmed the worth table stays
 // unknown to every user, the organization admin included.
 model appraisal_category_score {
-  id       Int    @id @default(autoincrement())
-  entry_id Int
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entry_id String @db.Uuid
   category String @db.VarChar(40)
 
   // Line-item scores as entered, kept so a result can be audited back to source.
@@ -1179,8 +1179,8 @@ model appraisal_category_score {
 // A piece of evidence feeding the quantity side: which quantification rule it
 // falls under, and its measure (pages, semester hours, or certified works).
 model appraisal_evidence {
-  id           Int      @id @default(autoincrement())
-  entry_id     Int
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entry_id     String   @db.Uuid
   category     String   @db.VarChar(40)
   rule_key     String   @db.VarChar(60)
   label        String?  @db.VarChar(255)
@@ -1198,9 +1198,9 @@ model appraisal_evidence {
 // The course registry (Form 2). Course units feed the teaching quantity, so a
 // course must exist before a lecturer can be appraised on it.
 model appraisal_course {
-  id         Int       @id @default(autoincrement())
-  org_id     Int
-  period_id  Int
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String    @db.Uuid
+  period_id  String    @db.Uuid
   dept       String?   @db.VarChar(255)
   title      String    @db.VarChar(255)
   code       String    @db.VarChar(50)
@@ -1216,15 +1216,15 @@ model appraisal_course {
 // Form 4: which departmental indicators apply to a given staff member. This is
 // what defines the work a person will actually be appraised on.
 model appraisal_indicator {
-  id           Int       @id @default(autoincrement())
-  org_id       Int
-  period_id    Int
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id       String    @db.Uuid
+  period_id    String    @db.Uuid
   pesuser_name String    @db.VarChar(255)
   // Which achievement category the indicator belongs to.
   category     String    @db.VarChar(40)
   label        String    @db.VarChar(255)
   // Set when the indicator is a registered course.
-  course_id    Int?
+  course_id    String?   @db.Uuid
   created_at   DateTime? @default(now()) @db.Timestamp(6)
 
   period appraisal_period @relation(fields: [period_id], references: [id], onDelete: Cascade)
@@ -1247,8 +1247,8 @@ model appraisal_indicator {
 // reason or the auditor's ruling.
 
 model performance_period {
-  id            Int       @id @default(autoincrement())
-  org_id        Int
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id        String    @db.Uuid
   frequency     String    @db.VarChar(20)
   starts_on     DateTime  @db.Date
   ends_on       DateTime  @db.Date
@@ -1275,10 +1275,10 @@ model performance_period {
 // One staff member's performance within a period: the fifth result, its RTP and
 // grade, and the workflow state. `flagged` is visible only to the org admin.
 model performance_entry {
-  id           Int     @id @default(autoincrement())
-  org_id       Int
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id       String  @db.Uuid
   dept         String? @db.VarChar(255)
-  period_id    Int
+  period_id    String  @db.Uuid
   pesuser_name String  @db.VarChar(255)
 
   // The fifth result: the mean of the four criteria, on a 0-100 scale.
@@ -1314,8 +1314,8 @@ model performance_entry {
 // One criterion's result within an entry, holding the staff member's own figure,
 // the head's counter-score with its mandatory reason, and the auditor's ruling.
 model performance_criterion_score {
-  id        Int    @id @default(autoincrement())
-  entry_id  Int
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entry_id  String @db.Uuid
   // 'competence' | 'integrity' | 'compatibility' | 'use_of_resources'
   criterion String @db.VarChar(40)
 
@@ -1345,9 +1345,9 @@ model performance_criterion_score {
 // A staff member drawn at random to score their head. One row per (period, head,
 // rater). The draw happens once, when the org admin closes data collection.
 model hod_performance_rater {
-  id         Int    @id @default(autoincrement())
-  org_id     Int
-  period_id  Int
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String @db.Uuid
+  period_id  String @db.Uuid
   dept       String @db.VarChar(255)
   hod_name   String @db.VarChar(255)
   // The selected staff member. Their identity is never shown to the head.
@@ -1371,9 +1371,9 @@ model hod_performance_rater {
 // A head's own performance result for the period, aggregated from the returns of
 // the staff drawn to score them.
 model hod_performance_result {
-  id        Int    @id @default(autoincrement())
-  org_id    Int
-  period_id Int
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id    String @db.Uuid
+  period_id String @db.Uuid
   dept      String @db.VarChar(255)
   hod_name  String @db.VarChar(255)
 
@@ -1411,7 +1411,7 @@ model hod_performance_result {
 /// response is kept so the replay is byte-identical to what they got the first
 /// time.
 model webhook_deliveries {
-  id                Int      @id @default(autoincrement())
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // Which integration sent it. One today ("provision"), named so a second one
   // cannot collide on idempotency keys.
   source            String   @db.VarChar(60)
@@ -1421,7 +1421,7 @@ model webhook_deliveries {
   payment_reference String?  @db.VarChar(255)
   status_code       Int
   response          Json
-  org_id            Int?
+  org_id            String?  @db.Uuid
   created_at        DateTime @default(now()) @db.Timestamp(6)
 
   @@unique([source, idempotency_key], map: "webhook_deliveries_key_unique")
@@ -1429,8 +1429,8 @@ model webhook_deliveries {
 }
 
 model org_entitlements {
-  id              Int      @id @default(autoincrement())
-  org_id          Int
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id          String   @db.Uuid
   // A key from ENTITLEMENTS in app/lib/billing/entitlements.ts.
   entitlement_key String   @db.VarChar(80)
   // true grants a key the plan does not include, false withdraws one it does.
@@ -1444,8 +1444,8 @@ model org_entitlements {
 }
 
 model model_access {
-  id         Int      @id @default(autoincrement())
-  org_id     Int
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String   @db.Uuid
   role       String   @db.VarChar(60)
   // A key from MODEL_CATALOG in app/lib/models/catalog.ts.
   model_key  String   @db.VarChar(60)
