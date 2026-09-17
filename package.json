@@ -18,6 +18,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:wait": "wait-on -t 60000 tcp:localhost:5434",
     "db:local:push": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon — refusing db push outside local Docker.')\" && prisma db push --skip-generate --accept-data-loss",
+    "db:reset": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon — refusing to reset outside local Docker.')\" && prisma db push --force-reset --skip-generate --accept-data-loss && node -e \"require('fs').rmSync('LOCAL_SEED_CREDENTIALS.md',{force:true})\"",
     "dev:local": "npm run db:up && npm run db:wait && npm run db:local:push && concurrently -n docker,next -c blue,green \"docker compose logs -f db\" \"next dev\""
   },
   "dependencies": {

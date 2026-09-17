@@ -13,7 +13,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { isLocalSeeded, seedLocalOrg, type LocalSeedInput } from '../_lib/localSeed';
+import { isLocalSeeded, readCredentialsFile, seedLocalOrg, type LocalSeedInput } from '../_lib/localSeed';
 
 function isLocalDatabase(): boolean {
   const url = process.env.DATABASE_URL || '';
@@ -35,7 +35,10 @@ export async function GET() {
   if (blocked) return blocked;
 
   const seeded = await isLocalSeeded();
-  return NextResponse.json({ seeded });
+  return NextResponse.json({
+    seeded,
+    credentialsText: seeded ? readCredentialsFile() : null,
+  });
 }
 
 export async function POST(req: Request) {

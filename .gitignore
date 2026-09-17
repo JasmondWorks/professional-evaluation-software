@@ -23,6 +23,9 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
+# Plaintext credentials written by the /local-seed form — never commit
+LOCAL_SEED_CREDENTIALS.md
+
 # macOS
 .DS_Store
 

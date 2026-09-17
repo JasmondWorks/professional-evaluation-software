@@ -24,6 +24,7 @@ type SeedResult = {
   adminEmail: string;
   employeesCreated: number;
   employeeErrors: { email: string; message: string }[];
+  credentialsText: string;
 };
 
 const CATEGORY_OPTIONS: { value: OrgCategory; label: string }[] = [
@@ -54,7 +55,8 @@ export default function LocalSeedPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SeedResult | null>(null);
-  const [nextKey, setNextKey] = useState(1);
+  const [savedCredentials, setSavedCredentials] = useState<string | null>(null);
+  const [nextKey, setNextKey] = useState(0);
 
   const [orgName, setOrgName] = useState('');
   const [category, setCategory] = useState<OrgCategory>('company');
@@ -64,12 +66,19 @@ export default function LocalSeedPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  const [employees, setEmployees] = useState<EmployeeRow[]>([emptyEmployee(0)]);
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
 
   useEffect(() => {
     fetch('/api/local-seed')
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((data) => setStatus(data.seeded ? 'seeded' : 'ready'))
+      .then((data) => {
+        if (data.seeded) {
+          setSavedCredentials(data.credentialsText ?? null);
+          setStatus('seeded');
+        } else {
+          setStatus('ready');
+        }
+      })
       .catch(() => setStatus('blocked'));
   }, []);
 
@@ -139,6 +148,8 @@ export default function LocalSeedPage() {
   }
 
   if (status === 'seeded') {
+    const credentialsText = result?.credentialsText ?? savedCredentials;
+
     return (
       <div className="max-w-2xl mx-auto px-4 py-10">
         <PageHeader title="Local seed" subtitle="This database already has an organization." />
@@ -163,9 +174,25 @@ export default function LocalSeedPage() {
             </>
           ) : (
             <p className="text-sm text-body">
-              Seeding only ever runs once. Sign in with the admin account you already set up.
+              Seeding only ever runs once. These are the details from when it ran.
             </p>
           )}
+
+          {credentialsText ? (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-muted">
+                Also saved to <code>LOCAL_SEED_CREDENTIALS.md</code> in the project root.
+              </p>
+              <pre className="text-xs bg-canvas border border-line rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">
+                {credentialsText}
+              </pre>
+            </div>
+          ) : (
+            <p className="text-sm text-muted">
+              No saved credentials file was found — this org may have been seeded another way.
+            </p>
+          )}
+
           <Button href="/" variant="primary" className="w-fit">
             Go to sign in
           </Button>
@@ -178,7 +205,7 @@ export default function LocalSeedPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       <PageHeader
         title="Seed your local database"
-        subtitle="Runs once — create the organization, its admin, and any starting employees."
+        subtitle="Runs once — create the organization and its admin. Employees are optional; the admin can add them from within the app instead."
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -236,29 +263,30 @@ export default function LocalSeedPage() {
               required
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              hint="Stored hashed — this is the only place it's shown in plain text."
+              hint="Stored hashed — shown in plain text only here and in the saved credentials file."
             />
           </div>
         </Card>
 
         <Card className="p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-strong">Employees</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-strong">Employees</h2>
+              <p className="text-xs text-muted mt-0.5">
+                Optional — skip this and add employees later as the admin, from within the app.
+              </p>
+            </div>
             <Button type="button" variant="outline" size="sm" onClick={addEmployee}>
               Add employee
             </Button>
           </div>
 
-          {employees.length === 0 && (
-            <p className="text-sm text-muted">No employees yet — the org and admin will still be created.</p>
-          )}
-
-          <div className="flex flex-col gap-4">
-            {employees.map((row, i) => (
-              <div key={row.key} className="border border-line rounded-lg p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted">Employee {i + 1}</span>
-                  {employees.length > 1 && (
+          {employees.length > 0 && (
+            <div className="flex flex-col gap-4">
+              {employees.map((row, i) => (
+                <div key={row.key} className="border border-line rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted">Employee {i + 1}</span>
                     <button
                       type="button"
                       onClick={() => removeEmployee(row.key)}
@@ -266,50 +294,50 @@ export default function LocalSeedPage() {
                     >
                       Remove
                     </button>
-                  )}
-                </div>
-                <div className="grid sm:grid-cols-3 gap-3">
-                  <Input
-                    label="Name"
-                    value={row.name}
-                    onChange={(e) => updateEmployee(row.key, { name: e.target.value })}
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={row.email}
-                    onChange={(e) => updateEmployee(row.key, { email: e.target.value })}
-                  />
-                  <Input
-                    label="Password"
-                    value={row.password}
-                    onChange={(e) => updateEmployee(row.key, { password: e.target.value })}
-                  />
-                  <Input
-                    label="Department"
-                    value={row.dept}
-                    onChange={(e) => updateEmployee(row.key, { dept: e.target.value })}
-                  />
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-body">Role</label>
-                    <Select value={row.role} onValueChange={(v) => updateEmployee(row.key, { role: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {availableRoles.map((r) => (
-                          <SelectItem key={r} value={r}>{roleLabel(r)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
-                  <Input
-                    label="Level"
-                    value={row.level}
-                    onChange={(e) => updateEmployee(row.key, { level: e.target.value })}
-                  />
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <Input
+                      label="Full name"
+                      value={row.name}
+                      onChange={(e) => updateEmployee(row.key, { name: e.target.value })}
+                    />
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={row.email}
+                      onChange={(e) => updateEmployee(row.key, { email: e.target.value })}
+                    />
+                    <Input
+                      label="Password"
+                      value={row.password}
+                      onChange={(e) => updateEmployee(row.key, { password: e.target.value })}
+                    />
+                    <Input
+                      label="Department"
+                      value={row.dept}
+                      onChange={(e) => updateEmployee(row.key, { dept: e.target.value })}
+                    />
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-body">Role</label>
+                      <Select value={row.role} onValueChange={(v) => updateEmployee(row.key, { role: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {availableRoles.map((r) => (
+                            <SelectItem key={r} value={r}>{roleLabel(r)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      label="Level"
+                      value={row.level}
+                      onChange={(e) => updateEmployee(row.key, { level: e.target.value })}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         <div className="flex items-center gap-3">
