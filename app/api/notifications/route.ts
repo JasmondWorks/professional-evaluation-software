@@ -31,12 +31,12 @@ async function handleRequest(request: NextRequest) {
 
     // Notifications are per user — a person only sees their own (scoped to org).
     const rawId = decoded.userID ?? decoded.id;
-    const userId = rawId != null ? Number(rawId) : NaN;
+    const userId = typeof rawId === 'string' && rawId ? rawId : null;
 
     const notifications = await prisma.notifications.findMany({
       where: {
         org_id: orgId,
-        ...(Number.isFinite(userId) ? { user_id: userId } : {}),
+        ...(userId ? { user_id: userId } : {}),
       },
       select: {
         id: true,

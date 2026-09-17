@@ -22,8 +22,8 @@ export async function GET(req: Request) {
     })
 
     // scope value → { id, name } of whoever heads it.
-    const hodByDept: Record<string, { id: number; name: string | null }> = {}
-    const unitHeadByFaculty: Record<string, { id: number; name: string | null }> = {}
+    const hodByDept: Record<string, { id: string; name: string | null }> = {}
+    const unitHeadByFaculty: Record<string, { id: string; name: string | null }> = {}
 
     for (const h of heads) {
       if (h.role === 'hod' && h.dept) hodByDept[h.dept] = { id: h.id, name: h.name }

@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     });
     const facultyOf = new Map(people.map((p) => [p.name, p.faculty_college ?? null]));
 
-    const byEntry = new Map<number, typeof scores>();
+    const byEntry = new Map<string, typeof scores>();
     for (const s of scores) {
       byEntry.set(s.entry_id, [...(byEntry.get(s.entry_id) ?? []), s]);
     }
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       select: { pesuser_name: true, period_id: true, grade: true },
     });
     const orderedPeriodIds = periods.map((p) => p.id);
-    const gradesByPerson = new Map<string, Map<number, string | null>>();
+    const gradesByPerson = new Map<string, Map<string, string | null>>();
     for (const e of priorEntries) {
       const m = gradesByPerson.get(e.pesuser_name) ?? new Map();
       m.set(e.period_id, e.grade);

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const created = await prisma.motivation_award.create({
       data: {
         org_id: orgId,
-        user_id: Number.isFinite(Number(body.user_id)) ? Number(body.user_id) : null,
+        user_id: body.user_id ? String(body.user_id) : null,
         staff_name: String(body.staff_name),
         dept: body.dept ? String(body.dept) : null,
         period: String(body.period),

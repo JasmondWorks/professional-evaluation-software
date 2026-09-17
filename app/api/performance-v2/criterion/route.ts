@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     return NextResponse.json({
       score: await recordCriterion(viewer, {
-        entryId: Number(body.entryId),
+        entryId: body.entryId,
         criterion: body.criterion,
         ratings: (body.ratings ?? []).map(Number),
       }),

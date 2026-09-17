@@ -51,8 +51,8 @@ export async function POST(req: Request) {
     // From the performance model rather than the old flat tables. `where` is
     // the org (and department, where the caller scoped it).
     const [mainPerformances, counterPerformances] = await Promise.all([
-      staffPerformance({ orgId: orgId as number, dept: (where as any).dept ?? null }),
-      hodCounterScores({ orgId: orgId as number, dept: (where as any).dept ?? null }),
+      staffPerformance({ orgId: orgId as string, dept: (where as any).dept ?? null }),
+      hodCounterScores({ orgId: orgId as string, dept: (where as any).dept ?? null }),
     ]);
     const performances = [...withSource(mainPerformances, "main"), ...withSource(counterPerformances, "counter")];
 

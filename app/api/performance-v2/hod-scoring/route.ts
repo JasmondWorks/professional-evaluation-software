@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const viewer = viewerFrom(req);
     const body = await req.json();
     await submitHodRating(viewer, {
-      assignmentId: Number(body.assignmentId),
+      assignmentId: body.assignmentId,
       management: (body.management ?? []).map(Number),
       productivity: (body.productivity ?? []).map(Number),
     });

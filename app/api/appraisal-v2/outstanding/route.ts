@@ -11,7 +11,7 @@ import { fail, viewerFrom } from '../_auth';
 export async function GET(req: Request) {
   try {
     const viewer = viewerFrom(req);
-    const periodId = Number(new URL(req.url).searchParams.get('periodId'));
+    const periodId = new URL(req.url).searchParams.get('periodId') ?? '';
     return NextResponse.json({ departments: await outstandingSubmissions(viewer, periodId) });
   } catch (err) { return fail(err); }
 }

@@ -5,13 +5,13 @@ import { NextRequest } from 'next/server';
  * JWT Payload Interface
  */
 export interface JWTPayload {
-  userID: string | number;
+  userID: string;
   name: string;
   role: string;
   // The authorization claim. Every tenant-scoping check compares this, never
   // `org` below — org.name is display text, not required to be unique, and
   // two organizations may legitimately share a name.
-  orgId: number | null;
+  orgId: string | null;
   // Display text only, kept so the UI can show an org name without a round
   // trip. Never compare this for access control.
   org: string | null;

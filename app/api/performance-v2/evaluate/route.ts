@@ -14,8 +14,8 @@ export async function POST(req: Request) {
     const viewer = viewerFrom(req);
     const body = await req.json();
     if (body.entryId) {
-      return NextResponse.json(await evaluateEntry(viewer, Number(body.entryId)));
+      return NextResponse.json(await evaluateEntry(viewer, body.entryId));
     }
-    return NextResponse.json(await evaluatePeriod(viewer, Number(body.periodId)));
+    return NextResponse.json(await evaluatePeriod(viewer, body.periodId));
   } catch (err) { return fail(err); }
 }

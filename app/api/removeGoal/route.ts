@@ -19,11 +19,11 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(
       token,
       getJWTSecret()
-    ) as { name: string; userID: number }
+    ) as { name: string; userID: string }
 
     // Delete the goal, scoped to the user so they can only delete their own goals
     await prisma.goals.deleteMany({
-      where: { id: Number(goalId), user_id: String(decoded.userID) },
+      where: { id: goalId, user_id: decoded.userID },
     })
 
     return NextResponse.json({ success: true })

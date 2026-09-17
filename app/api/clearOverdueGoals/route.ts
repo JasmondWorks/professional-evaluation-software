@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const del = await prisma.goals.deleteMany({
       where: { 
-        id: { in: goalIds.map(Number) },
+        id: { in: goalIds },
         user_id: { in: ids } 
       },
     })

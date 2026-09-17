@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     return NextResponse.json(
       await recordHodScore(viewer, {
-        entryId: Number(body.entryId),
+        entryId: body.entryId,
         criterion: body.criterion,
         hodScore: Number(body.hodScore),
         justification: body.justification ?? '',

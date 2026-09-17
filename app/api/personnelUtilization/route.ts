@@ -175,8 +175,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const id = Number(body.id);
-    if (!Number.isFinite(id)) {
+    const id = body.id;
+    if (!id) {
       return NextResponse.json({ error: "A run id is required" }, { status: 400 });
     }
 

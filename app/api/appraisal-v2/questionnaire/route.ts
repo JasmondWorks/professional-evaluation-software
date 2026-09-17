@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { entryId, answers } = await req.json();
-    await saveQuestionnaire(viewer, { entryId: Number(entryId), answers });
+    await saveQuestionnaire(viewer, { entryId: entryId, answers });
     return NextResponse.json({ saved: true });
   } catch (err) { return fail(err); }
 }

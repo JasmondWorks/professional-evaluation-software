@@ -6,24 +6,18 @@ import React from "react"
 export const dynamic = "force-dynamic"
 
 type SuperAdmin = {
-  id: number
+  id: string
   name: string
   email: string
 }
 
 // Server Action to fetch super-admins
 async function getSuperAdmins(): Promise<SuperAdmin[]> {
-  const users = await prisma.pesuser.findMany({
+  return prisma.pesuser.findMany({
     where: { role: 'super-admin' },
     select: { id: true, name: true, email: true },
     orderBy: { name: 'asc' }
   });
-
-  // Cast back to number if ID is returned as BigInt (Prisma usually returns BigInt as bigint)
-  return users.map(u => ({
-    ...u,
-    id: Number(u.id)
-  }));
 }
 
 export default async function SuperAdminsPage() {

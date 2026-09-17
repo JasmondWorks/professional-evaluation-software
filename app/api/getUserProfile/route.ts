@@ -6,11 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
 import { verifyToken } from "../_lib/authGuard";
 
-async function getUser(id: number | null, orgId: number | null) {
+async function getUser(id: string | null, orgId: string | null) {
   if (id === null || orgId === null) return null;
 
   const u = await prisma.pesuser.findFirst({
-    where: { id: Number(id), org_id: orgId },
+    where: { id, org_id: orgId },
   });
 
   if (!u) return null;

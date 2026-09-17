@@ -14,7 +14,7 @@ type Goals = {
 
 async function updateData( entry: Goals ) {
    await prisma.goals.updateMany({
-     where: { id: Number(entry.id), user_id: entry.user_id },
+     where: { id: entry.id, user_id: entry.user_id },
      data: {
        name: entry.name,
        description: entry.description,

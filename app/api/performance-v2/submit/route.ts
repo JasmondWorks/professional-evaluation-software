@@ -12,6 +12,6 @@ export async function POST(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const body = await req.json();
-    return NextResponse.json({ entry: await submitEntry(viewer, Number(body.entryId)) });
+    return NextResponse.json({ entry: await submitEntry(viewer, body.entryId) });
   } catch (err) { return fail(err); }
 }

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     return NextResponse.json(
       await recordAuditorScore(viewer, {
-        entryId: Number(body.entryId),
+        entryId: body.entryId,
         criterion: body.criterion,
         score: Number(body.score),
         note: body.note,

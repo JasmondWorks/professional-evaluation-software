@@ -294,14 +294,14 @@ export const counterTotalsSchema = z.object({
 });
 
 export const workSamplingPositionSchema = z.object({
-  studyId: numeric,
+  studyId: z.string(),
   name: z.string().min(1),
   department: z.string().nullable().optional(),
   performanceAllowance: numeric.nullable().optional(),
 });
 
 export const workSamplingObservationSchema = z.object({
-  positionId: numeric,
+  positionId: z.string(),
   date: z.string().min(1),
   time: z.string().min(1),
   isBusy: z.boolean().optional(),

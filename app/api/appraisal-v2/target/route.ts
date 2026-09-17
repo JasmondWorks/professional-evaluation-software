@@ -10,7 +10,7 @@ import { fail, viewerFrom } from '../_auth';
 export async function GET(req: Request) {
   try {
     const viewer = viewerFrom(req);
-    const periodId = Number(new URL(req.url).searchParams.get('periodId'));
+    const periodId = new URL(req.url).searchParams.get('periodId') ?? '';
     const targets = await prisma.appraisal_target.findMany({
       where: { org_id: viewer.orgId, period_id: periodId },
       orderBy: [{ model: 'asc' }, { position: 'asc' }, { category: 'asc' }],

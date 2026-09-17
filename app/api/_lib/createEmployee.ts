@@ -51,11 +51,11 @@ export type EmployeeInput = {
    *  Section 21 counts these as the real head count per level. */
   management_level?: number | string | null;
   org: string;
-  orgId?: number | null;
+  orgId?: string | null;
 } & Partial<Record<PermissionKey, boolean>>;
 
 export type CreateOutcome =
-  | { ok: true; userId: number; password: string }
+  | { ok: true; userId: string; password: string }
   | {
       ok: false;
       reason: 'email_exists' | 'duplicate_employee' | 'head_conflict' | 'unknown_role' | 'error';
@@ -116,7 +116,7 @@ export async function resolveRoleName(
   org: string,
   role: string,
   productCategory?: string | null,
-  orgId?: number | null,
+  orgId?: string | null,
 ): Promise<string | null> {
   const wanted = String(role ?? '').trim().toLowerCase();
   if (wanted === '') return null;
@@ -142,7 +142,7 @@ export async function roleExists(
   org: string,
   role: string,
   productCategory?: string | null,
-  orgId?: number | null,
+  orgId?: string | null,
 ): Promise<boolean> {
   return (await resolveRoleName(org, role, productCategory, orgId)) !== null;
 }
@@ -235,7 +235,7 @@ export async function createEmployee(
     await prisma.permission.create({
       data: {
         ...permissionData,
-        user_id: String(user.id),
+        user_id: user.id,
         org: org || null,
         org_id: orgId ?? null,
       } as any,
@@ -285,7 +285,7 @@ export async function sendLoginEmail(
 }
 
 /** The org admin, used as reply-to on credential emails. */
-export async function orgAdminEmail(org: string, orgId?: number | null): Promise<string | undefined> {
+export async function orgAdminEmail(org: string, orgId?: string | null): Promise<string | undefined> {
   const admin = await prisma.pesuser.findFirst({
     where: { ...(orgId != null ? { org_id: orgId } : { org }), role: { in: ['admin', 'Super user'] } },
     select: { email: true },

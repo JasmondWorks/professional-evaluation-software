@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   });
 
   // Group users by org_id (equivalent to json_agg + GROUP BY org_id).
-  const grouped = new Map<number | null, typeof users>();
+  const grouped = new Map<string | null, typeof users>();
   for (const user of users) {
     const list = grouped.get(user.org_id) ?? [];
     list.push(user);
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   }
 
   const orgIds = Array.from(grouped.keys()).filter(
-    (id): id is number => id !== null,
+    (id): id is string => id !== null,
   );
   const orgs = await prisma.org.findMany({
     where: { id: { in: orgIds } },

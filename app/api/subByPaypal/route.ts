@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
         
         createdSub = await prisma.subscriptions.create({
           data: {
-            pesuser_id: Number(userID),
+            pesuser_id: userID,
             plan_id: localPlanId,
             paypal_subscription_id: paypalSubId,
             status: status,

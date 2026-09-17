@@ -21,10 +21,10 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     if (body.action === 'close') {
-      return NextResponse.json(await closePeriod(viewer, Number(body.periodId)));
+      return NextResponse.json(await closePeriod(viewer, body.periodId));
     }
     if (body.action === 'release') {
-      return NextResponse.json(await releaseResults(viewer, Number(body.periodId)));
+      return NextResponse.json(await releaseResults(viewer, body.periodId));
     }
 
     return NextResponse.json(

@@ -32,8 +32,8 @@ export function withinF1Band(feelingMean: number, f1: number): boolean {
 }
 
 type CycleLimits = {
-  id: number;
-  session_id: number | null;
+  id: string;
+  session_id: string | null;
   category_limits: unknown;
 };
 
@@ -78,9 +78,9 @@ export type TransitionResult = {
   within: boolean;
   triggeredReset: boolean;
   f1: number;
-  sessionId: number;
+  sessionId: string;
   /** Present only when a reset started a new session. */
-  newSessionId?: number;
+  newSessionId?: string;
 };
 
 /**
@@ -98,8 +98,8 @@ export async function recordFeelingAndTransition(
   prisma: any,
   params: {
     org: string;
-    cycleId: number;
-    sessionId?: number | null;
+    cycleId: string;
+    sessionId?: string | null;
     iteration?: number | null;
     feelingMean: number;
     createdBy?: string;
@@ -112,7 +112,7 @@ export async function recordFeelingAndTransition(
       ? await prisma.wellbeingSession.findUnique({ where: { id: params.sessionId } })
       : null) ?? (await getActiveSession(prisma, org));
   if (!session) session = await startSession(prisma, org, params.createdBy);
-  const sessionId: number = session.id;
+  const sessionId: string = session.id;
 
   // First iteration defines F1.
   if (session.f1_feeling_value == null) {

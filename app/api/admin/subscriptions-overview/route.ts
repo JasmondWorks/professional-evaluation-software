@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const orgIds = [...new Set(subs.map((s) => s.pesuser?.org_id).filter((id): id is number => id != null))];
+  const orgIds = [...new Set(subs.map((s) => s.pesuser?.org_id).filter((id): id is string => id != null))];
   const orgs = await prisma.org.findMany({ where: { id: { in: orgIds } }, select: { id: true, name: true } });
   const orgNameById = new Map(orgs.map((o) => [o.id, o.name]));
 

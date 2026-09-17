@@ -18,7 +18,7 @@ export function isHeadRole(role: string): role is HeadRole {
 export type HeadCheck =
   | { ok: true }
   | { ok: false; code: 'no-scope'; message: string }
-  | { ok: false; code: 'taken'; message: string; existing: { id: number; name: string | null } }
+  | { ok: false; code: 'taken'; message: string; existing: { id: string; name: string | null } }
 
 // Returns ok, or the reason a person can't take this head role: they have no
 // department/faculty set, or someone else already heads that scope.
@@ -26,11 +26,11 @@ export async function checkSingleHead(
   prisma: any,
   opts: {
     org: string
-    orgId?: number | null
+    orgId?: string | null
     role: string
     dept?: string | null
     faculty_college?: string | null
-    excludeUserId?: number
+    excludeUserId?: string
   },
 ): Promise<HeadCheck> {
   const { org, orgId, role, excludeUserId } = opts

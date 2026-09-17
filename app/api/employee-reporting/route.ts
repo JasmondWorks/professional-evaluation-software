@@ -23,14 +23,13 @@ export async function POST(req: Request) {
   if (!orgId) return NextResponse.json({ error: 'Missing organization on your account.' }, { status: 400 });
 
   const { id } = await req.json().catch(() => ({ id: null }));
-  const numericId = Number(id);
-  if (!numericId || Number.isNaN(numericId)) {
+  if (typeof id !== 'string' || !id) {
     return NextResponse.json({ error: 'A staff id is required.' }, { status: 400 });
   }
 
   try {
     const staff = await prisma.pesuser.findFirst({
-      where: { id: numericId, org_id: orgId },
+      where: { id, org_id: orgId },
       select: { id: true, dept: true },
     });
     if (!staff) {

@@ -18,7 +18,7 @@ type Facility = {
    remark: string,
 }
 
-async function updateData( entry: Facility, org:string, orgId: number | null ) {
+async function updateData( entry: Facility, org:string, orgId: string | null ) {
    await prisma.facilities.create({
      data: {
        identification_symbol: entry.symbol,

@@ -16,13 +16,13 @@ import { ACADEMIC_FORMS } from '../app/lib/appraisal/instrument';
 
 const prisma = new PrismaClient();
 const ORG = '__demo__';
-let ORG_ID = 0;
+let ORG_ID = '';
 const DEPT = 'Mechanical Engineering';
 const PASSWORD = 'Demo1234!';
 
-const admin: Viewer = { orgId: 0, org: ORG, name: 'Demo Estab', role: 'admin', dept: DEPT };
-const deptAdmin: Viewer = { orgId: 0, org: ORG, name: 'Demo Dept Officer', role: 'dept-admin', dept: DEPT };
-const staff: Viewer = { orgId: 0, org: ORG, name: 'Demo Lecturer', role: 'lecturer', dept: DEPT };
+const admin: Viewer = { orgId: '', org: ORG, name: 'Demo Estab', role: 'admin', dept: DEPT };
+const deptAdmin: Viewer = { orgId: '', org: ORG, name: 'Demo Dept Officer', role: 'dept-admin', dept: DEPT };
+const staff: Viewer = { orgId: '', org: ORG, name: 'Demo Lecturer', role: 'lecturer', dept: DEPT };
 
 async function upsertUser(name: string, role: string, email: string) {
   const hash = await bcrypt.hash(PASSWORD, 10);
@@ -54,6 +54,7 @@ async function main() {
   for (const viewer of [admin, deptAdmin, staff]) {
     viewer.orgId = newOrg.id;
   }
+  ORG_ID = newOrg.id;
   await upsertUser(admin.name, 'admin', 'demo.admin@pes.test');
   await upsertUser(deptAdmin.name, 'dept-admin', 'demo.deptadmin@pes.test');
   await upsertUser('Demo Head', 'hod', 'demo.hod@pes.test');

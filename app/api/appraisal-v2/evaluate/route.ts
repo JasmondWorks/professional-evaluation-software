@@ -10,6 +10,6 @@ export async function POST(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { entryId } = await req.json();
-    return NextResponse.json({ entry: await evaluateEntry(viewer, Number(entryId)) });
+    return NextResponse.json({ entry: await evaluateEntry(viewer, entryId) });
   } catch (err) { return fail(err); }
 }

@@ -18,7 +18,7 @@ export function effectivePhase(c: CycleLike): string {
 // Persist the advanced phase if it changed; returns the effective phase.
 export async function syncCyclePhase(
   prisma: any,
-  cycle: { id: number } & CycleLike,
+  cycle: { id: string } & CycleLike,
 ): Promise<string> {
   const eff = effectivePhase(cycle);
   if (eff !== cycle.phase) {

@@ -39,7 +39,7 @@ export type DepartmentIntegrity = {
 
 export type IntegrityReport = {
   model: 'appraisal' | 'performance';
-  periodId: number;
+  periodId: string;
   ranAt: string;
   minSubmissions: number;
   departments: DepartmentIntegrity[];
@@ -90,7 +90,7 @@ function testDepartment(dept: string, subjects: IntegritySubject[]): DepartmentI
 /** Run the test over every department represented in `subjects`. */
 export function runIntegrityTest(
   model: 'appraisal' | 'performance',
-  periodId: number,
+  periodId: string,
   subjects: IntegritySubject[],
 ): IntegrityReport {
   const byDept = new Map<string, IntegritySubject[]>();

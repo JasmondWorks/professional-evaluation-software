@@ -31,13 +31,13 @@ export type StaffPerformance = {
   partial: boolean;
   status: string;
   flagged: boolean;
-  entry_id: number;
-  period_id: number;
+  entry_id: string;
+  period_id: string;
 };
 
 /** The period these figures should be read from: the newest one holding any
  *  entries for the org. Returns null when the org has never run one. */
-export async function reportingPeriod(orgId: number) {
+export async function reportingPeriod(orgId: string) {
   const period = await prisma.performance_period.findFirst({
     where: { org_id: orgId, entries: { some: {} } },
     orderBy: { starts_on: 'desc' },
@@ -68,11 +68,11 @@ export function settledScore(row: {
 }
 
 type Filter = {
-  orgId: number;
+  orgId: string;
   dept?: string | null;
   names?: string[];
   /** Defaults to the reporting period. Pass a period to pin a historic cycle. */
-  periodId?: number;
+  periodId?: string;
   /** Include entries still being drafted. Off by default, so half-finished
    *  ratings never surface as though they were results. */
   includeDrafts?: boolean;
@@ -130,9 +130,9 @@ export async function staffPerformance(filter: Filter): Promise<StaffPerformance
 
 /** One staff member, or null when they have nothing in the reporting period. */
 export async function onePerformance(
-  orgId: number,
+  orgId: string,
   pesuserName: string,
-  periodId?: number,
+  periodId?: string,
 ): Promise<StaffPerformance | null> {
   const rows = await staffPerformance({ orgId, names: [pesuserName], periodId });
   return rows[0] ?? null;
@@ -174,7 +174,7 @@ export async function hodCounterScores(filter: Filter) {
 /** Distinct staff who have submitted a performance record for the org. Used by
  *  the dashboard and assessment counters, which ask "who has returned
  *  anything". */
-export async function performanceSubmitters(orgId: number): Promise<string[]> {
+export async function performanceSubmitters(orgId: string): Promise<string[]> {
   const rows = await prisma.performance_entry.findMany({
     where: { org_id: orgId, status: { not: 'draft' } },
     select: { pesuser_name: true },
@@ -185,7 +185,7 @@ export async function performanceSubmitters(orgId: number): Promise<string[]> {
 
 /** How many staff have a performance record per department, for the coverage
  *  panels. */
-export async function performanceCountsByDept(orgId: number) {
+export async function performanceCountsByDept(orgId: string) {
   const rows = await prisma.performance_entry.groupBy({
     by: ['dept'],
     where: { org_id: orgId, status: { not: 'draft' } },
@@ -197,7 +197,7 @@ export async function performanceCountsByDept(orgId: number) {
 /** Entries the organization admin has been asked to look at: a large gap between
  *  a staff member's score and their head's, or a referral to the auditor. The
  *  flag itself is admin-only — see the confidentiality note in the service. */
-export async function flaggedPerformance(orgId: number) {
+export async function flaggedPerformance(orgId: string) {
   const periodId = (await reportingPeriod(orgId))?.id;
   if (!periodId) return [];
 
@@ -235,7 +235,7 @@ function round2(x: number): number {
 
 export type PerformanceOverview = {
   period: {
-    id: number;
+    id: string;
     frequency: string;
     starts_on: string;
     ends_on: string;
@@ -261,7 +261,7 @@ export type PerformanceOverview = {
  *  the result into "employees" and "teams" tabs. Those two views belong to the
  *  maintenance model, not this one — performance is measured per staff member
  *  against a target — so this returns one untabbed set of figures. */
-export async function performanceOverview(orgId: number): Promise<PerformanceOverview> {
+export async function performanceOverview(orgId: string): Promise<PerformanceOverview> {
   const period = await reportingPeriod(orgId);
   const rows = await staffPerformance({ orgId });
   const target = Number(period?.target ?? PERFORMANCE_TARGET);

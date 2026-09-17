@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   try {
     // Scope to the caller's org so an admin can't touch another org's staff.
     const result = await prisma.pesuser.updateMany({
-      where: { org_id: orgId, ...(id ? { id: Number(id) } : { email }) },
+      where: { org_id: orgId, ...(id ? { id: String(id) } : { email }) },
       data,
     })
     if (result.count === 0) {

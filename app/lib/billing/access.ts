@@ -56,7 +56,7 @@ export class SubscriptionExpiredError extends EntitlementError {
  *  either case. */
 export type PlanViewer = {
   org: string;
-  orgId?: number | null;
+  orgId?: string | null;
   productCategory?: string | null;
   productPlan?: string | null;
 };
@@ -78,7 +78,7 @@ export type ResolvedPlan = {
 /** Read category and plan from the token, falling back to the org row for
  *  anything missing or unrecognised. */
 async function identify(viewer: PlanViewer): Promise<{
-  orgId: number;
+  orgId: string;
   institution: InstitutionType;
   plan: PlanType;
   maintenanceGranted: boolean;

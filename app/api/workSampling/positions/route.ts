@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
     const { studyId, name, department, performanceAllowance } = parsed.data!;
 
     // The study id arrives from the browser; it has to be the caller's own.
-    const owner = await orgOfStudy(Number(studyId));
+    const owner = await orgOfStudy(studyId);
     if (!owner || owner !== auth.user.orgId) return notYours();
 
     const result = await prisma.workSamplingPosition.create({
       data: {
-        studyId: Number(studyId),
+        studyId: studyId,
         name: name,
         department: department ?? null,
         performanceAllowance: performanceAllowance ?? null,
@@ -59,16 +59,16 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
 
-    const owner = await orgOfPosition(Number(id));
+    const owner = await orgOfPosition(id);
     if (!owner || owner !== auth.user.orgId) return notYours();
     
     // Explicitly delete observations first to be safe, then delete the position
     await prisma.workSamplingObservation.deleteMany({
-      where: { positionId: Number(id) }
+      where: { positionId: id }
     });
     
     await prisma.workSamplingPosition.delete({
-      where: { id: Number(id) }
+      where: { id: id }
     });
     
     return NextResponse.json({ success: true });

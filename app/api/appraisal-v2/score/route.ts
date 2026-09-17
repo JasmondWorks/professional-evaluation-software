@@ -19,7 +19,7 @@ export async function PATCH(req: Request) {
   try {
     const viewer = viewerFrom(req);
     const { entryId } = await req.json();
-    await submitEntry(viewer, Number(entryId));
+    await submitEntry(viewer, entryId);
     return NextResponse.json({ submitted: true });
   } catch (err) { return fail(err); }
 }

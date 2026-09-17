@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { verifyToken } from "../_lib/authGuard";
 
-async function getFacility( orgId: number | null ) {
+async function getFacility( orgId: string | null ) {
   if (!orgId) return []
   return prisma.facilities.findMany({ where: { org_id: orgId } })
 }

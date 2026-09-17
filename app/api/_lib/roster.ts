@@ -7,7 +7,7 @@ import { ORG_ADMIN_ROLES } from '@/app/lib/appraisal/instrument';
  *  submitted" in an Unspecified department that was really just the admin's own
  *  row with no `dept` set. Every roster count must use this so the assessment
  *  page, the dashboard and the stats endpoint cannot drift apart. */
-export function rosterWhere(orgId: number | null) {
+export function rosterWhere(orgId: string | null) {
   return {
     org_id: orgId,
     OR: [

@@ -39,7 +39,7 @@ import {
 } from './scoring';
 
 export type Viewer = {
-  orgId: number;
+  orgId: string;
   org: string;
   name: string;
   role: string;
@@ -96,7 +96,7 @@ export async function openPeriod(
   });
 }
 
-export async function currentPeriod(orgId: number) {
+export async function currentPeriod(orgId: string) {
   return prisma.performance_period.findFirst({
     where: { org_id: orgId, status: 'open' },
     orderBy: { starts_on: 'desc' },
@@ -106,7 +106,7 @@ export async function currentPeriod(orgId: number) {
 /** Close a period. This ends data collection AND is the moment the client
  *  described as "at the end of this exercise": the draw for who scores each head
  *  happens here, once, so nobody can influence the sample by submitting late. */
-export async function closePeriod(viewer: Viewer, periodId: number) {
+export async function closePeriod(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   const period = await loadPeriod(viewer, periodId);
   if (period.status !== 'open') throw new PerformanceError('That period is not open.', 409);
@@ -122,7 +122,7 @@ export async function closePeriod(viewer: Viewer, periodId: number) {
 
 /** Release results. Separate from closing, and restricted to the organization
  *  admin: closing ends collection, releasing is when staff finally see a grade. */
-export async function releaseResults(viewer: Viewer, periodId: number) {
+export async function releaseResults(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   const period = await loadPeriod(viewer, periodId);
   if (period.status !== 'closed') {
@@ -217,7 +217,7 @@ function assertRatings(criterion: CriterionKey, ratings: number[]) {
 /** Record one criterion's ratings and its result, normalised to 100. */
 export async function recordCriterion(
   viewer: Viewer,
-  input: { entryId: number; criterion: CriterionKey; ratings: number[] },
+  input: { entryId: string; criterion: CriterionKey; ratings: number[] },
 ) {
   const entry = await loadEntry(viewer, input.entryId);
   assertEntryOpen(entry);
@@ -259,7 +259,7 @@ export async function recordCriterion(
 
 /** Seal the entry. All four criteria must be present: the overall is their mean,
  *  and a mean of two is not the result the client asked for. */
-export async function submitEntry(viewer: Viewer, entryId: number) {
+export async function submitEntry(viewer: Viewer, entryId: string) {
   const entry = await loadEntry(viewer, entryId);
   assertEntryOpen(entry);
   if (viewer.name !== entry.pesuser_name) {
@@ -289,7 +289,7 @@ export async function submitEntry(viewer: Viewer, entryId: number) {
 
 /** Everyone being assessed in a period, with just enough to drive a list.
  *  Grades stay hidden from staff and heads until results are released. */
-export async function listEntries(viewer: Viewer, periodId: number) {
+export async function listEntries(viewer: Viewer, periodId: string) {
   const period = await loadPeriod(viewer, periodId);
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
   const isDeptScoped = DEPARTMENT_SCOPED_ROLES.includes(viewer.role);
@@ -308,7 +308,7 @@ export async function listEntries(viewer: Viewer, periodId: number) {
   return entries.map((e) => presentEntry(e, viewer, released));
 }
 
-export async function getEntry(viewer: Viewer, entryId: number) {
+export async function getEntry(viewer: Viewer, entryId: string) {
   const entry = await loadEntry(viewer, entryId);
   const period = await loadPeriod(viewer, entry.period_id);
   const full = await prisma.performance_entry.findUnique({
@@ -334,7 +334,7 @@ export async function getEntry(viewer: Viewer, entryId: number) {
 
 /** The five results: each criterion, then the overall as their mean, then RTP
  *  against the period's target and the grade that follows from it. */
-export async function evaluateEntry(viewer: Viewer, entryId: number) {
+export async function evaluateEntry(viewer: Viewer, entryId: string) {
   requireOrgAdmin(viewer);
   const entry = await loadEntry(viewer, entryId);
   const period = await loadPeriod(viewer, entry.period_id);
@@ -368,7 +368,7 @@ export async function evaluateEntry(viewer: Viewer, entryId: number) {
 }
 
 /** Run the evaluation across the whole period. */
-export async function evaluatePeriod(viewer: Viewer, periodId: number) {
+export async function evaluatePeriod(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   await loadPeriod(viewer, periodId);
   const entries = await prisma.performance_entry.findMany({
@@ -417,7 +417,7 @@ function settledScore(row: {
  *  the tolerance band. */
 export async function recordHodScore(
   viewer: Viewer,
-  input: { entryId: number; criterion: CriterionKey; hodScore: number; justification: string },
+  input: { entryId: string; criterion: CriterionKey; hodScore: number; justification: string },
 ) {
   if (!input.justification?.trim()) {
     throw new PerformanceError('A written reason is required before a score can be changed.', 400);
@@ -473,7 +473,7 @@ export async function recordHodScore(
 /** The staff member accepts or rejects their head's score. */
 export async function respondToHod(
   viewer: Viewer,
-  input: { entryId: number; criterion: CriterionKey; accepted: boolean },
+  input: { entryId: string; criterion: CriterionKey; accepted: boolean },
 ) {
   const entry = await loadEntry(viewer, input.entryId);
   if (viewer.name !== entry.pesuser_name) {
@@ -528,7 +528,7 @@ export async function respondToHod(
 /** The external auditor's figure is final. */
 export async function recordAuditorScore(
   viewer: Viewer,
-  input: { entryId: number; criterion: CriterionKey; score: number; note?: string },
+  input: { entryId: string; criterion: CriterionKey; score: number; note?: string },
 ) {
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new PerformanceError('Only the performance auditor can resolve a referred score.', 403);
@@ -566,7 +566,7 @@ export async function recordAuditorScore(
  *
  *  A referral outranks a pending response, because it is the state that actually
  *  holds a figure back. */
-async function refreshEntryStatus(entryId: number) {
+async function refreshEntryStatus(entryId: string) {
   const entry = await prisma.performance_entry.findUnique({ where: { id: entryId } });
   if (!entry || entry.status === 'draft') return;
 
@@ -622,7 +622,7 @@ export async function auditorQueue(viewer: Viewer) {
  *   the head and any other head in it. Where a department has fewer staff than
  *   the sample size, everyone available is drawn — the minimum then decides
  *   whether the result stands. */
-export async function drawHodRaters(viewer: Viewer, periodId: number) {
+export async function drawHodRaters(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   const period = await loadPeriod(viewer, periodId);
 
@@ -733,7 +733,7 @@ function assertHodRatings(criterion: HodCriterionKey, ratings: number[]) {
 export async function submitHodRating(
   viewer: Viewer,
   input: {
-    assignmentId: number;
+    assignmentId: string;
     management: number[];
     productivity: number[];
   },
@@ -765,7 +765,7 @@ export async function submitHodRating(
 }
 
 /** Aggregate one head's returns into their result. */
-export async function evaluateHod(viewer: Viewer, periodId: number, hodName: string) {
+export async function evaluateHod(viewer: Viewer, periodId: string, hodName: string) {
   requireOrgAdmin(viewer);
   const period = await loadPeriod(viewer, periodId);
 
@@ -818,7 +818,7 @@ export async function evaluateHod(viewer: Viewer, periodId: number, hodName: str
   return { result, outcome };
 }
 
-export async function evaluateAllHods(viewer: Viewer, periodId: number) {
+export async function evaluateAllHods(viewer: Viewer, periodId: string) {
   requireOrgAdmin(viewer);
   const heads = await prisma.hod_performance_rater.findMany({
     where: { org_id: viewer.orgId, period_id: periodId },
@@ -837,7 +837,7 @@ export async function evaluateAllHods(viewer: Viewer, periodId: number) {
 /** A head's own result. Individual returns are never exposed, and the figure is
  *  withheld entirely until enough staff have responded — otherwise a head with
  *  two returns could work out who said what. */
-export async function hodResults(viewer: Viewer, periodId: number) {
+export async function hodResults(viewer: Viewer, periodId: string) {
   const period = await loadPeriod(viewer, periodId);
   const isAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
 
@@ -953,7 +953,7 @@ function simplifyReconciliation(value: string | null): string | null {
 // ---------------------------------------------------------------------------
 
 export type PerformanceNotice = {
-  periodId: number | null;
+  periodId: string | null;
   periodStatus: string | null;
   needsEntry: boolean;
   awaitingYourResponse: number;
@@ -1013,7 +1013,7 @@ function requireOrgAdmin(viewer: Viewer) {
   }
 }
 
-async function loadPeriod(viewer: Viewer, periodId: number) {
+async function loadPeriod(viewer: Viewer, periodId: string) {
   const period = await prisma.performance_period.findFirst({
     where: { id: periodId, org_id: viewer.orgId },
   });
@@ -1021,7 +1021,7 @@ async function loadPeriod(viewer: Viewer, periodId: number) {
   return period;
 }
 
-async function loadEntry(viewer: Viewer, entryId: number) {
+async function loadEntry(viewer: Viewer, entryId: string) {
   const entry = await prisma.performance_entry.findFirst({
     where: { id: entryId, org_id: viewer.orgId },
   });
@@ -1039,7 +1039,7 @@ export { CRITERION_KEYS, HOD_CRITERION_KEYS, PERFORMANCE_TARGET };
  *  the test is about the inputs, not about the settled result.
  *
  *  Admin only: it names individuals against their department's band. */
-export async function runPerformanceIntegrity(viewer: Viewer, periodId: number): Promise<IntegrityReport> {
+export async function runPerformanceIntegrity(viewer: Viewer, periodId: string): Promise<IntegrityReport> {
   if (!ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new PerformanceError('Only the organization administrator can run the data integrity test.', 403);
   }
