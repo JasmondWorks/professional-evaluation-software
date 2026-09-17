@@ -15,7 +15,10 @@
     "db:push": "echo 'Refusing: prisma db push leaves no migration file and no ledger row. See CLAUDE.md — use db:migrate locally, db:deploy for production.' && exit 1",
     "db:pull": "prisma db pull",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "db:wait": "wait-on -t 60000 tcp:localhost:5434",
+    "db:local:push": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon — refusing db push outside local Docker.')\" && prisma db push --skip-generate --accept-data-loss",
+    "dev:local": "npm run db:up && npm run db:wait && npm run db:local:push && concurrently -n docker,next -c blue,green \"docker compose logs -f db\" \"next dev\""
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
@@ -90,6 +93,7 @@
     "@types/react-dom": "^18",
     "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10",
+    "concurrently": "^10.0.5",
     "eslint": "^8",
     "eslint-config-next": "^14.0.0",
     "playwright": "^1.62.1",
@@ -99,6 +103,7 @@
     "redux": "^4.2.1",
     "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wait-on": "^9.1.0"
   }
 }

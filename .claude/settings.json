@@ -20,7 +20,10 @@
       "Bash(git push jasmond dev)",
       "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate deploy)",
       "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma db execute *)",
-      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate resolve *)"
+      "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate resolve *)",
+      "Bash(cat)",
+      "Bash(cp /tmp/inspect_sm.mjs ./scripts/_tmp_inspect_sm.mjs)",
+      "Bash(npx prisma *)"
     ]
   }
 }

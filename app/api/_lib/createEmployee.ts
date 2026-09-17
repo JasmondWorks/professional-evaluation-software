@@ -236,9 +236,8 @@ export async function createEmployee(
       data: {
         ...permissionData,
         user_id: user.id,
-        org: org || null,
         org_id: orgId ?? null,
-      } as any,
+      },
     });
 
     await prisma.roles.updateMany({
