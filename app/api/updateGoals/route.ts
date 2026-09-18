@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '../_lib/authGuard'
 import { validateData, updateGoalSchema, formatZodErrors } from '@/app/lib/validation'
 
 type Goals = {
@@ -31,10 +30,10 @@ export async function PUT(request: NextRequest) {
 
     // Verify JWT token from body
     const token = data.token || data.access_token
-    if (!token) {
+    const decoded = verifyToken(token)
+    if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    jwt.verify(token, getJWTSecret())
 
     // Validate input
     const validation = validateData(updateGoalSchema, data)
@@ -43,6 +42,12 @@ export async function PUT(request: NextRequest) {
         { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
+    }
+
+    // The goal owner is the caller — never trust a client-supplied user_id,
+    // or any signed-in user could overwrite anyone else's goal by id.
+    if (!decoded.userID || validation.data!.user_id !== decoded.userID) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const goals = await updateData(validation.data!)

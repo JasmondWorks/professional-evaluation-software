@@ -5,10 +5,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { PUBLIC_USER_COLUMNS } from '../admin/_scope'
 
 async function getUsers( orgId: string | null ) {
   if (!orgId) return []
-  return prisma.pesuser.findMany({ where: { org_id: orgId } })
+  return prisma.pesuser.findMany({ where: { org_id: orgId }, select: PUBLIC_USER_COLUMNS })
 }
 
 export async function POST(request: NextRequest) {

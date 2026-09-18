@@ -19,10 +19,9 @@ export async function GET(
     return NextResponse.json({ error: "Invalid org id" }, { status: 400 });
   }
   if (!canReachOrg(auth.viewer, orgId)) {
-    return NextResponse.json(
-      { error: "You do not have permission to view this organization" },
-      { status: 403 }
-    );
+    // Same body as an org that doesn't exist: whether this id belongs to
+    // another tenant is not something this caller should be able to learn.
+    return NextResponse.json({ error: "Organization not found" }, { status: 404 });
   }
 
   try {

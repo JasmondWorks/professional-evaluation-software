@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev"; // your Prisma client
 import crypto from "crypto";
 
+// PayPal has separate live/sandbox API hosts; verifying against sandbox in
+// production would reject every real webhook (or worse, validate against the
+// wrong environment's certs). PAYPAL_MODE must be set to "live" in production.
+const PAYPAL_API_BASE =
+  process.env.PAYPAL_MODE === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+
 async function verifyWebhook(request: NextRequest, webhookId: string): Promise<boolean> {
   const certUrl = request.headers.get("paypal-cert-url")!;
   const authAlgo = request.headers.get("paypal-auth-algo")!;
@@ -11,7 +19,7 @@ async function verifyWebhook(request: NextRequest, webhookId: string): Promise<b
   const transmissionSig = request.headers.get("paypal-transmission-sig")!;
 
   // ====== Get Access Token ======
-  const resp = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+  const resp = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization:
@@ -28,7 +36,7 @@ async function verifyWebhook(request: NextRequest, webhookId: string): Promise<b
 
   // ====== Verify Webhook Signature ======
   const verifyRes = await fetch(
-    "https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+    `${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`,
     {
       method: "POST",
       headers: {

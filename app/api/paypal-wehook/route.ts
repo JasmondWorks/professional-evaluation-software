@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 
+// PayPal has separate live/sandbox API hosts; verifying against sandbox in
+// production would reject every real webhook. PAYPAL_MODE must be set to
+// "live" in production.
+const PAYPAL_API_BASE =
+  process.env.PAYPAL_MODE === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+
 // ✅ verify webhook using PayPal API
 async function verifyWebhook(
   bodyText: string,
@@ -19,7 +27,7 @@ async function verifyWebhook(
   }
 
   // 🔐 get access token
-  const tokenRes = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+  const tokenRes = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization:
@@ -42,7 +50,7 @@ async function verifyWebhook(
 
   // 🔎 verify signature
   const verifyRes = await fetch(
-    "https://api-m.sandbox.paypal.com/v1/notifications/verify-webhook-signature",
+    `${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`,
     {
       method: "POST",
       headers: {

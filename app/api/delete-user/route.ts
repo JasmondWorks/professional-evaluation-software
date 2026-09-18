@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // adjust path
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { PUBLIC_USER_COLUMNS } from "../admin/_scope";
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +26,10 @@ export async function POST(req: Request) {
     }
 
     // Fetch matching users first so we can report exactly what was removed.
-    const result = await prisma.pesuser.findMany({ where: { org_id: orgId, email } });
+    const result = await prisma.pesuser.findMany({
+      where: { org_id: orgId, email },
+      select: PUBLIC_USER_COLUMNS,
+    });
 
     if (result.length === 0) {
       return NextResponse.json(

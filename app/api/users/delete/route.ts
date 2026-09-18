@@ -4,18 +4,16 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev"; // adjust path
-import { verifyToken } from "../../_lib/authGuard";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { PUBLIC_USER_COLUMNS } from "../../admin/_scope";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ success: false, message: "Authorization header missing" }, { status: 401 });
-    }
-    const token = authHeader.split(" ")[1];
-    const decoded = verifyToken(token) as any;
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    const orgId = decoded.orgId;
+    // Deleting users requires the manage_user capability (or admin tier), and
+    // is scoped to the caller's own org — same rule as /api/delete-user.
+    const auth = authorize(tokenFromRequest(req), { anyOf: ["can_manage_user_roles"] });
+    if (!auth.ok) return auth.response;
+    const orgId = auth.user.orgId;
 
     const body = await req.json();
     const { email, id } = body;
@@ -37,7 +35,7 @@ export async function POST(req: Request) {
     const where = id ? { org_id: orgId, id: String(id) } : { org_id: orgId, email };
 
     // Fetch matching users first so we can report exactly what was removed.
-    const result = await prisma.pesuser.findMany({ where });
+    const result = await prisma.pesuser.findMany({ where, select: PUBLIC_USER_COLUMNS });
 
     if (result.length === 0) {
       return NextResponse.json(

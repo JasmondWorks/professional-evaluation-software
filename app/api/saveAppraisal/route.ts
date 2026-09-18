@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev';
-import jwt from 'jsonwebtoken';
+import { authorize } from '../_lib/authGuard';
 import { validateData, saveAppraisalSchema, formatZodErrors } from '@/app/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -10,10 +9,8 @@ export async function POST(request: NextRequest) {
 
     // Verify JWT token from body
     const token = body.token || body.access_token
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    jwt.verify(token, getJWTSecret())
+    const auth = authorize(token, { anyOf: ['can_access_employee_data'] });
+    if (!auth.ok) return auth.response;
 
     // Validate input
     const validation = validateData(saveAppraisalSchema, body);
@@ -24,7 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { pesuser_name, org, dept, isCounter, payload: appraisalData } = validation.data!;
+    const { pesuser_name, dept, isCounter, payload: appraisalData } = validation.data!;
+    // The org this write lands in comes from the verified token, never the
+    // body — `org` is a display string, but trusting a client-supplied value
+    // here would let any authenticated user overwrite another org's scores.
+    const org = auth.user.org;
+    if (!org) {
+      return NextResponse.json({ error: 'No organization on this account.' }, { status: 400 });
+    }
 
     // Convert all payload values to numbers
     const numericData: Record<string, number> = {};
