@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { seedPresetRoles } from './seedRoles';
 import { createEmployee, resolveRoleName, type EmployeeInput } from './createEmployee';
+import { PRESET_ROLES, resolveBaseRole, presetPermissionMap } from '@/app/components/utils/roles';
 
 export type LocalSeedEmployee = {
   name: string;
@@ -26,8 +27,41 @@ export type LocalSeedEmployee = {
   password: string;
   dept?: string;
   role?: string;
+  /** Which system preset a custom `role` behaves as (permissions, single-head
+   *  rules). Ignored for a preset `role`. Defaults to 'employee-w'. */
+  baseRole?: string;
   level?: string;
 };
+
+/** `role` on a seed employee can name a role that doesn't exist in this org yet
+ *  — unlike the rest of the app, where roles are created ahead of time through
+ *  the Roles UI (see `app/api/addRoles/route.ts`, which this mirrors). Creates
+ *  it as a custom role with `baseRole`'s permission template (default
+ *  'employee-w') so seeding from a file doesn't require a UI round-trip first. */
+async function ensureCustomRole(orgId: string, role: string, baseRole?: string): Promise<void> {
+  const trimmed = role.trim();
+  if (!trimmed || (PRESET_ROLES as readonly string[]).includes(trimmed)) return;
+
+  const existing = await prisma.roles.findFirst({
+    where: { org_id: orgId, name: { equals: trimmed, mode: 'insensitive' } },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  const resolvedBaseRole = resolveBaseRole(baseRole);
+
+  await prisma.roles.create({
+    data: { name: trimmed, org_id: orgId, base_role: resolvedBaseRole, assigned: 0 },
+  });
+
+  const templateUserId = `role:${orgId}:${trimmed}`;
+  const existingTemplate = await prisma.permission.findFirst({ where: { user_id: templateUserId } });
+  if (!existingTemplate) {
+    await prisma.permission.create({
+      data: { ...presetPermissionMap(resolvedBaseRole), user_id: templateUserId, org_id: orgId },
+    });
+  }
+}
 
 export type LocalSeedInput = {
   org: { name: string; category: 'company' | 'public' | 'academic'; plan: string };
@@ -151,6 +185,7 @@ export async function seedLocalOrg(input: LocalSeedInput): Promise<LocalSeedResu
     }
 
     const requestedRole = emp.role?.trim() || 'employee-w';
+    await ensureCustomRole(org.id, requestedRole, emp.baseRole);
     const canonicalRole = await resolveRoleName(org.name, requestedRole, input.org.category, org.id);
     if (!canonicalRole) {
       employeeErrors.push({ email: emp.email, message: `Role "${requestedRole}" does not exist in this organization.` });
