@@ -1,0 +1,49 @@
+{
+  "_comment": "Reference only — shows every allowed value. Not read by the script; fill in local-seed-data.json instead.",
+
+  "org": {
+    "name": "Acme University",
+    "category": "academic",
+    "_category_options": ["company", "public", "academic"],
+    "plan": "premium",
+    "_plan_options": ["basic", "standard", "premium"]
+  },
+
+  "admin": {
+    "name": "Ada Lovelace",
+    "email": "admin@acme.edu",
+    "password": "Str0ngPassw0rd!"
+  },
+
+  "employees": [
+    {
+      "name": "Grace Hopper",
+      "email": "grace@acme.edu",
+      "password": "AnotherPassw0rd!",
+      "dept": "Computer Science",
+      "role": "hod",
+      "_role_options": [
+        "admin",
+        "hod",
+        "dept-admin",
+        "unit-head",
+        "lecturer",
+        "industrial-engineer",
+        "employee-w",
+        "auditor"
+      ],
+      "_role_notes": "'lecturer' only resolves if org.category is 'academic'. Omit role (or leave blank) to default to 'employee-w'.",
+      "level": "Senior"
+    },
+    {
+      "name": "Alan Turing",
+      "email": "alan@acme.edu",
+      "password": "YetAnotherPassw0rd!",
+      "dept": "Mathematics",
+      "role": "employee-w",
+      "level": ""
+    }
+  ],
+
+  "_employees_notes": "employees is optional — use an empty array [] to seed only the org + admin. dept and level are free text; level is optional and can be left as an empty string or omitted."
+}
