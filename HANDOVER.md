@@ -168,3 +168,71 @@ grep -rn 'body\.org\|params\.org' app/api            # attacker-supplied scoping
 
 All three should stay empty, or the exception should be justified in the commit
 message. Do not copy a neighbouring route to decide whether a guard is needed.
+
+---
+
+## 6. Follow-up — 18 September 2026
+
+A third-party analyst re-reviewed the codebase against §1–2 above and found two
+items the 2–4 September pass missed, plus one new one. A follow-up sweep of the
+rest of the API layer then found four more IDORs the report itself didn't catch.
+Commits `6a58f41` → `c83b68e` on `dev`, pushed to `jasmond/dev`.
+
+**From the analyst's report:**
+
+- **Data exposure** — `getUsers`, `getDepartment` ran `prisma.pesuser.findMany()`
+  with no `select`, so the password/`resettoken`/`resettokenexpiry` columns rode
+  along in the response; `delete-user` echoed the same full row back to the
+  caller. Fixed: all three now select `PUBLIC_USER_COLUMNS`
+  ([`app/api/admin/_scope.ts`](app/api/admin/_scope.ts)).
+- **Cross-tenant enumeration** — `admin/orgs/[orgId]/users` answered `403` (not
+  `404`) when an org admin named another tenant's id, confirming the id exists.
+  Fixed to `404`, matching the pattern already used in `admin/users/[id]`. The
+  sibling `admin/orgs/[orgId]/auditors` route had the identical bug, not named
+  in the report; fixed alongside it.
+
+**Found in the follow-up sweep, not in the report:**
+
+- **`users/delete`** — a second, parallel delete-user endpoint with *no*
+  capability check at all (any authenticated user could delete org members),
+  plus the same unselected-columns leak as `delete-user` above. Now requires
+  `can_manage_user_roles` and selects `PUBLIC_USER_COLUMNS`.
+- **`updateGoals` / `addGoals`** — both verified the JWT signature and then
+  discarded the decoded payload, trusting a client-supplied `user_id` to scope
+  the write. Any signed-in user could overwrite another user's goal, or (via
+  `addGoals`) spam notifications and flip evaluation flags on an org they don't
+  belong to. Fixed: `user_id` must equal the verified token's `userID`.
+- **`saveAppraisal`** — same shape: JWT checked for validity only, then a
+  client-supplied `org` used to upsert appraisal scores, letting any user write
+  into another organization's records. Fixed: requires
+  `can_access_employee_data`; `org` now comes from the verified token.
+- **`admin/auditors`** — new auditor accounts were created with the hardcoded
+  literal password `"default_password"`, with no forced change. Fixed to use
+  `generateUniquePassword()` (the same helper `createEmployee.ts` uses) and
+  `must_change_password: true`.
+- **PayPal webhook verification hardcoded to the sandbox host** in both
+  `paypal/webhook` and `paypal-wehook` — would misverify or fail outright in
+  production. Now switches on `PAYPAL_MODE=live`.
+- **HTML injection into outbound email** — `auditor-responses` and
+  `survey-response/staff` are public, unauthenticated routes that built admin
+  notification emails by interpolating raw submitted fields with no escaping;
+  an anonymous submitter could inject markup into the admin's inbox. Added
+  [`app/api/_lib/escapeHtml.ts`](app/api/_lib/escapeHtml.ts) and applied it
+  there, then to every other mailer with the same pattern
+  (`resendCredentials`, `resetPassword`, `password/request`, `send-email`,
+  `storefront/provision/email.ts`, `createEmployee.sendLoginEmail`) even where
+  the recipient is only ever the account owner. `send-email`'s admin-supplied
+  `origin` param, dropped unvalidated into an invite link, is now parsed and
+  restricted to `http(s)` before use.
+- **Dead code carrying the pre-audit vulnerable patterns**, unreferenced
+  anywhere: `app/api/dbQueries.ts` (plaintext password comparison in a Prisma
+  `where`, no select) and `app/api/modules/authentications.ts` (a fake login
+  stub accepting any credentials). Deleted.
+
+**Also cleaned up:** every `.docx`/`.pdf` client working document and a batch
+of one-off dev scripts and legacy hand-written SQL were removed from the repo
+root — unrelated to authorization, just repo hygiene. See commit `ce0fd14`.
+
+**Checked and found already clean:** JWT secret handling, cookie flags, path
+containment on `/api/downloads`, remaining raw SQL (all parameterized), rate
+limiting on public routes, and no further 403-vs-404 enumeration leaks.
