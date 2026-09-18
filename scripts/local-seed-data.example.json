@@ -32,8 +32,18 @@
         "employee-w",
         "auditor"
       ],
-      "_role_notes": "'lecturer' only resolves if org.category is 'academic'. Omit role (or leave blank) to default to 'employee-w'.",
+      "_role_notes": "'lecturer' only resolves if org.category is 'academic'. Omit role (or leave blank) to default to 'employee-w'. role does NOT have to be one of these — any other text (e.g. 'Snr. Supt', 'Chief Admin Officer') is created as a new custom role in this org the first time it's used.",
       "level": "Senior"
+    },
+    {
+      "name": "Ada King",
+      "email": "ada@acme.edu",
+      "password": "YetAnotherPassw0rd2!",
+      "dept": "Fire",
+      "role": "Snr. Supt",
+      "baseRole": "unit-head",
+      "_baseRole_notes": "Only used the first time this custom role name appears. Sets which preset's permissions the new role starts with — same _role_options list above. Omit to default to 'employee-w'; an admin can fine-tune permissions afterwards from the Roles page.",
+      "level": "Level 10"
     },
     {
       "name": "Alan Turing",
