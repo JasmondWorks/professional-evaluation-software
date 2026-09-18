@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs'
 import { sendMail } from '@/app/lib/email'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { rateLimit } from '../_lib/rateLimit'
+import { escapeHtml } from '../_lib/escapeHtml'
 
 const randombytes = require('randombytes')
 
@@ -28,10 +29,10 @@ async function sendLoginEmail(to: string, name: string, password: string) {
     subject: 'Your Login Credentials',
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2 style="color: #1e3a8a;">Hello ${name},</h2>
+        <h2 style="color: #1e3a8a;">Hello ${escapeHtml(name)},</h2>
         <p>Your login credentials have been reset.</p>
-        <p><strong>Email:</strong> ${to}</p>
-        <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${password}</code></p>
+        <p><strong>Email:</strong> ${escapeHtml(to)}</p>
+        <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${escapeHtml(password)}</code></p>
         <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
         <p>Please log in and change your password immediately.</p>
       </div>

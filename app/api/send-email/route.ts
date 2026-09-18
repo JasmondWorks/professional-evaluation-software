@@ -8,6 +8,7 @@ import { sendMail } from "@/app/lib/email";
 import { getJWTSecret } from "@/app/lib/jwt";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { rateLimit } from "../_lib/rateLimit";
+import { escapeHtml } from "../_lib/escapeHtml";
 
 // Invites an external auditor. It had no auth, so it was an open relay: anyone
 // could make the organization's mail account send an arbitrary address a link
@@ -40,10 +41,24 @@ export async function POST(request: Request) {
       expiresIn: "7d",
     });
     // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,
-    // which previously produced dead localhost invite links.
-    const BASE_URL =
-      origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const secureLink = `${BASE_URL}/auditor/${token}`;
+    // which previously produced dead localhost invite links. The caller is an
+    // admin, not the public, but `origin` still shouldn't be trusted enough to
+    // drop unvalidated into an href: an admin account handing out a malformed
+    // value (or a compromised admin session) shouldn't be able to turn this
+    // into an arbitrary link mailed from the app's own address.
+    const fallbackBase = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    let baseUrl = fallbackBase;
+    if (typeof origin === "string" && origin) {
+      try {
+        const parsed = new URL(origin);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+          baseUrl = parsed.origin;
+        }
+      } catch {
+        // Malformed origin — fall back rather than embed it unvalidated.
+      }
+    }
+    const secureLink = `${baseUrl}/auditor/${token}`;
 
     // This built its own transport with smtp.gmail.com:465 hardcoded, ignoring
     // EMAIL_HOST, EMAIL_PORT and the Resend path that every other email in the
@@ -59,12 +74,12 @@ export async function POST(request: Request) {
           <p>Please click the button below to securely accept the invitation and access the platform:</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${secureLink}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation</a>
+            <a href="${escapeHtml(secureLink)}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation</a>
           </div>
-          
+
           <p style="font-size: 14px; color: #555;">If the button above isn't clickable, copy and paste the following link into your web browser:</p>
           <p style="font-size: 14px; word-break: break-all; color: #4F46E5; background: #f9f9f9; padding: 10px; border-radius: 4px;">
-            ${secureLink}
+            ${escapeHtml(secureLink)}
           </p>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />

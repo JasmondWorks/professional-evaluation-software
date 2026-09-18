@@ -6,6 +6,7 @@
  */
 
 import { sendMail } from '@/app/lib/email';
+import { escapeHtml } from '@/app/api/_lib/escapeHtml';
 import type { InstitutionType, PlanType } from '@/app/lib/billing/catalog';
 
 const CATEGORY_LABEL: Record<InstitutionType, string> = {
@@ -45,20 +46,20 @@ export async function sendWelcomeEmail(input: {
     subject: `${organization} is set up on PES`,
     html: `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6;color:#1b1b28;max-width:560px;margin:0 auto;padding:8px">
-  <h1 style="font-size:20px;font-weight:600;margin:0 0 4px">Welcome to PES, ${adminName}</h1>
+  <h1 style="font-size:20px;font-weight:600;margin:0 0 4px">Welcome to PES, ${escapeHtml(adminName)}</h1>
   <p style="font-size:15px;color:#4b4b5c;margin:0 0 24px">
-    Your payment is confirmed and <strong>${organization}</strong> has been created.
+    Your payment is confirmed and <strong>${escapeHtml(organization)}</strong> has been created.
     You are its administrator.
   </p>
 
   <table style="width:100%;border-collapse:collapse;background:#f7f7fa;border-radius:10px;margin:0 0 24px">
     <tr>
       <td style="padding:12px 14px;font-size:13px;color:#6b6b7b">Organization</td>
-      <td style="padding:12px 14px;font-size:14px;font-weight:600;text-align:right">${organization}</td>
+      <td style="padding:12px 14px;font-size:14px;font-weight:600;text-align:right">${escapeHtml(organization)}</td>
     </tr>
     <tr>
       <td style="padding:12px 14px;font-size:13px;color:#6b6b7b;border-top:1px solid #e6e6ee">Your sign-in email</td>
-      <td style="padding:12px 14px;font-size:14px;font-weight:600;text-align:right;border-top:1px solid #e6e6ee">${to}</td>
+      <td style="padding:12px 14px;font-size:14px;font-weight:600;text-align:right;border-top:1px solid #e6e6ee">${escapeHtml(to)}</td>
     </tr>
     <tr>
       <td style="padding:12px 14px;font-size:13px;color:#6b6b7b;border-top:1px solid #e6e6ee">Plan</td>
@@ -90,7 +91,7 @@ export async function sendWelcomeEmail(input: {
   </p>
 
   <p style="font-size:12px;color:#9a9aad;margin:24px 0 0;border-top:1px solid #e6e6ee;padding-top:16px">
-    You are receiving this because a PES plan was purchased for ${organization}.
+    You are receiving this because a PES plan was purchased for ${escapeHtml(organization)}.
     Nobody can sign in to this account until you set a password.
   </p>
 </div>`,

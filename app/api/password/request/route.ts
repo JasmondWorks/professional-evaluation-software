@@ -16,6 +16,7 @@ import prisma from '@/app/api/prisma.dev';
 import { rateLimit } from '@/app/api/_lib/rateLimit';
 import { issuePasswordToken, passwordLink } from '@/app/lib/auth/passwordToken';
 import { sendMail } from '@/app/lib/email';
+import { escapeHtml } from '@/app/api/_lib/escapeHtml';
 
 export async function POST(req: Request) {
   const tooMany = rateLimit(req, { key: 'password-request', limit: 5, windowMs: 60 * 60_000 });
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     ${purpose === 'setup' ? 'Finish setting up your account' : 'Reset your password'}
   </h1>
   <p style="font-size:15px;color:#4b4b5c;margin:0 0 22px">
-    Hello${user.name ? ' ' + user.name : ''}, use the button below to
+    Hello${user.name ? ' ' + escapeHtml(user.name) : ''}, use the button below to
     ${purpose === 'setup' ? 'choose your password' : 'choose a new password'}.
   </p>
   <p style="margin:0 0 10px">

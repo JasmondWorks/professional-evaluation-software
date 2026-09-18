@@ -6,6 +6,7 @@ import crypto from 'crypto'
 import { validateData, resetPasswordSchema, confirmResetSchema, formatZodErrors } from '@/app/lib/validation'
 import { rateLimit } from '../_lib/rateLimit'
 import { sendMail } from '@/app/lib/email'
+import { escapeHtml } from '../_lib/escapeHtml'
 import {
   consumePasswordToken,
   findPasswordTokenHolder,
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6;color:#1b1b28;max-width:520px;margin:0 auto;padding:8px">
   <h1 style="font-size:19px;font-weight:600;margin:0 0 6px">Reset your password</h1>
   <p style="font-size:15px;color:#4b4b5c;margin:0 0 22px">
-    Hello${user.name ? ' ' + user.name : ''}, use the button below to choose a new password.
+    Hello${user.name ? ' ' + escapeHtml(user.name) : ''}, use the button below to choose a new password.
   </p>
   <p style="margin:0 0 10px">
     <a href="${resetLink}" style="display:inline-block;background:#322b80;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:12px 24px;border-radius:8px">
