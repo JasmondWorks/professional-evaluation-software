@@ -1,53 +1,27 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { PUBLIC_USER_COLUMNS } from '../admin/_scope'
 
-type user = {
-  id:number
-  name: string
-  email: string 
-  gsm: string
-  role: string
-  address: string
-  dept: string
-  faculty_college: string
-  dob: string
-  doa: string
-  poa : string
-  doc : string
-  post : string
-  dopp: string
-  level: string
-  image : string
-  org : string
-}
-
-async function getUsers( user: string | null ) {
-  const users: user[] = await prisma.$queryRawUnsafe('SELECT * FROM pesuser where org = $1', user?.toString())
-  
-  await prisma.$disconnect()
-  return users
+async function getUsers( orgId: string | null ) {
+  if (!orgId) return []
+  return prisma.pesuser.findMany({ where: { org_id: orgId }, select: PUBLIC_USER_COLUMNS })
 }
 
 export async function POST(request: NextRequest) {
-  const { token } = await request.json();
-  const user = jwt.decode( token);
-  console.log(token)
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
 
-  if (token) {
-    try {
-      let userName: string | null = null;
-      if (typeof user === 'object' && user !== null && 'name' in user && typeof (user as any).name === 'string') {
-        userName = (user as any).name;
-      }
-      let userInfo = await getUsers(userName)
-      console.log(userInfo)
-      return NextResponse.json(userInfo)
-  
-    } catch(err) {
-      console.error(err)
-      return NextResponse.json({ data: ['no data'] })
-    }    
-  }
-  return NextResponse.json({ data: ['no data'] })
+  try {
+    const userOrgId = auth.user.orgId ?? null;
+    let userInfo = await getUsers(userOrgId)
+    return NextResponse.json(userInfo)
+  } catch(err) {
+    console.error(err)
+    return NextResponse.json({ data: ['no data'] })
+  }    
 }

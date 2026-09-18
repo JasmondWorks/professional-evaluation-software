@@ -1,5 +1,9 @@
 'use client'
+import { notify } from "@/lib/toast";
 import { useState } from 'react'
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
+import { inputBase } from "@/app/components/ui/Input";
 
 export default function StudentEvaluationTotals() {
   const [students, setStudents] = useState(
@@ -20,48 +24,51 @@ export default function StudentEvaluationTotals() {
   const average = validScores.length > 0 ? (total / validScores.length).toFixed(2) : '0.00'
 
   return (
-    <div className="w-11/12 mx-auto p-8 space-y-8">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        Student Evaluation (Total Scores)
-      </h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <PageHeader
+        title="Student evaluation"
+        subtitle="Enter each student's total score to compute the class total and average."
+      />
 
-      <div className="space-y-6">
+      <div className="bg-surface border border-line rounded-xl shadow-card divide-y divide-line">
         {students.map((student, index) => (
-          <div key={index} className="flex gap-4 items-center border p-3 rounded-lg shadow-sm">
-            <span className="w-16 text-gray-500 font-medium">#{index + 1}</span>
+          <div key={index} className="flex gap-3 items-center px-4 py-3">
+            <span className="w-8 text-sm text-muted font-medium tabular-nums">#{index + 1}</span>
             <input
               type="text"
               placeholder="Student name"
+              aria-label={`Student ${index + 1} name`}
               value={student.name}
               onChange={e => handleChange(index, 'name', e.target.value)}
-              className="flex-1 border rounded p-2"
+              className={`${inputBase} flex-1`}
             />
             <input
               type="number"
-              placeholder="Total score"
+              placeholder="Score"
+              aria-label={`Student ${index + 1} total score`}
               value={student.score}
               onChange={e => handleChange(index, 'score', e.target.value)}
-              className="w-32 text-center border rounded p-2"
+              className={`${inputBase} w-28 text-right tabular-nums`}
             />
           </div>
         ))}
       </div>
 
-      <div className="border-t pt-6">
-        <h2 className="text-xl font-semibold text-center mb-3">Summary</h2>
-        <div className="flex justify-around text-lg font-medium">
-          <p>Total Score: <span className="font-bold">{total}</span></p>
-          <p>Average Score: <span className="font-bold">{average}</span></p>
+      <div className="grid grid-cols-2 gap-4 mt-6">
+        <div className="rounded-lg border border-line bg-surface p-4">
+          <p className="text-sm text-muted">Total score</p>
+          <p className="mt-1 text-2xl font-semibold text-strong tabular-nums">{total}</p>
+        </div>
+        <div className="rounded-lg border border-pes-100 bg-pes-50 p-4">
+          <p className="text-sm text-pes-700">Average score</p>
+          <p className="mt-1 text-2xl font-semibold text-pes-700 tabular-nums">{average}</p>
         </div>
       </div>
 
-      <div className="pt-6 text-center">
-        <button
-          onClick={() => alert(`Average Score: ${average}`)}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg"
-        >
-          Submit Summary
-        </button>
+      <div className="mt-6">
+        <Button onClick={() => notify.info(`Average score: ${average}`)}>
+          Submit summary
+        </Button>
       </div>
     </div>
   )

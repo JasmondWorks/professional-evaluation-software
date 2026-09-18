@@ -1,0 +1,107 @@
+// Reusable server-side authorization for API routes.
+//
+// Client-side gating (sidebar, <Can>) is UX only — it can be bypassed by hitting
+// the endpoint directly. Protected routes must verify the JWT and check the
+// caller's capability/role here, on the server.
+//
+//   const auth = authorize(tokenFromRequest(req), { anyOf: ['can_access_employee_data'] });
+//   if (!auth.ok) return auth.response;
+//   // auth.user is the verified payload (role, org, perms, …)
+//
+// Admin tiers (super-admin/admin) pass any capability check by default, mirroring
+// how the sidebar allow-lists include admins everywhere.
+
+import { NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import { PermissionKey } from '@/app/components/utils/roles';
+
+// Read per call, via the one helper that refuses a missing or placeholder
+// secret. Held in a module constant this was also resolved at import time,
+// before the environment was necessarily populated.
+import { getJWTSecret } from '@/app/lib/jwt';
+
+// Platform tiers that bypass capability checks within their org.
+const ADMIN_TIERS = ['super-admin', 'admin'];
+
+export type DecodedUser = {
+  userID?: string;
+  role?: string | null;
+  // The authorization claim — every tenant-scoping check should compare this,
+  // never `org` below.
+  orgId?: string | null;
+  // Display text only (org.name is not unique). Never compare this for
+  // access control.
+  org?: string | null;
+  email?: string | null;
+  perms?: Partial<Record<PermissionKey, true>>;
+  [k: string]: any;
+};
+
+/** The org id from a verified token, or the forbidden() response if it's
+ *  missing — every org-scoped route needs one or the other. */
+export function requireOrgId(
+  user: DecodedUser,
+): { ok: true; orgId: string } | { ok: false; response: NextResponse } {
+  if (!user.orgId) {
+    return { ok: false, response: forbidden('No organization on this account.') };
+  }
+  return { ok: true, orgId: user.orgId };
+}
+
+export function verifyToken(token?: string | null): DecodedUser | null {
+  if (!token) return null;
+  try {
+    return jwt.verify(token, getJWTSecret()) as DecodedUser;
+  } catch {
+    return null;
+  }
+}
+
+// Pull a bearer token from the Authorization header.
+export function tokenFromRequest(req: Request): string | null {
+  const h = req.headers.get('authorization') || req.headers.get('Authorization');
+  return h ? h.replace(/^Bearer\s+/i, '') : null;
+}
+
+export type AccessRule = {
+  anyOf?: PermissionKey[]; // allowed if the user holds any of these capabilities
+  roles?: string[]; // allowed if the user's role is in this list
+  allowAdmins?: boolean; // default true: admin/super-admin always pass
+};
+
+export function hasAccess(user: DecodedUser | null, rule: AccessRule): boolean {
+  if (!user) return false;
+  const role = user.role ?? '';
+  if ((rule.allowAdmins ?? true) && ADMIN_TIERS.includes(role)) return true;
+
+  // An empty rule means "any signed-in user is allowed". Twenty routes call
+  // authorize(token, {}) for exactly that, including /api/getUser, which serves
+  // a person their own record. Without this line those routes fell through to
+  // the final `return false` and answered 403 to everyone who was not an admin,
+  // so a lecturer could not load their own profile.
+  const restricts = (rule.roles?.length ?? 0) > 0 || (rule.anyOf?.length ?? 0) > 0;
+  if (!restricts) return true;
+
+  if (rule.roles?.includes(role)) return true;
+  if (rule.anyOf?.some((k) => user.perms?.[k] === true)) return true;
+  return false;
+}
+
+export const unauthorized = (msg = 'Unauthorized') =>
+  NextResponse.json({ error: msg, status: 401 }, { status: 401 });
+
+export const forbidden = (
+  msg = 'You do not have permission to perform this action',
+) => NextResponse.json({ error: msg, status: 403 }, { status: 403 });
+
+// Verify + authorize in one call. Returns the verified user on success, or a
+// ready-to-return NextResponse on failure.
+export function authorize(
+  token: string | null | undefined,
+  rule: AccessRule,
+): { ok: true; user: DecodedUser } | { ok: false; response: NextResponse } {
+  const user = verifyToken(token);
+  if (!user) return { ok: false, response: unauthorized() };
+  if (!hasAccess(user, rule)) return { ok: false, response: forbidden() };
+  return { ok: true, user };
+}

@@ -1,11 +1,19 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
+import { hodCounterScores, staffPerformance } from '@/app/lib/performance/results';
+import { authorize, tokenFromRequest } from '../_lib/authGuard';
 
+// The org was taken from an unverified jwtDecode, so every score in this
+// response could be pulled for any organization by hand-writing a token.
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const org = searchParams.get("org");
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
 
-  if (!org) {
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+
+  if (!org || !orgId) {
     return NextResponse.json(
       { error: "Missing org parameter" },
       { status: 400 }
@@ -13,59 +21,53 @@ export async function GET(req: Request) {
   }
 
   try {
+    const appraisalSelect = {
+      teaching_quality_evaluation: true,
+      research_quality_evaluation: true,
+      administrative_quality_evaluation: true,
+      community_quality_evaluation: true,
+      pesuser_name: true,
+    } as const;
+
     // appraisal values
-    const appraisal = await prisma.$queryRaw<
-      { teaching_quality_evaluation: number | null; research_quality_evaluation: number | null; administrative_quality_evaluation: number | null; community_quality_evaluation: number | null; pesuser_name: string }[]
-    >`
-      SELECT teaching_quality_evaluation, research_quality_evaluation, administrative_quality_evaluation, community_quality_evaluation, pesuser_name
-      FROM appraisal
-      WHERE org = ${org};
-    `;
+    const appraisal = await prisma.appraisal.findMany({
+      where: { org_id: orgId },
+      select: appraisalSelect,
+    });
 
     // counter appraisal values
-    const counterAppraisal = await prisma.$queryRaw<
-      { teaching_quality_evaluation: number | null; research_quality_evaluation: number | null; administrative_quality_evaluation: number | null; community_quality_evaluation: number | null; pesuser_name: string }[]
-    >`
-      SELECT teaching_quality_evaluation, research_quality_evaluation, administrative_quality_evaluation, community_quality_evaluation, pesuser_name
-      FROM counter_appraisal
-      WHERE org = ${org};
-    `;
+    const counterAppraisal = await prisma.counter_appraisal.findMany({
+      where: { org_id: orgId },
+      select: appraisalSelect,
+    });
 
-    // userperformance values
-    const userperformance = await prisma.$queryRaw<
-      { competence: number | null; integrity: number | null; compatibility: number | null; use_of_resources: number | null; pesuser_name: string }[]
-    >`
-      SELECT competence, integrity, compatibility, use_of_resources, pesuser_name
-      FROM userperformance
-      WHERE org = ${org};
-    `;
-
-    // counter userperformance values
-    const counterUserperformance = await prisma.$queryRaw<
-      { competence: number | null; integrity: number | null; compatibility: number | null; use_of_resources: number | null; pesuser_name: string }[]
-    >`
-      SELECT competence, integrity, compatibility, use_of_resources, pesuser_name
-      FROM counter_userperformance
-      WHERE org = ${org};
-    `;
+    // Performance now comes from the model rather than the old flat tables:
+    // the four criteria as settled, and the heads' objections beside them.
+    // staffPerformance/hodCounterScores live in app/lib and still filter by
+    // the org name string (out of scope for this pass).
+    const userperformance = await staffPerformance({ orgId });
+    const counterUserperformance = await hodCounterScores({ orgId });
 
     // stress values
-    const stress = await prisma.$queryRaw<
-      { stress_category: string | null; stress_theme_form: string | null; stress_feeling_frequency_form: string | null; pesuser_name: string }[]
-    >`
-      SELECT stress_category, stress_theme_form, stress_feeling_frequency_form, pesuser_name
-      FROM stress
-      WHERE org = ${org};
-    `;
+    const stress = await prisma.stress.findMany({
+      where: { org_id: orgId },
+      select: {
+        stress_category: true,
+        stress_theme_form: true,
+        stress_feeling_frequency_form: true,
+        pesuser_name: true,
+      },
+    });
 
     // counter stress values
-    const counterStress = await prisma.$queryRaw<
-      { stress_theme_form: string | null; stress_feeling_frequency_form: string | null; pesuser_name: string }[]
-    >`
-      SELECT stress_theme_form, stress_feeling_frequency_form, pesuser_name
-      FROM counter_stress
-      WHERE org = ${org};
-    `;
+    const counterStress = await prisma.counter_stress.findMany({
+      where: { org_id: orgId },
+      select: {
+        stress_theme_form: true,
+        stress_feeling_frequency_form: true,
+        pesuser_name: true,
+      },
+    });
 
     return NextResponse.json({
       appraisal,

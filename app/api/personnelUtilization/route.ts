@@ -1,38 +1,82 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // adjust path if needed
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireModel } from "../_lib/planGuard";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const {
-      org,
-      a_ij,
-      lambda,
-      mu,
-      rho,
-      p0,
-      lbar,
-      kmin,
-      kmax,
-      kstar,
-      hstar,
-    } = body;
+    // This handler took no token at all and read `org` from the body, so an
+    // unauthenticated caller could write runs into any organization's
+    // utilization history — and that history feeds the staff prediction, so a
+    // planted row bends every extrapolation drawn through it afterwards. The
+    // org now comes from the verified token, as it does in the GET and PATCH
+    // below; anything the body claims about it is ignored.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
 
-    if (!org || a_ij == null || lambda == null || mu == null || kstar == null || hstar == null) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
+      return NextResponse.json(
+        { error: "This account is not attached to an organization" },
+        { status: 403 },
+      );
     }
 
-    // Validate Eq. 8.9: λ < μ
-    if (lambda >= mu) {
+    const body = await req.json();
+    const { a_ij, lambda, mu, rho, p0, lbar, kmin, kmax, kstar, hstar } = body;
+
+    // The rest of the parameter set, stored so the management levels above can
+    // be tested against the same boundary conditions. Optional: a run made from
+    // the rates alone is still a valid run.
+    const numeric = (v: any) =>
+      v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v);
+    const constraints = {
+      alpha: numeric(body.alpha),
+      y_coef: numeric(body.y_coef),
+      w_val: numeric(body.w_val),
+      d_val: numeric(body.d_val),
+      g_val: numeric(body.g_val),
+      j_val: numeric(body.j_val),
+      t1: numeric(body.t1),
+      t2: numeric(body.t2),
+      t3: numeric(body.t3),
+      t4: numeric(body.t4),
+    };
+
+    if (
+      a_ij == null ||
+      lambda == null ||
+      mu == null ||
+      kstar == null ||
+      hstar == null
+    ) {
       return NextResponse.json(
-        { error: "Constraint violated: λ must be less than μ (Eq. 8.9)" },
-        { status: 400 }
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    // The queue is only stable while arrivals trail service. Rows that break the
+    // rule are not merely wrong on their own row — the history feeds the staff
+    // prediction, so one bad K* skews every extrapolation drawn through it. The
+    // form blocks this too; this is the check that actually holds.
+    if (!(Number(lambda) < Number(mu))) {
+      return NextResponse.json(
+        { error: "λ must be strictly less than μ." },
+        { status: 400 },
       );
     }
 
     const saved = await prisma.personnel_utilization.create({
       data: {
-        org,
+        org_id: orgId,
         a_ij,
         lambda,
         mu,
@@ -43,24 +87,49 @@ export async function POST(req: NextRequest) {
         kmax,
         kstar,
         hstar,
+        ...constraints,
       },
     });
 
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error("Error saving personnel utilization data:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
+    // This used to take the newest row in the table with no org filter at all,
+    // so one organization's latest run was handed to whoever asked next. The
+    // org now comes from the token and scopes the query.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
+
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
+      return NextResponse.json(
+        { error: "Organization not found in token" },
+        { status: 400 },
+      );
+    }
+
     const latest = await prisma.personnel_utilization.findFirst({
+      where: { org_id: orgId },
       orderBy: { created_at: "desc" },
     });
 
     if (!latest) {
-      return NextResponse.json({ message: "No records found" }, { status: 404 });
+      return NextResponse.json(
+        { message: "No records found" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({
@@ -75,6 +144,67 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching personnel utilization data:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+// Attaching the staff numbers a run was used against.
+//
+// The client wants the future staff-number prediction to read a K* and its head
+// count out of this history alone. A utilization run does not know the head
+// count when it is made — the organization structure cascade works that out
+// afterwards, from the K* this run produced — so the cascade writes the numbers
+// back here when the structure is saved.
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
+
+    const org = auth.user?.org ? String(auth.user.org) : null;
+    const orgId = auth.user?.orgId ?? null;
+    if (!org || !orgId) {
+      return NextResponse.json(
+        { error: "Organization not found in token" },
+        { status: 400 },
+      );
+    }
+
+    const body = await req.json();
+    const id = body.id;
+    if (!id) {
+      return NextResponse.json({ error: "A run id is required" }, { status: 400 });
+    }
+
+    // Scoped by org as well as id, so a run belonging to another organization
+    // cannot be written to by guessing its number.
+    const updated = await prisma.personnel_utilization.updateMany({
+      where: { id, org_id: orgId },
+      data: {
+        staff_number:
+          body.staff_number == null ? null : Number(body.staff_number),
+        supervisory_staff:
+          body.supervisory_staff == null ? null : Math.round(Number(body.supervisory_staff)),
+        management_staff:
+          body.management_staff == null ? null : Math.round(Number(body.management_staff)),
+        staff_method: body.staff_method == null ? null : String(body.staff_method),
+      },
+    });
+
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "No such run" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error attaching staff numbers to a utilization run:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

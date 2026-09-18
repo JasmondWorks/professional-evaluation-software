@@ -1,30 +1,49 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
+import { validateData, changePasswordSchema, formatZodErrors } from '@/app/lib/validation'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rateLimit } from '../_lib/rateLimit'
 
-type ChangePasswordRequest = {
-  email: string
-  currentPassword: string
-  newPassword: string
-}
-
+// Changing your own password. It knew the current password had to be right, but
+// not who was asking, and with no rate limiting that made it a password oracle
+// against any address: guess, and the 401 tells you whether you guessed wrong.
+// The address now comes off the session, so the only account reachable here is
+// the caller's own.
 export async function POST(request: NextRequest) {
-  try {
-    const { email, currentPassword, newPassword }: ChangePasswordRequest = await request.json()
+  const auth = authorize(tokenFromRequest(request), {})
+  if (!auth.ok) return auth.response
 
-    // Validate input
-    if (!email || !currentPassword || !newPassword) {
+  // Authenticated, but the reply still says whether the current password was
+  // right, so the guessing has to be bounded too.
+  const tooMany = rateLimit(request, {
+    key: 'change-password',
+    limit: 5,
+    windowMs: 60_000,
+    subject: auth.user.email ? String(auth.user.email) : null,
+  })
+  if (tooMany) return tooMany
+
+  try {
+    const body = await request.json()
+
+    const validation = validateData(changePasswordSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json(
-        { error: 'New password must be at least 6 characters long' },
-        { status: 400 }
-      )
+    const { currentPassword, newPassword } = validation.data!
+    const email = auth.user.email ? String(auth.user.email) : null
+
+    if (!email) {
+      return NextResponse.json({ error: 'No email on this account' }, { status: 403 })
     }
 
     // Find user
@@ -56,7 +75,17 @@ export async function POST(request: NextRequest) {
     // Update password
     await prisma.pesuser.update({
       where: { id: user.id },
-      data: { password: hashedPassword }
+      data: {
+        password: hashedPassword,
+        // They have chosen this one themselves, so there is nothing left to
+        // force — this is what releases them from the change-password gate.
+        must_change_password: false,
+        // Any outstanding set-password or reset link is spent: the account is
+        // settled, and a link still sitting in an inbox should not reopen it.
+        password_token: null,
+        password_token_expiry: null,
+        password_token_purpose: null,
+      }
     })
 
     return NextResponse.json(

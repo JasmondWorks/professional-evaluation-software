@@ -1,0 +1,576 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { BackLink,
+  Alert, Badge, Button, Card, CardBody, CardHeader, PageHeader, Textarea,
+} from '@/app/components/ui';
+import { apiFetch } from '@/app/utils/apiFetch';
+import { notify } from '@/lib/toast';
+import {
+  AppraisalModel, formsFor, mayEnterForm, ORG_ADMIN_ROLES,
+} from '@/app/lib/appraisal/instrument';
+import { jwtDecode } from 'jwt-decode';
+import { getAccessToken } from '@/app/utils/auth';
+import FormCard from './FormCard';
+import Questionnaire from './Questionnaire';
+import StageBanner from '../../StageBanner';
+import { DEPARTMENT_ADMIN_ROLES } from '@/app/lib/appraisal/instrument';
+import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
+
+type CategoryScore = {
+  category: string;
+  quality: string | null;
+  hod_score: string | null;
+  hod_justification: string | null;
+  line_items: unknown;
+  copies_submitted: number | null;
+  student_count: number | null;
+  basic_units: string | null;
+  staff_accepted: boolean | null;
+  reconciliation: string | null;
+  recorded_score: string | null;
+  auditor_score: string | null;
+};
+
+type Entry = {
+  id: number;
+  pesuser_name: string;
+  dept: string | null;
+  model: AppraisalModel;
+  position: string | null;
+  cadre: string | null;
+  status: string;
+  verified_at: string | null;
+  verified_by: string | null;
+  rtp: string | null;
+  grade: string | null;
+  partial_target: boolean;
+  questionnaire: Record<string, { answer?: boolean | null; note?: string }> | null;
+  categories: CategoryScore[];
+};
+
+export default function EntryPage() {
+  const params = useParams<{ id: string }>();
+  const entryId = params.id;
+
+  const [entry, setEntry] = useState<Entry | null>(null);
+  // Naming the model only tells a reader something where both kinds exist.
+  const isAcademicOrg = useIsAcademicOrg();
+  const [sealed, setSealed] = useState(false);
+  // Academic Forms 8 and 9 are recorded by the departmental administrator. If the
+  // department has none, say so up front rather than letting people find out when
+  // a save is refused.
+  const [deptAdmin, setDeptAdmin] = useState<{ hasAdmin: boolean; names: string[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Who is looking. The forms are rendered from this, so the screen can never
+  // offer an input the server would refuse.
+  const [viewer, setViewer] = useState<{ role: string; name: string }>({ role: '', name: '' });
+  useEffect(() => {
+    const t = getAccessToken();
+    if (!t) return;
+    try {
+      const c: any = jwtDecode(t);
+      setViewer({ role: c?.role ?? '', name: c?.name ?? '' });
+    } catch {
+      /* leave blank; nothing becomes editable */
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/appraisal-v2/entry?entryId=${entryId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Could not load this appraisal.');
+      setEntry(data.entry);
+      setSealed(data.sealed);
+      if (data.entry?.model === 'academic' && data.entry?.dept) {
+        const aRes = await apiFetch(
+          `/api/appraisal-v2/dept-admin?dept=${encodeURIComponent(data.entry.dept)}`,
+        );
+        if (aRes.ok) setDeptAdmin(await aRes.json());
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [entryId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // While an appraisal is still a draft, leaving with forms unscored is more
+  // often an oversight than a decision. The browser prompt is deliberately the
+  // native one: it fires on tab close and back navigation, which a React modal
+  // cannot intercept.
+  useEffect(() => {
+    if (!entry || entry.status !== 'draft') return;
+    const total = formsFor(entry.model).length;
+    if (entry.categories.length >= total) return;
+
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [entry]);
+
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  async function verify() {
+    setBusy(true);
+    setVerifyError(null);
+    try {
+      const res = await apiFetch('/api/appraisal-v2/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      notify.success('Verified. The head of department can now review it.');
+      load();
+    } catch (err: any) {
+      setVerifyError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit() {
+    // The client asked for a prompt before someone leaves a form unscored, in
+    // case it was an oversight rather than a choice.
+    const missing = forms.filter((f) => !scoreFor(f.key));
+    if (missing.length > 0) {
+      const names = missing.map((f) => `Form ${f.form}, ${f.label}`).join('\n');
+      const ok = window.confirm(
+        `${missing.length} form${missing.length === 1 ? ' has' : 's have'} no score recorded:\n\n${names}\n\n` +
+          'Categories with nothing entered are left out of the result. Submit anyway? ' +
+          'You will not be able to edit these forms afterwards.',
+      );
+      if (!ok) return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await apiFetch('/api/appraisal-v2/score', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to submit.');
+      notify.success('Submitted successfully. Your forms are now with the departmental administrator.');
+      setError(null);
+      load();
+    } catch (err: any) {
+      // A network failure surfaces as "Failed to fetch", which tells the user
+      // nothing about what they were doing. The submission may also have landed
+      // before the connection dropped, so say so rather than invite a blind retry.
+      const network = err?.message === 'Failed to fetch' || err?.name === 'TypeError';
+      setError(
+        network
+          ? 'Failed to submit. Check your connection and reload the page before trying again, in case it went through.'
+          : err.message ?? 'Failed to submit.',
+      );
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-pes border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!entry) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+        <Alert tone="danger">{error ?? 'This appraisal could not be found.'}</Alert>
+      </div>
+    );
+  }
+
+  const forms = formsFor(entry.model);
+  const locked = entry.status !== 'draft';
+  const isOwnEntry = viewer.name === entry.pesuser_name;
+  const isOrgAdmin = ORG_ADMIN_ROLES.includes(viewer.role);
+  // The organization administrator enters nothing, so the forms are not shown to
+  // them at all. Everyone else sees only the forms that are theirs to fill.
+  // Seeing a form and filling one in are different rights.
+  //   organization admin   nothing, they never touch the data
+  //   head of department   every form, read-only, since they score all of them
+  //   everyone else        only the forms they fill in themselves
+  const canEnter = (key: (typeof forms)[number]['key']) =>
+    mayEnterForm({ role: viewer.role, formKey: key, isOwnEntry });
+  const isHead = viewer.role === 'hod' || viewer.role === 'unit-head';
+  const visibleForms = isOrgAdmin ? [] : isHead ? forms : forms.filter((f) => canEnter(f.key));
+  const scoreFor = (key: string) => entry.categories.find((c) => c.category === key) ?? null;
+  const entered = entry.categories.length;
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+      <BackLink href="/appraisal/entries">Back to appraisals</BackLink>
+
+      <PageHeader
+        title={entry.pesuser_name}
+        subtitle={`${isAcademicOrg ? (entry.model === 'academic' ? 'Academic' : 'Non-academic') + ' appraisal' : 'Appraisal'}${
+          entry.dept ? ` · ${entry.dept}` : ''
+        } · ${entered} of ${forms.length} forms entered`}
+        actions={
+          !locked && isOwnEntry && !isOrgAdmin ? (
+            <div className="flex flex-wrap gap-2">
+              {/* Courses feed the teaching quantity, so this belongs beside the
+                  action it gates rather than a page away. Academic only. */}
+              {entry.model === 'academic' ? (
+                <Link href="/appraisal/courses">
+                  <Button variant="secondary">My courses</Button>
+                </Link>
+              ) : null}
+              <Button
+                onClick={() => (entered === 0 ? setError('Fill in at least one form before submitting.') : submit())}
+                aria-disabled={entered === 0}
+                className={entered === 0 ? 'opacity-50' : undefined}
+                loading={busy}
+              >
+                Submit for review
+              </Button>
+            </div>
+          ) : null
+        }
+      />
+
+      {error ? <Alert tone="danger" className="mb-6">{error}</Alert> : null}
+
+      <StageBanner
+        status={entry.status}
+        role={viewer.role}
+        verifiedBy={entry.verified_by}
+        verifiedAt={entry.verified_at}
+      />
+
+      {/* The departmental administrator's step: confirm the paper forms match
+          what was entered before the head of department sees any of it. */}
+      {DEPARTMENT_ADMIN_ROLES.includes(viewer.role) && entry.status === 'submitted' ? (
+        <Card className="mb-6">
+          <CardBody>
+            <h3 className="text-base font-semibold text-strong">Verify Forms 8 and 9</h3>
+            <p className="mt-1 text-sm text-body">
+              Check the entered scores against the paper originals. Once verified this goes
+              to the head of department and can no longer be edited.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button loading={busy} onClick={verify}>
+                Verify and send to the head of department
+              </Button>
+            </div>
+            {verifyError ? (
+              <Alert tone="danger" className="mt-3">
+                {verifyError}
+              </Alert>
+            ) : null}
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {deptAdmin && !deptAdmin.hasAdmin ? (
+        <Alert tone="warning" className="mb-6">
+          {entry.dept} has no departmental administrator, so Forms 8 and 9 cannot be
+          recorded and this appraisal cannot be completed. Ask your organization
+          administrator to assign one from the employee database.
+        </Alert>
+      ) : null}
+
+      {!locked && entered === 0 ? (
+        <p className="mb-6 text-sm text-muted">
+          Enter at least one form before submitting.
+        </p>
+      ) : null}
+
+      {sealed ? (
+        <Alert tone="brand" className="mb-6">
+          Your result stays hidden until the appraisal period closes and the organization
+          admin releases it.
+        </Alert>
+      ) : entry.rtp !== null ? (
+        <Card className="mb-6">
+          <CardBody>
+            <div className="flex flex-wrap items-center gap-6">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted">RTP</p>
+                <p className="text-2xl font-semibold tabular-nums text-strong">
+                  {Number(entry.rtp).toFixed(2)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted">Grade</p>
+                <p className="text-2xl font-semibold text-pes">{entry.grade}</p>
+              </div>
+              {/* RTP is computed only from categories that were actually scored.
+                  Say so, otherwise a lecturer who entered one form sees a grade
+                  that looks like a verdict on their whole year. */}
+              {entered < forms.length || entry.partial_target ? (
+                <Alert tone="warning" className="flex-1">
+                  {entered < forms.length
+                    ? `Based on ${entered} of ${forms.length} forms. Categories with nothing entered are left out of the total, so this is provisional until every form is in.`
+                    : 'One or more categories have no target set, so this covers only part of the appraisal.'}
+                </Alert>
+              ) : null}
+            </div>
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {isOrgAdmin ? (
+        <Alert tone="brand" className="mb-6">
+          You do not enter appraisal data. Departments record the scores; your part is to
+          run the evaluation and release the results once they have submitted.
+        </Alert>
+      ) : null}
+
+      <div className="space-y-5">
+        {visibleForms.map((form) => {
+          const score = scoreFor(form.key);
+          return (
+            <div key={form.key} className="space-y-3">
+              <FormCard
+                form={form}
+                entryId={entryId}
+                locked={locked || !canEnter(form.key)}
+                lockedReason={
+                  !canEnter(form.key)
+                    ? `Recorded by ${form.enteredBy === 'department_admin' ? 'the departmental administrator' : 'the member of staff'}.`
+                    : undefined
+                }
+                savedQuality={score?.quality ? Number(score.quality) : null}
+                savedLineItems={score?.line_items ?? null}
+                savedCopies={score?.copies_submitted ?? null}
+                savedStudentCount={score?.student_count ?? null}
+                savedBasicUnits={score?.basic_units ?? null}
+                onSaved={load}
+              />
+              {score && (viewer.role === 'hod' || isOrgAdmin || isOwnEntry) ? (
+                <ReviewPanel
+                  entryId={entryId}
+                  formKey={form.key}
+                  score={score}
+                  onChange={load}
+                  canScore={viewer.role === 'hod'}
+                  isAppraisee={isOwnEntry}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+
+        {/* The questionnaire belongs to the appraisee. The organization
+            administrator has nothing to do with it. */}
+        {isOwnEntry && !isOrgAdmin ? (
+          <Questionnaire
+            entryId={entryId}
+            locked={locked}
+            model={entry.model}
+            initial={entry.questionnaire}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** The HOD's decision and the appraisee's reply. The client's rule: if the HOD
+ *  enters no contrary score the appraisee's own score stands. Only a contrary
+ *  score goes back to the appraisee, who may accept or contest it. */
+function ReviewPanel({
+  entryId,
+  formKey,
+  score,
+  onChange,
+  canScore,
+  isAppraisee,
+}: {
+  entryId: string;
+  formKey: string;
+  score: CategoryScore;
+  onChange: () => void;
+  /** Only the head of department records a counter-score. */
+  canScore: boolean;
+  /** The appraisee answers an adjustment but never scores. */
+  isAppraisee: boolean;
+}) {
+  const [hodScore, setHodScore] = useState('');
+  const [justification, setJustification] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const awaitingStaff = score.reconciliation === 'awaiting_staff_response';
+  const settled = score.recorded_score !== null;
+  const referred = score.reconciliation === 'referred_to_auditor';
+
+  async function post(path: string, body: Record<string, unknown>, message: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await apiFetch(`/api/appraisal-v2/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId, category: formKey, ...body }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      notify.success(message);
+      onChange();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="border-dashed">
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted">Review</h4>
+          {referred ? (
+            <Badge tone="danger">With the auditor</Badge>
+          ) : settled ? (
+            <Badge tone="success">Recorded at {Number(score.recorded_score).toFixed(1)}</Badge>
+          ) : awaitingStaff ? (
+            <Badge tone="warning">Awaiting the appraisee</Badge>
+          ) : (
+            <Badge tone="neutral">Not yet reviewed</Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardBody>
+        {error ? <Alert tone="danger" className="mb-3">{error}</Alert> : null}
+
+        {score.hod_score !== null ? (
+          <div className="mb-4 space-y-2 text-sm">
+            <p className="text-body">
+              The head of department recorded{' '}
+              <span className="font-semibold tabular-nums text-strong">
+                {Number(score.hod_score).toFixed(1)}
+              </span>{' '}
+              against the appraisee&apos;s{' '}
+              <span className="font-semibold tabular-nums text-strong">
+                {score.quality ? Number(score.quality).toFixed(1) : '—'}
+              </span>
+              .
+            </p>
+            {score.hod_justification ? (
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Their reason
+                </p>
+                {/* Read-only on purpose: this is the head of department's own
+                    words, and the appraisee answers it rather than edits it. */}
+                <p
+                  aria-readonly="true"
+                  className="rounded-lg border border-line bg-canvas px-3 py-2 text-body"
+                >
+                  {score.hod_justification}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {awaitingStaff ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              size="sm"
+              loading={busy}
+              onClick={() => post('respond', { accepted: true }, 'Adjustment accepted.')}
+            >
+              Accept the adjustment
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              loading={busy}
+              onClick={() =>
+                post('respond', { accepted: false }, 'Contested. Passed to the appraisal auditor.')
+              }
+            >
+              Contest it
+            </Button>
+          </div>
+        ) : settled || referred ? (
+          <p className="text-sm text-muted">
+            {referred
+              ? 'The appraisal auditor will review both scores and record a final figure.'
+              : 'No further action is needed on this form.'}
+          </p>
+        ) : !canScore ? (
+          <p className="text-sm text-muted">
+            {isAppraisee
+              ? 'Your head of department has not reviewed this form yet.'
+              : 'Awaiting the head of department.'}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">
+              Leave this blank to accept the appraisee&apos;s score as final. Enter a different
+              score only if you disagree, and say why.
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-sm">
+                <span className="mb-1 block font-medium text-body">Your score</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={hodScore}
+                  onChange={(e) => setHodScore(e.target.value)}
+                  className="w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm tabular-nums outline-none focus:border-pes-400 focus-visible:shadow-focus"
+                />
+              </label>
+            </div>
+            <Textarea
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              placeholder="Why this score differs from the appraisee's"
+              rows={3}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                size="sm"
+                loading={busy}
+                disabled={hodScore === '' || justification.trim() === ''}
+                onClick={() =>
+                  post(
+                    'review',
+                    { hodScore: Number(hodScore), justification },
+                    'Score recorded and sent to the appraisee.',
+                  )
+                }
+              >
+                Record my score
+              </Button>
+              {hodScore === '' || justification.trim() === '' ? (
+                <p className="text-sm text-muted">
+                  {hodScore === ''
+                    ? 'Enter a score, or leave the whole panel blank to accept theirs.'
+                    : 'A written justification is required before a score can be changed.'}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}

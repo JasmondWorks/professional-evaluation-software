@@ -1,6 +1,13 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
+import { STRESS_INSTRUMENT, CategoryKey } from "@/app/lib/stress/instrument";
+import { scoreItem } from "@/app/lib/stress/scoring";
+import { notify } from "@/lib/toast";
+import { useActiveCycle } from "@/app/components/useActiveCycle";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
 
 type JWTPayload = {
   name?: string;
@@ -8,170 +15,184 @@ type JWTPayload = {
   org?: string;
 };
 
-type StressItem = {
-  label: string;
-  weight: number;
-};
+const FORM6_URL = "/data-entry/stress/stress-feeling";
 
-type StressCategory = {
-  category: string;
-  items: StressItem[];
-};
-
-const stressData: StressCategory[] = [
-  {
-    category: "Organizational",
-    items: [
-      { label: "Time", weight: 116 },
-      { label: "Paper Work", weight: 99 },
-      { label: "Lack of Materials", weight: 34 },
-      { label: "Extra Duties", weight: 32 },
-      { label: "Physical Plant", weight: 19 },
-      { label: "Meetings", weight: 15 },
-      { label: "Class Size", weight: 15 },
-      { label: "Poor Scheduling", weight: 13 },
-      { label: "Interruptions", weight: 13 },
-      { label: "Travels", weight: 12 },
-      { label: "Conflicting demand", weight: 11 },
-      { label: "Athletics", weight: 4 },
-    ],
-  },
-  {
-    category: "Student",
-    items: [
-      { label: "Student Discipline", weight: 97 },
-      { label: "Student Apathy", weight: 38 },
-      { label: "Low Student Achievement", weight: 37 },
-      { label: "Student Absences", weight: 3 },
-    ],
-  },
-  {
-    category: "Administrative",
-    items: [
-      { label: "Unclear Expectations", weight: 27 },
-      { label: "Lack of Knowledge or Expertise", weight: 25 },
-      { label: "Lack of Support (Backing, Recognition)", weight: 24 },
-      { label: "Inconsistency", weight: 17 },
-      { label: "Unreasonable Expectations", weight: 14 },
-      { label: "Poor Evaluation Procedures", weight: 12 },
-      { label: "Indecisiveness", weight: 10 },
-      { label: "Lack of Opportunities for Input", weight: 10 },
-      { label: "Failure to Provide Resources", weight: 7 },
-      { label: "Lack of Follow-Through", weight: 6 },
-      { label: "Harassment", weight: 5 },
-      { label: "Favoritism", weight: 5 },
-      { label: "Miscellaneous", weight: 4 },
-    ],
-  },
-  {
-    category: "Teacher",
-    items: [
-      { label: "Conflict or Lack of Cooperation", weight: 59 },
-      { label: "Incompetence or Irresponsibility", weight: 21 },
-      { label: "Negative Attitude", weight: 7 },
-      { label: "Lack of Communication", weight: 5 },
-    ],
-  },
-  {
-    category: "Parents",
-    items: [
-      { label: "Interference", weight: 24 },
-      { label: "Nonsupport or Apathy", weight: 15 },
-      { label: "Lack of Communication & Understanding", weight: 11 },
-    ],
-  },
-  {
-    category: "Occupational",
-    items: [
-      { label: "Lack of Professional Growth", weight: 12 },
-      { label: "Low Salary", weight: 9 },
-      { label: "Lack of Advancement", weight: 5 },
-      { label: "Job Insecurity", weight: 4 },
-    ],
-  },
-  {
-    category: "Personal",
-    items: [
-      { label: "Professional/Personal Conflict", weight: 12 },
-      { label: "Conflict With Personal Values", weight: 10 },
-      { label: "Miscellaneous", weight: 4 },
-    ],
-  },
-  {
-    category: "Academic Program",
-    items: [
-      { label: "Repetition", weight: 7 },
-      { label: "Unrealistic Goals", weight: 7 },
-      { label: "Low Standards", weight: 5 },
-      { label: "Responsibility to Grade Students", weight: 4 },
-    ],
-  },
-  {
-    category: "Negative Public Attitude",
-    items: [{ label: "Negative Public Attitude", weight: 9 }],
-  },
-  {
-    category: "Miscellaneous",
-    items: [{ label: "Miscellaneous", weight: 27 }],
-  },
-];
+// A friendly full-screen state (no open form to fill).
+function StatusScreen({
+  title,
+  body,
+  ctaLabel,
+  ctaHref,
+}: {
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}) {
+  return (
+    <div className="w-full p-12 flex justify-center">
+      <div className="max-w-lg w-full bg-white border border-line rounded-xl p-8 text-center shadow-sm mt-10">
+        <h1 className="text-2xl font-bold text-strong mb-3">{title}</h1>
+        <p className="text-body mb-6">{body}</p>
+        {ctaLabel && ctaHref && (
+          <Link
+            href={ctaHref}
+            className="inline-block bg-pes text-white px-6 py-3 rounded-lg font-medium hover:bg-pes-800 transition-colors"
+          >
+            {ctaLabel}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function StressForm5() {
   const [values, setValues] = useState<Record<string, number>>({});
   const [currentStep, setCurrentStep] = useState(0);
+  // Live cycle status — polls + refetches on focus, so the form opens/closes
+  // and the "already submitted" state update without a page refresh.
+  const { data: cycle, loading: loadingCycle } = useActiveCycle();
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (key: string, val: number) => {
     setValues((prev) => ({ ...prev, [key]: val }));
   };
 
-  // compute totals
-  const categoryTotals: Record<string, number> = {};
-  stressData.forEach((group) => {
-    let subtotal = 0;
-    group.items.forEach((item) => {
-      const val = values[`${group.category}-${item.label}`] || 0;
-      subtotal += (val * item.weight) / 10;
-    });
-    categoryTotals[group.category] = subtotal;
-  });
+  // #9: every item in a category must be answered before you can advance / submit.
+  const isCategoryComplete = (cat: (typeof STRESS_INSTRUMENT)[number]) =>
+    cat.items.every((item) => (values[`${cat.key}-${item.label}`] ?? 0) > 0);
 
-  const scores = {
-    organizational: categoryTotals["Organizational"] || 0,
-    student: categoryTotals["Student"] || 0,
-    administrative: categoryTotals["Administrative"] || 0,
-    teacher: categoryTotals["Teacher"] || 0,
-    parents: categoryTotals["Parents"] || 0,
-    occupational: categoryTotals["Occupational"] || 0,
-    personal: categoryTotals["Personal"] || 0,
-    academic_program: categoryTotals["Academic Program"] || 0,
-    negative_public_attitude: categoryTotals["Negative Public Attitude"] || 0,
-    misc: categoryTotals["Miscellaneous"] || 0,
-  };
+  // Each category's total = sum of its item scores (choice/10 × item max),
+  // computed from the instrument so the weights live in exactly one place. Keyed
+  // by category key, which matches the stress_scores columns.
+  const scores = {} as Record<CategoryKey, number>;
+  for (const cat of STRESS_INSTRUMENT) {
+    scores[cat.key] = cat.items.reduce(
+      (sum, item) => sum + scoreItem(values[`${cat.key}-${item.label}`] ?? 0, item.max),
+      0,
+    );
+  }
 
   const handleSubmit = async () => {
+    if (submitting) return; // guard against double-submit
+    setSubmitting(true);
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
       const user: JWTPayload = jwtDecode(token || "");
 
-      await fetch("/api/saveStressScores", {
+      const res = await apiFetch("/api/saveStressScores", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           user_name: user.name,
-          org: user.org,
           scores,
         }),
       });
 
-      alert("Stress scores submitted successfully ✅");
+      // Read the body defensively — a gateway/cold-start error can return
+      // non-JSON, which used to throw and show a false "something went wrong"
+      // even though the row saved.
+      const data = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        // "Already submitted" is a success from the user's point of view.
+        if (res.status === 409 && /already submitted/i.test(data?.message || "")) {
+          setSubmitted(true);
+          return;
+        }
+        notify.error(data?.message || "Could not submit the form. Please try again.");
+        return;
+      }
+      notify.success("Your stress category form has been submitted.");
+      setSubmitted(true);
     } catch (err) {
       console.error(err);
-      alert("Error submitting stress scores ❌");
+      notify.error("Network problem submitting the form. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const currentCategory = stressData[currentStep];
+  const currentCategory = STRESS_INSTRUMENT[currentStep];
+  const currentComplete = currentCategory ? isCategoryComplete(currentCategory) : false;
+  const allComplete = STRESS_INSTRUMENT.every(isCategoryComplete);
 
+  // ---- Cycle gating: decide whether the form is fillable ----
+  if (loadingCycle) {
+    return (
+      <div className="w-full p-12 flex justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-pes border-t-transparent mt-16" />
+      </div>
+    );
+  }
+
+  // Just submitted (this session) or already submitted for the cycle → thank-you.
+  // Only offer the Form 6 link if it's actually open now; otherwise avoid the
+  // dead-end (Form 6 opens later, once the org runs the setting).
+  if (submitted || cycle?.form5?.submitted) {
+    const form6Open = cycle?.form6?.open;
+    return (
+      <StatusScreen
+        title="You're all set for the stress category form ✅"
+        body={
+          form6Open
+            ? "Thanks — your response has been recorded for this cycle. You only fill this form once. The theme & feeling form is open — complete that next."
+            : "Thanks — your response has been recorded for this cycle. You only fill this form once. When the theme & feeling form opens, you'll be nudged from your dashboard."
+        }
+        ctaLabel={form6Open ? "Go to the Theme & Feeling form" : undefined}
+        ctaHref={form6Open ? FORM6_URL : undefined}
+      />
+    );
+  }
+
+  // No cycle running.
+  if (!cycle?.active) {
+    return (
+      <StatusScreen
+        title="No stress exercise is open right now"
+        body="Your organization hasn't opened a stress exercise at the moment. You'll be notified on your dashboard when the form is available."
+      />
+    );
+  }
+
+  // Scheduled but not open yet (before its open date) — NOT the same as closed.
+  if (cycle.form5?.status === "not_yet") {
+    const opens = cycle.form5.opensAt ? new Date(cycle.form5.opensAt).toLocaleString() : null;
+    return (
+      <StatusScreen
+        title="The stress category form hasn't opened yet"
+        body={
+          opens
+            ? `This form opens on ${opens}. You'll be notified on your dashboard when it's ready to fill.`
+            : "This form isn't open for submissions yet. You'll be notified on your dashboard when it's ready."
+        }
+      />
+    );
+  }
+
+  // Cycle running but Form 5 window has closed. The staff member didn't fill it —
+  // they may still proceed to Form 6.
+  if (cycle.form5?.status === "closed" || !cycle.form5?.open) {
+    const form6Open = cycle?.form6?.open;
+    return (
+      <StatusScreen
+        title="The stress category form has closed"
+        body={
+          form6Open
+            ? "Submissions for this form are now closed. You didn't submit it during the window, but you can still continue to the theme & feeling form."
+            : "Submissions for this form are now closed. You didn't submit it during the window. When the theme & feeling form opens, you'll be nudged from your dashboard."
+        }
+        ctaLabel={form6Open ? "Continue to the Theme & Feeling form" : undefined}
+        ctaHref={form6Open ? FORM6_URL : undefined}
+      />
+    );
+  }
+
+  // Form 5 is open and not yet submitted → the wizard.
   return (
     <div className="w-full p-12">
       <h1 className="text-2xl font-bold mb-6">
@@ -180,10 +201,10 @@ export default function StressForm5() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">
-          Step {currentStep + 1} of {stressData.length}: {currentCategory.category}
+          Step {currentStep + 1} of {STRESS_INSTRUMENT.length}: {currentCategory.label}
         </h2>
-        <table className="min-w-full border border-gray-300">
-          <thead className="bg-gray-100">
+        <table className="min-w-full border border-line">
+          <thead className="bg-canvas">
             <tr>
               <th className="border px-2 py-1">Item</th>
               {Array.from({ length: 10 }, (_, i) => (
@@ -199,19 +220,22 @@ export default function StressForm5() {
               <tr key={j}>
                 <td className="border px-2 py-1">{item.label}</td>
                 {Array.from({ length: 10 }, (_, i) => (
-                  <td key={i} className="border px-2 py-1 text-center">
-                    <input
-                      type="radio"
-                      name={`${currentCategory.category}-${item.label}`}
-                      value={i + 1}
-                      checked={values[`${currentCategory.category}-${item.label}`] === i + 1}
-                      onChange={(e) =>
-                        handleChange(
-                          `${currentCategory.category}-${item.label}`,
-                          parseInt(e.target.value)
-                        )
-                      }
-                    />
+                  <td key={i} className="border p-0 text-center">
+                    <label className="flex h-10 w-full cursor-pointer items-center justify-center hover:bg-canvas transition-colors">
+                      <input
+                        type="radio"
+                        name={`${currentCategory.key}-${item.label}`}
+                        value={i + 1}
+                        checked={values[`${currentCategory.key}-${item.label}`] === i + 1}
+                        onChange={(e) =>
+                          handleChange(
+                            `${currentCategory.key}-${item.label}`,
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="h-4 w-4 cursor-pointer text-pes focus:ring-pes"
+                      />
+                    </label>
                   </td>
                 ))}
                 {/* <td className="border px-2 py-1 text-center">{item.weight}</td> */}
@@ -233,26 +257,40 @@ export default function StressForm5() {
         {currentStep > 0 && (
           <button
             onClick={() => setCurrentStep((prev) => prev - 1)}
-            className="bg-gray-500 text-white px-4 py-2 rounded"
+            className="bg-surface border border-line text-body px-4 py-2 rounded-lg hover:bg-line/50 transition-colors"
           >
             Back
           </button>
         )}
 
-        {currentStep < stressData.length - 1 ? (
-          <button
-            onClick={() => setCurrentStep((prev) => prev + 1)}
-            className="ml-auto bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Next
-          </button>
+        {currentStep < STRESS_INSTRUMENT.length - 1 ? (
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <button
+              onClick={() => setCurrentStep((prev) => prev + 1)}
+              disabled={!currentComplete}
+              title={!currentComplete ? "Answer every item in this category to continue" : undefined}
+              className="bg-pes text-white px-4 py-2 rounded-lg hover:bg-pes-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+            {!currentComplete && (
+              <span className="text-xs text-muted">Answer every item to continue.</span>
+            )}
+          </div>
         ) : (
-          <button
-            onClick={handleSubmit}
-            className="ml-auto bg-pes text-white px-4 py-2 rounded"
-          >
-            Submit Totals
-          </button>
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <button
+              onClick={handleSubmit}
+              disabled={!allComplete || submitting}
+              title={!allComplete ? "Answer every item in all categories before submitting" : undefined}
+              className="bg-pes text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Submitting…" : "Submit Totals"}
+            </button>
+            {!allComplete && (
+              <span className="text-xs text-muted">Every item in all categories must be answered.</span>
+            )}
+          </div>
         )}
       </div>
     </div>

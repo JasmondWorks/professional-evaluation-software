@@ -1,0 +1,294 @@
+/** Creating one employee: the single path used by both /api/addEmployee and the
+ *  bulk upload.
+ *
+ *  This lived inline in the single-employee route. Bulk upload needs exactly the
+ *  same work — role resolution, the single-head check, the permission row, the
+ *  assigned counter, the credentials email — and duplicating it is how the two
+ *  drift until only one of them enforces something. */
+import prisma from '../prisma.dev';
+import { Prisma } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { sendMail } from '@/app/lib/email';
+import { escapeHtml } from './escapeHtml';
+import { PRESET_ROLES, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles';
+import { checkSingleHead } from './singleHead';
+
+const randombytes = require('randombytes');
+
+export const PERMISSION_FIELDS: PermissionKey[] = [
+  'can_manage_user_roles',
+  'can_access_employee_data',
+  'access_employee_all',
+  'access_employee_subordinates',
+  'access_employee_selected',
+  'can_define_performance_metrics',
+  'define_performance_all',
+  'define_performance_subordinates',
+  'define_performance_selected',
+  'can_access_reporting_hierarchy',
+  'can_manage_performance_reviews',
+  'manage_reviews_all',
+  'manage_reviews_subordinates',
+  'manage_reviews_selected',
+];
+
+export type EmployeeInput = {
+  name: string;
+  email: string;
+  gsm: string;
+  role: string;
+  address: string;
+  dept: string;
+  faculty_college: string;
+  dob: string;
+  doa: string;
+  poa?: string | null;
+  doc?: string | null;
+  post?: string | null;
+  dopp?: string | null;
+  level?: string | null;
+  /** Which management level the person sits at, 1 being the first level above
+   *  the supervisory staff. Null for everyone holding no management post.
+   *  Section 21 counts these as the real head count per level. */
+  management_level?: number | string | null;
+  org: string;
+  orgId?: string | null;
+} & Partial<Record<PermissionKey, boolean>>;
+
+export type CreateOutcome =
+  | { ok: true; userId: string; password: string }
+  | {
+      ok: false;
+      reason: 'email_exists' | 'duplicate_employee' | 'head_conflict' | 'unknown_role' | 'error';
+      message: string;
+    };
+
+/** Strips NUL bytes, which Postgres rejects in text columns. */
+function sanitizeString(val?: string | null) {
+  if (!val) return null;
+  return val.replace(/\u0000/g, '');
+}
+
+export function generateUniquePassword(length = 8) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+  const bytes = randombytes(length);
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(bytes[i] % chars.length));
+  }
+  return password;
+}
+
+/** Preset roles that only make sense in an academic institution.
+ *
+ *  "Employee Academic" is a lecturer, which a company or a public-sector body
+ *  does not have. The add-employee form already hides it for those institution
+ *  types, but that is presentation: a spreadsheet naming the role reached the
+ *  database unchallenged. Every other preset is universal — a company has heads
+ *  of department and division heads too, they are just labelled differently on
+ *  screen. */
+export const ACADEMIC_ONLY_ROLES = ['lecturer'] as const;
+
+export function roleAllowedForCategory(role: string, productCategory?: string | null): boolean {
+  const academicOnly = (ACADEMIC_ONLY_ROLES as readonly string[]).includes(role);
+  if (!academicOnly) return true;
+  return String(productCategory ?? '').trim().toLowerCase() === 'academic';
+}
+
+/** The preset roles an organization of this institution type may assign. Used by
+ *  the bulk preview so it offers the same list the server will accept. */
+export function presetRolesForCategory(productCategory?: string | null): string[] {
+  return (PRESET_ROLES as readonly string[]).filter((r) =>
+    roleAllowedForCategory(r, productCategory),
+  );
+}
+
+/** The canonical name for a role written by a human, or null if there is no such
+ *  role in this organization.
+ *
+ *  Somebody filling a spreadsheet writes "HOD", not "hod", and both mean the
+ *  same post. Matching is case-insensitive and ignores surrounding whitespace,
+ *  and the stored name is always the canonical one so `pesuser.role` stays a
+ *  predictable value for the role-based UI.
+ *
+ *  Unknown roles still resolve to null: bulk upload refuses them rather than
+ *  inventing them, since a typo would otherwise become a permanent role. */
+export async function resolveRoleName(
+  org: string,
+  role: string,
+  productCategory?: string | null,
+  orgId?: string | null,
+): Promise<string | null> {
+  const wanted = String(role ?? '').trim().toLowerCase();
+  if (wanted === '') return null;
+
+  const preset = (PRESET_ROLES as readonly string[]).find((p) => p.toLowerCase() === wanted);
+  if (preset) {
+    return roleAllowedForCategory(preset, productCategory) ? preset : null;
+  }
+
+  // Custom roles are per-org and stored with the casing their creator chose,
+  // so compare case-insensitively and return what is actually in the table.
+  const row = await prisma.roles.findFirst({
+    where: {
+      ...(orgId != null ? { org_id: orgId } : { org }),
+      name: { equals: role.trim(), mode: 'insensitive' },
+    },
+    select: { name: true },
+  });
+  return row?.name ?? null;
+}
+
+export async function roleExists(
+  org: string,
+  role: string,
+  productCategory?: string | null,
+  orgId?: string | null,
+): Promise<boolean> {
+  return (await resolveRoleName(org, role, productCategory, orgId)) !== null;
+}
+
+export async function createEmployee(
+  input: EmployeeInput,
+  password: string,
+): Promise<CreateOutcome> {
+  const {
+    name, email, gsm, role, address, dept, faculty_college,
+    dob, doa, poa, doc, post, dopp, level, management_level, org, orgId,
+  } = input;
+
+  try {
+    const existing = await prisma.pesuser.findUnique({ where: { email }, select: { id: true } });
+    if (existing) {
+      return {
+        ok: false,
+        reason: 'email_exists',
+        message: 'An employee with this email already exists.',
+      };
+    }
+
+    // A preset selection stays itself; a custom role maps to its base_role so
+    // role-based UI stays predictable while the custom name is still displayed.
+    let functionalRole: string;
+    const displayRole = role;
+    if ((PRESET_ROLES as readonly string[]).includes(role)) {
+      functionalRole = role;
+    } else {
+      const roleRow = await prisma.roles.findFirst({
+        where: { ...(orgId != null ? { org_id: orgId } : { org }), name: role },
+        select: { base_role: true },
+      });
+      functionalRole = resolveBaseRole(roleRow?.base_role);
+    }
+
+    // One head per scope: refuse a second HOD for the department, or a second
+    // faculty/division head for the faculty, within this org.
+    const headCheck = await checkSingleHead(prisma, {
+      org,
+      orgId,
+      role: functionalRole,
+      dept,
+      faculty_college,
+    });
+    if (!headCheck.ok) {
+      return { ok: false, reason: 'head_conflict', message: headCheck.message };
+    }
+
+    const user = await prisma.pesuser.create({
+      data: {
+        name,
+        email,
+        password: await bcrypt.hash(password, 10),
+        // This password was generated for them and emailed in plain text, so
+        // they are held at the change-password screen until they choose their
+        // own. The administrator who created the account has seen it too.
+        must_change_password: true,
+        gsm: gsm || null,
+        role: functionalRole,
+        display_role: displayRole || null,
+        address: address || null,
+        dept: dept || null,
+        faculty_college: faculty_college || null,
+        dob: dob ? new Date(dob) : null,
+        doa: doa ? new Date(doa) : null,
+        poa: sanitizeString(poa),
+        doc: sanitizeString(doc),
+        post: sanitizeString(post),
+        dopp: dopp ? new Date(dopp) : null,
+        level: sanitizeString(level),
+        management_level:
+          management_level === null ||
+          management_level === undefined ||
+          management_level === '' ||
+          !Number.isFinite(Number(management_level))
+            ? null
+            : Math.trunc(Number(management_level)),
+        image: null,
+        org_id: orgId ?? null,
+      },
+      select: { id: true },
+    });
+
+    const permissionData = Object.fromEntries(
+      PERMISSION_FIELDS.map((k) => [k, Boolean((input as any)[k])]),
+    );
+
+    await prisma.permission.create({
+      data: {
+        ...permissionData,
+        user_id: user.id,
+        org_id: orgId ?? null,
+      },
+    });
+
+    await prisma.roles.updateMany({
+      where: { name: role, ...(orgId != null ? { org_id: orgId } : { org }) },
+      data: { assigned: { increment: 1 } },
+    });
+
+    return { ok: true, userId: user.id, password };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return {
+        ok: false,
+        reason: 'duplicate_employee',
+        message: `${name} is already registered in the ${dept} department.`,
+      };
+    }
+    console.error('createEmployee failed:', error);
+    return {
+      ok: false,
+      reason: 'error',
+      message: error instanceof Error ? error.message : 'There was a problem creating this employee.',
+    };
+  }
+}
+
+export async function sendLoginEmail(
+  to: string,
+  name: string,
+  password: string,
+  replyTo?: string,
+) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+      <h2 style="color: #1e3a8a;">Hello ${escapeHtml(name)},</h2>
+      <p>Your account has been created successfully.</p>
+      <p><strong>Email:</strong> ${escapeHtml(to)}</p>
+      <p style="margin-bottom: 5px;"><strong>Password:</strong> <code style="background-color: #f3f4f6; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-family: monospace; font-size: 16px;">${escapeHtml(password)}</code></p>
+      <p style="margin-top: 15px; font-size: 14px; color: #6b7280;"><em>Note: Be careful not to copy any extra spaces before or after the password when pasting.</em></p>
+      <p>Please log in and change your password immediately.</p>
+    </div>
+  `;
+  const { success } = await sendMail({ to, subject: 'Your Login Credentials', html, replyTo });
+  return success;
+}
+
+/** The org admin, used as reply-to on credential emails. */
+export async function orgAdminEmail(org: string, orgId?: string | null): Promise<string | undefined> {
+  const admin = await prisma.pesuser.findFirst({
+    where: { ...(orgId != null ? { org_id: orgId } : { org }), role: { in: ['admin', 'Super user'] } },
+    select: { email: true },
+  });
+  return admin?.email ?? undefined;
+}

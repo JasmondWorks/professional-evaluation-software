@@ -1,10 +1,24 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, org, dept } = await req.json();
+    // jwtDecode parses a token without checking its signature, so this org was
+    // whatever the caller wrote into one.
+    const auth = authorize(tokenFromRequest(req), { anyOf: ['can_manage_user_roles'] });
+    if (!auth.ok) return auth.response;
+
+    const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+
+    const { email, dept } = await req.json();
 
     if (!email) {
       return NextResponse.json(
@@ -13,15 +27,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Update role in DB
-    const updatedUser = await prisma.$queryRawUnsafe<Array<{ name: string; email: string; role: string; org: string; dept: string }>>(`
-      UPDATE pesuser
-      SET role = 'dept-admin'
-      WHERE email = '${email}'
-      RETURNING name, email, role, org, dept;
-    `);
+    const existingUser = await prisma.pesuser.findUnique({ where: { email } });
+    if (!existingUser || existingUser.org_id !== orgId) {
+      return NextResponse.json({ error: "User not found or unauthorized" }, { status: 404 });
+    }
 
-    if (!updatedUser || updatedUser.length === 0) {
+    // ✅ Update role in DB
+    const user = await prisma.pesuser
+      .update({
+        where: { email },
+        data: { role: "dept-admin" },
+        select: { name: true, email: true, role: true, org_id: true, dept: true },
+      })
+      .catch(() => null);
+
+    if (!user) {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
@@ -36,8 +56,6 @@ export async function POST(req: NextRequest) {
         pass: process.env.EMAIL_PASS,
       },
     });
-
-    const user = updatedUser[0];
 
     const mailOptions = {
       from: `"Admin" <${process.env.EMAIL_USER}>`,

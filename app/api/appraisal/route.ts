@@ -1,16 +1,33 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Appraisal scores. Unauthenticated and unscoped: a name in the body read that
+// person's scores in whichever organization happened to hold the name, and an
+// empty body read everyone's.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const orgId = auth.user.orgId ?? null;
+
   try {
     const { pesuser_name } = await req.json();
-    let whereClause = "";
-    if (pesuser_name) whereClause = `WHERE pesuser_name = '${pesuser_name.replace(/'/g, "''")}'`;
-    const results = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept, teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation
-      FROM appraisal ${whereClause};
-    `);
+    const results = await prisma.appraisal.findMany({
+      where: { org_id: orgId, ...(pesuser_name ? { pesuser_name } : {}) },
+      select: {
+        pesuser_name: true,
+        dept: true,
+        teaching_quality_evaluation: true,
+        research_quality_evaluation: true,
+        administrative_quality_evaluation: true,
+        community_quality_evaluation: true,
+      },
+    });
     return NextResponse.json(results);
   } catch (err) {
     console.error("Error fetching appraisal data:", err);

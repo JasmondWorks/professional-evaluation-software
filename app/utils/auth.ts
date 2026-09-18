@@ -3,26 +3,14 @@
  */
 
 import { jwtDecode } from 'jwt-decode'
+import { TokenManager } from './TokenManager'
 
 /**
  * Safely retrieves the access token from localStorage
  * @returns The access token or null if not found/invalid
  */
 export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  try {
-    const token = localStorage.getItem('access_token')
-    if (!token || token === 'undefined' || token === 'null') {
-      return null
-    }
-    return token
-  } catch (error) {
-    console.error('Error accessing localStorage:', error)
-    return null
-  }
+  return TokenManager.getToken();
 }
 
 /**
@@ -30,30 +18,14 @@ export function getAccessToken(): string | null {
  * @param token - The JWT token to store
  */
 export function setAccessToken(token: string): void {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    localStorage.setItem('access_token', token)
-  } catch (error) {
-    console.error('Error storing token in localStorage:', error)
-  }
+  TokenManager.setToken(token);
 }
 
 /**
  * Removes the access token from localStorage
  */
 export function removeAccessToken(): void {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  try {
-    localStorage.removeItem('access_token')
-  } catch (error) {
-    console.error('Error removing token from localStorage:', error)
-  }
+  TokenManager.clearToken();
 }
 
 /**

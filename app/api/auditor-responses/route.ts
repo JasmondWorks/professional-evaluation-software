@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../prisma.dev";
+import { rateLimit } from "../_lib/rateLimit";
+import { escapeHtml } from "../_lib/escapeHtml";
 import nodemailer from "nodemailer";
-
-const prisma = new PrismaClient();
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -30,7 +30,14 @@ const questions = [
   "If invited again in the future, will you accept the invitation even if you were openly criticized?",
 ];
 
+// Deliberately public: an invited external auditor answers this before they
+// have an account. Submissions land in a queue an admin must approve
+// (/api/admin/auditors) before they become a user.
 export async function POST(req: Request) {
+  // Public, and each submission mails the admin, so bound it.
+  const tooMany = rateLimit(req, { key: "auditor-responses", limit: 5, windowMs: 60 * 60_000 });
+  if (tooMany) return tooMany;
+
   try {
     const body = await req.json();
     const { name, email, gsm, address, dob, image, responses } = body;
@@ -46,19 +53,20 @@ export async function POST(req: Request) {
     }
 
     // Save into auditor_responses table
-    await prisma.$queryRawUnsafe(
-      `INSERT INTO auditor_responses (name, email, gsm, address, dob, image, responses, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'pending')
-       ON CONFLICT (email) DO UPDATE SET 
-         name = EXCLUDED.name,
-         gsm = EXCLUDED.gsm,
-         address = EXCLUDED.address,
-         dob = EXCLUDED.dob,
-         image = EXCLUDED.image,
-         responses = EXCLUDED.responses,
-         status = 'pending'`,
-      name, email, gsm, address, dobDate, image || null, JSON.stringify(responses)
-    );
+    const auditorData = {
+      name,
+      gsm,
+      address,
+      dob: dobDate,
+      image: image || null,
+      responses,
+      status: "pending",
+    };
+    await prisma.auditor_responses.upsert({
+      where: { email },
+      update: auditorData,
+      create: { email, ...auditorData },
+    });
 
     // Generate HTML table for the email
     const tableRows = questions
@@ -66,8 +74,8 @@ export async function POST(req: Request) {
         (question, index) => `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${question}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${responses[index] || "No response"}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(question)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(responses[index] || "No response")}</td>
           </tr>
         `
       )
@@ -75,10 +83,10 @@ export async function POST(req: Request) {
 
     const emailHtml = `
       <h2>New Auditor Response</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email.replaceAll('%40', '@')}</p>
-      <p><strong>GSM:</strong> ${gsm}</p>
-      <p><strong>Address:</strong> ${address}</p>
+      <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email.replaceAll('%40', '@'))}</p>
+      <p><strong>GSM:</strong> ${escapeHtml(gsm)}</p>
+      <p><strong>Address:</strong> ${escapeHtml(address)}</p>
       <p><strong>Date of Birth:</strong> ${dobDate.toDateString()}</p>
       <p><strong>Responses:</strong></p>
       <table style="border-collapse: collapse; width: 100%; text-align: left;">

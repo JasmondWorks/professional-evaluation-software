@@ -1,6 +1,11 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePackages } from "../../../lib/utils/paypalSetup";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
 function serialize(obj: any) {
   const result: any = {};
@@ -11,9 +16,15 @@ function serialize(obj: any) {
   return result;
 }
 
+// The subscription is created for `userID`, which arrived in the body — so a
+// caller could start a plan against somebody else's account.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { plan, userID } = await req.json();
+    const { plan } = await req.json();
+    const userID = auth.user.userID;
     if (!plan || !userID) {
       return NextResponse.json({ error: "Plan & userID are required" }, { status: 400 });
     }

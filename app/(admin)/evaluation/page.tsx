@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Upload, BarChart3, FileText } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Upload, BarChart3, FileText } from "lucide-react";
+import { getAccessToken } from "@/app/utils/auth";
+import { apiFetch } from '@/app/utils/apiFetch';
+import { Alert, Card, CardHeader, CardBody, Badge, DataTable, Empty, Skeleton } from "@/app/components/ui";
 
 /* ----------------- Types ----------------- */
 interface DataPoint {
@@ -22,10 +25,12 @@ interface GroupData {
 
 interface Data {
   userperformance: {
-    competence: number;
-    integrity: number;
-    compatibility: number;
-    use_of_resources: number;
+    // Null while a criterion is still with the staff member or the auditor —
+    // held out of the analysis rather than charted as a zero.
+    competence: number | null;
+    integrity: number | null;
+    compatibility: number | null;
+    use_of_resources: number | null;
     pesuser_name: string;
   }[];
   appraisal: {
@@ -72,8 +77,11 @@ const variance = (arr: number[]) => {
 };
 
 /* IQR outlier detection */
-function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outlier[] } {
-  const values = dataset.map(d => d.value).sort((a, b) => a - b);
+function filterIQR(dataset: DataPoint[]): {
+  cleaned: DataPoint[];
+  outliers: Outlier[];
+} {
+  const values = dataset.map((d) => d.value).sort((a, b) => a - b);
   const q1 = values[Math.floor(values.length * 0.25)];
   const q3 = values[Math.floor(values.length * 0.75)];
   const iqr = q3 - q1;
@@ -83,7 +91,7 @@ function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outl
   const cleaned: DataPoint[] = [];
   const outliers: Outlier[] = [];
 
-  dataset.forEach(d => {
+  dataset.forEach((d) => {
     if (d.value < lower || d.value > upper) {
       outliers.push({ department: d.department, user: d.user, value: d.value });
     } else {
@@ -97,111 +105,211 @@ function filterIQR(dataset: DataPoint[]): { cleaned: DataPoint[]; outliers: Outl
 /* Z-score outlier detection */
 function detectZScoreOutliers(groups: GroupData[]): Outlier[] {
   const outliers: Outlier[] = [];
-  groups.forEach(g => {
+  groups.forEach((g) => {
     const stdDev = Math.sqrt(g.variance);
     if (stdDev === 0) return;
-    g.values.forEach(v => {
+    g.values.forEach((v) => {
       const z = Math.abs((v - g.mean) / stdDev);
-      if (z > 2.58) outliers.push({ department: g.department, user: g.user, value: v, zScore: z });
+      if (z > 2.58)
+        outliers.push({
+          department: g.department,
+          user: g.user,
+          value: v,
+          zScore: z,
+        });
     });
   });
   return outliers;
 }
 
 /* ----------------- ResultsView ----------------- */
-const ResultsView: React.FC<{ results: StatisticalResults; dept: string; type: string }> = ({ results, dept, type }) => (
-  <div className="mb-8">
-    <h2 className="text-xl font-bold mb-2">
-      <BarChart3 className="inline mr-2" /> {type} Results for {dept}
-    </h2>
-    <p
-      className={`font-semibold mb-4 ${
-        results.passedCount >= 15 && results.iqrOutliers.length === 0 && results.zScoreOutliers.length === 0
-          ? 'text-green-600'
-          : 'text-red-600'
-      }`}
-    >
-      {results.passedCount} users passed data integrity test
-    </p>
+const ResultsView: React.FC<{
+  results: StatisticalResults;
+  dept: string;
+  type: string;
+}> = ({ results, dept, type }) => {
+  const isHealthy =
+    results.passedCount >= 15 &&
+    results.iqrOutliers.length === 0 &&
+    results.zScoreOutliers.length === 0;
 
-    {results.iqrOutliers.length > 0 && (
-      <div className="mb-4">
-        <h3 className="font-semibold text-red-600">IQR Outliers ({results.iqrOutliers.length})</h3>
-        <ul className="list-disc pl-6">
-          {results.iqrOutliers.map((o, i) => (
-            <li key={i}>{o.user} – {o.value}</li>
-          ))}
-        </ul>
-      </div>
-    )}
+  const outlierColumns = [
+    { key: "user", label: "User", width: "50%" },
+    { key: "value", label: "Value", width: "25%" },
+    { 
+      key: "zScore", 
+      label: "Z-Score", 
+      width: "25%", 
+      render: (o: Outlier) => o.zScore != null ? o.zScore.toFixed(2) : "-" 
+    },
+  ];
 
-    {results.zScoreOutliers.length > 0 && (
-      <div className="mb-4">
-        <h3 className="font-semibold text-red-600">Z-Score Outliers ({results.zScoreOutliers.length})</h3>
-        <ul className="list-disc pl-6">
-          {results.zScoreOutliers.map((o, i) => (
-            <li key={i}>{o.user} – {o.value} (z={o.zScore?.toFixed(2)})</li>
-          ))}
-        </ul>
-      </div>
-    )}
-  </div>
-);
+  return (
+    <Card className="mb-8 overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between bg-surface border-b border-line">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-pes-50 text-pes-600 rounded-lg">
+            <BarChart3 size={20} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-strong">
+              {type} Results for {dept}
+            </h2>
+            <p className="text-sm text-muted">
+              Statistical analysis of evaluation data
+            </p>
+          </div>
+        </div>
+        <Badge tone={isHealthy ? "success" : "warning"} dot>
+          {results.passedCount} users passed
+        </Badge>
+      </CardHeader>
+
+      <CardBody className="space-y-6 bg-canvas p-6">
+        {results.iqrOutliers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-strong flex items-center gap-2">
+                <FileText size={16} className="text-muted" /> IQR Outliers
+              </h3>
+              <Badge tone="danger">{results.iqrOutliers.length} detected</Badge>
+            </div>
+            <DataTable
+              columns={outlierColumns}
+              data={results.iqrOutliers}
+            />
+          </div>
+        )}
+
+        {results.zScoreOutliers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-strong flex items-center gap-2">
+                <FileText size={16} className="text-muted" /> Z-Score Outliers
+              </h3>
+              <Badge tone="danger">{results.zScoreOutliers.length} detected</Badge>
+            </div>
+            <DataTable
+              columns={outlierColumns}
+              data={results.zScoreOutliers}
+            />
+          </div>
+        )}
+        
+        {results.iqrOutliers.length === 0 && results.zScoreOutliers.length === 0 && (
+          <div className="py-8 text-center bg-surface border border-line rounded-xl border-dashed">
+            <p className="text-muted font-medium">No outliers detected in the data.</p>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
 
 /* ----------------- Main Component ----------------- */
 export default function StatisticalAnalysisPage() {
   const searchParams = useSearchParams();
   const dept = searchParams.get("dept") || "Unknown Department";
 
-  const [appraisalResults, setAppraisalResults] = useState<StatisticalResults | null>(null);
-  const [performanceResults, setPerformanceResults] = useState<StatisticalResults | null>(null);
+  const [appraisalResults, setAppraisalResults] =
+    useState<StatisticalResults | null>(null);
+  const [performanceResults, setPerformanceResults] =
+    useState<StatisticalResults | null>(null);
+  // Without these the page rendered nothing at all while loading, nothing when
+  // the fetch failed, and nothing when there was simply no data yet — three very
+  // different situations that all looked like a blank screen.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDataset = async () => {
-      const res = await fetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`);
+      const token = getAccessToken();
+      const res = await apiFetch(`/api/getDataScores?dept=${encodeURIComponent(dept)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!res.ok) {
-        console.error('Failed to fetch data scores:', res.status, res.statusText);
+        console.error("Failed to fetch data scores:", res.status, res.statusText);
+        setError("The evaluation data could not be loaded. Try again.");
+        setLoading(false);
         return;
       }
 
       const data: Data = await res.json();
 
-      const appraisal = (data.appraisal ?? []).flatMap(a => [
-        { department: dept, user: a.pesuser_name, value: a.teaching_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.research_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.administrative_quality_evaluation },
-        { department: dept, user: a.pesuser_name, value: a.community_quality_evaluation },
+      const appraisal = (data.appraisal ?? []).flatMap((a) => [
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.teaching_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.research_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.administrative_quality_evaluation,
+        },
+        {
+          department: dept,
+          user: a.pesuser_name,
+          value: a.community_quality_evaluation,
+        },
       ]);
 
-      const performance = (data.userperformance ?? []).flatMap(u => [
-        { department: dept, user: u.pesuser_name, value: u.competence },
-        { department: dept, user: u.pesuser_name, value: u.integrity },
-        { department: dept, user: u.pesuser_name, value: u.compatibility },
-        { department: dept, user: u.pesuser_name, value: u.use_of_resources },
-      ]);
+      const performance = (data.userperformance ?? []).flatMap((u) =>
+        [u.competence, u.integrity, u.compatibility, u.use_of_resources]
+          .filter((v): v is number => v !== null && v !== undefined)
+          .map((value) => ({ department: dept, user: u.pesuser_name, value })),
+      );
 
-      runAnalysis(appraisal, 'appraisal');
-      runAnalysis(performance, 'performance');
+      runAnalysis(appraisal, "appraisal");
+      runAnalysis(performance, "performance");
+      setLoading(false);
     };
-    fetchDataset();
+    fetchDataset().catch((err) => {
+      console.error("Failed to fetch data scores:", err);
+      setError("The evaluation data could not be loaded. Try again.");
+      setLoading(false);
+    });
   }, [dept]);
 
-  const runAnalysis = (dataset: DataPoint[], type: 'appraisal' | 'performance') => {
+  const runAnalysis = (
+    dataset: DataPoint[],
+    type: "appraisal" | "performance",
+  ) => {
     if (dataset.length === 0) return;
 
     // Step 1: filter outliers (IQR)
     const { cleaned, outliers: iqrOutliers } = filterIQR(dataset);
 
     // Step 2: group per user
-    const grouped = cleaned.reduce((acc, d) => {
-      const key = d.user;
-      if (!acc[key]) acc[key] = { department: d.department, user: d.user, values: [] as number[] };
-      acc[key].values.push(d.value);
-      return acc;
-    }, {} as Record<string, { department: string; user: string; values: number[] }>);
+    const grouped = cleaned.reduce(
+      (acc, d) => {
+        const key = d.user;
+        if (!acc[key])
+          acc[key] = {
+            department: d.department,
+            user: d.user,
+            values: [] as number[],
+          };
+        acc[key].values.push(d.value);
+        return acc;
+      },
+      {} as Record<
+        string,
+        { department: string; user: string; values: number[] }
+      >,
+    );
 
-    const groups: GroupData[] = Object.values(grouped).map(g => ({
+    const groups: GroupData[] = Object.values(grouped).map((g) => ({
       ...g,
       mean: mean(g.values),
       variance: variance(g.values),
@@ -227,18 +335,48 @@ export default function StatisticalAnalysisPage() {
       isNormallyDistributed: true,
       hasEqualVariances: true,
       recommendedAlpha: 0.05,
-      analysisRecommendation: '',
+      analysisRecommendation: "",
       passedCount: groups.length,
     };
 
-    if (type === 'appraisal') setAppraisalResults(results);
+    if (type === "appraisal") setAppraisalResults(results);
     else setPerformanceResults(results);
   };
 
+  const hasResults = Boolean(appraisalResults || performanceResults);
+
   return (
-    <div className="container mx-auto py-10">
-      {appraisalResults && <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />}
-      {performanceResults && <ResultsView results={performanceResults} dept={dept} type="Performance" />}
+    <div className="container mx-auto px-5 py-10">
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-64" />
+        </div>
+      ) : error ? (
+        <Alert tone="danger">{error}</Alert>
+      ) : !hasResults ? (
+        <Empty
+          title="No scores to analyse yet"
+          description={
+            dept === "Unknown Department"
+              ? "Open this page from a department in the assessment list — the analysis is run over one department's scores at a time."
+              : `Nobody in ${dept} has submitted an appraisal or performance score yet. The distribution and its outliers appear here once they do.`
+          }
+        />
+      ) : (
+        <>
+          {appraisalResults && (
+            <ResultsView results={appraisalResults} dept={dept} type="Appraisal" />
+          )}
+          {performanceResults && (
+            <ResultsView
+              results={performanceResults}
+              dept={dept}
+              type="Performance"
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

@@ -23,6 +23,9 @@ pnpm-debug.log*
 .env.test.local
 .env.production.local
 
+# Plaintext credentials written by the /local-seed form — never commit
+LOCAL_SEED_CREDENTIALS.md
+
 # macOS
 .DS_Store
 
@@ -54,6 +57,21 @@ next-env.d.ts
 
 # ESLint cache
 .eslintcache
+
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+docs/
+.next-build
+
+# Local-only ledger snapshots + generated baseline (never a real migration)
+.migration-baseline-backup/
+
+# Database dumps and ad-hoc SQL. backup.sql was tracked and held COPY data for
+# pesuser, appraisal, goals, org and ~25 other tables — real names, 22 email
+# addresses and password hashes. Schema changes belong in prisma/migrations/,
+# and a dump belongs nowhere near the repository.
+*.sql
+!prisma/migrations/**/*.sql
+!prisma/manual-migrations/*.sql

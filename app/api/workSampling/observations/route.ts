@@ -1,61 +1,71 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { orgOfPosition, notYours } from "../_scope";
+import { validateData, workSamplingObservationSchema, formatZodErrors } from "@/app/lib/validation";
+import { requireEntitlement } from '../../_lib/planGuard';
 
 // POST — record a single observation (with programmatic upsert)
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { positionId, date, time, isBusy, performanceRating, notes } = body;
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
-    if (!positionId || !date || !time) {
+  try {
+    const parsed = validateData(workSamplingObservationSchema, await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "positionId, date and time are required" },
+        { success: false, error: "Validation failed", details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       );
     }
+    const { positionId, date, time, isBusy, performanceRating, notes } = parsed.data!;
+
+    // Observations are the study's raw data — anyone able to write them can
+    // move the utilisation figure the study produces.
+    const owner = await orgOfPosition(positionId);
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
     // Check if an observation already exists for the same position, date, and time
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "WorkSamplingObservation" WHERE "positionId" = $1 AND date = $2 AND time = $3`,
-      Number(positionId),
-      date,
-      time
-    ) as any[];
+    const existing = await prisma.workSamplingObservation.findFirst({
+      where: {
+        positionId: positionId,
+        date: date,
+        time: time
+      }
+    });
 
     let result;
-    if (existing.length > 0) {
+    if (existing) {
       // Update existing observation
-      result = await prisma.$queryRawUnsafe(
-        `UPDATE "WorkSamplingObservation"
-         SET "isBusy" = $1, "performanceRating" = $2, notes = $3
-         WHERE id = $4
-         RETURNING *;`,
-        Boolean(isBusy),
-        performanceRating ?? null,
-        notes ?? null,
-        existing[0].id
-      );
+      result = await prisma.workSamplingObservation.update({
+        where: { id: existing.id },
+        data: {
+          isBusy: Boolean(isBusy),
+          performanceRating: performanceRating ?? null,
+          notes: notes ?? null
+        }
+      });
     } else {
       // Insert new observation
-      const query = `
-        INSERT INTO "WorkSamplingObservation"
-          ("positionId", date, time, "isBusy", "performanceRating", notes)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *;
-      `;
-      result = await prisma.$queryRawUnsafe(
-        query,
-        Number(positionId),
-        date,
-        time,
-        Boolean(isBusy),
-        performanceRating ?? null,
-        notes ?? null
-      );
+      result = await prisma.workSamplingObservation.create({
+        data: {
+          positionId: positionId,
+          date: date,
+          time: time,
+          isBusy: Boolean(isBusy),
+          performanceRating: performanceRating ?? null,
+          notes: notes ?? null
+        }
+      });
     }
 
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error saving observation:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -64,15 +74,30 @@ export async function POST(req: NextRequest) {
 
 // DELETE — remove an observation
 export async function DELETE(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
+
   try {
     const { id } = await req.json();
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
-    await prisma.$queryRawUnsafe(
-      `DELETE FROM "WorkSamplingObservation" WHERE id = $1`,
-      Number(id)
-    );
+
+    const existing = await prisma.workSamplingObservation.findUnique({
+      where: { id: id },
+      select: { positionId: true },
+    });
+    if (!existing) return notYours();
+
+    const owner = await orgOfPosition(existing.positionId);
+    if (!owner || owner !== auth.user.orgId) return notYours();
+
+    await prisma.workSamplingObservation.delete({
+      where: { id: id }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting observation:", error);

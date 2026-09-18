@@ -1,27 +1,28 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import { jwtDecode } from 'jwt-decode';
+import { Prisma } from '@prisma/client'
+import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { requireModel } from '../_lib/planGuard';
 
-function decodeJWT(jwt: string){
-  const decoded = jwtDecode<{ org: string, user_id: string, dept: string }>(jwt);
-  return decoded;
-}
-
+// The org, user and department were read with jwtDecode, which does not check
+// the signature — so a token typed by hand named whichever org it liked and the
+// index was written there. Same three values, off a verified token.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireModel(auth.user, 'personnel-utilization');
+  if (!plan.ok) return plan.response;
+
   const body = await req.json();
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader) {
-    return NextResponse.json({ message: 'Authorization header missing' }, { status: 401 });
-  }
   const { payload } = body;
   const value = body[payload];
-  console.log('i was hit')
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    return NextResponse.json({ message: 'Token missing' }, { status: 401 });
-  }
-  const { org, user_id, dept } = decodeJWT(token);
-  console.log({ org, user_id, dept })
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+  const dept = auth.user.dept ? String(auth.user.dept) : null;
 
   const allowedFields = [
     'productivity',
@@ -37,32 +38,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Invalid payload field' }, { status: 400 });
   }
 
+  // Only meaningful for the productivity index, and only when the caller sent
+  // them. The index is a ratio; keeping the two figures behind it is what lets
+  // the future-output prediction fit a line through the history later.
+  const resourceFigures =
+    payload === 'productivity'
+      ? {
+          output_resources:
+            body.output_resources == null ? null : Number(body.output_resources),
+          input_resources:
+            body.input_resources == null ? null : Number(body.input_resources),
+        }
+      : {};
+
   try {
-    // Check if user appraisal already exists
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "index" WHERE org = $1`,
-      org,
-    ) as any[];
+    // Always create a new record for historical tracking
+    await prisma.index.create({
+      data: { org_id: orgId, dept, [payload]: value, ...resourceFigures } as Prisma.indexUncheckedCreateInput,
+    });
 
-    if (existing.length === 0) {
-      // Insert new row with only the given field
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "index" (org, "${payload}") VALUES ($1, $2)`,
-        org,
-        value
-      );
-
-      return NextResponse.json({ message: 'saved successfully' }, { status: 201 });
-    } else {
-      // Update the field
-      await prisma.$executeRawUnsafe(
-        `UPDATE "index" SET "${payload}" = $1 WHERE org = $2`,
-        value,
-        org
-      );
-
-      return NextResponse.json({ message: 'index updated' }, { status: 200 });
-    }
+    return NextResponse.json({ message: 'saved successfully' }, { status: 201 });
   } catch (error) {
      console.error('Prisma query error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });

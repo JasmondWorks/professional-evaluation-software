@@ -2,7 +2,6 @@
 import '../../globals.css'
 import { useRouter } from "next/navigation";
 import { usePathname } from 'next/navigation';
-import { Lato } from 'next/font/google'
 // import { Provider } from 'react-redux'
 // import { store } from '../state/store'
 import { useEffect, useState } from 'react'
@@ -10,13 +9,6 @@ import { CloseSquare, DocumentSketch } from 'iconsax-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import LoadingButton from '../../components/ui/LoadingButton';
-
-const lato = Lato( 
-  {
-    weight: ['100', '300', '400', '700', '900'],
-    subsets: ['latin']
-   }
-  )
 
 export default function RootLayout({ children, }: { children: React.ReactNode }) {
 
@@ -27,27 +19,30 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
     setSideBarActive(!is_sidebar_active);
   }
   const handleMobile = () => {~
-    console.log(is_mobile)
     setMobile(!is_mobile)
   }
 
   const [orgs, setOrgs] = useState<any[]>([]);
+  const [role, setRole] = useState<string | null>(null);
   const pathname = usePathname()
 
   const isActive = (href: string) => pathname === href || `/${pathname.split('/')[1]}` === href;
 
-  const tabs = [
+  const allTabs = [
     { key: 1, name: 'Dashboard', href: '/admin/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
-    { key: 4, name: 'Admin users', href: '/admin/super', role_access: [ 'admin', 'hod'] }, 
-    { key: 4, name: 'Auditors', href: '/admin/auditor', role_access: [ 'super-admin' ] }, 
+    { key: 2, name: 'Admin users', href: '/admin/super', role_access: [ 'admin', 'hod'] },
+    { key: 3, name: 'Auditors', href: '/admin/auditor', role_access: [ 'super-admin' ] },
   ]
 
+  const tabs = allTabs.filter((t) => !role || t.role_access.includes(role));
+
   useEffect(() => {
-    console.log('dont render twice')
+    const match = document.cookie.match(/(?:^|; )role=([^;]+)/);
+    setRole(match ? decodeURIComponent(match[1]) : null);
   }, [])
   
   return (
-      <div className={ lato.className + 'bg-gray-50 flex flex-row relative justify-center w-screen' }
+      <div className='bg-canvas flex flex-row relative justify-center w-screen'
         onChange={handleMobile}>
 
           <div className="(sidebar) bg-white w-2/12 border-e">
@@ -73,7 +68,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
                         <Link
                           href={ i.href }
                           key={ i.key }
-                          className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-gray-400'} 
+                          className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-muted'} 
                                       hover:bg-gray-200 hover:text-pes p-3 ps-8 my-1 text-md flex transition-colors duration-200`}
                         >
                           <p className="mx-3">{ i.name }</p>
@@ -107,7 +102,7 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
                               onClick={() => handleSideBar()} 
                               href={ i.href } 
                               key={ i.key } 
-                              className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-gray-400'} 
+                              className={`${ isActive(i.href) ? 'bg-gray-200 text-pes' : 'bg-transparent text-muted'} 
                                           hover:bg-gray-200 hover:text-pes p-3 ps-8 my-1 text-md flex`}
                           >
                               <p className='mx-3'> { i.name }</p>

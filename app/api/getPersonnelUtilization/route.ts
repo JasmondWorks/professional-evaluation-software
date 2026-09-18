@@ -1,0 +1,33 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { requireModel } from "../_lib/planGuard";
+
+export async function POST(request: NextRequest) {
+  try {
+    const auth = authorize(tokenFromRequest(request), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'personnel-utilization');
+    if (!plan.ok) return plan.response;
+
+    const orgId = auth.user.orgId ?? null;
+
+    if (!orgId) {
+      return NextResponse.json({ error: "Organization not found in token" }, { status: 400 });
+    }
+
+    const records = await prisma.personnel_utilization.findMany({
+      where: { org_id: orgId },
+      orderBy: { created_at: "desc" },
+    });
+
+    return NextResponse.json({ success: true, data: records });
+  } catch (error) {
+    console.error("Error fetching personnel utilization data:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

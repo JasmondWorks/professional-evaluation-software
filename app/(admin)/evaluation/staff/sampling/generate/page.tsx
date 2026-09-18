@@ -131,14 +131,14 @@ export default function GeneratePage() {
     <div className="flex flex-col p-6 gap-6 max-w-5xl">
       <div>
         <h1 className="font-bold text-pes text-2xl mb-1">Random Study Day &amp; Hour Generator</h1>
-        <p className="text-gray-500 text-sm">
+        <p className="text-muted text-sm">
           Generates study dates and observation times using Charles-Owaba equations 6.4–6.9
         </p>
       </div>
 
       {/* Parameters */}
       <div className="bg-white rounded-xl shadow p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Start Month
           <select name="startMonth" value={params.startMonth} onChange={handleChange}
             className="mt-1 border rounded px-3 py-2 focus:ring-2 focus:ring-pes focus:border-transparent">
@@ -148,53 +148,53 @@ export default function GeneratePage() {
           </select>
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Number of Months
           <input type="number" name="numMonths" min={1} max={12} value={params.numMonths}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Days Per Month (desired)
           <input type="number" name="daysPerMonth" min={1} max={27} value={params.daysPerMonth}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Work Start Time (hr)
           <input type="number" name="workStartTime" min={0} max={23} step={0.5} value={params.workStartTime}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-          <span className="text-xs text-gray-400 mt-1">Y₀ — e.g. 8 = 08:00</span>
+          <span className="text-xs text-muted mt-1">Y₀ — e.g. 8 = 08:00</span>
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Min Cycle Duration A (min)
           <input type="number" name="minDuration" min={1} max={120} value={params.minDuration}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-          <span className="text-xs text-gray-400 mt-1">Time to complete one tour + rest</span>
+          <span className="text-xs text-muted mt-1">Time to complete one tour + rest</span>
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Working Hours/Day (W)
           <input type="number" name="workingHours" min={1} max={24} step={0.5} value={params.workingHours}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-gray-700">
+        <label className="flex flex-col text-sm font-medium text-body">
           Observations/Day (n)
           <input type="number" name="obsPerDay" min={1} max={50} value={params.obsPerDay}
             onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
         </label>
 
         {/* Derived B */}
-        <div className="flex flex-col text-sm font-medium text-gray-700">
-          <span>Max Duration B (min) <span className="text-gray-400 font-normal">auto</span></span>
-          <div className={`mt-1 border rounded px-3 py-2 font-bold ${validB > 0 ? 'bg-gray-50 text-pes' : 'bg-red-50 text-red-600 border-red-300'}`}>
+        <div className="flex flex-col text-sm font-medium text-body">
+          <span>Max Duration B (min) <span className="text-muted font-normal">auto</span></span>
+          <div className={`mt-1 border rounded px-3 py-2 font-bold ${validB > 0 ? 'bg-canvas text-pes' : 'bg-danger-50 text-danger-600 border-danger-100'}`}>
             {validB.toFixed(1)}
           </div>
-          <span className="text-xs text-gray-400 mt-1">B = (W×60 − n×A) / n  (eq 6.9)</span>
+          <span className="text-xs text-muted mt-1">B = (W×60 − n×A) / n  (eq 6.9)</span>
           {validB <= 0 && (
-            <span className="text-xs text-red-500 mt-1">⚠ Reduce obs/day or increase working hours</span>
+            <span className="text-xs text-danger-600 mt-1">⚠ Reduce obs/day or increase working hours</span>
           )}
         </div>
       </div>
@@ -215,7 +215,7 @@ export default function GeneratePage() {
             <Calendar className="w-5 h-5 text-pes" />
             Generated Study Schedule
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             Formula: days — x = floor(1.0 + k×R) eq 6.4–6.6 &nbsp;|&nbsp;
             times — Y_i = Y_&#123;i-1&#125; + [A + (B−A)×R] eq 6.7
           </p>
@@ -239,19 +239,19 @@ export default function GeneratePage() {
                   const dateObj = new Date(year, s.month - 1, s.day)
                   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' })
                   return (
-                    <tr key={idx} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <tr key={idx} className={`border-b border-line ${idx % 2 === 0 ? 'bg-white' : 'bg-canvas'}`}>
                       <td className="p-3 font-medium">{MONTH_NAMES[s.month - 1]}</td>
                       <td className="p-3 font-bold text-pes">{s.day}</td>
-                      <td className="p-3 text-gray-600">{dayName}, {MONTH_NAMES[s.month-1].slice(0,3)} {s.day}</td>
-                      <td className="p-3 font-mono text-xs text-gray-500">{s.R_day.toFixed(4)}</td>
+                      <td className="p-3 text-body">{dayName}, {MONTH_NAMES[s.month-1].slice(0,3)} {s.day}</td>
+                      <td className="p-3 font-mono text-xs text-muted">{s.R_day.toFixed(4)}</td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
                           {s.times.length > 0 ? s.times.map((t, ti) => (
-                            <span key={ti} className="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded px-2 py-0.5 font-mono text-xs">
+                            <span key={ti} className="bg-pes-50 text-pes-700 border border-pes-100 rounded px-2 py-0.5 font-mono text-xs">
                               {t}
                             </span>
                           )) : (
-                            <span className="text-gray-400 text-xs italic">No times within working hours</span>
+                            <span className="text-muted text-xs italic">No times within working hours</span>
                           )}
                         </div>
                       </td>
@@ -262,7 +262,7 @@ export default function GeneratePage() {
             </table>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+          <div className="bg-pes-50 border border-blue-200 rounded-lg p-4 text-sm text-pes-700">
             <strong>Parameters used:</strong>&nbsp;
             A = {params.minDuration} min, &nbsp;
             B = {validB.toFixed(1)} min, &nbsp;

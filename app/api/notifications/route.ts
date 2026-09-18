@@ -1,26 +1,54 @@
-// app/api/notifications/route.ts
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { verifyToken } from "../_lib/authGuard";
+
+export async function GET(request: NextRequest) {
+  return handleRequest(request);
+}
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { org } = body;
+  return handleRequest(request);
+}
 
-    if (!org) {
+async function handleRequest(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const orgId = decoded.orgId;
+
+    if (!orgId) {
       return NextResponse.json(
         { error: "Missing org" },
         { status: 400 }
       );
     }
 
-    const query = `
-      SELECT id, user_id, org, title, message, is_read, created_at
-      FROM notifications
-      WHERE org = $1
-      ORDER BY created_at DESC;
-    `;
-    const notifications = await prisma.$queryRawUnsafe(query, org);
+    // Notifications are per user — a person only sees their own (scoped to org).
+    const rawId = decoded.userID ?? decoded.id;
+    const userId = typeof rawId === 'string' && rawId ? rawId : null;
+
+    const notifications = await prisma.notifications.findMany({
+      where: {
+        org_id: orgId,
+        ...(userId ? { user_id: userId } : {}),
+      },
+      select: {
+        id: true,
+        user_id: true,
+        org_id: true,
+        title: true,
+        message: true,
+        is_read: true,
+        created_at: true,
+      },
+      orderBy: { created_at: "desc" },
+    });
 
     return NextResponse.json({ notifications });
   } catch (err) {
@@ -29,7 +57,5 @@ export async function POST(request: NextRequest) {
       { error: "Failed to fetch notifications" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

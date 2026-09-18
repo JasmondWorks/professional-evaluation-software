@@ -1,0 +1,231 @@
+// Shared role / permission primitives.
+//
+// Roles are open-ended: an org admin can create custom roles (e.g. "Paginator").
+// To keep role-based UI predictable, a custom role is created with a `base_role`
+// — one of the system PRESETS below — and employees created with that role get
+// the preset written into pesuser.role, while the custom name is kept in
+// pesuser.display_role for display. Fine-grained access is then driven by
+// PERMISSIONS (a fixed, knowable set), not the role name.
+
+// System preset roles that drive role-based UI. A custom role must map onto one
+// of these. "super-admin" is a platform tier (not assignable as a base role).
+import { orgTerms } from '@/app/lib/orgTerms';
+
+export const PRESET_ROLES = [
+  'admin',
+  'hod',
+  // The departmental administrator: the officer in a department who records
+  // Forms 8 and 9 and prints the blanks. Confirmed by the client on 13 Aug as a
+  // different person from the HOD, who scores and approves.
+  //
+  // The string matches what /api/assign-admin has always written. Listing it
+  // here also fixes a standing bug: it was never a preset, so
+  // resolveEffectiveRole fell back to 'employee-w' and anyone assigned as a
+  // departmental administrator silently got baseline access instead.
+  'dept-admin',
+  'unit-head',
+  'lecturer',
+  'industrial-engineer',
+  'employee-w',
+  'auditor',
+] as const;
+
+export type PresetRole = (typeof PRESET_ROLES)[number];
+
+// Human-friendly labels for the presets (used in dropdowns).
+export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
+  admin: 'Admin',
+  hod: 'Department Lead (HOD)',
+  'dept-admin': 'Departmental Administrator',
+  'unit-head': 'Faculty / Division Head',
+  lecturer: 'Employee — Academic',
+  'industrial-engineer': 'Employee — Non-Academic',
+  'employee-w': 'Employee (baseline)',
+  auditor: 'Auditor',
+};
+
+/** The label for a preset, in the words the organization actually uses.
+ *
+ *  Only `unit-head` differs by institution type, and it differs twice over. In
+ *  a university it is the Dean above the HODs. In a company or public body it
+ *  is the head of a unit — and it is also the role that runs the MAINTENANCE
+ *  MODEL, which the organization admin is barred from executing (the client,
+ *  1 September: maintenance happens at the production floor). An admin looking
+ *  for the person who runs maintenance was being shown "Faculty / Division
+ *  Head", which reads like a university title and describes none of that.
+ *
+ *  Pass the org's product category — see orgTerms for the Faculty/Division and
+ *  Dean/Manager pairing this builds on. */
+export function presetRoleLabel(role: PresetRole, category?: string | null): string {
+  if (role !== 'unit-head') return PRESET_ROLE_LABELS[role];
+
+  const { unit, head } = orgTerms(category);
+  return `${unit} Head (${head})`;
+}
+
+/** What a role carries beyond its name, for the places that assign one. Only
+ *  the responsibilities a person would not guess from the title. */
+export function presetRoleNote(role: PresetRole): string | null {
+  if (role === 'unit-head') {
+    return 'Also runs the maintenance model, which the organization admin cannot execute.';
+  }
+  return null;
+}
+
+// All roles the app special-cases by name (presets + platform super-admin).
+export const KNOWN_ROLES = ['super-admin', ...PRESET_ROLES] as const;
+
+export type KnownRole = (typeof KNOWN_ROLES)[number];
+
+// Baseline surface for anyone whose role we don't recognize.
+export const FALLBACK_ROLE: PresetRole = 'employee-w';
+
+// Map a raw role string to a role the UI knows how to place. With Approach B,
+// pesuser.role is always a preset, so this normally passes through unchanged;
+// it stays as a safety net for legacy/custom values.
+export function resolveEffectiveRole(role?: string | null): KnownRole {
+  if (role && (KNOWN_ROLES as readonly string[]).includes(role)) {
+    return role as KnownRole;
+  }
+  return FALLBACK_ROLE;
+}
+
+// Normalize an arbitrary base-role choice to a valid preset (defaults to baseline).
+export function resolveBaseRole(base?: string | null): PresetRole {
+  if (base && (PRESET_ROLES as readonly string[]).includes(base)) {
+    return base as PresetRole;
+  }
+  return FALLBACK_ROLE;
+}
+
+// The capabilities stored per user/role in the `permission` table. Descriptive
+// names, stored as booleans. This is the closed set the UI can safely branch on
+// regardless of role name.
+export const PERMISSION_KEYS = [
+  'can_manage_user_roles',
+  'can_access_employee_data',
+  'access_employee_all',
+  'access_employee_subordinates',
+  'access_employee_selected',
+  'can_define_performance_metrics',
+  'define_performance_all',
+  'define_performance_subordinates',
+  'define_performance_selected',
+  'can_access_reporting_hierarchy',
+  'can_manage_performance_reviews',
+  'manage_reviews_all',
+  'manage_reviews_subordinates',
+  'manage_reviews_selected',
+] as const;
+
+export type PermissionKey = (typeof PERMISSION_KEYS)[number];
+
+// The single source of truth for the permission hierarchy: each top-level
+// capability and its scope children. UI (Create Role, employee wizard, View
+// Permissions) renders from this so the structure lives in exactly one place;
+// a child is only meaningful when its parent is granted.
+export type PermissionNode = {
+  key: PermissionKey;
+  label: string;
+  description: string;
+  children: { key: PermissionKey; label: string }[];
+};
+
+export const PERMISSION_TREE: PermissionNode[] = [
+  {
+    key: 'can_manage_user_roles',
+    label: 'Manage User Roles',
+    description: 'Create, edit, and delete user roles, defining their specific permissions and responsibilities.',
+    children: [],
+  },
+  {
+    key: 'can_access_employee_data',
+    label: 'Access Employee Data',
+    description: 'View and edit the details of employees.',
+    children: [
+      { key: 'access_employee_all', label: 'All Employees' },
+      { key: 'access_employee_subordinates', label: 'Subordinates' },
+      { key: 'access_employee_selected', label: 'Selected Employees' },
+    ],
+  },
+  {
+    key: 'can_define_performance_metrics',
+    label: 'Define Performance Metrics',
+    description: 'View and edit the performance metrics of employees.',
+    children: [
+      { key: 'define_performance_all', label: 'All Employees' },
+      { key: 'define_performance_subordinates', label: 'Subordinates' },
+      { key: 'define_performance_selected', label: 'Selected Employees' },
+    ],
+  },
+  {
+    key: 'can_access_reporting_hierarchy',
+    label: 'Access Reporting Hierarchy',
+    description: 'Define and modify the organizational reporting structure, assigning managers to employees and creating teams.',
+    children: [],
+  },
+  {
+    key: 'can_manage_performance_reviews',
+    label: 'Manage Performance Reviews',
+    description: 'Schedule, modify, or cancel performance review meetings for any employee.',
+    children: [
+      { key: 'manage_reviews_all', label: 'All Employees' },
+      { key: 'manage_reviews_subordinates', label: 'Subordinates' },
+      { key: 'manage_reviews_selected', label: 'Selected Employees' },
+    ],
+  },
+];
+
+// Default capability template for each system preset. Used when seeding preset
+// roles into a new org so they behave sensibly out of the box (and so the Roles
+// table can show/edit their permissions like any custom role). Anything not
+// listed defaults to false. These are starting points — an admin can edit them.
+export const PRESET_PERMISSION_DEFAULTS: Record<PresetRole, PermissionKey[]> = {
+  admin: [...PERMISSION_KEYS], // full access
+  hod: [
+    'can_access_employee_data',
+    'access_employee_subordinates',
+    'can_define_performance_metrics',
+    'define_performance_subordinates',
+    'can_access_reporting_hierarchy',
+    'can_manage_performance_reviews',
+    'manage_reviews_subordinates',
+  ],
+  // Faculty/Division head — oversees several departments in their unit.
+  // Records Forms 8 and 9 for their department. They handle appraisal paperwork
+  // rather than staff records, so no administrative capabilities by default.
+  'dept-admin': [],
+  'unit-head': [
+    'can_access_employee_data',
+    'access_employee_all',
+    'can_access_reporting_hierarchy',
+    'can_manage_performance_reviews',
+    'manage_reviews_all',
+  ],
+  'industrial-engineer': ['can_define_performance_metrics', 'define_performance_all'],
+  auditor: ['can_access_employee_data', 'access_employee_all', 'can_manage_performance_reviews', 'manage_reviews_all'],
+  lecturer: [], // self-service employee — no management capabilities
+  'employee-w': [],
+};
+
+// Build a full boolean permission map for a preset from its default list.
+export function presetPermissionMap(preset: PresetRole): Record<PermissionKey, boolean> {
+  const granted = new Set(PRESET_PERMISSION_DEFAULTS[preset] ?? []);
+  return Object.fromEntries(PERMISSION_KEYS.map((k) => [k, granted.has(k)])) as Record<
+    PermissionKey,
+    boolean
+  >;
+}
+
+// Compact a raw permission row (boolean columns) into a small { key: true }
+// object suitable for embedding in the JWT — only granted capabilities are kept.
+export function compactPermissions(
+  row: Partial<Record<PermissionKey, boolean | null>> | null | undefined,
+): Partial<Record<PermissionKey, true>> {
+  const out: Partial<Record<PermissionKey, true>> = {};
+  if (!row) return out;
+  for (const key of PERMISSION_KEYS) {
+    if (row[key] === true) out[key] = true;
+  }
+  return out;
+}

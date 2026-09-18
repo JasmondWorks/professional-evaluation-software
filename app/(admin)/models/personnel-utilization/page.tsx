@@ -2,14 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { jwtDecode } from "jwt-decode";
-import { getAccessToken } from '@/app/utils/auth';
 
-import {
-  findOptimalK,
-  HParams,
-  OptimalKResult,
-} from "./lib/util-models11-16";
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from "@/app/utils/auth";
+import { useModelAccess, hasEntitlement } from "@/app/components/useModelAccess";
+
+import { findOptimalK, HParams, OptimalKResult } from "./lib/util-models11-16";
+
+export interface HParamsWithConstraints extends HParams {
+  K?: number;
+  B?: number;
+  W?: number;
+  P0?: number;
+  t1?: number;
+  t2?: number;
+  t3?: number;
+  t4?: number;
+  S0?: number;
+  G?: number;
+  D?: number;
+  Y?: number;
+  alpha?: number;
+  J?: number;
+}
 import {
   LineChart,
   Line,
@@ -18,19 +33,48 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
+import InfoPopover from "@/app/components/ui/InfoPopover";
+import { boundaryViolations } from "@/app/lib/models/boundaryConditions";
+import { apiFetch } from "@/app/utils/apiFetch";
+import { BackLink } from '@/app/components/ui';
 
 export default function PersonnelUtilizationPage() {
-  // Only the 3 true parameters (Eq. 8.10: Θ_ij = {A_ij, λ_ij, μ_ij})
-  const [params, setParams] = useState<HParams>({
+  const access = useModelAccess();
+  const [params, setParams] = useState<HParamsWithConstraints>({
     A: 8,
-    lambda: 1.847,
-    mu: 6.5834,
+    K: 1,
+    B: 12,
+    W: 2,
+    P0: 0.1,
+    t1: 1,
+    t2: 1,
+    t3: 1,
+    t4: 0.2,
+    S0: 0.05,
+    G: 40,
+    D: 8,
+    Y: 0.5,
+    alpha: 0.8,
+    lambda: 0.3,
+    mu: 0.5,
+    J: 5,
   });
+  const [usePdfConstraints, setUsePdfConstraints] = useState(true);
   const [result, setResult] = useState<OptimalKResult | null>(null);
+  const [violations, setViolations] = useState<string[] | null>(null);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // λ < μ is not one constraint among others: an arrival rate at or above the
+  // service rate describes a queue that grows without bound, so K* and H* are
+  // meaningless rather than merely unreliable. It is therefore checked whatever
+  // the eqs.39–42 toggle says, and it blocks the save outright — a bad row here
+  // would go on to poison the history the future-requirement prediction reads.
+  const lambdaMuInvalid =
+    Number.isFinite(params.lambda) &&
+    Number.isFinite(params.mu) &&
+    !((params.lambda as number) < (params.mu as number));
 
   // Decode org from JWT
   const getOrgFromToken = () => {
@@ -44,26 +88,60 @@ export default function PersonnelUtilizationPage() {
     }
   };
 
-  const handleChange = (key: keyof HParams, value: number) => {
-    setParams((prev) => ({ ...prev, [key]: value }));
+  const handleChange = (key: keyof HParamsWithConstraints, value: number) => {
+    setParams((prev: HParamsWithConstraints) => ({ ...prev, [key]: value }));
     setResult(null);
+    setViolations(null);
   };
 
   const isFormValid = () => {
-    if (!Number.isFinite(params.A) || params.A <= 0) return false;
-    if (!Number.isFinite(params.lambda) || params.lambda <= 0) return false;
-    if (!Number.isFinite(params.mu) || params.mu <= 0) return false;
-    if (params.lambda >= params.mu) return false; // Eq. 8.9: λ < μ
+    const fields = [
+      "B",
+      "W",
+      "P0",
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "S0",
+      "G",
+      "D",
+      "Y",
+      "alpha",
+      "lambda",
+      "mu",
+      "J",
+      "A",
+    ];
+    for (let f of fields) {
+      const val = (params as any)[f];
+      if (val === undefined || val === null || Number.isNaN(val)) return false;
+    }
     return true;
   };
 
   const calculate = () => {
-    const r = findOptimalK(params);
+    const r = findOptimalK({ ...params, A: params.A ?? 8 } as any);
+    // The same check the management levels run, from the same module — see
+    // app/lib/models/boundaryConditions.ts.
+    const fails = usePdfConstraints
+      ? boundaryViolations(
+        params as any,
+        r.Kstar,
+        params.lambda ?? 0,
+        params.mu ?? 0,
+      )
+      : [];
     setResult(r);
+    setViolations(fails);
   };
 
   const handleSave = async () => {
     if (!result) return;
+    if (lambdaMuInvalid) {
+      setSaveMsg("Cannot save: λ must be strictly less than μ.");
+      return;
+    }
     const org = getOrgFromToken();
     if (!org) {
       setSaveMsg("Missing org in token — please log in again.");
@@ -81,7 +159,7 @@ export default function PersonnelUtilizationPage() {
         return;
       }
 
-      const res = await fetch("/api/personnelUtilization", {
+      const res = await apiFetch("/api/personnelUtilization", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,6 +177,19 @@ export default function PersonnelUtilizationPage() {
           kmax: result.table.length,
           kstar: result.Kstar,
           hstar: result.Hstar,
+          // Kept with the run so every management level above this one can be
+          // tested against the same boundary conditions without the operator
+          // re-entering them — the client's rule of 30 August.
+          alpha: params.alpha,
+          y_coef: params.Y,
+          w_val: params.W,
+          d_val: params.D,
+          g_val: params.G,
+          j_val: params.J,
+          t1: params.t1,
+          t2: params.t2,
+          t3: params.t3,
+          t4: params.t4,
         }),
       });
 
@@ -112,166 +203,522 @@ export default function PersonnelUtilizationPage() {
     }
   };
 
-  // Input helper
   const numberInput = (
-    key: keyof HParams,
+    key: keyof HParamsWithConstraints,
     label: string,
     hint: string,
-    opts: { min?: number; max?: number; step?: number }
+    opts: { min?: number; max?: number; step?: number },
   ) => (
-    <label key={key} className="block border-gray-200 border rounded p-4 my-1">
-      <div className="text-sm font-medium">{label}</div>
-      <input
-        type="number"
-        value={params[key] ?? ""}
-        min={opts.min}
-        max={opts.max}
-        step={opts.step}
-        onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-        className="mt-1 block w-full rounded-md border border-gray-400 outline-pes shadow-sm p-2"
-      />
-      <div className="text-xs text-gray-500">{hint}</div>
-    </label>
+    <div key={key} className="block w-full min-w-0">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+        <span className="truncate">{label}</span>
+        <InfoPopover text={hint} />
+      </div>
+      {opts.max !== undefined ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            value={params[key] ?? 0}
+            min={opts.min}
+            max={opts.max}
+            step={opts.step}
+            onChange={(e) =>
+              handleChange(key, parseFloat(e.target.value || "0"))
+            }
+            className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
+          />
+          <input
+            type="number"
+            value={params[key] ?? ""}
+            min={opts.min}
+            max={opts.max}
+            step={opts.step}
+            onChange={(e) =>
+              handleChange(key, parseFloat(e.target.value || "0"))
+            }
+            className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
+          />
+        </div>
+      ) : (
+        <input
+          type="number"
+          value={params[key] ?? ""}
+          min={opts.min}
+          max={opts.max}
+          step={opts.step}
+          onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
+          className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+        />
+      )}
+    </div>
   );
-
-  // Validation message for λ ≥ μ
-  const lambdaError = params.lambda >= params.mu && params.lambda > 0 && params.mu > 0;
 
   return (
     <div className="p-8 w-full mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Model 11 — Personnel Utilisation</h1>
-      <p className="text-gray-600 mb-6">
-        Computes the optimal span of control K* that maximises the personnel
-        utilisation function H<sub>ij</sub> (Charles-Owaba, Eq. 8.8b).
-        Based on an (M|M|1):(FCFS|K|K) queuing model of the decision centre.
-      </p>
-
-      {/* Parameter inputs — only the 3 true parameters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-        {numberInput(
-          "A",
-          "A — Hours scheduled for work in a day",
-          "e.g. 8 hours/day",
-          { min: 0.1, step: 0.5 }
-        )}
-        {numberInput(
-          "lambda",
-          "λ — Arrival rate (cases/hour)",
-          "Rate at which subordinates consult the boss (Eq. 8.22: λ = TNC / TTS)",
-          { min: 0.001, step: 0.001 }
-        )}
-        {numberInput(
-          "mu",
-          "μ — Service rate (cases/hour)",
-          "Rate at which the boss processes cases (Eq. 8.24: μ = TCC / Σt). Must be > λ.",
-          { min: 0.001, step: 0.001 }
-        )}
+      <div className="mb-4">
+        <BackLink href="/models">Back to Models</BackLink>
+      </div>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">
+            Model 11 — Personnel Utilization
+          </h1>
+          <p className="text-body mb-6 max-w-2xl">
+            Calculate optimal K* for a decision centre with given workload
+            parameters. Based on H(t,K), with optional constraints (eqs.39–42).
+          </p>
+        </div>
+        <Link
+          href="/models/personnel-utilization/history"
+          className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+        >
+          <svg
+            className="w-4 h-4 text-muted"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          View History & Reports
+        </Link>
       </div>
 
-      {lambdaError && (
-        <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4 text-sm">
-          <strong>Constraint violated (Eq. 8.9):</strong> λ must be strictly less than μ.
-          Currently λ = {params.lambda.toFixed(4)} and μ = {params.mu.toFixed(4)}.
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Category 1: Workload & Time Allocation */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">
+                Workload & Time Allocation
+              </h2>
+              <p className="text-xs text-muted">
+                Core hours and operational timeline parameters
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {numberInput(
+              "B",
+              "B — Formal lecture hours",
+              "Hours/week in formal class time",
+              { min: 0, step: 0.1 },
+            )}
+            {numberInput(
+              "W",
+              "W — Workload offset",
+              "Hours/week lost to interruptions/admin",
+              { min: 0, step: 0.1 },
+            )}
+            {numberInput(
+              "A",
+              "A — Hours scheduled for work",
+              "Hours scheduled for work in a day",
+              { min: 0, step: 0.1 },
+            )}
+            {numberInput(
+              "G",
+              "G — Total available hours",
+              "Weekly total hours outside class",
+              { min: 0, step: 0.1 },
+            )}
+            {numberInput(
+              "D",
+              "D — Decision tasks hours",
+              "Weekly hours allocated to decision tasks",
+              { min: 0, step: 0.1 },
+            )}
+          </div>
+        </div>
+
+        {/* Category 2: Proportions & Activity Constants */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+                ></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">
+                Proportions & Activity
+              </h2>
+              <p className="text-xs text-muted">
+                Percentages and fractional coefficients (0-1)
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {numberInput("P0", "P₀ — Preliminary work", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+            {numberInput("S0", "S₀ — Secondary duties", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+            {numberInput("alpha", "α — Activity proportion", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+            {numberInput("Y", "Y — Coefficient for α", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+          </div>
+        </div>
+
+        {/* Category 3: Weighting Constants */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">
+                Weighting Constants
+              </h2>
+              <p className="text-xs text-muted">
+                Algorithmic multipliers (t₁ - t₄)
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {numberInput("t1", "t₁ — Constant 1", "Default 1", {
+              min: 0,
+              step: 0.1,
+            })}
+            {numberInput("t2", "t₂ — Constant 2", "Default 1", {
+              min: 0,
+              step: 0.1,
+            })}
+            {numberInput("t3", "t₃ — Constant 3", "Default 1", {
+              min: 0,
+              step: 0.1,
+            })}
+            {numberInput("t4", "t₄ — Constant 4", "Default 0.2", {
+              min: 0,
+              step: 0.1,
+            })}
+          </div>
+        </div>
+
+        {/* Category 4: Advanced Constraints */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">
+                Advanced Constraints
+              </h2>
+              <p className="text-xs text-muted">
+                Parameters for equations 41 & 42
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            {numberInput("lambda", "λ (Eq.41)", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+            {numberInput("mu", "μ (Eq.41)", "0–1", {
+              min: 0,
+              max: 1,
+              step: 0.01,
+            })}
+            {numberInput("J", "J (Eq.42)", "Hours", { min: 0, step: 0.1 })}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-6">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={usePdfConstraints}
+            onChange={(e) => {
+              setUsePdfConstraints(e.target.checked);
+              setResult(null);
+              setViolations(null);
+            }}
+          />
+          Use PDF constraints (eqs.39–42)
+        </label>
+      </div>
+
+      {lambdaMuInvalid && (
+        <div className="mb-3 rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <strong>Rule: λ &lt; μ.</strong> The arrival rate must be strictly less
+          than the service rate. Currently λ = {params.lambda} and μ = {params.mu}
+          , so the queue never clears and there is no optimal K. Adjust the two
+          rates to continue.
         </div>
       )}
 
+      {/* AGENTS.md: a blocked control looks disabled but still takes the click,
+          so pressing it says why instead of doing nothing. */}
       <button
-        onClick={calculate}
-        disabled={!isFormValid()}
-        className={`px-4 py-2 rounded text-white ${isFormValid() ? "bg-pes hover:bg-blue-900" : "bg-gray-400 cursor-not-allowed"}`}
+        onClick={() => {
+          if (lambdaMuInvalid) {
+            setViolations(["λ must be strictly less than μ. Adjust the two rates to continue."]);
+            return;
+          }
+          if (!isFormValid()) {
+            setViolations(["Fill in every parameter before calculating."]);
+            return;
+          }
+          calculate();
+        }}
+        aria-disabled={!isFormValid() || lambdaMuInvalid}
+        className={`px-4 py-2 rounded text-white ${isFormValid() && !lambdaMuInvalid ? "bg-pes hover:bg-pes-800" : "bg-gray-400"}`}
       >
         Calculate
       </button>
 
       {result && (
         <>
-          {/* Primary results */}
-          <div className="bg-white p-4 rounded shadow mb-6 mt-6">
-            <h2 className="text-lg font-semibold mb-2">Results</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <div className="text-gray-500">Optimal Span (K*)</div>
-                <div className="text-2xl font-bold">{result.Kstar}</div>
-              </div>
-              <div>
-                <div className="text-gray-500">Max Utilisation (H*)</div>
-                <div className="text-2xl font-bold">
-                  {Number.isFinite(result.Hstar) ? result.Hstar.toFixed(6) : "NaN"}
+          <div className="mt-8 border-t border-line pt-8">
+            <h2 className="text-xl font-bold text-strong mb-6">
+              Model Results
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* K* Card */}
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted mb-1">
+                    Optimal Personnel (K*)
+                  </p>
+                  <p className="text-4xl font-bold text-pes">{result.Kstar}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    ></path>
+                  </svg>
                 </div>
               </div>
-              <div>
-                <div className="text-gray-500">Traffic Intensity (ρ)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.rho) ? result.rho.toFixed(6) : "NaN"}
+
+              {/* H* Card */}
+              <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted mb-1">
+                    Efficiency Ratio (H*)
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-600">
+                    {Number.isFinite(result.Hstar)
+                      ? result.Hstar.toFixed(5)
+                      : "NaN"}
+                  </p>
                 </div>
-              </div>
-              <div>
-                <div className="text-gray-500">P₀ (Boss idle probability)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.P0) ? result.P0.toFixed(6) : "NaN"}
-                </div>
-              </div>
-              <div>
-                <div className="text-gray-500">L̄ (Avg cases waiting)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.Lbar) ? result.Lbar.toFixed(6) : "NaN"}
+                <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    ></path>
+                  </svg>
                 </div>
               </div>
             </div>
+
+            {/* Constraints Alert */}
+            {violations && violations.length === 0 ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-start">
+                <svg
+                  className="w-5 h-5 text-emerald-500 mt-0.5 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <div>
+                  <h3 className="text-sm font-medium text-emerald-800">
+                    Constraints Satisfied
+                  </h3>
+                  <p className="text-sm text-emerald-600 mt-1">
+                    The calculated K* value successfully meets all mathematical
+                    bounds and constraints.
+                  </p>
+                </div>
+              </div>
+            ) : violations && violations.length > 0 ? (
+              <div className="bg-danger-50 border border-danger-100 rounded-xl p-4 mb-6 flex items-start">
+                <svg
+                  className="w-5 h-5 text-danger-600 mt-0.5 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path>
+                </svg>
+                <div>
+                  <h3 className="text-sm font-medium text-danger-700">
+                    Constraints Violation Warning
+                  </h3>
+                  <p className="text-sm text-danger-600 mt-1 mb-2">
+                    The calculated K* value failed the following boundary
+                    checks:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-danger-700 space-y-1">
+                    {violations.map((v, i) => (
+                      <li key={i}>{v}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-3">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90"
+              onClick={() => {
+                if (lambdaMuInvalid) {
+                  setSaveMsg("λ must be strictly less than μ. This result cannot be saved.");
+                  return;
+                }
+                if (saving) return;
+                handleSave();
+              }}
+              aria-disabled={saving || lambdaMuInvalid}
+              className={`rounded px-4 py-2 text-white ${saving || lambdaMuInvalid ? "bg-gray-400" : "bg-pes hover:opacity-90"}`}
             >
               {saving ? "Saving..." : "Save Result"}
             </button>
 
-            <Link
-              href="/models/personnel-utilization/unit-head"
-              className="bg-gray-100 hover:bg-gray-200 text-blue-700 font-medium px-4 py-2 rounded border border-gray-300"
-            >
-              ➜ Go to Unit Head Model
-            </Link>
+            {/* 🔗 Show link here when results exist — and only when unit head
+                overloading is in the plan. It is a separately sold line, so an
+                organization can hold the H* index without it. */}
+            {hasEntitlement(access, 'personnel-utilization.unit-head-overloading') && (
+              <Link
+                href="/models/personnel-utilization/unit-head"
+                className="bg-canvas hover:bg-gray-200 text-pes-700 font-medium px-4 py-2 rounded border border-line"
+              >
+                ➜ Go to Unit Head Model
+              </Link>
+            )}
           </div>
 
           {saveMsg && <p className="mt-2 text-sm">{saveMsg}</p>}
 
-          {/* Top candidates table */}
           <div className="bg-white p-4 rounded shadow mb-6 mt-6">
             <h3 className="font-medium mb-2">Top candidates</h3>
             <ul className="list-disc list-inside text-sm">
               {result.table
-                .filter((r) => Number.isFinite(r.H))
+                .filter((r: any) => r.admissible !== false)
                 .sort((a, b) => b.H - a.H)
                 .slice(0, 5)
                 .map((r) => (
                   <li key={r.K}>
-                    K={r.K}, H={r.H.toFixed(6)}
+                    K={r.K}, H={r.H.toFixed(5)}
                   </li>
                 ))}
             </ul>
           </div>
 
-          {/* H vs K chart */}
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-medium mb-2">H vs K (Utilisation Curve)</h3>
-            <div className="h-72">
+            <h3 className="font-medium mb-2">H vs K</h3>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={result.table.map((r) => ({
-                    K: r.K,
-                    H: Number.isFinite(r.H) ? r.H : null,
-                  }))}
-                >
+                <LineChart data={result.table.map((r) => ({ K: r.K, H: r.H }))}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="K" label={{ value: "K (Span of Control)", position: "insideBottom", offset: -3 }} />
-                  <YAxis domain={["auto", "auto"]} label={{ value: "H (Utilisation)", angle: -90, position: "insideLeft" }} />
-                  <Tooltip formatter={(value: any) => [Number(value).toFixed(6), "H"]} />
-                  <ReferenceLine x={result.Kstar} stroke="red" strokeDasharray="3 3" label={{ value: `K*=${result.Kstar}`, position: "top" }} />
+                  <XAxis dataKey="K" />
+                  <YAxis />
+                  <Tooltip />
                   <Line
                     type="monotone"
                     dataKey="H"

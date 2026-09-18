@@ -1,6 +1,12 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { verifyToken } from '@/app/api/_lib/authGuard'
 import nodemailer from "nodemailer";
+import { validateData, addFacilitySchema, formatZodErrors } from '@/app/lib/validation'
 
 type Facility = {
    description: string,
@@ -12,28 +18,60 @@ type Facility = {
    remark: string,
 }
 
-async function updateData( entry: Facility, org:string ) {
-   const params = [ entry.symbol, entry.description, entry.location, entry.id, entry.type, Number(entry.rating), entry.remark, org]
-   const query = `
-        INSERT INTO facilities (identification_symbol, description_of_facility, location, facility_register_id_no, type, priority_rating, remarks, org)
-        VALUES ( $1, $2, $3, $4, $5, $6, $7, $8 );
-   `
-   await prisma.$queryRawUnsafe(query, ...params)
+async function updateData( entry: Facility, org:string, orgId: string | null ) {
+   await prisma.facilities.create({
+     data: {
+       identification_symbol: entry.symbol,
+       description_of_facility: entry.description,
+       location: entry.location,
+       facility_register_id_no: entry.id,
+       type: entry.type,
+       priority_rating: String(entry.rating),
+       remarks: entry.remark,
+       org_id: orgId,
+     },
+   })
 
-   await prisma.$disconnect()
    return { message: 'success', status: 200 }
 }
 
 export async function POST(request: NextRequest) {
-  const {data, org} = await request.json();
+  const token = request.headers.get("authorization")?.split(" ")[1];
+  
+  if (!token) {
+    return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+  
+  const org = payload.org as string;
+  const orgId = payload.orgId ?? null;
+
+  const { data } = await request.json();
   console.log(data, org)
 
   if (data) {
+    // Add org to data so it can be validated by schema
+    data.org = org;
+    const validation = validateData(addFacilitySchema, data);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
+        { status: 400 }
+      );
+    }
+    
     try {
-      let goals = await updateData(data, org)
+      let goals = await updateData(data, org, orgId)
       console.log(goals)
-      const query1 = `select email from pesuser where org = $1 and role = $2`
-      const userData: {email: string}[] = await prisma.$queryRawUnsafe(query1, org ,"admin")
+      const adminUser = await prisma.pesuser.findFirst({
+        where: { org_id: orgId, role: "admin" },
+        select: { email: true },
+      })
 
 
       // ✅ Send email notification
@@ -48,8 +86,8 @@ export async function POST(request: NextRequest) {
 
 
         const mailOptions = {
-        from: `"Super Admin" <${process.env.EMAIL_USER}>`,
-        to: userData[0].email,
+        from: `"Super Admin" <${process.env.EMAIL_USER || "noreply@example.com"}>`,
+        to: adminUser?.email || process.env.EMAIL_USER || "admin@example.com",
         subject: "New Entry added",
         text: `Hello,\n\nA user at ${org} has filled entries for maintenance models.\n\nBest,\nPES team`,
         };

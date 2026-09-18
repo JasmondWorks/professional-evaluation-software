@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
-import jwt from 'jsonwebtoken';
+import { authorize } from '../_lib/authGuard';
 import { validateData, saveAppraisalSchema, formatZodErrors } from '@/app/lib/validation';
 
 export async function POST(request: NextRequest) {
@@ -9,10 +9,8 @@ export async function POST(request: NextRequest) {
 
     // Verify JWT token from body
     const token = body.token || body.access_token
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
+    const auth = authorize(token, { anyOf: ['can_access_employee_data'] });
+    if (!auth.ok) return auth.response;
 
     // Validate input
     const validation = validateData(saveAppraisalSchema, body);
@@ -23,7 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { pesuser_name, org, dept, isCounter, payload: appraisalData } = validation.data!;
+    const { pesuser_name, dept, isCounter, payload: appraisalData } = validation.data!;
+    // The org this write lands in comes from the verified token, never the
+    // body — `org` is a display string, but trusting a client-supplied value
+    // here would let any authenticated user overwrite another org's scores.
+    const org = auth.user.org;
+    if (!org) {
+      return NextResponse.json({ error: 'No organization on this account.' }, { status: 400 });
+    }
 
     // Convert all payload values to numbers
     const numericData: Record<string, number> = {};
@@ -38,26 +43,21 @@ export async function POST(request: NextRequest) {
       numericData[key] = numValue;
     }
 
-    if (isCounter) {
-      // Save counter appraisal (HOD scores)
-      await prisma.$executeRaw`
-        INSERT INTO counterappraisal (pesuser_name, org, dept, payload)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          payload = ${JSON.stringify(numericData)}::jsonb,
-          dept = ${dept || null}
-      `;
+    // The appraisal tables store evaluation scores as individual columns, so
+    // spread numericData (keyed by column name) into the row rather than a blob.
+    const delegate: any = isCounter ? prisma.counter_appraisal : prisma.appraisal;
+    const values = { ...numericData, dept: dept || null };
+
+    // Upsert on (pesuser_name, org) via constraint-independent find-then-write.
+    const existing = await delegate.findFirst({
+      where: { pesuser_name, org },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await delegate.updateMany({ where: { pesuser_name, org }, data: values });
     } else {
-      // Save regular appraisal (employee scores)
-      await prisma.$executeRaw`
-        INSERT INTO appraisal (pesuser_name, org, dept, payload)
-        VALUES (${pesuser_name}, ${org}, ${dept || null}, ${JSON.stringify(numericData)}::jsonb)
-        ON CONFLICT (pesuser_name, org)
-        DO UPDATE SET
-          payload = ${JSON.stringify(numericData)}::jsonb,
-          dept = ${dept || null}
-      `;
+      await delegate.create({ data: { pesuser_name, org, ...values } });
     }
 
     return NextResponse.json(

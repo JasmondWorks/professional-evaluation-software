@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import prisma from '../../prisma.dev'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { validateData, loginSchema, formatZodErrors } from '@/app/lib/validation'
+import { getJWTSecret } from '@/app/lib/jwt'
+import { rateLimit } from '../../_lib/rateLimit'
+
+// Tiers allowed through the platform console login.
+const PLATFORM_TIERS = ['super-admin', 'admin'];
 
 type reqInfo = {
   email: string
@@ -10,39 +16,55 @@ type reqInfo = {
 
 async function getUser(info: reqInfo) {
   const { email, password } = info
-  const users = await prisma.$queryRaw`
-    SELECT * 
-    FROM pesuser 
-    WHERE email = ${email};
-  ` as any[];
+  const user = await prisma.pesuser.findUnique({ where: { email } });
 
-  if (users.length === 0) {
+  if (!user) {
     return [];
   }
 
-  const user = users[0];
-  const isBcrypt = user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$'));
-  
+  // Only bcrypt. The old code fell back to `password === user.password` for any
+  // row whose hash did not start with $2a/$2b/$2y, which meant a legacy plaintext
+  // row was still a valid credential.
   let isMatch = false;
-  if (isBcrypt) {
-    try {
-      isMatch = await bcrypt.compare(password, user.password);
-    } catch (e) {
-      isMatch = false;
-    }
-  } else {
-    isMatch = password === user.password;
+  try {
+    isMatch = await bcrypt.compare(password, user.password);
+  } catch {
+    isMatch = false;
   }
 
-  if (isMatch) {
+  // This is the console login, not the tenant one. A non-platform account that
+  // authenticates here used to walk away with a token claiming admin.
+  if (isMatch && PLATFORM_TIERS.includes(user.role ?? '')) {
     return [user];
   }
   return [];
 }
 
 
+// Deliberately public: the platform console's login. It refuses accounts that
+// are not a platform tier, so authenticating here is not by itself entry.
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  const body = await req.json();
+
+  const tooMany =
+    rateLimit(req, { key: 'admin-login', limit: 10, windowMs: 60_000 }) ??
+    rateLimit(req, {
+      key: 'admin-login:account',
+      limit: 5,
+      windowMs: 60_000,
+      subject: typeof body?.email === 'string' ? body.email.toLowerCase() : null,
+    });
+  if (tooMany) return tooMany;
+
+  const validation = validateData(loginSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: "Validation failed", details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    );
+  }
+
+  const { email, password } = validation.data!;
 
   try {
     const data = await getUser({ email, password });
@@ -53,14 +75,26 @@ export async function POST(req: Request) {
 
     const user = data[0];
 
+    // Was signed with the literal 'oti', which is both a secret committed to the
+    // repo and a secret nothing else verifies with — so the token this route
+    // issued was rejected by every guarded route it was meant to open.
+    const org = user.org_id
+      ? await prisma.org.findUnique({ where: { id: user.org_id }, select: { name: true } })
+      : null;
+
     const token = jwt.sign(
       {
         userID: user.id,
         name: user.name,
         role: user.role,
         email: user.email,
+        // super-admin is platform-wide and typically has no org_id; admin
+        // console accounts scoped to one org carry it here as usual.
+        orgId: user.org_id,
+        org: org?.name ?? null,
       },
-      'oti'
+      getJWTSecret(),
+      { expiresIn: '15m' }
     );
 
     return NextResponse.json({
@@ -73,8 +107,5 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return NextResponse.json({ message: "Invalid credentials", status: 500 });
-  } finally {
-    // Close Prisma AFTER all queries
-    await prisma.$disconnect();
   }
 }

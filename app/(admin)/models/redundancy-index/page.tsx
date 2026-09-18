@@ -1,14 +1,18 @@
 "use client";
+import React, { useState, useEffect } from "react";
+import { getAccessToken } from '@/app/utils/auth';
+import Link from "next/link";
 
-import { useState } from "react";
-import { jwtDecode } from "jwt-decode";
-import { getAccessToken } from "@/app/utils/auth";
-
+import InfoPopover from "@/app/components/ui/InfoPopover";
+import HistoryPicker from "@/app/components/models/HistoryPicker";
+import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui';
 import {
   findOptimalKCost,
   DParams,
   OptimalKCostResult,
 } from "../personnel-utilization/lib/util-models11-16";
+import CostCascadePanel from "./CostCascadePanel";
 import {
   LineChart,
   Line,
@@ -20,162 +24,227 @@ import {
   ReferenceLine,
 } from "recharts";
 
+// Two models share this page because they share a queueing core: the redundancy
+// ratio reports wasted man-hours after the fact, while Supervision Cost (Eq.
+// 8.35) picks the span of control K* that minimises the cost of producing them.
 export default function RedundancyIndexPage() {
-  const [activeTab, setActiveTab] = useState<"redundancy" | "cost">("redundancy");
-
   return (
     <div className="p-8 w-full mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Redundancy Index</h1>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab("redundancy")}
-          className={`px-4 py-2 rounded font-medium ${
-            activeTab === "redundancy"
-              ? "bg-pes text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          Redundancy Index
-        </button>
-        <button
-          onClick={() => setActiveTab("cost")}
-          className={`px-4 py-2 rounded font-medium ${
-            activeTab === "cost"
-              ? "bg-pes text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          Supervision Cost
-        </button>
+      <div className="mb-4">
+        <BackLink href="/models">Back to Models</BackLink>
       </div>
 
-      {activeTab === "redundancy" && <RedundancyTab />}
-      {activeTab === "cost" && <SupervisionCostTab />}
+      <Tabs defaultValue="redundancy" syncParam="tab">
+        <TabsList className="mb-8">
+          <TabsTrigger value="redundancy">Redundancy Index</TabsTrigger>
+          <TabsTrigger value="cost">Supervision Cost</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="redundancy">
+          <RedundancyTab />
+        </TabsContent>
+        <TabsContent value="cost">
+          <SupervisionCostTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-// =====================================================================
-// TAB 1: Redundancy Index (existing functionality, preserved)
-// =====================================================================
 function RedundancyTab() {
-  const [data, setData] = useState({ wasted: "", total: "" });
+  const [wasted, setWasted] = useState<number | "">("");
+  const [total, setTotal] = useState<number | "">("");
+
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [userToken, setUserToken] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  function evaluateIndex() {
-    const wasted = parseFloat(data.wasted);
-    const total = parseFloat(data.total);
+  useEffect(() => {
+    const token = getAccessToken();
+    if (token) setUserToken(token);
+  }, []);
 
-    if (isNaN(wasted) || isNaN(total)) return alert("Please enter valid numbers");
-    if (total === 0) return alert("Total man-hours cannot be zero");
+  const evaluateIndex = () => {
+    setErrorMsg(null);
+    setSuccess(false);
 
-    const index = wasted / total;
+    if (wasted === "" || total === "" || Number(total) === 0) {
+      setErrorMsg("Please enter valid wasted and total hours (total cannot be zero).");
+      return;
+    }
+
+    const index = Number(wasted) / Number(total);
     setResult(Number(index.toFixed(4)));
-    setSuccessMsg("");
-  }
+  };
 
-  async function handleSubmit() {
-    if (result === null) return alert("Please evaluate the index first");
-
+  const handleSubmit = async () => {
+    if (result === null) return;
     setLoading(true);
-    setSuccessMsg("");
+    setSuccess(false);
+    setErrorMsg(null);
 
     try {
-      const res = await fetch("/api/addPersonnelIndex", {
+      const res = await apiFetch("/api/addPersonnelIndex", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          authorization: `Bearer ${getAccessToken()}`,
+          authorization: `Bearer ${userToken}`,
         },
         body: JSON.stringify({
           payload: "redundancy",
-          redundancy: Number(result),
+          redundancy: result,
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to save data");
+      if (!res.ok) throw new Error("Failed to save redundancy index");
 
-      setSuccessMsg("Successfully saved to database");
-      setData({ wasted: "", total: "" });
-      setResult(null);
+      setSuccess(true);
     } catch (err) {
-      console.error("Error saving data:", err);
-      alert("Error saving redundancy index");
+      console.error("Error:", err);
+      setErrorMsg("Something went wrong while saving data.");
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const isFilled = wasted !== "" && total !== "";
 
   return (
     <div>
-      <p className="text-gray-600 mb-6">
-        Computes the redundancy index as the ratio of wasted man-hours to total establishment man-hours.
-      </p>
-
-      <div className="flex gap-8 mb-6 flex-wrap">
-        <label className="flex flex-col w-72">
-          <span className="text-sm font-medium">Wasted Man-hours</span>
-          <input
-            type="number"
-            value={data.wasted}
-            onChange={(e) => setData((d) => ({ ...d, wasted: e.target.value }))}
-            className="border border-gray-300 px-4 py-2 rounded mt-1 outline-pes"
-            placeholder="Enter wasted hours"
-          />
-        </label>
-
-        <label className="flex flex-col w-72">
-          <span className="text-sm font-medium">Total Establishment Man-hours</span>
-          <input
-            type="number"
-            value={data.total}
-            onChange={(e) => setData((d) => ({ ...d, total: e.target.value }))}
-            className="border border-gray-300 px-4 py-2 rounded mt-1 outline-pes"
-            placeholder="Enter total hours"
-          />
-        </label>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Model 24 — Redundancy Index</h1>
+          <p className="text-body mb-6 max-w-2xl">
+            Evaluate the proportion of wasted man-hours against the total establishment capacity.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/redundancy-index/history"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
+          </Link>
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">Man-hour Variables</h2>
+              <p className="text-xs text-muted">Inputs calculating the redundancy metric</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center text-sm font-semibold text-body">
+                  <span className="truncate">Wasted Man-hours</span>
+                  <InfoPopover text="Hours lost due to delays, idleness, or lack of tasks. D* from a Supervision Cost run is the minimum-cost figure." />
+                </div>
+                {/* The client asked to be able to pull D* from the Supervision
+                    Cost history rather than copy it across by hand, since that
+                    is where the minimum-cost figure is computed. */}
+                <HistoryPicker<{
+                  id: number;
+                  created_at: string;
+                  Kstar: number | null;
+                  Dstar: number | null;
+                  lambda: number | null;
+                  mu: number | null;
+                }>
+                  source="supervision-cost"
+                  label="Fill D* from history"
+                  columns={[
+                    { label: "D* (min)", render: (r) => (r.Dstar == null ? "—" : Number(r.Dstar).toFixed(4)) },
+                    { label: "K*", render: (r) => r.Kstar ?? "—" },
+                    { label: "\u03bb", render: (r) => (r.lambda == null ? "—" : Number(r.lambda).toFixed(4)) },
+                    { label: "\u03bc", render: (r) => (r.mu == null ? "—" : Number(r.mu).toFixed(4)) },
+                  ]}
+                  onSelect={(run) => {
+                    if (run.Dstar != null) setWasted(Number(run.Dstar));
+                  }}
+                />
+              </div>
+              <input
+                type="number"
+                value={wasted}
+                onChange={(e) => setWasted(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Total Establishment Man-hours</span>
+                <InfoPopover text="Total available man-hours across the organization or department." />
+              </div>
+              <input
+                type="number"
+                value={total}
+                onChange={(e) => setTotal(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {errorMsg && <p className="text-danger-600 font-medium mb-4">{errorMsg}</p>}
+
+      <button
+        onClick={evaluateIndex}
+        disabled={!isFilled}
+        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
+      >
+        Evaluate Redundancy
+      </button>
 
       {result !== null && (
-        <p className="text-green-700 font-semibold mb-3">
-          Redundancy Index: {result}
-        </p>
+        <div className="mt-8 border-t border-line pt-8">
+          <h2 className="text-xl font-bold text-strong mb-6">Model Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between col-span-1 md:col-span-2 lg:col-span-1">
+              <div>
+                <p className="text-sm font-medium text-muted mb-1">Redundancy Index</p>
+                <p className="text-4xl font-bold text-pes">{result}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Result"}
+            </button>
+          </div>
+
+          {success && <p className="mt-4 text-sm font-medium text-green-600">✅ Successfully saved.</p>}
+        </div>
       )}
-
-      {successMsg && (
-        <p className="text-green-600 font-semibold mb-3">{successMsg}</p>
-      )}
-
-      <div className="flex gap-4">
-        <button
-          type="button"
-          className="bg-pes hover:opacity-90 text-white font-semibold px-12 py-3 rounded"
-          onClick={evaluateIndex}
-        >
-          Evaluate
-        </button>
-
-        <button
-          type="button"
-          className={`${
-            loading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:opacity-90"
-          } text-white font-semibold px-12 py-3 rounded`}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? "Saving..." : "Save"}
-        </button>
-      </div>
     </div>
   );
 }
 
 // =====================================================================
-// TAB 2: Supervision Cost — Wasted Man-Hours Cost Function (Eq. 8.35)
+// Supervision Cost — Wasted Man-Hour Cost Function (Eq. 8.35)
+// (Charles-Owaba, Ch. 8, Section 4)
+//
+// Same (M|M|1):(FCFS|K|K) queue as Personnel Utilisation, with two extra cost
+// parameters. Where that model maximises H_ij, this one minimises D_ij — the
+// search walks K upward and stops once the curve has clearly turned.
 // =====================================================================
 function SupervisionCostTab() {
   const [params, setParams] = useState<DParams>({
@@ -188,17 +257,6 @@ function SupervisionCostTab() {
   const [result, setResult] = useState<OptimalKCostResult | null>(null);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const getOrgFromToken = () => {
-    try {
-      const token = getAccessToken();
-      if (!token) return null;
-      const decoded: any = jwtDecode(token);
-      return decoded?.org || null;
-    } catch {
-      return null;
-    }
-  };
 
   const handleChange = (key: keyof DParams, value: number) => {
     setParams((prev) => ({ ...prev, [key]: value }));
@@ -215,19 +273,16 @@ function SupervisionCostTab() {
     return true;
   };
 
-  const calculate = () => {
-    const r = findOptimalKCost(params);
-    setResult(r);
-  };
+  const calculate = () => setResult(findOptimalKCost(params));
 
   const handleSave = async () => {
-    if (!result) return;
-    const org = getOrgFromToken();
-    if (!org) {
-      setSaveMsg("Missing org in token — please log in again.");
+    // The params can be edited after Calculate ran, so the result on screen is
+    // not proof the rule still holds. Re-check at the point of writing.
+    if (params.lambda >= params.mu) {
+      setSaveMsg("Cannot save: λ must be strictly less than μ.");
       return;
     }
-
+    if (!result) return;
     setSaving(true);
     setSaveMsg(null);
 
@@ -239,14 +294,14 @@ function SupervisionCostTab() {
         return;
       }
 
-      const res = await fetch("/api/supervisionCost", {
+      // org is derived from the token server-side, so it is not sent here.
+      const res = await apiFetch("/api/supervisionCost", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          org,
           a_ij: params.A,
           a_cost: params.a,
           b_cost: params.b,
@@ -263,170 +318,168 @@ function SupervisionCostTab() {
       });
 
       if (!res.ok) throw new Error("Failed to save");
-      setSaveMsg("Saved successfully!");
+      setSaveMsg("✅ Saved successfully.");
     } catch (err) {
       console.error(err);
-      setSaveMsg("Error saving result.");
+      setSaveMsg("❌ Error saving result.");
     } finally {
       setSaving(false);
     }
   };
 
-  // Input helper
   const numberInput = (
     key: keyof DParams,
     label: string,
     hint: string,
-    opts: { min?: number; max?: number; step?: number }
+    opts: { min?: number; step?: number },
   ) => (
-    <label key={key} className="block border-gray-200 border rounded p-4 my-1">
-      <div className="text-sm font-medium">{label}</div>
+    <div key={key} className="block w-full min-w-0">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+        <span className="truncate">{label}</span>
+        <InfoPopover text={hint} />
+      </div>
       <input
         type="number"
         value={params[key] ?? ""}
         min={opts.min}
-        max={opts.max}
         step={opts.step}
         onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-        className="mt-1 block w-full rounded-md border border-gray-400 outline-pes shadow-sm p-2"
+        className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
       />
-      <div className="text-xs text-gray-500">{hint}</div>
-    </label>
+    </div>
   );
 
-  const lambdaError = params.lambda >= params.mu && params.lambda > 0 && params.mu > 0;
+  const lambdaError =
+    params.lambda >= params.mu && params.lambda > 0 && params.mu > 0;
+
+  const stat = (label: string, value: number | null, digits: number) => (
+    <div>
+      <p className="text-sm font-medium text-muted mb-1">{label}</p>
+      <p className="text-xl font-semibold text-strong">
+        {value !== null && Number.isFinite(value) ? value.toFixed(digits) : "—"}
+      </p>
+    </div>
+  );
 
   return (
     <div>
-      <p className="text-gray-600 mb-6">
-        Computes the optimal span of control K* that minimises the supervision
-        cost function D<sub>ij</sub> (Charles-Owaba, Eq. 8.35).
-        Uses the same (M|M|1):(FCFS|K|K) queuing model as the Personnel Utilisation function,
-        with two additional cost parameters (a<sub>ij</sub>, b<sub>ij</sub>).
-      </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Supervision Cost</h1>
+          <p className="text-body mb-6 max-w-2xl">
+            Computes the span of control K* that minimises the supervision cost
+            function D<sub>ij</sub> (Eq. 8.35) — the same queueing model as
+            Personnel Utilisation, with a cost per waiting subordinate hour and
+            a cost per wasted hour of the decision centre head.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/redundancy-index/supervision-cost-history"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
+          </Link>
+        </div>
+      </div>
 
-      {/* Parameter inputs — 5 parameters (Eq. 8.37) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-        {numberInput(
-          "A",
-          "A — Hours scheduled for work in a day",
-          "e.g. 8 hours/day",
-          { min: 0.1, step: 0.5 }
-        )}
-        {numberInput(
-          "a",
-          "a — Unit cost of man-hours spent",
-          "Cost associated with subordinate waiting time (Eq. 8.37)",
-          { min: 0.01, step: 1 }
-        )}
-        {numberInput(
-          "b",
-          "b — Unit cost per wasted boss man-hour",
-          "Cost per wasted man-hour of the decision centre head (Eq. 8.37)",
-          { min: 0.01, step: 1 }
-        )}
-        {numberInput(
-          "lambda",
-          "λ — Arrival rate (cases/hour)",
-          "Rate at which subordinates consult the boss (Eq. 8.22: λ = TNC / TTS)",
-          { min: 0.001, step: 0.001 }
-        )}
-        {numberInput(
-          "mu",
-          "μ — Service rate (cases/hour)",
-          "Rate at which the boss processes cases (Eq. 8.24: μ = TCC / Σt). Must be > λ.",
-          { min: 0.001, step: 0.001 }
-        )}
+      <div className="bg-white rounded-xl border border-line p-6 shadow-sm mb-8">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+          <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 9v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-strong">Cost Parameters</h2>
+            <p className="text-xs text-muted">Θ_c = {"{"} A, a, b, λ, μ {"}"} — Eq. 8.37</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {numberInput("A", "A — Hours scheduled per day", "Hours scheduled for work in a day, e.g. 8.", { min: 0.1, step: 0.5 })}
+          {numberInput("a", "a — Unit cost of man-hours spent", "Cost associated with subordinate waiting time (Eq. 8.37).", { min: 0.01, step: 1 })}
+          {numberInput("b", "b — Unit cost per wasted boss man-hour", "Cost per wasted man-hour of the decision centre head (Eq. 8.37).", { min: 0.01, step: 1 })}
+          {numberInput("lambda", "λ — Arrival rate (cases/hour)", "Rate at which subordinates consult the boss (Eq. 8.22: λ = TNC / TTS).", { min: 0.001, step: 0.001 })}
+          {numberInput("mu", "μ — Service rate (cases/hour)", "Rate at which the boss processes cases (Eq. 8.24: μ = TCC / Σt). Must exceed λ.", { min: 0.001, step: 0.001 })}
+        </div>
       </div>
 
       {lambdaError && (
-        <div className="bg-red-50 border border-red-300 text-red-700 rounded p-3 mb-4 text-sm">
-          <strong>Constraint violated (Eq. 8.9):</strong> λ must be strictly less than μ.
-          Currently λ = {params.lambda.toFixed(4)} and μ = {params.mu.toFixed(4)}.
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-3 mb-4 text-sm">
+          <strong>Constraint violated (Eq. 8.9):</strong> λ must be strictly less
+          than μ. Currently λ = {params.lambda.toFixed(4)} and μ ={" "}
+          {params.mu.toFixed(4)}.
         </div>
       )}
-
-
 
       <button
         onClick={calculate}
         disabled={!isFormValid()}
-        className={`px-4 py-2 rounded text-white ${isFormValid() ? "bg-pes hover:bg-blue-900" : "bg-gray-400 cursor-not-allowed"}`}
+        className={`px-6 py-2 rounded text-white ${
+          isFormValid() ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"
+        }`}
       >
         Calculate
       </button>
 
       {result && (
-        <>
-          {/* Primary results */}
-          <div className="bg-white p-4 rounded shadow mb-6 mt-6">
-            <h2 className="text-lg font-semibold mb-2">Results</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+        <div className="mt-8 border-t border-line pt-8">
+          <h2 className="text-xl font-bold text-strong mb-6">Model Results</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
               <div>
-                <div className="text-gray-500">Optimal Span (K*)</div>
-                <div className="text-2xl font-bold">{result.Kstar}</div>
+                <p className="text-sm font-medium text-muted mb-1">Optimal Span (K*)</p>
+                <p className="text-4xl font-bold text-pes">{result.Kstar}</p>
               </div>
               <div>
-                <div className="text-gray-500">Min Supervision Cost (D*)</div>
-                <div className="text-2xl font-bold">
-                  {Number.isFinite(result.Dstar) ? result.Dstar.toFixed(4) : "NaN"}
-                </div>
+                <p className="text-sm font-medium text-muted mb-1">Min Supervision Cost (D*)</p>
+                <p className="text-4xl font-bold text-strong">
+                  {Number.isFinite(result.Dstar) ? result.Dstar.toFixed(4) : "—"}
+                </p>
               </div>
-              <div>
-                <div className="text-gray-500">Traffic Intensity (ρ)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.rho) ? result.rho.toFixed(6) : "NaN"}
-                </div>
-              </div>
-              <div>
-                <div className="text-gray-500">P₀ (Boss idle probability)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.P0) ? result.P0.toFixed(6) : "NaN"}
-                </div>
-              </div>
-              <div>
-                <div className="text-gray-500">L̄ (Avg cases waiting)</div>
-                <div className="text-xl font-semibold">
-                  {Number.isFinite(result.Lbar) ? result.Lbar.toFixed(6) : "NaN"}
-                </div>
-              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm grid grid-cols-3 gap-4">
+              {stat("Traffic intensity (ρ)", result.rho, 6)}
+              {stat("P₀ — boss idle", result.P0, 6)}
+              {stat("L̄ — avg waiting", result.Lbar, 6)}
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-6">
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90"
+              disabled={saving || lambdaError}
+              title={lambdaError ? "λ must be strictly less than μ" : undefined}
+              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Result"}
             </button>
+            {saveMsg && <p className="text-sm font-medium">{saveMsg}</p>}
           </div>
 
-          {saveMsg && <p className="mt-2 text-sm">{saveMsg}</p>}
-
-          {/* Top candidates table (lowest cost) */}
-          <div className="bg-white p-4 rounded shadow mb-6 mt-6">
-            <h3 className="font-medium mb-2">Top candidates (lowest cost)</h3>
-            <ul className="list-disc list-inside text-sm">
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm mb-6">
+            <h3 className="font-bold text-strong mb-3">Top candidates (lowest cost)</h3>
+            <ul className="list-disc list-inside text-sm text-body space-y-1">
               {result.table
                 .filter((r) => Number.isFinite(r.D))
                 .sort((a, b) => a.D - b.D)
                 .slice(0, 5)
                 .map((r) => (
                   <li key={r.K}>
-                    K={r.K}, D={r.D.toFixed(4)}
+                    K = {r.K}, D = {r.D.toFixed(4)}
                   </li>
                 ))}
             </ul>
           </div>
 
-          {/* D vs K chart */}
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-medium mb-2">D vs K (Supervision Cost Curve)</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              U-shaped concave curve — minimum at K* = {result.Kstar}
+          <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+            <h3 className="font-bold text-strong mb-1">D vs K — supervision cost curve</h3>
+            <p className="text-xs text-muted mb-4">
+              U-shaped curve, minimum at K* = {result.Kstar}
             </p>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -437,23 +490,32 @@ function SupervisionCostTab() {
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="K" label={{ value: "K (Span of Control)", position: "insideBottom", offset: -3 }} />
-                  <YAxis domain={["auto", "auto"]} label={{ value: "D (Cost)", angle: -90, position: "insideLeft" }} />
-                  <Tooltip formatter={(value: any) => [Number(value).toFixed(4), "D"]} />
-                  <ReferenceLine x={result.Kstar} stroke="red" strokeDasharray="3 3" label={{ value: `K*=${result.Kstar}`, position: "top" }} />
-                  <Line
-                    type="monotone"
-                    dataKey="D"
-                    stroke="#2563eb"
-                    strokeWidth={2}
-                    dot={false}
+                  <XAxis
+                    dataKey="K"
+                    label={{ value: "K (span of control)", position: "insideBottom", offset: -3 }}
                   />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    label={{ value: "D (cost)", angle: -90, position: "insideLeft" }}
+                  />
+                  <Tooltip formatter={(value: any) => [Number(value).toFixed(4), "D"]} />
+                  <ReferenceLine
+                    x={result.Kstar}
+                    stroke="#dc2626"
+                    strokeDasharray="3 3"
+                    label={{ value: `K*=${result.Kstar}`, position: "top" }}
+                  />
+                  <Line type="monotone" dataKey="D" stroke="#2563eb" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
-        </>
+        </div>
       )}
+
+      {/* The management ladder and Section 21, which the client moved here from
+          the organization structure page on 30 August. */}
+      <CostCascadePanel />
     </div>
   );
 }

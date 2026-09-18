@@ -1,30 +1,24 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
-
-// Helper to run raw SQL migrations to ensure columns exist in development/production dynamically.
-async function ensureColumnsExist() {
-  try {
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedDates" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "lockedTimes" jsonb;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "WorkSamplingStudy" ADD COLUMN IF NOT EXISTS "studyMonths" jsonb;
-    `);
-  } catch (error) {
-    console.error("Auto-migration column check failed:", error);
-  }
-}
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { requireEntitlement } from '../../_lib/planGuard';
 
 // POST — create a new study (with parameters)
+// Creates a study. `org` came from the body, so a study could be filed into
+// another organization - and the org is what every other work-sampling route
+// checks ownership against.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
+
   try {
-    await ensureColumnsExist();
     const body = await req.json();
+    const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
     const {
-      org,
       department,
       analyst,
       authorizedBy,
@@ -46,47 +40,35 @@ export async function POST(req: NextRequest) {
       lockedTimes,
     } = body;
 
-    const query = `
-      INSERT INTO "WorkSamplingStudy" (
-        org, department, analyst, "authorizedBy",
-        "confidenceLevel", "desiredAccuracy", "preliminaryP",
-        "totalObservationsRequired", "studyMonth", "studyMonths",
-        "observationsPerDay", "workingHoursPerDay", "workStartTime",
-        "minCycleDuration", "maxDuration", "estimatedStudyDays",
-        "availableAnnualHours", "defaultPerformanceAllowance",
-        "lockedDates", "lockedTimes"
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20
-      )
-      RETURNING *;
-    `;
+    // Prisma serializes the Json columns (studyMonths/lockedDates/lockedTimes)
+    // natively — the old raw insert stringified them, causing a jsonb/text
+    // type error (42804) that broke study creation and, in turn, Add Position.
+    const study = await prisma.workSamplingStudy.create({
+      data: {
+        org_id: orgId,
+        department: department ?? null,
+        analyst: analyst ?? null,
+        authorizedBy: authorizedBy ?? null,
+        confidenceLevel: confidenceLevel ?? null,
+        desiredAccuracy: desiredAccuracy ?? null,
+        preliminaryP: preliminaryP ?? null,
+        totalObservationsRequired: totalObservationsRequired ?? null,
+        studyMonth: studyMonth ?? null,
+        studyMonths: studyMonths ?? undefined,
+        observationsPerDay: observationsPerDay ?? null,
+        workingHoursPerDay: workingHoursPerDay ?? null,
+        workStartTime: workStartTime ?? null,
+        minCycleDuration: minCycleDuration ?? null,
+        maxDuration: maxDuration ?? null,
+        estimatedStudyDays: estimatedStudyDays ?? null,
+        availableAnnualHours: availableAnnualHours ?? null,
+        defaultPerformanceAllowance: defaultPerformanceAllowance ?? null,
+        lockedDates: lockedDates ?? undefined,
+        lockedTimes: lockedTimes ?? undefined,
+      },
+    });
 
-    const result = await prisma.$queryRawUnsafe(
-      query,
-      org ?? null,
-      department ?? null,
-      analyst ?? null,
-      authorizedBy ?? null,
-      confidenceLevel ?? null,
-      desiredAccuracy ?? null,
-      preliminaryP ?? null,
-      totalObservationsRequired ?? null,
-      studyMonth ?? null,
-      studyMonths ? JSON.stringify(studyMonths) : null,
-      observationsPerDay ?? null,
-      workingHoursPerDay ?? null,
-      workStartTime ?? null,
-      minCycleDuration ?? null,
-      maxDuration ?? null,
-      estimatedStudyDays ?? null,
-      availableAnnualHours ?? null,
-      defaultPerformanceAllowance ?? null,
-      lockedDates ? JSON.stringify(lockedDates) : null,
-      lockedTimes ? JSON.stringify(lockedTimes) : null,
-    );
-
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: study });
   } catch (error) {
     console.error("Error creating work sampling study:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -94,18 +76,26 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — list all studies (with position and observation counts)
-export async function GET() {
+// Listed every study on the platform, unauthenticated.
+export async function GET(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
+
+  const orgId = auth.user.orgId ?? null;
+
   try {
-    await ensureColumnsExist();
-    const results = await prisma.$queryRawUnsafe(`
+      const results = await prisma.$queryRaw`
       SELECT s.*,
         (SELECT COUNT(*)::int FROM "WorkSamplingPosition" WHERE "studyId" = s.id) AS "positionCount",
         (SELECT COUNT(*)::int FROM "WorkSamplingObservation" o
           JOIN "WorkSamplingPosition" p ON o."positionId" = p.id
           WHERE p."studyId" = s.id) AS "observationCount"
       FROM "WorkSamplingStudy" s
+      WHERE s."org_id" = ${orgId}
       ORDER BY s."createdAt" DESC
-    `);
+    `;
     return NextResponse.json({ success: true, data: results });
   } catch (error) {
     console.error("Error fetching studies:", error);

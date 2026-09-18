@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function StaffSurveyPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -103,7 +104,7 @@ export default function StaffSurveyPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/survey", {
+      const res = await apiFetch("/api/survey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(responses),
@@ -119,7 +120,7 @@ export default function StaffSurveyPage() {
   };
 
   return (
-    <main className="p-10 bg-gray-50 min-h-screen">
+    <main className="p-10 bg-canvas min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Staff Survey</h1>
 
       {sections.map((section) => (
@@ -137,11 +138,11 @@ export default function StaffSurveyPage() {
         <button
           onClick={submitSurvey}
           disabled={submitting}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          className="bg-pes text-white px-6 py-3 rounded-md hover:bg-pes-800 disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Submit Survey"}
         </button>
-        {message && <p className="mt-3 text-sm text-gray-700">{message}</p>}
+        {message && <p className="mt-3 text-sm text-body">{message}</p>}
       </div>
     </main>
   );
@@ -161,8 +162,8 @@ function SurveySection({
   onChange: (q: string, v: string) => void;
 }) {
   return (
-    <section className="bg-white p-6 my-6 rounded-lg shadow-sm border border-gray-100">
-      <h2 className="text-xl font-bold mb-4 text-indigo-700">{title}</h2>
+    <section className="bg-white p-6 my-6 rounded-lg shadow-sm border border-line">
+      <h2 className="text-xl font-bold mb-4 text-strong">{title}</h2>
       {questions.map((q, i) => (
         <div key={i} className="mb-4">
           <p className="font-medium mb-2">{q}</p>

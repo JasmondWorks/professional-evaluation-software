@@ -1,5 +1,9 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
-import { jwtDecode } from "jwt-decode";
+import { verifyToken } from "../_lib/authGuard";
 import prisma from "../prisma.dev";
 
 export async function POST(req: NextRequest) {
@@ -9,9 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing token" }, { status: 401 });
     }
 
-    const decoded: any = jwtDecode(token);
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     const org = decoded?.org;
-    if (!org) {
+    const orgId = decoded?.orgId;
+    if (!org || !orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -35,19 +41,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO motivation (
-        org, total_score, rating, thresholds, categories
-      )
-      VALUES (
-        ${org},
-        ${Number(total_score)},
-        ${rating},
-        ${JSON.stringify(thresholds)}::jsonb,
-        ${JSON.stringify(categories)}::jsonb
-      )
-      RETURNING *;
-    `;
+    const record = await prisma.motivation.create({
+      data: {
+        org_id: orgId,
+        total_score: Number(total_score),
+        rating,
+        thresholds,
+        categories,
+      },
+    });
 
     return NextResponse.json({ success: true, record }, { status: 201 });
   } catch (err: any) {

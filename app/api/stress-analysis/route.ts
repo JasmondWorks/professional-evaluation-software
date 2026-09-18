@@ -1,12 +1,34 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "../prisma.dev"; // adjust if your prisma file is elsewhere
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
 
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { validateData, stressAnalysisSchema, formatZodErrors } from '@/app/lib/validation'; // adjust if your prisma file is elsewhere
+
+// A stress ANOVA run. The org it was filed under came from the body, so anyone
+// could write a run into anyone's history — and the history is not just a log:
+// the future-requirement prediction fits a line through it.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+
   try {
     const body = await req.json();
 
+    const parsed = validateData(stressAnalysisSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
+    }
+
     const {
-      org,
       group_by,
       ssto,
       sstr,
@@ -22,18 +44,24 @@ export async function POST(req: NextRequest) {
       std_dev,
     } = body;
 
-    // Use Prisma raw query for direct insert
-    const result = await prisma.$queryRawUnsafe(`
-      INSERT INTO stress_analysis_results (
-        org, group_by, ssto, sstr, sse, f_statistic, critical_value, conclusion,
-        df_between, df_within, ms_between, ms_within, mean, std_dev
-      )
-      VALUES (
-        '${org}', '${group_by}', ${ssto}, ${sstr}, ${sse}, ${f_statistic}, ${critical_value},
-        '${conclusion}', ${df_between}, ${df_within}, ${ms_between}, ${ms_within}, ${mean}, ${std_dev}
-      )
-      RETURNING *;
-    `);
+    const result = await prisma.stress_analysis_results.create({
+      data: {
+        org_id: orgId,
+        group_by,
+        ssto,
+        sstr,
+        sse,
+        f_statistic,
+        critical_value,
+        conclusion,
+        df_between,
+        df_within,
+        ms_between,
+        ms_within,
+        mean,
+        std_dev,
+      },
+    });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

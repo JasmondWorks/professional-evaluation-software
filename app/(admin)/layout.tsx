@@ -1,75 +1,65 @@
-'use client'
-import '.././globals.css'
-import Navbar from '../components/navbar'
-import Sidebar from '../components/sidebar'
-import Dimmer from '../components/dimmer'
-import Action from '../components/modals/action'
-import Newgoal from '../components/modals/newgoal'
-import Editgoal from '../components/modals/editgoal'
-import Notification from '../components/modals/notification'
-import { Lato } from 'next/font/google'
-import { Provider } from 'react-redux'
-import { store } from '../state/store'
-import Deletegoal from '../components/modals/deletegoal'
-import SetNotification from '../components/modals/setnotification'
-import NotificationSent from '../components/modals/notification_sent'
-import RoleCreated from '../components/modals/role_created'
-import Success from '../components/modals/success'
-import Viewgoal from '../components/modals/viewgoal'
-import Failure from '../components/modals/failure'
-import { useEffect, useState } from 'react'
-import { DocumentSketch } from 'iconsax-react'
+"use client";
 
-const lato = Lato( 
-  {
-    weight: ['100', '300', '400', '700', '900'],
-    subsets: ['latin']
-   }
-  )
+import Navbar from "../components/navbar";
+import Sidebar from "../components/sidebar";
+import Dimmer from "../components/dimmer";
+import Newgoal from "../components/modals/newgoal";
+import Editgoal from "../components/modals/editgoal";
+import { Provider } from "react-redux";
+import { store } from "../state/store";
+import Deletegoal from "../components/modals/deletegoal";
+import SetNotification from "../components/modals/setnotification";
+import NotificationSent from "../components/modals/notification_sent";
+import RoleCreated from "../components/modals/role_created";
+import Viewgoal from "../components/modals/viewgoal";
+import Failure from "../components/modals/failure";
+import SubscriptionGate from "../components/SubscriptionGate";
+import PasswordGate from "../components/PasswordGate";
+import { useState } from "react";
 
-export default function RootLayout({ children, }: { children: React.ReactNode }) {
-
-  const [is_mobile, setMobile] = useState(false);
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [is_sidebar_active, setSideBarActive] = useState(false);
 
   const handleSideBar = () => {
     setSideBarActive(!is_sidebar_active);
-  }
-  const handleMobile = () => {~
-    console.log(is_mobile)
-    setMobile(!is_mobile)
-  }
+  };
 
-  useEffect(() => {
-    console.log('dont render twice')
-  }, [])
-  
   return (
-    <Provider store={ store }>
-        <div className={ lato.className + 'bg-gray-10 flex flex-row relative justify-center w-screen' }
-        onChange={handleMobile}>
-            <Dimmer />
-            <Notification />
-            <SetNotification />
-            <Success />
-            <Failure />
-            <Action />
-            <Newgoal />
-            <Editgoal />
-            <Viewgoal />
-            <Deletegoal/>
-            <NotificationSent/>
-            <RoleCreated />
+    <Provider store={store}>
+      <div className="bg-canvas flex flex-row relative justify-center w-screen min-h-screen">
+        <Dimmer />
+        <SetNotification />
+        <Failure />
+        <Newgoal />
+        <Editgoal />
+        <Viewgoal />
+        <Deletegoal />
+        <NotificationSent />
+        <RoleCreated />
 
-            <Sidebar is_sidebar_active={is_sidebar_active} handleSideBar={handleSideBar} />
-            <div className="flex flex-col w-4/5 max-lg:w-full">
-              <Navbar is_sidebar_active={is_sidebar_active} handleSideBar={handleSideBar} />
-              {children}          
-            </div>
+        <Sidebar
+          is_sidebar_active={is_sidebar_active}
+          handleSideBar={handleSideBar}
+        />
+        <div className="flex flex-col flex-1 min-w-0 lg:pl-64">
+          <Navbar
+            is_sidebar_active={is_sidebar_active}
+            handleSideBar={handleSideBar}
+          />
+          {/* Every signed-in page sits inside this. A lapsed subscription
+              closes the platform to every role, not just to the admin who can
+              renew it. */}
+          {/* Password first: a person whose password is not yet their own
+              should not be told about billing, or anything else. */}
+          <PasswordGate>
+            <SubscriptionGate>{children}</SubscriptionGate>
+          </PasswordGate>
         </div>
+      </div>
     </Provider>
-  )
+  );
 }
-
-
-

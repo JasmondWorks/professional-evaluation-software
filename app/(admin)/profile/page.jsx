@@ -1,11 +1,9 @@
-import Link from "next/link"
 import Profile from '../../components/profile'
 
-export default function Home() {
-   return(
-      <main className="w-full flex flex-col border bg-gray-50">
+export default function ProfilePage() {
+   return (
+      <main className="w-full">
          <Profile />
-      </main>     
+      </main>
    )
 }
-

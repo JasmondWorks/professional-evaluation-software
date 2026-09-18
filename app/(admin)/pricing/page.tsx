@@ -1,18 +1,24 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
 import Subscriptionbutton from "../../components/subscription/paypal";
 import PaystackButton from "@/app/components/subscription/paystackButton";
 import PayPalProviderWrapper from "../../components/subscription/paypalWrapper";
 import { packages } from "../../lib/utils/packages";
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
+import { apiFetch } from '@/app/utils/apiFetch';
 
+// Sectors whose product already includes the maintenance model.
+const MAINTENANCE_BY_DEFAULT = ["company"];
 
 export default function Home() {
   const [activePlan, setActivePlan] = useState<string | null>(null);
   const [email, setEmail] = useState("");
-  const [maintenance, setMaintenance] = useState(false)
+  const [maintenance, setMaintenance] = useState(false);
+  const [category, setCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -22,13 +28,18 @@ export default function Home() {
       const decoded: any = jwtDecode(token);
       setEmail(decoded?.email);
       setMaintenance(decoded?.maintenance_model);
+      setCategory(decoded?.productCategory ?? decoded?.category ?? null);
     } catch (err) {
       console.error("Invalid token:", err);
     }
 
     const fetchSubscription = async () => {
       try {
-        const res = await fetch(`/api/subscriptions/active?email=${email}`);
+        const res = await apiFetch(`/api/subscriptions/active`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
         if (data.active) setActivePlan(data.plan?.toLowerCase());
       } catch (err) {
@@ -41,12 +52,11 @@ export default function Home() {
 
   const handleUpgrade = async (oldPlan: string, newPlan: string) => {
     try {
-      await fetch("/api/subscriptions/upgrade", {
+      await apiFetch("/api/subscriptions/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, oldPlan, newPlan }),
       });
-      console.log("Upgrade ready for new payment.");
     } catch (err) {
       console.error("Upgrade failed:", err);
     }
@@ -54,10 +64,15 @@ export default function Home() {
 
   // --- CANCEL PLAN HANDLER ---
   const handleCancelPlan = async () => {
-    if (!confirm("Are you sure you want to cancel all plans? This will delete your account and all related data.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to cancel all plans? This will delete your account and all related data.",
+      )
+    )
+      return;
 
     try {
-      const res = await fetch("/api/subscriptions/cancel", {
+      const res = await apiFetch("/api/subscriptions/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -66,21 +81,24 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        alert("All plans canceled and account deleted.");
-        localStorage.removeItem("access_token");
+        notify.success("All plans canceled and account deleted.");
+        removeAccessToken();
+        try {
+          await apiFetch('/api/logout', { method: 'POST' });
+        } catch(e) { console.error(e) }
         window.location.href = "/"; // Redirect to home or signup page
       } else {
-        alert(data.error || "Failed to cancel plans.");
+        notify.error(data.error ||"Failed to cancel plans.");
       }
     } catch (err) {
       console.error("Cancel plan failed:", err);
-      alert("Cancel plan failed. Check console for details.");
+      notify.error("Cancel plan failed. Check console for details.");
     }
   };
 
   const renderPlan = (
     planKey: "basic" | "standard" | "premium",
-    color?: string
+    color?: string,
   ) => {
     const plan = packages[planKey];
     const isActive = activePlan === planKey;
@@ -90,20 +108,26 @@ export default function Home() {
       ["basic", "standard", "premium"].indexOf(planKey) >
         ["basic", "standard", "premium"].indexOf(activePlan);
 
-    const disabledStyle = isActive ? "opacity-60 pointer-events-none" : "";
-    const label = isActive ? "Current Plan" : canUpgrade ? "Upgrade" : "Subscribe";
+    // Only the subscribe/pay actions are disabled for the current plan — the
+    // rest of the card (incl. "view plan") must stay interactive.
+    const payDisabled = isActive ? "opacity-60 pointer-events-none" : "";
+    const label = isActive
+      ? "Current Plan"
+      : canUpgrade
+        ? "Upgrade"
+        : "Subscribe";
 
     return (
       <div
         className={`price-card ${
           color ? color : "bg-white"
-        } ${color ? "text-white" : ""} h-112 w-72 border rounded-3xl flex flex-col justify-between p-4 ${disabledStyle} ${
+        } ${color ? "text-white" : ""} h-[28rem] w-72 border rounded-3xl flex flex-col justify-between p-4 ${
           canUpgrade ? "border-blue-400 shadow-lg" : ""
         }`}
       >
         <div className="flex flex-col">
           {isActive ? (
-            <div className="bg-blue-100 text-pes rounded-full py-1 px-2 text-center mb-2 font-light text-sm">
+            <div className="bg-pes-100 text-pes rounded-full py-1 px-2 text-center mb-2 font-light text-sm">
               Current plan
             </div>
           ) : (
@@ -124,30 +148,35 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col mt-4 gap-2">
-          <Suspense
-            fallback={
-              <button className="border-pes bg-white rounded-lg p-4">
-                Loading...
-              </button>
-            }
-          >
-            <Subscriptionbutton
-              plan={planKey}
-            />
-          </Suspense>
+          <div className={`flex flex-col gap-2 ${payDisabled}`}>
+            <Suspense
+              fallback={
+                <button className="border-pes bg-white rounded-lg p-4">
+                  Loading...
+                </button>
+              }
+            >
+              <Subscriptionbutton plan={planKey} />
+            </Suspense>
 
-          <PaystackButton
-            email={email}
-            planCode={
-              planKey === "basic"
-                ? "PLN_w4hf2tk7k3mu66a"
-                : planKey === "standard"
-                ? "PLN_pl6nmfsedqvm0oa"
-                : "PLN_bquiv8u3t2otwuh"
-            }
-            label={label}
-          />
-          <a href={`/prices?plan=${planKey}`} className={`hover:underline ${color ? "text-white" : "text-pes"}`}>view plan</a>
+            <PaystackButton
+              email={email}
+              planCode={
+                planKey === "basic"
+                  ? "PLN_eowlq7d4cp4r0dp"
+                  : planKey === "standard"
+                    ? "PLN_cle5ip7jtxfpj5k"
+                    : "PLN_paglu0ly0z641mm"
+              }
+              label={label}
+            />
+          </div>
+          <Link
+            href={`/prices?plan=${planKey}`}
+            className={`hover:underline ${color ? "text-white" : "text-pes"}`}
+          >
+            view plan
+          </Link>
         </div>
       </div>
     );
@@ -157,7 +186,7 @@ export default function Home() {
     <PayPalProviderWrapper>
       <main className="w-full flex flex-col">
         {/* Header */}
-        <div className="px-12 pt-8 pb-4 ms-6 mt-6 me-6 border-b border-gray-100 bg-white">
+        <div className="px-12 pt-8 pb-4 ms-6 mt-6 me-6 border-b border-line bg-white">
           <h1 className="text-2xl my-3 font-bold">Pricing</h1>
           <p className="text-sm">
             Simple pricing. No hidden fees. Advanced features for your company.
@@ -171,13 +200,16 @@ export default function Home() {
           {renderPlan("premium", "bg-my")}
         </div>
 
-        {/* Other Packages */}
-        {
-          (!maintenance)?
+        {/* Other Packages.
+            The maintenance model comes with the company product, so those
+            organizations have it already and are not asked to request it. Every
+            other sector — an institution of learning, a public or civil body —
+            asks for it here. */}
+        {!maintenance && !MAINTENANCE_BY_DEFAULT.includes((category ?? "").toLowerCase()) ? (
           <div className="flex flex-col px-12 p-12 ms-6 mb-6 me-6 bg-white">
             <h1 className="text-xl my-3 font-bold">Other Available Packages</h1>
-            <div className="border border-gray-100 rounded-lg px-6 pb-6 flex flex-col">
-              <div className="mainte flex justify-between py-4 mb-2 border-b border-gray-100">
+            <div className="border border-line rounded-lg px-6 pb-6 flex flex-col">
+              <div className="mainte flex justify-between py-4 mb-2 border-b border-line">
                 <h1 className="font-bold my-auto">Maintenance model</h1>
                 <Link
                   href={"/maintenance-payment"}
@@ -188,14 +220,15 @@ export default function Home() {
               </div>
               <p className="text-sm">
                 This maintenance model helps by providing predictive maintenance
-                intervals for your equipment(s) to optimize efficiency and reduce
-                wastage.
+                intervals for your equipment(s) to optimize efficiency and
+                reduce wastage. It is included with the company product; request
+                it here to add it to your plan.
               </p>
             </div>
           </div>
-          : <></>
-        }
-
+        ) : (
+          <></>
+        )}
       </main>
     </PayPalProviderWrapper>
   );

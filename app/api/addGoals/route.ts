@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '../_lib/authGuard'
 import { validateData, createGoalSchema, formatZodErrors } from '@/app/lib/validation'
 
 type Goals = {
@@ -13,7 +13,6 @@ type Goals = {
 
 async function updateData(entry: Goals) {
   const userId = entry.user_id
-  const userIdNum = Number(userId)
 
   if (!entry.user_id) {
     throw new Error('Invalid user_id: must be provided')
@@ -38,36 +37,48 @@ async function updateData(entry: Goals) {
   const title = `New Goal Created: ${entry.name}`
   const message = `${entry.description} (Due: ${entry.due_date})`
 
-  await prisma.$executeRaw`
-    INSERT INTO notifications (user_id, org, title, message)
-    SELECT id, org, ${title}, ${message}
-    FROM pesuser
-    WHERE org = (SELECT org FROM pesuser WHERE id = ${userIdNum})
-  `
+  // Resolve the goal owner's org, then notify every user in that org.
+  const owner = await prisma.pesuser.findUnique({
+    where: { id: userId },
+    select: { org_id: true },
+  })
+  const orgId = owner?.org_id ?? null
 
-  const orgResult = await prisma.$queryRaw<
-    { name: string; evaluation: string[]; ongoing: boolean }[]
-  >`
-    SELECT name, evaluation, ongoing
-    FROM org
-    WHERE name = (SELECT org FROM pesuser WHERE id = ${userIdNum})
-  `
+  if (orgId != null) {
+    const orgUsers = await prisma.pesuser.findMany({
+      where: { org_id: orgId },
+      select: { id: true, org_id: true },
+    })
 
-  if (orgResult.length > 0) {
-    const orgName = orgResult[0].name
-    const evaluations = orgResult[0].evaluation || []
+    await prisma.notifications.createMany({
+      data: orgUsers.map((u) => ({
+        user_id: u.id,
+        org_id: u.org_id,
+        title,
+        message,
+      })),
+    })
 
-    const updatedEvaluations = evaluations.includes(entry.evaluation_type)
-      ? evaluations
-      : [...evaluations, entry.evaluation_type]
+    const orgRecord = await prisma.org.findFirst({
+      where: { id: orgId },
+      select: { id: true, evaluation: true },
+    })
 
-    await prisma.$executeRaw`
-      UPDATE org
-      SET evaluation = ${updatedEvaluations},
-          ongoing = true,
-          updated_at = NOW()
-      WHERE name = ${orgName}
-    `
+    if (orgRecord) {
+      const evaluations = orgRecord.evaluation || []
+      const updatedEvaluations = evaluations.includes(entry.evaluation_type)
+        ? evaluations
+        : [...evaluations, entry.evaluation_type]
+
+      await prisma.org.update({
+        where: { id: orgRecord.id },
+        data: {
+          evaluation: updatedEvaluations,
+          ongoing: true,
+          updated_at: new Date(),
+        },
+      })
+    }
   }
 
   return { message: 'success', status: 200, goalId }
@@ -79,10 +90,10 @@ export async function POST(request: NextRequest) {
 
     // Verify JWT token from body
     const token = data.token || data.access_token
-    if (!token) {
+    const decoded = verifyToken(token)
+    if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-change-in-production')
 
     // Validate input
     const validation = validateData(createGoalSchema, data)
@@ -91,6 +102,13 @@ export async function POST(request: NextRequest) {
         { error: 'Validation failed', details: formatZodErrors(validation.errors!) },
         { status: 400 }
       )
+    }
+
+    // Goals are created for the caller — never trust a client-supplied
+    // user_id, or any signed-in user could spam notifications and flip
+    // evaluation flags on an organization they don't belong to.
+    if (!decoded.userID || validation.data!.user_id !== decoded.userID) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const goals = await updateData(validation.data!)

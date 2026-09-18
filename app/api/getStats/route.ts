@@ -1,46 +1,68 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { performanceSubmitters } from '@/app/lib/performance/results';
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { rosterWhere } from '../_lib/roster'
 
 /**
  * API route to get statistics for the dashboard.
  * Returns the count of unique pesuser_name and org across all tables.
 */
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
     try {
-        // Get unique pesuser_name count across all tables
-        const pesuser_nameResult = await prisma.$queryRawUnsafe<{ count: number }[]>(`
-            SELECT COUNT(DISTINCT pesuser_name) as count FROM (
-                SELECT pesuser_name FROM appraisal
-                UNION
-                SELECT pesuser_name FROM userperformance
-                UNION
-                SELECT pesuser_name FROM stress
-            ) AS all_pesuser_names
-        `)
-        console.log('pesuser_nameResult:', Number(pesuser_nameResult[0]?.count))
-        const pesuser_nameCount = Number(pesuser_nameResult[0]?.count) || 0
+        const auth = authorize(tokenFromRequest(req), {});
+        if (!auth.ok) return auth.response;
 
-        // Get unique org count across all tables
-        const orgResult = await prisma.$queryRawUnsafe<{ count: number }[]>(`
-            SELECT COUNT(DISTINCT org) as count FROM (
-                SELECT org FROM appraisal
-                UNION
-                SELECT org FROM userperformance
-                UNION
-                SELECT org FROM stress
-            ) AS all_orgs
-        `)
-        console.log('orgResult:', Number(orgResult[0]?.count))
-        const organizationCount = Number(orgResult[0]?.count) || 0
+        const userOrg = auth.user.org ? String(auth.user.org) : null;
+        const orgId = auth.user.orgId ?? null;
+
+        if (!userOrg || !orgId) {
+            return NextResponse.json({ pesuser_nameCount: 0, organizationCount: 0 });
+        }
+
+        // Single source of truth = the enrolled roster (pesuser), org-scoped —
+        // the SAME basis as the dashboard's employee count, so staff counts are
+        // consistent across the whole app (#12). "submitted" is how many of those
+        // staff have entered any evaluation.
+        const roster = await prisma.pesuser.findMany({
+            where: rosterWhere(orgId),
+            select: { name: true, dept: true },
+        });
+        const staffCount = roster.length;
+        const deptCount = new Set(
+            roster.map((r) => (r.dept && r.dept.trim()) || "Unspecified"),
+        ).size;
+
+        const submitterRows: { pesuser_name: string | null }[] = await prisma.$queryRaw`
+            SELECT DISTINCT pesuser_name FROM appraisal WHERE org_id = ${orgId}
+            UNION SELECT DISTINCT pesuser_name FROM stress WHERE org_id = ${orgId}
+            `;
+        // Performance submitters come from the performance model, which has a
+        // period and a draft state — a half-filled form is not a submission.
+        // performanceSubmitters() lives in app/lib and still filters by the org
+        // name string (out of scope for this pass — see org-id-migration notes).
+        const performanceSubmitterNames = await performanceSubmitters(orgId);
+        const submitterSet = new Set([
+            ...submitterRows.map((r) => r.pesuser_name).filter((n): n is string => !!n),
+            ...performanceSubmitterNames,
+        ]);
+        const submittedCount = roster.filter((u) => u.name && submitterSet.has(u.name)).length;
 
         return NextResponse.json({
-            pesuser_nameCount,
-            organizationCount,
+            staffCount,
+            deptCount,
+            submittedCount,
+            // Backward-compat aliases (now roster-based).
+            pesuser_nameCount: staffCount,
+            organizationCount: deptCount,
         })
     } catch (error) {
+        console.error(error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
-    } finally {
-        await prisma.$disconnect()
     }
 }

@@ -1,17 +1,21 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 401 });
-    }
-
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
-    if (!org) {
+    // Saving performance-metric results requires define_performance (or admin).
+    const auth = authorize(tokenFromRequest(req), {
+      roles: ["industrial-engineer"],
+      anyOf: ["can_define_performance_metrics"],
+    });
+    if (!auth.ok) return auth.response;
+    const orgId = auth.user.orgId ?? null;
+    if (!orgId) {
       return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
@@ -30,29 +34,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for existing record
-    const existing: any = await prisma.$queryRaw`
-      SELECT id FROM performance_result WHERE org = ${org}
-    `;
-
-    if (existing.length > 0) {
-      // Update
-      await prisma.$queryRaw`
-        UPDATE performance_result
-        SET total_score = ${total_score},
-            rating = ${rating},
-            thresholds = ${JSON.stringify(thresholds)},
-            criteria = ${JSON.stringify(criteria)},
-            updated_at = NOW()
-        WHERE org = ${org}
-      `;
-    } else {
-      // Insert
-      await prisma.$queryRaw`
-        INSERT INTO performance_result (org, total_score, rating, thresholds, criteria)
-        VALUES (${org}, ${total_score}, ${rating}, ${JSON.stringify(thresholds)}, ${JSON.stringify(criteria)})
-      `;
-    }
+    await prisma.performance_result.create({
+      data: { org_id: orgId, total_score, rating, thresholds, criteria },
+    });
 
     return NextResponse.json({ success: true, message: "Performance result saved" });
   } catch (err: any) {

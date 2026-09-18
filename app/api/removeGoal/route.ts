@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
@@ -17,17 +18,13 @@ export async function POST(request: NextRequest) {
     // Verify token to ensure the request is authenticated
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
-    ) as { name: string; userID: number }
+      getJWTSecret()
+    ) as { name: string; userID: string }
 
     // Delete the goal, scoped to the user so they can only delete their own goals
-    await prisma.$executeRawUnsafe(
-      'DELETE FROM goals WHERE id = $1 AND user_id = $2',
-      Number(goalId),
-      String(decoded.userID)
-    )
-
-    await prisma.$disconnect()
+    await prisma.goals.deleteMany({
+      where: { id: goalId, user_id: decoded.userID },
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
+import { ArrowLeft2 } from "iconsax-react";
+import { getAccessToken } from "@/app/utils/auth";
 import {
   findOptimalK_ordinary,
   calculateStaffNeeds,
 } from "../utils/sharedLogic";
 import ParametersForm from "../_components/ParametersForm";
 import ResultsCard from "../_components/ResultsCard";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function OrdinaryOptimization() {
   const [params, setParams] = useState({
@@ -37,7 +40,7 @@ export default function OrdinaryOptimization() {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (token) {
       const decoded: any = jwt.decode(token);
       setRole(decoded?.role || null);
@@ -78,9 +81,12 @@ export default function OrdinaryOptimization() {
 
     // 🔹 Save result to backend
     try {
-      const res = await fetch("/api/results", {
+      const res = await apiFetch("/api/results", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAccessToken()}`
+        },
         body: JSON.stringify({
           mode: "ordinary",
           ...params,
@@ -101,11 +107,23 @@ export default function OrdinaryOptimization() {
 
   return (
     <div className="p-10">
-      <div className="flex items-center mb-6 space-x-4">
-        <Link href="/models/student-teacher" className="text-blue-600 hover:underline">
-          {"<- back"}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/models/student-teacher"
+            className="inline-flex items-center gap-1.5 bg-white border border-line shadow-sm text-body px-3 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors"
+          >
+            <ArrowLeft2 size="16" className="text-muted" /> Back
+          </Link>
+          <h1 className="text-2xl font-bold">Ordinary Optimization</h1>
+        </div>
+        <Link
+          href="/models/student-teacher/ordinary/history"
+          className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2 print:hidden"
+        >
+          <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          View History
         </Link>
-        <h1 className="text-2xl font-bold">Ordinary Optimization</h1>
       </div>
 
       <div className="print:hidden">
@@ -122,14 +140,14 @@ export default function OrdinaryOptimization() {
             {loading ? "Calculating..." : "Calculate"}
           </button>
         ) : (
-          <p className="mt-4 text-red-600 font-semibold text-sm">Only admins can perform calculations.</p>
+          <p className="mt-4 text-danger-600 font-semibold text-sm">Only admins can perform calculations.</p>
         )}
       </div>
 
       {status && (
         <p
           className={`mt-3 text-sm ${
-            status.startsWith("✅") ? "text-green-600" : "text-red-600"
+            status.startsWith("✅") ? "text-green-600" : "text-danger-600"
           }`}
         >
           {status}
@@ -142,7 +160,7 @@ export default function OrdinaryOptimization() {
           {isAdmin && (
             <button 
               onClick={() => window.print()}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 print:hidden"
+              className="mt-4 px-4 py-2 bg-pes text-white rounded hover:bg-pes-800 print:hidden"
             >
               Print Results
             </button>

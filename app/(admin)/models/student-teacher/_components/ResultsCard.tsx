@@ -22,11 +22,11 @@ export default function ResultsCard({ results }: { results: Results }) {
 
   return (
     <div className="bg-white border rounded-2xl shadow-md p-6 mt-8 w-full md:w-3/4 lg:w-1/2 mx-auto">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">
+      <h2 className="text-xl font-bold mb-4 text-strong">
         Optimization Results
       </h2>
 
-      <div className="grid grid-cols-2 gap-y-2 text-gray-700">
+      <div className="grid grid-cols-2 gap-y-2 text-body">
         <p className="font-semibold">Optimal K*:</p>
         <p>{results.optimalK}</p>
 
@@ -50,10 +50,10 @@ export default function ResultsCard({ results }: { results: Results }) {
       </div>
 
       <div className="mt-6 border-t pt-4">
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">
+        <h3 className="text-lg font-semibold mb-2 text-strong">
           Staff Distribution
         </h3>
-        <div className="grid grid-cols-2 gap-y-2 text-gray-700">
+        <div className="grid grid-cols-2 gap-y-2 text-body">
           <p className="font-semibold">Lecturers:</p>
           <p>{results.staffDistribution.lecturers}</p>
 

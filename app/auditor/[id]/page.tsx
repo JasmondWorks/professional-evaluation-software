@@ -1,11 +1,16 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const email = params.id; // Extracted email
+  const token = params.id; // Extracted token
+  const [email, setEmail] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [verificationError, setVerificationError] = useState("");
+  
   const [responses, setResponses] = useState<string[]>(Array(13).fill("")); // updated to match 12 questions
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false)
@@ -36,6 +41,31 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const response = await apiFetch("/api/verify-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+          setEmail(data.email);
+        } else {
+          setVerificationError(data.message || "Invalid token");
+        }
+      } catch (error) {
+        setVerificationError("Failed to verify token");
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+    
+    verifyToken();
+  }, [token]);
+
   // ✅ check all required fields are filled
   const isFormComplete =
     formData.name.trim() !== "" &&
@@ -51,7 +81,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auditor-responses", {
+      const response = await apiFetch("/api/auditor-responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, responses, ...formData, credentialData: Object.values(credentialData) }),
@@ -120,10 +150,28 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         }));
 
       } catch (err) {
-        console.log(err);
         // console.log(err);
-      }
+        }
     }
+
+  if (isVerifying) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-6 rounded-2xl shadow-md bg-white text-pes text-center">
+        <p className="text-xl font-medium animate-pulse">Verifying invitation...</p>
+      </div>
+    );
+  }
+
+  if (verificationError || !email) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-10 rounded-2xl shadow-md bg-white text-pes text-center space-y-4">
+        <div className="text-danger-600 text-5xl mb-4">⚠️</div>
+        <h1 className="text-2xl font-semibold text-danger-600">Access Denied</h1>
+        <p className="text-body font-medium">{verificationError || "Invalid or Expired Invitation Link"}</p>
+        <p className="text-sm text-muted mt-4">Please contact the administrator to request a new invitation.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto h-fit overflow-scroll mt-10 p-6 rounded-2xl shadow-md bg-white text-pes">
@@ -162,7 +210,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
           />
 
           <label htmlFor="dob" className="mt-2">
-            <span className="text-gray-400 mt-2 m-1">Date of birth</span>
+            <span className="text-muted mt-2 m-1">Date of birth</span>
             <input
               type="date"
               id="dob"
@@ -205,8 +253,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         <div className="credentials">
             <label htmlFor="c_origin" className="my-2.5 flex justify-between">
               <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-500">Certificate of recognition</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-gray-600">Browse Files</div>
+                <p className="m-auto text-sm text-muted">Certificate of recognition</p>
+                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
               </div>
               <input id="c_origin" type="file" onChange={handleFileUpload} className="hidden" />
               <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_origin }</p>
@@ -214,8 +262,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
             <label htmlFor="c_prof" className="my-2.5 flex justify-between">
               <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-500">Professional certificate</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-gray-600">Browse Files</div>
+                <p className="m-auto text-sm text-muted">Professional certificate</p>
+                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
               </div>
               <input id="c_prof" type="file" onChange={handleFileUpload} className="hidden" />
               <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_prof }</p>
@@ -223,8 +271,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
             <label htmlFor="c_acad" className="my-2.5 flex justify-between">
               <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-500">Academic certificate</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-gray-600">Browse Files</div>
+                <p className="m-auto text-sm text-muted">Academic certificate</p>
+                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
               </div>
               <input id="c_acad" type="file" onChange={handleFileUpload} className="hidden" />
               <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_acad }</p>
@@ -232,14 +280,14 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
             <label htmlFor="others" className="my-2.5 flex justify-between">
               <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-gray-500">Others</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-gray-600">Browse Files</div>
+                <p className="m-auto text-sm text-muted">Others</p>
+                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
               </div>
               <input id="others" type="file" onChange={handleFileUpload} className="hidden" />
               <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.others }</p>
             </label>
 
-            <p className="bg-gray-50 p-3">As deemed necessary</p>
+            <p className="bg-canvas p-3">As deemed necessary</p>
         </div>
 
         <button
@@ -263,7 +311,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
             message.includes("✅")
               ? "text-green-600"
               : message.includes("❌")
-              ? "text-red-600"
+              ? "text-danger-600"
               : "text-yellow-600"
           }`}
         >

@@ -1,83 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { Save2, Calculator, Chart2, BoxAdd, BoxRemove, DocumentText } from 'iconsax-react';
+import { useEffect, useState } from "react";
+import InfoPopover from "@/app/components/ui/InfoPopover";
+import CascadePanel from "./CascadePanel";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function OrgStructurePage() {
-  const [openSection, setOpenSection] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [msgType, setMsgType] = useState<"success" | "error" | "">("");
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  // This model is derived from the optimal span of control K*, so it stays
+  // locked until Personnel Utilisation has been run for the org. The same
+  // check is enforced in /api/orgStructure — this one only saves the user
+  // from filling six sections of a form that cannot be saved.
+  const [utilizationRun, setUtilizationRun] = useState<boolean | null>(null);
+  // Section 17 quotes the optimal supervisory span. It used to link to a
+  // reference PDF that was never in the repo, so the button 404'd; the org's
+  // own most recent K* is both accurate and already fetched by the gate check.
+  const [latestKstar, setLatestKstar] = useState<number | null>(null);
 
-  // ===== Helper to Save =====
+  const token = typeof window !== "undefined" ? getAccessToken() : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkPrerequisite() {
+      if (!token) {
+        setUtilizationRun(false);
+        return;
+      }
+      try {
+        const res = await apiFetch("/api/getPersonnelUtilization", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          const runs = Array.isArray(data?.data) ? data.data : [];
+          setUtilizationRun(res.ok && runs.length > 0);
+          const kstar = runs[0]?.kstar;
+          setLatestKstar(kstar == null ? null : Number(kstar));
+        }
+      } catch {
+        if (!cancelled) setUtilizationRun(false);
+      }
+    }
+
+    checkPrerequisite();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   async function saveResult(
     section: number,
     result: number,
     numerator: number[] = [],
     denominator: number[] = [],
-    extra_data: any = {}
+    extra_data: any = {},
   ) {
     if (!token) {
-      setMessage("❌ Missing authentication token.");
+      setMsgType("error");
+      setMessage("Missing authentication token.");
       return;
     }
 
     try {
       setLoading(true);
-      const res = await fetch("/api/orgStructure", {
+      const res = await apiFetch("/api/orgStructure", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ section, result, numerator, denominator, extra_data }),
+        body: JSON.stringify({
+          section,
+          result,
+          numerator,
+          denominator,
+          extra_data,
+        }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setMessage(`✅ Results saved successfully`);
+        setMsgType("success");
+        setMessage(`Results for Section ${section} saved successfully`);
+        setTimeout(() => setMessage(""), 3000);
       } else {
-        setMessage(`❌ Error: ${data.error || "Failed to save"}`);
+        setMsgType("error");
+        setMessage(`Error: ${data.error || "Failed to save"}`);
       }
     } catch (err: any) {
-      setMessage(`❌ ${String(err)}`);
+      setMsgType("error");
+      setMessage(`Network error saving result`);
     } finally {
       setLoading(false);
     }
   }
 
-  // ===== Section 17 =====
-  const section17Link = "/downloadables/personnel-utilization.pdf";
-
-  // ===== Section 18 =====
-  const [section18Numerator, setSection18Numerator] = useState<number[]>([0]);
-  const [section18DenominatorA, setSection18DenominatorA] = useState<number[]>([0]);
-  const [section18DenominatorB, setSection18DenominatorB] = useState<number[]>([0]);
-  const [section18Result, setSection18Result] = useState<number | null>(null);
-
-  const calcSection18 = async () => {
-    const sumNum = section18Numerator.reduce((a, b) => a + b, 0);
-    const sumDenA = section18DenominatorA.reduce((a, b) => a + b, 0);
-    const sumDenB = section18DenominatorB.reduce((a, b) => a + b, 0);
-    const result = sumDenA && sumDenB ? sumNum / (sumDenA * sumDenB) : 0;
-    setSection18Result(result);
-    await saveResult(18, result, section18Numerator, [...section18DenominatorA, ...section18DenominatorB]);
-  };
-
-  // ===== Section 19 =====
-  const [section19Numerator, setSection19Numerator] = useState<number[]>([0]);
-  const [section19Denominator, setSection19Denominator] = useState<number[]>([0]);
-  const [Z, setZ] = useState<number | "">("");
-  const [section19Result, setSection19Result] = useState<number | null>(null);
-
-  const calcSection19 = async () => {
-    const sumNum = section19Numerator.reduce((a, b) => a + b, 0);
-    const sumDen = section19Denominator.reduce((a, b) => a + b, 0);
-    const result = sumDen ? (Number(Z) * sumNum) / sumDen : 0;
-    setSection19Result(result);
-    await saveResult(19, result, section19Numerator, section19Denominator, { Z });
-  };
+  // Sections 18 and 19 are computed together in ./CascadePanel now. They used
+  // to be separate cards of Σ-terms whose results could contradict one another,
+  // because nothing tied the ladder in 18 to the shape in 19. Section 21 has
+  // moved to the Supervision Cost tab of the Redundancy Index.
 
   // ===== Section 20 =====
   const [maxInput, setMaxInput] = useState<number | "">("");
@@ -96,274 +130,198 @@ export default function OrgStructurePage() {
     await saveResult(20, result, [Number(minInput)], [], { type: "Min" });
   };
 
-  // ===== Section 21 =====
-  const [prNumerator, setPrNumerator] = useState<number | "">("");
-  const [prDenominator, setPrDenominator] = useState<number | "">("");
-  const [prResult, setPrResult] = useState<number | null>(null);
-
-  const calcPR = async () => {
-    const result =
-      Number(prDenominator) !== 0
-        ? (Number(prNumerator) / Number(prDenominator)) * 100
-        : 0;
-    setPrResult(result);
-    await saveResult(21, result, [Number(prNumerator)], [Number(prDenominator)]);
-  };
-
-  // ===== Section 22 =====
-  const [a, setA] = useState<number | "">("");
-  const [b, setB] = useState<number | "">("");
-  const [x, setX] = useState<number | "">("");
-  const [projResult, setProjResult] = useState<number | null>(null);
-
-  const calcProjection = async () => {
-    const result = Number(a) + Number(b) * Number(x);
-    setProjResult(result);
-    await saveResult(22, result, [Number(a), Number(b), Number(x)]);
-  };
+  // Section 22 (future requirements) moved out to its own model at
+  // /models/future-requirements, where it reads a and b off a line fitted
+  // through the recorded history instead of asking somebody to derive them by
+  // hand and type them in.
 
   // ===== Helpers =====
   const numberInput = (
     label: string,
     value: number | "",
     setValue: (v: number | "") => void,
-    opts: { min?: number; step?: number } = {}
+    desc?: string
   ) => (
-    <label className="block mb-2">
-      <div className="text-sm font-medium">{label}</div>
+    <div className="block">
+      <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+        <span className="truncate">{label}</span>
+        {desc && <InfoPopover text={desc} />}
+      </div>
       <input
         type="number"
-        min={opts.min}
-        step={opts.step}
         value={value}
-        onChange={(e) =>
-          setValue(e.target.value === "" ? "" : Number(e.target.value))
-        }
-        className="mt-1 block w-full rounded border-gray-300 p-2 shadow-sm"
+        onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
+        className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
       />
-    </label>
+    </div>
   );
 
   const dynamicList = (
     label: string,
     list: number[],
-    setList: (v: number[]) => void
+    setList: (v: number[]) => void,
   ) => (
     <div className="mb-4">
-      <div className="font-medium mb-2">{label}</div>
-      {list.map((val, idx) => (
-        <div key={idx} className="flex gap-2 items-center mb-2">
-          <input
-            type="number"
-            value={val}
-            onChange={(e) => {
-              const newList = [...list];
-              newList[idx] = Number(e.target.value);
-              setList(newList);
-            }}
-            className="block w-full rounded border-gray-300 p-2 shadow-sm"
-          />
-          {list.length > 1 && (
-            <button
-              onClick={() => {
-                const newList = list.filter((_, i) => i !== idx);
+      <div className="text-sm font-semibold text-body mb-1.5">{label}</div>
+      <div className="space-y-2 border border-line bg-canvas p-3 rounded-lg">
+        {list.map((val, idx) => (
+          <div key={idx} className="flex gap-2 items-center">
+            <span className="text-xs font-bold text-muted w-4">{idx + 1}.</span>
+            <input
+              type="number"
+              value={val}
+              onChange={(e) => {
+                const newList = [...list];
+                newList[idx] = Number(e.target.value);
                 setList(newList);
               }}
-              type="button"
-              className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-              title="Remove row"
-            >
-              ✕
-            </button>
+              className="block w-full rounded border-line px-3 py-1.5 text-sm shadow-sm outline-none focus:border-pes"
+            />
+            {list.length > 1 && (
+              <button
+                onClick={() => {
+                  const newList = list.filter((_, i) => i !== idx);
+                  setList(newList);
+                }}
+                type="button"
+                className="text-danger-600 hover:text-danger-700 p-1"
+                title="Remove row"
+              >
+                <BoxRemove size="18" />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={() => setList([...list, 0])}
+          type="button"
+          className="flex items-center gap-1 text-xs font-medium text-pes hover:text-pes-800 transition-colors mt-2 ml-6"
+        >
+          <BoxAdd size="16" /> Add Row
+        </button>
+      </div>
+    </div>
+  );
+
+  const modelCard = (title: string, desc: string, icon: React.ReactNode, children: React.ReactNode, onCalc?: () => void, result?: number | null, resultLabel?: string, resultUnit: string = "") => (
+    <div className="bg-white rounded-xl border border-line overflow-hidden shadow-sm flex flex-col h-full">
+      <div className="p-6 flex-1">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+          <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-strong">{title}</h2>
+            <p className="text-xs text-muted">{desc}</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {children}
+        </div>
+      </div>
+      {onCalc && (
+        <div className="p-6 bg-canvas border-t border-line">
+          <button
+            onClick={onCalc}
+            disabled={loading}
+            className="w-full py-2.5 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+          >
+            {loading ? "Saving..." : (
+              <>
+                <Calculator size="18" />
+                Calculate & Save
+              </>
+            )}
+          </button>
+
+          {result !== null && result !== undefined && (
+            <div className="mt-4 p-4 rounded-lg border text-center bg-pes-50 border-blue-100 text-blue-900">
+              <p className="text-xs font-medium mb-1 text-pes-700">{resultLabel || "Result"}</p>
+              <p className="text-2xl font-bold">{result.toFixed(2)}{resultUnit}</p>
+            </div>
           )}
         </div>
-      ))}
-      <button
-        onClick={() => setList([...list, 0])}
-        type="button"
-        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors text-sm font-medium"
-      >
-        + Add Row
-      </button>
+      )}
     </div>
   );
 
-  const section = (key: string, title: string, children: React.ReactNode) => (
-    <div className="border rounded mb-4">
-      <button
-        onClick={() => setOpenSection(openSection === key ? null : key)}
-        className="w-full text-left p-3 bg-gray-100 font-semibold"
-      >
-        {title}
-      </button>
-      {openSection === key && <div className="p-4">{children}</div>}
-    </div>
-  );
+  if (utilizationRun === null) {
+    return (
+      <div className="p-8 w-full mx-auto">
+        <div className="mb-4">
+          <BackLink href="/models">Back to Models</BackLink>
+        </div>
+        <p className="text-muted text-sm">Checking prerequisites…</p>
+      </div>
+    );
+  }
+
+  if (!utilizationRun) {
+    return (
+      <div className="p-8 w-full mx-auto">
+        <div className="mb-4">
+          <BackLink href="/models">Back to Models</BackLink>
+        </div>
+
+        <div className="bg-white rounded-xl border border-line p-8 shadow-sm max-w-2xl">
+          <h1 className="text-2xl font-bold mb-2">Organization Structure</h1>
+          <p className="text-body mb-6">
+            This model is derived from the optimal span of control (K*) produced
+            by the Personnel Utilisation model. Run Personnel Utilisation for
+            your organisation first, then return here.
+          </p>
+          <Link
+            href="/models/personnel-utilization"
+            className="inline-block bg-pes text-white rounded px-6 py-2 hover:opacity-90"
+          >
+            Go to Personnel Utilisation
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full mx-auto p-12">
-      <h1 className="text-2xl font-bold mb-6">
-        Organization Structure Models (17–22)
-      </h1>
+    <div className="p-8 w-full mx-auto">
+      <div className="mb-4">
+        <BackLink href="/models">Back to Models</BackLink>
+      </div>
+
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Organization Structure (Models 17–22)</h1>
+          <p className="text-body max-w-2xl text-sm">
+            Determine personnel utilization, structural sizing, shape, design min/max boundaries, redundancy percentage, and projected personnel requirements.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/org-structure/history"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <DocumentText size="16" />
+            View History
+          </Link>
+        </div>
+      </div>
 
       {message && (
-        <div className="p-3 mb-4 text-sm text-center bg-gray-100 rounded">
+        <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg border text-sm font-medium animate-in slide-in-from-bottom-5 z-50 ${
+          msgType === "success" ? "bg-green-50 text-green-700 border-green-200" : "bg-danger-50 text-danger-700 border-danger-100"
+        }`}>
           {message}
         </div>
       )}
 
-      {/* Section 17 */}
-      {section(
-        "s17",
-        "17. Determine Organization Size at Supervisory Level",
-        <>
-          <p className="mb-4">
-            In a fair organization, optimal value at the supervisory level is
-            from the Personnel Utilization Table:
-          </p>
-          <a
-            href={section17Link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            View Personnel Utilization Table
-          </a>
-        </>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        
+        {/* Sections 17-19 are one calculation, not three: 17's head count is
+            what 18 divides down level by level, and 18's ladder is 19's shape. */}
+        <div className="xl:col-span-3">
+          <CascadePanel onSave={saveResult} />
+        </div>
 
-      {/* Section 18 */}
-      {section(
-        "s18",
-        "18. Determination of the Size of an Organization Structure",
-        <>
-          {dynamicList("Numerator terms (Σ...)", section18Numerator, setSection18Numerator)}
-          {dynamicList("Denominator part A (Σ...)", section18DenominatorA, setSection18DenominatorA)}
-          {dynamicList("Denominator part B (Σ...)", section18DenominatorB, setSection18DenominatorB)}
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcSection18}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Calculate & Save"}
-          </button>
-          {section18Result !== null && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Result (S):</strong> {section18Result.toFixed(2)}
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Section 19 */}
-      {section(
-        "s19",
-        "19. Shape of an Organization’s Structure",
-        <>
-          {numberInput("Z — Avg. number of management positions per level", Z, setZ)}
-          {dynamicList("Numerator terms (Σ...)", section19Numerator, setSection19Numerator)}
-          {dynamicList("Denominator terms (Σ...)", section19Denominator, setSection19Denominator)}
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcSection19}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Calculate & Save"}
-          </button>
-          {section19Result !== null && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Shape (E):</strong> {section19Result.toFixed(2)}
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Section 20 */}
-      {section(
-        "s20",
-        "20. Organizational Design",
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold mb-2">Max (p.68–70)</h3>
-              {numberInput("Input for Max formula", maxInput, setMaxInput)}
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-                onClick={calcMax}
-                disabled={loading}
-              >
-                {loading ? "Saving..." : "Calculate Max & Save"}
-              </button>
-              {maxResult !== null && <p className="mt-2"><strong>Max:</strong> {maxResult}</p>}
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Min (p.74)</h3>
-              {numberInput("Input for Min formula", minInput, setMinInput)}
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-                onClick={calcMin}
-                disabled={loading}
-              >
-                {loading ? "Saving..." : "Calculate Min & Save"}
-              </button>
-              {minResult !== null && <p className="mt-2"><strong>Min:</strong> {minResult}</p>}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Section 21 */}
-      {section(
-        "s21",
-        "21. Real Percentage Redundancy (PR%)",
-        <>
-          {numberInput("Numerator", prNumerator, setPrNumerator)}
-          {numberInput("Denominator", prDenominator, setPrDenominator)}
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcPR}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Calculate & Save"}
-          </button>
-          {prResult !== null && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>PR%:</strong> {prResult.toFixed(2)}%
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Section 22 */}
-      {section(
-        "s22",
-        "22. Predicting / Projecting Future Personnel Requirements",
-        <>
-          {numberInput("a — Intercept", a, setA)}
-          {numberInput("b — Gradient", b, setB)}
-          {numberInput("x — Production/service volume", x, setX)}
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={calcProjection}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Calculate & Save"}
-          </button>
-          {projResult !== null && (
-            <div className="mt-4 bg-white p-4 rounded shadow">
-              <p>
-                <strong>Predicted Personnel Requirement:</strong> {projResult.toFixed(2)}
-              </p>
-            </div>
-          )}
-        </>
-      )}
+      </div>
     </div>
   );
 }

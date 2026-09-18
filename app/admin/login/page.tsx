@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/app/components/useAuth";import { getAccessToken } from '@/app/utils/auth';
-
+import { useAuth } from "@/app/components/useAuth";
+import { getAccessToken } from "@/app/utils/auth";
+import { Eye } from "iconsax-react";
+import { EyeOff } from "lucide-react";
 
 type formdata = {
   email: string;
@@ -20,6 +22,7 @@ export default function Home() {
     text: "",
     color: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const schema = Yup.object({
@@ -51,7 +54,9 @@ export default function Home() {
 
         document.cookie = `role=${res.role}; path=/; max-age=86400`;
 
-        router.push("/admin/dashboard");
+        // The platform console for super-admin now lives in the main app's own
+        // dashboard, not this legacy shell — same token, same auth, different UI.
+        router.push(res.role === "super-admin" ? "/dashboard" : "/admin/dashboard");
       } else if (res.status == 500) {
         setMessage({
           visibility: "visible",
@@ -60,13 +65,13 @@ export default function Home() {
         });
       }
     } catch (error) {
-      console.log(error);
     }
   }
 
   useEffect(() => {
     if (getAccessToken()) {
-      router.push("/admin/dashboard");
+      const role = document.cookie.match(/(?:^|; )role=([^;]+)/)?.[1];
+      router.push(role === "super-admin" ? "/dashboard" : "/admin/dashboard");
     }
   }, [router]);
 
@@ -75,7 +80,7 @@ export default function Home() {
       {/* message box */}
       <div
         style={{ borderColor: message.color }}
-        className={`z-10 bg-white absolute p-6 px-12 shadow-md rounded-md border text-gray-600 font-semibold ${message.visibility} top-3 left-1/2 -translate-x-1/2`}
+        className={`z-10 bg-white absolute p-6 px-12 shadow-md rounded-md border text-body font-semibold ${message.visibility} top-3 left-1/2 -translate-x-1/2`}
       >
         {message.text}
       </div>
@@ -106,7 +111,7 @@ export default function Home() {
                 Email Address:
               </label>
               <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
+                className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg"
                 type="email"
                 name="email"
                 id="email"
@@ -118,13 +123,23 @@ export default function Home() {
               <label htmlFor="password" className="mb-1">
                 Password:
               </label>
-              <Field
-                className="bg-transparent border border-gray-200 text-gray-700 focus:outline-pes ps-4 py-2 rounded-lg"
-                type="password"
-                name="password"
-                id="password"
-                required
-              />
+              <div className="relative w-full">
+                <Field
+                  className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  id="password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-body focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
 
             <button

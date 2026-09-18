@@ -5,10 +5,16 @@ import { NextRequest } from 'next/server';
  * JWT Payload Interface
  */
 export interface JWTPayload {
-  userID: string | number;
+  userID: string;
   name: string;
   role: string;
-  org: string;
+  // The authorization claim. Every tenant-scoping check compares this, never
+  // `org` below — org.name is display text, not required to be unique, and
+  // two organizations may legitimately share a name.
+  orgId: string | null;
+  // Display text only, kept so the UI can show an org name without a round
+  // trip. Never compare this for access control.
+  org: string | null;
   email: string;
   logo?: string;
   dept?: string;
@@ -20,21 +26,40 @@ export interface JWTPayload {
 }
 
 /**
- * Get JWT secret from environment
+ * The one place the signing secret is read.
+ *
+ * This used to warn and then hand back the literal below, which is published in
+ * this repository — so a single unset variable silently downgraded every token
+ * in the app to a key anyone can read. A missing secret is a broken deployment,
+ * not a degraded one, so it throws: the request fails loudly instead of
+ * accepting forged tokens quietly.
  */
-function getJWTSecret(): string {
+export function getJWTSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret === 'fallback-secret-change-in-production') {
-    console.warn('⚠️  WARNING: Using fallback JWT secret. Set JWT_SECRET in production!');
+    throw new Error(
+      'JWT_SECRET is not set (or is still the placeholder). Refusing to sign or verify tokens.',
+    );
   }
-  return secret || 'fallback-secret-change-in-production';
+  return secret;
+}
+
+/** The refresh secret, held to the same standard as the access one. */
+export function getRefreshSecret(): string {
+  const secret = process.env.REFRESH_TOKEN_SECRET;
+  if (!secret || secret === 'fallback-refresh-secret-change-in-production') {
+    throw new Error(
+      'REFRESH_TOKEN_SECRET is not set (or is still the placeholder). Refusing to issue refresh tokens.',
+    );
+  }
+  return secret;
 }
 
 /**
  * Sign a JWT token
  */
-export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, expiresIn: string = '7d'): string {
-  return jwt.sign(payload, getJWTSecret(), { expiresIn });
+export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, expiresIn: any = '7d'): string {
+  return jwt.sign(payload as object, getJWTSecret(), { expiresIn });
 }
 
 /**

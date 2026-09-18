@@ -1,19 +1,30 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/state/store'
-import { Verify } from 'iconsax-react'
+'use client'
 
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/app/state/store";
+import { Verify } from "iconsax-react";
+import { notificationSentView } from "@/app/state/notificationsent/notificationSentSlice";
+import { Modal } from '../ui/modal';
+import Button from '../ui/Button';
 
-export default function NotificationSent(){
-    const isVisible = useSelector( (state: RootState) => state.notificationSent.visible )
+export default function NotificationSent() {
+  const isVisible = useSelector((state: RootState) => state.notificationSent.visible);
+  const dispatch = useDispatch();
+  const close = () => dispatch(notificationSentView());
 
-    return (
-        <div className={`notification ${ isVisible? 'visible': 'invisible' } rounded-sm shadow-lg p-12 z-30 flex flex-col w-4/12 bg-white absolute top-1/2 -translate-y-1/2`}>
-
-            <div className='flex flex-col'>
-               <Verify className='text-pes text-2xl mx-auto' size={100} variant='Bold'/>
-               <h1 className='font-bold mx-auto'>Notification Sent Successfully</h1>
-               <a href='/dashboard' className='flex bg-pes rounded-md text-white w-fit px-8 py-3 mx-auto mt-4'>Back to Dashboard</a>
-            </div>
-        </div>
-    )
+  return (
+    <Modal
+      isOpen={isVisible}
+      setIsOpen={(open) => { if (!open) close() }}
+      title="Notification sent"
+      footer={<Button href="/dashboard" onClick={close}>Back to dashboard</Button>}
+    >
+      <div className="flex flex-col items-center gap-3 py-2 text-center">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-pes-50 text-pes-700">
+          <Verify size={32} variant="Bold" />
+        </span>
+        <p className="text-sm text-muted">Your notification was delivered to the recipients.</p>
+      </div>
+    </Modal>
+  );
 }

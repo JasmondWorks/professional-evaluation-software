@@ -1,31 +1,49 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { verifyToken } from "../_lib/authGuard";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { user_name, org } = body;
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Authorization header missing" }, { status: 401 });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const orgId = decoded.orgId;
 
-    if (!user_name || !org) {
+    const body = await req.json();
+    const { user_name } = body;
+
+    if (!user_name || !orgId) {
       return NextResponse.json(
         { error: "user_name and org are required" },
         { status: 400 }
       );
     }
 
-    console.log("Fetching stress scores for:", { user_name, org });
+    console.log("Fetching stress scores for:", { user_name, orgId });
 
-    const [row] = await prisma.$queryRawUnsafe<any[]>(
-      `
-      SELECT organizational, student, administrative, teacher, parents,
-             occupational, personal, academic_program, negative_public_attitude, misc
-      FROM stress_scores
-      WHERE user_name = $1 AND org = $2
-      LIMIT 1
-      `,
-      user_name,
-      org
-    );
+    const row = await prisma.stress_scores.findFirst({
+      where: { user_name, org_id: orgId },
+      select: {
+        organizational: true,
+        student: true,
+        administrative: true,
+        teacher: true,
+        parents: true,
+        occupational: true,
+        personal: true,
+        academic_program: true,
+        negative_public_attitude: true,
+        misc: true,
+      },
+    });
 
     if (!row) {
       return NextResponse.json(

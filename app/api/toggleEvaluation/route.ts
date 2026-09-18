@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getJWTSecret } from '@/app/lib/jwt';
 import prisma from '../prisma.dev'
 import jwt from 'jsonwebtoken'
 
@@ -14,25 +15,26 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
-    ) as { org: string; role: string }
+      getJWTSecret()
+    ) as { org: string; orgId: string; role: string }
 
     if (decoded.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const orgName = decoded.org
+    const orgId = decoded.orgId
 
     // Fetch current evaluation array
-    const result = await prisma.$queryRaw<{ evaluation: string[] }[]>`
-      SELECT evaluation FROM org WHERE name = ${orgName} LIMIT 1
-    `
+    const org = await prisma.org.findUnique({
+      where: { id: orgId },
+      select: { id: true, evaluation: true },
+    })
 
-    if (!result.length) {
+    if (!org) {
       return NextResponse.json({ error: 'Org not found' }, { status: 404 })
     }
 
-    const current: string[] = result[0].evaluation || []
+    const current: string[] = org.evaluation || []
 
     let updated: string[]
     if (enabled) {
@@ -41,14 +43,10 @@ export async function POST(request: NextRequest) {
       updated = current.filter((e) => e !== evaluation_type)
     }
 
-    await prisma.$executeRaw`
-      UPDATE org
-      SET evaluation = ${updated},
-          updated_at = NOW()
-      WHERE name = ${orgName}
-    `
-
-    await prisma.$disconnect()
+    await prisma.org.update({
+      where: { id: org.id },
+      data: { evaluation: updated, updated_at: new Date() },
+    })
 
     return NextResponse.json({ success: true, evaluation: updated })
   } catch (err) {

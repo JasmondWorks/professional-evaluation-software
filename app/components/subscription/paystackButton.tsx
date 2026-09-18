@@ -1,5 +1,7 @@
 "use client";
+import { notify } from "@/lib/toast";
 import { useState } from "react";
+import { apiFetch } from '@/app/utils/apiFetch';
 
 interface PaystackButtonProps {
   email: string;
@@ -14,7 +16,7 @@ export default function PaystackButton({ email, planCode, label }: PaystackButto
     try {
       setLoading(true);
 
-      const response = await fetch("/api/paystack/subscribe", {
+      const response = await apiFetch("/api/paystack/subscribe", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -25,14 +27,16 @@ export default function PaystackButton({ email, planCode, label }: PaystackButto
       const data = await response.json();
 
       if (data.authorization_url) {
-        window.open(data.authorization_url, "_blank");
-      } else {
-        alert("Subscription initialization failed");
+        // Redirect in the same tab. window.open(..., "_blank") after an await
+        // loses the user-gesture context and gets silently popup-blocked.
+        window.location.href = data.authorization_url;
+        return;
       }
 
+      notify.error(data.error ||"Subscription initialization failed");
     } catch (err) {
       console.error(err);
-      alert("Payment start failed");
+      notify.error("Payment start failed");
     } finally {
       setLoading(false);
     }

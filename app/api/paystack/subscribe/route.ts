@@ -1,9 +1,20 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import {packages} from "../../../lib/utils/packages"
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
 
+// Starts a Paystack checkout. The email is what the webhook later attaches the
+// subscription to, so it has to be the caller's own, not a value they typed.
 export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { email, planCode } = await req.json();
+    const email = auth.user.email ? String(auth.user.email) : null;
+    const { planCode } = await req.json();
     // console.log(packages[planCode])
 
     // Initialize Paystack subscription

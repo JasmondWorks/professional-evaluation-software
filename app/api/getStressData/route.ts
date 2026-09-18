@@ -1,11 +1,21 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
+// Submitters per department. The GROUP BY ran over the whole table, so the
+// counts mixed every organization's departments together — and anyone could ask.
 export async function GET(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const orgId = auth.user.orgId ?? null;
+
   try {
     const rawResult = await prisma.$queryRaw`
       SELECT dept, COUNT(DISTINCT pesuser_name) as total_users
       FROM stress
+      WHERE org_id = ${orgId}
       GROUP BY dept
     `;
     

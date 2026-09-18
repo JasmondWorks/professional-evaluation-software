@@ -1,23 +1,28 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// A person's own awards. The name came from the body, so anyone could read
+// anyone's record by guessing it.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { name } = await req.json();
+    const name = auth.user.name ? String(auth.user.name) : null;
+    if (!name) {
+      return NextResponse.json({ error: "No name on this account" }, { status: 403 });
+    }
 
     const [first, second, hall, badges] = await Promise.all([
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'first_book' AS source FROM first_book_of_record WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'second_book' AS source FROM second_book_of_record WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'hall_of_fame' AS source FROM hall_of_fame WHERE name = ${name}
-      `,
-      prisma.$queryRaw<any[]>`
-        SELECT *, 'badges' AS source FROM badges WHERE name = ${name}
-      `
+      prisma.first_book_of_record.findMany({ where: { name } }),
+      prisma.second_book_of_record.findMany({ where: { name } }),
+      prisma.hall_of_fame.findMany({ where: { name } }),
+      prisma.badges.findMany({ where: { name } }),
     ]);
 
     // Map sources to URLs
@@ -38,7 +43,7 @@ export async function POST(req: NextRequest) {
             url = `/reward/badges/${name}`;
             break;
         }
-        return { ...item, url };
+        return { ...item, source: type, url };
       });
     };
 

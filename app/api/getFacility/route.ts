@@ -1,31 +1,37 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from "../_lib/authGuard";
 
-type Facility = {
-  description_of_facility: string,
-  identification_symbol: string,
-  location: string,
-  facility_register_id_no: string,
-  type: string,
-  priority_rating: number,
-  remarks: string,
-  org: string
-}
-
-async function getFacility( user: string | null ) {
-  const users: Facility[] = await prisma.$queryRawUnsafe('SELECT * FROM facilities  where org = $1', user?.toString())
-  await prisma.$disconnect()
-  return users
+async function getFacility( orgId: string | null ) {
+  if (!orgId) return []
+  return prisma.facilities.findMany({ where: { org_id: orgId } })
 }
 
 export async function POST(request: NextRequest) {
-  const { org } = await request.json();
-  console.log('Fetched facility info:', org);
+  const token = request.headers.get("authorization")?.split(" ")[1];
 
-  if (org) {
+  if (!token) {
+    return NextResponse.json({ error: "Missing authorization token" }, { status: 401 });
+  }
+
+  let orgId;
+  try {
+    const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    orgId = decoded?.orgId;
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  console.log('Fetched facility info:', orgId);
+
+  if (orgId) {
     try {
-        let userInfo = await getFacility(org)
+        let userInfo = await getFacility(orgId)
         console.log('Fetched facility info:', userInfo);
 
         const classes = new Set<string>();

@@ -1,10 +1,26 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { Prisma } from '@prisma/client'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
+// A person's own stress submission. The name and department used to arrive in
+// the body with nothing checking them, so an unauthenticated POST could write a
+// stress score against anyone in any organization. They now come off the
+// verified token: you can only submit as yourself.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
 
   const body = await req.json();
-  const { pesuser_name, dept, payload } = body;
+  const { payload } = body;
+  const pesuser_name = auth.user.name ? String(auth.user.name) : null;
+  const dept = auth.user.dept ? String(auth.user.dept) : null;
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
   const value = body[payload];
 
   const allowedFields = [
@@ -22,30 +38,22 @@ export async function POST(req: NextRequest) {
 
   try {
     // Check if user stress already exists
-    const existing = await prisma.$queryRawUnsafe(
-      `SELECT * FROM "stress" WHERE pesuser_name = $1 AND dept = $2`,
-      pesuser_name,
-      dept
-    ) as any[];
+    const existing = await prisma.stress.findFirst({
+      where: { pesuser_name, dept, org_id: orgId },
+    });
 
-    if (existing.length === 0) {
-      // Insert new row with only the given field
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "stress" (pesuser_name, dept, "${payload}") VALUES ($1, $2, $3)`,
-        pesuser_name,
-        dept,
-        value
-      );
+    // `payload` is validated against allowedFields above, so the dynamic key is safe.
+    if (!existing) {
+      await prisma.stress.create({
+        data: { pesuser_name, dept, [payload]: value } as Prisma.stressUncheckedCreateInput,
+      });
 
       return NextResponse.json({ message: 'stress created' }, { status: 201 });
     } else {
-      // Update the field
-      await prisma.$executeRawUnsafe(
-        `UPDATE "stress" SET "${payload}" = $1 WHERE pesuser_name = $2 AND dept = $3`,
-        value,
-        pesuser_name,
-        dept
-      );
+      await prisma.stress.updateMany({
+        where: { pesuser_name, dept },
+        data: { [payload]: value } as Prisma.stressUncheckedUpdateManyInput,
+      });
       return NextResponse.json({ message: 'stress updated' }, { status: 200 });
     }
   } catch (error) {

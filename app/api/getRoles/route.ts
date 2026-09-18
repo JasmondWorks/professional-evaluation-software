@@ -1,31 +1,27 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 
-async function getRoles( user: string | null ) {
-  const users = await prisma.$queryRawUnsafe('SELECT * FROM roles where org = $1', user?.toString())
-  await prisma.$disconnect()
-  return users
+async function getRoles( orgId: string | null ) {
+  if (!orgId) return []
+  return prisma.roles.findMany({ where: { org_id: orgId } })
 }
 
 export async function POST(request: NextRequest) {
-  const { token } = await request.json();
-  const user = jwt.decode(token);
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
 
-  if (token) {
-    try {
-      let userName: string | null = null;
-      if (typeof user === 'object' && user !== null && 'name' in user) {
-        userName = (user as { name?: string }).name ?? null;
-      }
-      let userInfo = await getRoles(userName);
-      return NextResponse.json(userInfo);
-
-    } catch(err) {
-      console.error(err)
-      return NextResponse.json([]);
-    }    
-  }
-  NextResponse.redirect(new URL('/not-found', request.url))
+  try {
+    const userOrgId = auth.user.orgId ?? null;
+    let userInfo = await getRoles(userOrgId);
+    return NextResponse.json(userInfo);
+  } catch(err) {
+    console.error(err)
+    return NextResponse.json([]);
+  }    
 }

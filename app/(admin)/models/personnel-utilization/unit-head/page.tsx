@@ -1,8 +1,19 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import { useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
+import HistoryPicker from "@/app/components/models/HistoryPicker";
+import { jwtDecode } from "jwt-decode";
+import { getAccessToken } from "@/app/utils/auth";
+import Link from "next/link";
 
+import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
+
+type JWTPayload = {
+  org?: string;
+};
 
 export default function UnitHeadOverloadingPage() {
   const [actualHours, setActualHours] = useState<number | "">("");
@@ -10,30 +21,24 @@ export default function UnitHeadOverloadingPage() {
   const [extraComplexity, setExtraComplexity] = useState<number | "">("");
   const [optimalHours, setOptimalHours] = useState<number | "">("");
   const [optimalK, setOptimalK] = useState<number | "">("");
+  
   const [result, setResult] = useState<null | {
     CF: number;
     OR: number;
     status: string;
   }>(null);
+  
   const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
-  // fetch K* and H* defaults
-  useEffect(() => {
-    const fetchUtilization = async () => {
-      try {
-        const res = await fetch("/api/personnelUtilization");
-        if (!res.ok) throw new Error("Failed to fetch utilization data");
-        const data = await res.json();
-        if (data?.Kstar) setOptimalK(data.Kstar);
-        if (data?.Hstar) setOptimalHours(data.Hstar);
-      } catch (err) {
-        console.error("Error fetching utilization data:", err);
-      }
-    };
-    fetchUtilization();
-  }, []);
+  // H* and K* are no longer pre-filled from whichever utilization run happened
+  // to be newest. That guessed at which run was meant and was silently wrong
+  // whenever an earlier one was intended, so the operator now picks the run
+  // explicitly from the history — see the button above the two fields.
 
   const calculate = () => {
+    if (actualHours === "" || numSubs === "" || extraComplexity === "" || optimalHours === "" || optimalK === "") return;
+
     const CF = 1 + Number(extraComplexity) / Number(numSubs);
     const OR = (Number(actualHours) * CF) / Number(optimalHours);
 
@@ -43,31 +48,32 @@ export default function UnitHeadOverloadingPage() {
     else status = "Optimal";
 
     setResult({ CF, OR, status });
+    setSaveMsg(null);
   };
 
   const saveResult = async () => {
-    if (!result) return alert("Please calculate before saving");
+    if (!result) return notify.error("Please calculate before saving");
 
     try {
       setSaving(true);
+      setSaveMsg(null);
       const token = getAccessToken();
       if (!token) {
-        alert("No access token found");
+        setSaveMsg("No access token found. Please log in.");
         return;
       }
 
-      const decoded: any = jwtDecode(token);
+      const decoded = jwtDecode<JWTPayload>(token);
       const org = decoded?.org;
       if (!org) {
-        alert("Invalid token: missing org");
+        setSaveMsg("Invalid token: missing org");
         return;
       }
 
-      const res = await fetch("/api/unitHead", {
+      const res = await apiFetch("/api/unitHead", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           org,
@@ -83,103 +89,222 @@ export default function UnitHeadOverloadingPage() {
       });
 
       if (!res.ok) throw new Error("Failed to save record");
-      alert("Record saved successfully!");
+      setSaveMsg("✅ Record saved successfully!");
     } catch (err) {
       console.error(err);
-      alert("Error saving record");
+      setSaveMsg("❌ Error saving record");
     } finally {
       setSaving(false);
     }
   };
 
-  const isFilled =
-    actualHours && numSubs && extraComplexity && optimalHours && optimalK;
-
-  const numberInput = (
-    label: string,
-    value: number | "",
-    setValue: (val: number | "") => void
-  ) => (
-    <label className="block">
-      <div className="text-sm font-medium">{label}</div>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) =>
-          setValue(e.target.value === "" ? "" : Number(e.target.value))
-        }
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2"
-      />
-    </label>
-  );
+  const isFilled = actualHours !== "" && numSubs !== "" && extraComplexity !== "" && optimalHours !== "" && optimalK !== "";
 
   return (
-    <div className="w-full p-8 mx-auto">
-      <a href="/models/personnel-utilization" className="text-pes hover:underline">
-        Back
-      </a>
-
-      <h1 className="text-2xl font-bold mb-4">
-        Model 14 — Unit Head Overloading
-      </h1>
-      <p className="text-gray-600 mb-6">
-        Calculates Overload Ratio (OR) using K* and H* values from personnel utilization.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {numberInput("Actual supervisory hours/week", actualHours, setActualHours)}
-        {numberInput("Number of subordinates", numSubs, setNumSubs)}
-        {numberInput("Total extra complexity weight", extraComplexity, setExtraComplexity)}
-        {numberInput("Optimal supervisory hours (H*)", optimalHours, setOptimalHours)}
-        {numberInput("Optimal K (K*)", optimalK, setOptimalK)}
+    <div className="p-8 w-full mx-auto">
+      <div className="mb-4 flex gap-4">
+        <BackLink href="/models">Back to Models</BackLink>
+      </div>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Model 14 — Unit Head Overloading</h1>
+          <p className="text-body mb-6 max-w-2xl">
+            Calculates Overload Ratio (OR) using K* and H* values from personnel utilization to determine leadership capacity.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/models/personnel-utilization"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Personnel Utilization
+          </Link>
+          <Link
+            href="/models/personnel-utilization/unit-head/history"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
+          </Link>
+        </div>
       </div>
 
-      <div className="flex gap-4">
-        <button
-          onClick={calculate}
-          disabled={!isFilled}
-          className={`px-4 py-2 rounded text-white ${
-            isFilled
-              ? "bg-pes hover:bg-blue-900"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-        >
-          Calculate
-        </button>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* Category 1: Supervisory Parameters */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">Supervisory Parameters</h2>
+              <p className="text-xs text-muted">Current actual supervisory workload</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Actual Supervisory Hours/Week</span>
+                <InfoPopover text="The real number of hours currently spent managing subordinates." />
+              </div>
+              <input
+                type="number"
+                value={actualHours}
+                onChange={(e) => setActualHours(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Number of Subordinates</span>
+                <InfoPopover text="The total headcount directly managed by the unit head." />
+              </div>
+              <input
+                type="number"
+                value={numSubs}
+                onChange={(e) => setNumSubs(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+          </div>
+        </div>
 
-        <button
-          onClick={saveResult}
-          disabled={!result || saving}
-          className={`px-4 py-2 rounded text-white ${
-            !result || saving
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {saving ? "Saving..." : "Save to Database"}
-        </button>
+        {/* Category 2: Complexity & Optimization Constants */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">Constants & Optimization</h2>
+              <p className="text-xs text-muted">Factors influencing complexity and baseline bounds</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Total Extra Complexity Weight</span>
+                <InfoPopover text="Additional weighting based on task difficulty or organizational structure." />
+              </div>
+              <input
+                type="number"
+                value={extraComplexity}
+                onChange={(e) => setExtraComplexity(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+              />
+            </div>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted">
+                H* and K* come from a Personnel Utilization run.
+              </p>
+              <HistoryPicker<{
+                id: number;
+                created_at: string;
+                kstar: number | null;
+                hstar: number | null;
+                lambda: number | null;
+                mu: number | null;
+              }>
+                source="personnel-utilization"
+                label="Fill from utilization history"
+                columns={[
+                  { label: "K*", render: (r) => r.kstar ?? "—" },
+                  {
+                    label: "H*",
+                    render: (r) => (r.hstar == null ? "—" : Number(r.hstar).toFixed(4)),
+                  },
+                  {
+                    label: "\u03bb",
+                    render: (r) => (r.lambda == null ? "—" : Number(r.lambda).toFixed(4)),
+                  },
+                  {
+                    label: "\u03bc",
+                    render: (r) => (r.mu == null ? "—" : Number(r.mu).toFixed(4)),
+                  },
+                ]}
+                onSelect={(run) => {
+                  if (run.hstar != null) setOptimalHours(Number(run.hstar));
+                  if (run.kstar != null) setOptimalK(Number(run.kstar));
+                }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="block w-full min-w-0">
+                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                  <span className="truncate">Optimal Hrs (H*)</span>
+                  <InfoPopover text="Optimal supervisory hours derived from Personnel Utilization (Model 11)." />
+                </div>
+                <input
+                  type="number"
+                  value={optimalHours}
+                  onChange={(e) => setOptimalHours(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                />
+              </div>
+              <div className="block w-full min-w-0">
+                <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                  <span className="truncate">Optimal Personnel (K*)</span>
+                  <InfoPopover text="Optimal head count derived from Personnel Utilization (Model 11)." />
+                </div>
+                <input
+                  type="number"
+                  value={optimalK}
+                  onChange={(e) => setOptimalK(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <button
+        onClick={calculate}
+        disabled={!isFilled}
+        className={`px-4 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
+      >
+        Calculate Ratio
+      </button>
 
       {result && (
-        <div className="bg-white p-4 rounded shadow mt-6">
-          <h2 className="text-lg font-semibold mb-2">Results</h2>
-          <p>
-            <strong>Complexity Factor (CF):</strong> {result.CF.toFixed(3)}
-          </p>
-          <p>
-            <strong>Overload Ratio (OR):</strong> {result.OR.toFixed(3)}
-          </p>
-          <p
-            className={`font-semibold ${
-              result.status === "Optimal"
-                ? "text-green-600"
-                : result.status === "Overloaded"
-                ? "text-red-600"
-                : "text-yellow-600"
-            }`}
-          >
-            Status: {result.status}
-          </p>
+        <div className="mt-8 border-t border-line pt-8">
+          <h2 className="text-xl font-bold text-strong mb-6">Model Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center">
+              <p className="text-sm font-medium text-muted mb-1">Complexity Factor (CF)</p>
+              <p className="text-3xl font-bold text-strong">{result.CF.toFixed(3)}</p>
+            </div>
+
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex flex-col justify-center">
+              <p className="text-sm font-medium text-muted mb-1">Overload Ratio (OR)</p>
+              <p className="text-3xl font-bold text-pes">{result.OR.toFixed(3)}</p>
+            </div>
+
+            <div className={`rounded-xl border p-6 shadow-sm flex flex-col justify-center ${
+                result.status === "Overloaded" 
+                  ? "bg-danger-50 text-danger-700 border-danger-100" 
+                  : result.status === "Underloaded" 
+                    ? "bg-yellow-50 text-yellow-800 border-yellow-200"
+                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              }`}>
+              <p className="text-sm font-medium opacity-80 mb-1">Status</p>
+              <p className="text-3xl font-bold">{result.status}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveResult}
+              disabled={saving}
+              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Result"}
+            </button>
+          </div>
+
+          {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}
         </div>
       )}
     </div>

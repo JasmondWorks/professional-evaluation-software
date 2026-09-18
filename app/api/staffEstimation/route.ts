@@ -1,8 +1,27 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev"; // Make sure prisma client is set up properly
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
+import type { EntitlementKey } from '@/app/lib/billing/entitlements';
+
+/** The three methods are separately sold, so which one a run uses decides
+ *  whether the plan allows it. The page sends Method1 | Method2 | Method3. */
+const METHOD_ENTITLEMENT: Record<string, EntitlementKey> = {
+  Method1: 'staff-number.plain',
+  Method2: 'staff-number.factored',
+  Method3: 'staff-number.work-sampling',
+};
 
 export async function POST(req: Request) {
   try {
+    // Staff determination is for admins, industrial engineers, or anyone
+    // granted define_performance.
+    const auth = authorize(tokenFromRequest(req), {
+      roles: ["industrial-engineer"],
+      anyOf: ["can_define_performance_metrics"],
+    });
+    if (!auth.ok) return auth.response;
     const body = await req.json();
 
     const {
@@ -26,39 +45,39 @@ export async function POST(req: Request) {
       standardManHours
     } = body;
 
-    // Insert using queryRaw
-    const insertQuery = `
-      INSERT INTO "StaffEstimation" (
-        "methodType", "staffNeeded", "basicTime", "relaxAllowance", "loadFactor", 
-        "numTasks", "timePerTask", "availableHoursPerPerson",
-        "observedTime", "estimatedTime", "correctiveFactor", "personsEstimate",
-        "A", "B", "confidenceLimit", "utilizationFactor", "annualManHours", "standardManHours"
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
-      )
-      RETURNING *;
-    `;
+    // A method the plan does not include is refused before anything is
+    // written, and an unrecognised one is refused outright rather than falling
+    // through to the model-level check.
+    const key = METHOD_ENTITLEMENT[String(methodType)];
+    if (!key) {
+      return NextResponse.json({ error: `Unknown method: ${methodType}` }, { status: 400 });
+    }
+    const plan = await requireEntitlement(auth.user, key);
+    if (!plan.ok) return plan.response;
 
-    const result = await prisma.$queryRawUnsafe(insertQuery,
-      methodType,
-      staffNeeded,
-      basicTime,
-      relaxAllowance,
-      loadFactor,
-      numTasks,
-      timePerTask,
-      availableHoursPerPerson,
-      observedTime,
-      estimatedTime,
-      correctiveFactor,
-      personsEstimate,
-      A,
-      B,
-      confidenceLimit,
-      utilizationFactor,
-      annualManHours,
-      standardManHours
-    );
+    const result = await prisma.staffEstimation.create({
+      data: {
+        methodType,
+        staffNeeded,
+        basicTime,
+        relaxAllowance,
+        loadFactor,
+        numTasks,
+        timePerTask,
+        availableHoursPerPerson,
+        observedTime,
+        estimatedTime,
+        correctiveFactor,
+        personsEstimate,
+        A,
+        B,
+        confidenceLimit,
+        utilizationFactor,
+        annualManHours,
+        standardManHours,
+        org_id: auth.user.orgId ?? undefined,
+      },
+    });
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
@@ -68,11 +87,5 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  try {
-    const results = await prisma.$queryRawUnsafe(`SELECT * FROM "StaffEstimation" ORDER BY "createdAt" DESC`);
-    return NextResponse.json({ success: true, data: results });
-  } catch (error) {
-    console.error("Error fetching records:", error);
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
-  }
+  return NextResponse.json({ error: "Method not allowed. Use GET in getStaffEstimation route instead." }, { status: 405 });
 }

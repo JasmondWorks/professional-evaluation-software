@@ -1,6 +1,12 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
+import { tokenFromRequest } from "../../_lib/authGuard";
+import { consoleViewer } from "../_scope";
+import { generateUniquePassword } from "../../_lib/createEmployee";
+import { escapeHtml } from "../../_lib/escapeHtml";
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -12,11 +18,14 @@ const transporter = nodemailer.createTransport({
 });
 
 // Get all pending auditors
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = consoleViewer(tokenFromRequest(req));
+  if (!auth.ok) return auth.response;
+
   try {
-    const auditors = await prisma.$queryRawUnsafe(
-      `SELECT * FROM auditor_responses ORDER BY created_at DESC`
-    );
+    const auditors = await prisma.auditor_responses.findMany({
+      orderBy: { created_at: "desc" },
+    });
     return NextResponse.json(auditors);
   } catch (error: any) {
     console.error("Error fetching auditors:", error);
@@ -26,6 +35,11 @@ export async function GET() {
 
 // Approve or Reject
 export async function POST(req: Request) {
+  // Approving an auditor creates a pesuser and mails out credentials. It ran
+  // unauthenticated, so anyone could mint an auditor account.
+  const auth = consoleViewer(tokenFromRequest(req));
+  if (!auth.ok) return auth.response;
+
   try {
     const { id, action } = await req.json();
 
@@ -34,32 +48,26 @@ export async function POST(req: Request) {
     }
 
     // Fetch auditor details
-    const auditor: any = await prisma.$queryRawUnsafe(
-      `SELECT * FROM auditor_responses WHERE id = $1`,
-      id
-    );
+    const a = await prisma.auditor_responses.findUnique({ where: { id } });
 
-    if (!auditor || auditor.length === 0) {
+    if (!a) {
       return NextResponse.json({ error: "Auditor not found" }, { status: 404 });
     }
 
-    const a = auditor[0];
-
     if (action === "approve") {
       // Check if auditor already exists in pesuser
-      const existingAuditor: any = await prisma.$queryRawUnsafe(
-        `SELECT id, audit_count FROM pesuser WHERE email = $1 AND role = 'auditor'`,
-        a.email
-      );
+      const existingAuditor = await prisma.pesuser.findFirst({
+        where: { email: a.email, role: "auditor" },
+        select: { id: true, audit_count: true },
+      });
 
-      if (existingAuditor.length > 0) {
-        const count = existingAuditor[0].audit_count;
-        if (count >= 3) {
+      if (existingAuditor) {
+        if ((existingAuditor.audit_count ?? 0) >= 3) {
           // Reject automatically
-          await prisma.$queryRawUnsafe(
-            `UPDATE auditor_responses SET status = 'rejected' WHERE id = $1`,
-            id
-          );
+          await prisma.auditor_responses.update({
+            where: { id },
+            data: { status: "rejected" },
+          });
           return NextResponse.json({
             success: false,
             message: "Auditor audit limit reached (3), automatically rejected",
@@ -67,46 +75,63 @@ export async function POST(req: Request) {
         }
 
         // Increment audit_count if under limit
-        await prisma.$queryRawUnsafe(
-          `UPDATE pesuser SET audit_count = audit_count + 1 WHERE id = $1`,
-          existingAuditor[0].id
-        );
-      } else {
+        await prisma.pesuser.update({
+          where: { id: existingAuditor.id },
+          data: { audit_count: { increment: 1 } },
+        });
+      }
+
+      // Random per-account password, same as every other provisioning path
+      // (createEmployee.generateUniquePassword) — a hardcoded literal here
+      // would give every new auditor account the same guessable password
+      // until they changed it, and changing it was never enforced.
+      const tempPassword = generateUniquePassword();
+
+      if (!existingAuditor) {
         // New auditor, insert with audit_count = 1
-        await prisma.$queryRawUnsafe(
-          `INSERT INTO pesuser (name, email, password, gsm, role, address, dob, image, audit_count) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)`,
-          a.name,
-          a.email,
-          "default_password",
-          a.gsm,
-          "auditor",
-          a.address,
-          a.dob,
-          a.image
-        );
+        await prisma.pesuser.create({
+          data: {
+            name: a.name,
+            email: a.email,
+            password: await bcrypt.hash(tempPassword, 10),
+            must_change_password: true,
+            gsm: a.gsm,
+            role: "auditor",
+            address: a.address,
+            dob: a.dob,
+            image: a.image,
+            audit_count: 1,
+          },
+        });
       }
 
       // Update auditor_responses status
-      await prisma.$queryRawUnsafe(
-        `UPDATE auditor_responses SET status = 'approved' WHERE id = $1`,
-        id
-      );
+      await prisma.auditor_responses.update({
+        where: { id },
+        data: { status: "approved" },
+      });
 
-      // Send success email
+      // Send success email. An existing auditor's password is untouched by a
+      // re-approval, so only a brand-new account gets credentials in the mail.
       await transporter.sendMail({
         from: `"Audit System" <${process.env.EMAIL_USER}>`,
         to: a.email,
         subject: "Approval Notification",
         html: `
-          <h2>Congratulations, ${a.name}!</h2>
+          <h2>Congratulations, ${escapeHtml(a.name)}!</h2>
           <p>Your application as an auditor has been approved.</p>
+          ${
+            existingAuditor
+              ? `<p>You can now log in with your existing credentials.</p>`
+              : `
           <p>You can now log in using:</p>
           <ul>
-            <li>Email: ${a.email}</li>
-            <li>Password: default_password</li>
+            <li>Email: ${escapeHtml(a.email)}</li>
+            <li>Password: ${escapeHtml(tempPassword)}</li>
           </ul>
-          <p>Please change your password after first login.</p>
+          <p>You will be asked to choose your own password on first login.</p>
+          `
+          }
         `,
       });
 
@@ -117,10 +142,10 @@ export async function POST(req: Request) {
     }
 
     if (action === "reject") {
-      await prisma.$queryRawUnsafe(
-        `UPDATE auditor_responses SET status = 'rejected' WHERE id = $1`,
-        id
-      );
+      await prisma.auditor_responses.update({
+        where: { id },
+        data: { status: "rejected" },
+      });
       return NextResponse.json({ success: true, message: "Auditor rejected" });
     }
   } catch (error: any) {

@@ -1,36 +1,39 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 // app/api/counterTotals/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
+import { validateData, counterTotalsSchema, formatZodErrors } from '@/app/lib/validation';
 
+// Stores a counter-evaluation total. counter_totals carries no org column, so
+// there is nothing to scope by here — but writing one is still not something an
+// anonymous caller should be able to do.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json()
-    const { section, result, numerator = [], denominator = [] } = body
-
-    if (!section || result === undefined || result === null) {
+    const parsed = validateData(counterTotalsSchema, body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields (section or result)' },
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       )
     }
+    const { section, result, numerator = [], denominator = [] } = parsed.data!
 
-    // Construct properly typed arrays
-    const numArray = `{${numerator.map(Number).join(',')}}`
-    const denArray = `{${denominator.map(Number).join(',')}}`
-
-    // Use Prisma's queryRaw for the database operation
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO counter_totals (
-        section, result, numerator, denominator
-      )
-      VALUES (
-        ${Number(section)},
-        ${Number(result)},
-        ${numArray}::numeric[],
-        ${denArray}::numeric[]
-      )
-      RETURNING *;
-    `
+    const record = await prisma.counter_totals.create({
+      data: {
+        section: Number(section),
+        result: Number(result),
+        numerator: numerator.map(Number),
+        denominator: denominator.map(Number),
+      },
+    })
 
     return NextResponse.json({ success: true, record }, { status: 201 })
   } catch (err: any) {

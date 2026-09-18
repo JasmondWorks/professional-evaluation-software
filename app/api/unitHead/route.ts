@@ -1,12 +1,36 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
+import { validateData, unitHeadSchema, formatZodErrors } from '@/app/lib/validation';
 
+// Stores a unit-head overloading run. `org` came from the body, so the run could
+// be filed against any organization by anyone; it now comes from the token.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  // Unit head overloading is a Premium line in the product plan.
+  const plan = await requireEntitlement(auth.user, 'personnel-utilization.unit-head-overloading');
+  if (!plan.ok) return plan.response;
+
   try {
     const body = await req.json();
 
+    const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
+    const parsed = validateData(unitHeadSchema, body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
+    }
+
     const {
-      org,
       actualHours,
       numSubs,
       extraComplexity,
@@ -17,24 +41,22 @@ export async function POST(req: NextRequest) {
       status,
     } = body;
 
-    if (!org)
+    if (!org || !orgId)
       return NextResponse.json({ error: "Missing org" }, { status: 400 });
 
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO unit_head_overloading 
-      (org, actual_hours, num_subordinates, extra_complexity, optimal_hours, optimal_k, complexity_factor, overload_ratio, status)
-      VALUES (
-        '${org}',
-        ${actualHours},
-        ${numSubs},
-        ${extraComplexity},
-        ${optimalHours},
-        ${optimalK || 0},
-        ${CF},
-        ${OR},
-        '${status}'
-      )
-    `);
+    await prisma.unit_head_overloading.create({
+      data: {
+        org_id: orgId,
+        actual_hours: actualHours,
+        num_subordinates: numSubs,
+        extra_complexity: extraComplexity,
+        optimal_hours: optimalHours,
+        optimal_k: optimalK || 0,
+        complexity_factor: CF,
+        overload_ratio: OR,
+        status,
+      },
+    });
 
     return NextResponse.json({ message: "Record saved successfully" });
   } catch (error) {

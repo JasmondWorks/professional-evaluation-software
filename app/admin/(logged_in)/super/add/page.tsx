@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/app/utils/apiFetch';
 
 export default function AddSuperAdminPage() {
   const router = useRouter()
@@ -8,7 +9,7 @@ export default function AddSuperAdminPage() {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
 
-    await fetch('/api/admin/add-super-admin', {
+    await apiFetch('/api/admin/add-super-admin', {
       method: 'POST',
       body: JSON.stringify({
         name: formData.get('name'),
@@ -22,7 +23,7 @@ export default function AddSuperAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 max-w-md mx-auto">
+    <div className="min-h-screen bg-canvas p-6 max-w-md mx-auto">
       <h1 className="text-2xl font-semibold mb-6">Add New Super Admin</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 bg-white p-6 rounded-xl shadow-sm">

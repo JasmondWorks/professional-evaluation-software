@@ -1,66 +1,75 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { hodCounterScores, staffPerformance } from "@/app/lib/performance/results";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// The org came from jwtDecode, which does not verify the signature.
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { org, name } = body;
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
 
-    let whereClause = "";
-    if (org) {
-      whereClause = `WHERE org = '${org.replace(/'/g, "''")}'`;
-    }
-    if (name) {
-      whereClause += (whereClause ? " AND " : "WHERE ") + `pesuser_name = '${name.replace(/'/g, "''")}'`;
-    }
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+
+  try {
+
+    const body = await req.json();
+    const { name } = body;
+
+    const where = {
+      ...(orgId ? { org_id: orgId } : {}),
+      ...(name ? { pesuser_name: name } : {}),
+    };
+    const appraisalSelect = {
+      pesuser_name: true, dept: true,
+      teaching_quality_evaluation: true, research_quality_evaluation: true,
+      administrative_quality_evaluation: true, community_quality_evaluation: true,
+    } as const;
+    const performanceSelect = {
+      pesuser_name: true, dept: true,
+      competence: true, integrity: true, compatibility: true, use_of_resources: true,
+    } as const;
+    const stressSelect = {
+      pesuser_name: true, dept: true,
+      stress_theme: true, stress_feeling_frequency: true,
+    } as const;
+    const withSource = (rows: any[], source: string) =>
+      rows.map((r) => ({ ...r, source }));
 
     // --- Appraisals (main + counter) ---
-    const appraisals = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'main' AS source
-      FROM appraisal ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             teaching_quality_evaluation, research_quality_evaluation,
-             administrative_quality_evaluation, community_quality_evaluation,
-             'counter' AS source
-      FROM counter_appraisal ${whereClause}
-    `);
+    const [mainAppraisals, counterAppraisals] = await Promise.all([
+      prisma.appraisal.findMany({ where, select: appraisalSelect }),
+      prisma.counter_appraisal.findMany({ where, select: appraisalSelect }),
+    ]);
+    const appraisals = [...withSource(mainAppraisals, "main"), ...withSource(counterAppraisals, "counter")];
 
     // --- Performance (main + counter) ---
-    const performances = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'main' AS source
-      FROM userperformance ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources,
-             'counter' AS source
-      FROM counter_userperformance ${whereClause}
-    `);
+    // From the performance model rather than the old flat tables. `where` is
+    // the org (and department, where the caller scoped it).
+    const [mainPerformances, counterPerformances] = await Promise.all([
+      staffPerformance({ orgId: orgId as string, dept: (where as any).dept ?? null }),
+      hodCounterScores({ orgId: orgId as string, dept: (where as any).dept ?? null }),
+    ]);
+    const performances = [...withSource(mainPerformances, "main"), ...withSource(counterPerformances, "counter")];
 
     // --- Stress (main + counter) ---
-    const stresses = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             stress_theme, stress_feeling_frequency,
-             'main' AS source
-      FROM stress ${whereClause}
-      UNION ALL
-      SELECT pesuser_name, dept,
-             stress_theme, stress_feeling_frequency,
-             'counter' AS source
-      FROM counter_stress ${whereClause}
-    `);
+    const [mainStresses, counterStresses] = await Promise.all([
+      prisma.stress.findMany({ where, select: stressSelect }),
+      prisma.counter_stress.findMany({ where, select: stressSelect }),
+    ]);
+    const stresses = [...withSource(mainStresses, "main"), ...withSource(counterStresses, "counter")];
 
     // --- Leadership scores (only one source) ---
-    const leadership = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT pesuser_name, dept,
-             competence, integrity, compatibility, use_of_resources
-      FROM lead_scores;
-    `);
+    const leadership = await prisma.lead_scores.findMany({
+      select: {
+        pesuser_name: true, dept: true,
+        competence: true, integrity: true, compatibility: true, use_of_resources: true,
+      },
+    });
 
     // --- Helper to group by source ---
     const groupBySource = (rows: any[], type: string) => {

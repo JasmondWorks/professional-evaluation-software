@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 export default function AddAuditorPage() {
   const [email, setEmail] = useState("");
@@ -17,12 +17,14 @@ export default function AddAuditorPage() {
     setStatus("");
 
     try {
-      const response = await fetch("/api/send-email", {
+      const response = await apiFetch("/api/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, link: `${BASE_URL}/auditor/${email}` }),
+        // Send the email + the current site origin; the server signs a token
+        // and builds the invite link so it works on any deployment domain.
+        body: JSON.stringify({ email, origin: window.location.origin }),
       });
 
       if (response.ok) {
@@ -43,7 +45,9 @@ export default function AddAuditorPage() {
 
   return (
     <div className="w-1/2 mx-auto mt-10 p-6 rounded-2xl shadow-md bg-white">
-      <h1 className="text-2xl font-semibold mb-4">Add External Auditor</h1>
+      <BackLink href="/em-database" className="mb-6">Back to Database</BackLink>
+      
+      <h1 className="text-2xl font-semibold mb-6">Add External Auditor</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -62,7 +66,7 @@ export default function AddAuditorPage() {
           type="submit"
           disabled={isLoading}
           className={`w-full py-2 px-4 rounded-lg text-white font-medium transition 
-            ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:bg-blue-700"}`}
+            ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:bg-pes-800"}`}
         >
           {isLoading ? "Sending..." : "Send Invitation"}
         </button>
@@ -71,7 +75,7 @@ export default function AddAuditorPage() {
       {message && (
         <p
           className={`mt-4 text-sm font-medium ${
-            status === "success" ? "text-green-600" : "text-red-600"
+            status === "success" ? "text-green-600" : "text-danger-600"
           }`}
         >
           {message}

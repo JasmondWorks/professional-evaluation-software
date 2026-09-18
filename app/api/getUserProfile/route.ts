@@ -1,41 +1,21 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from "../_lib/authGuard";
 
-type user = {
-  id: number;
-  name: string;
-  email: string;
-  password: string;
-  gsm: string;
-  role: string;
-  address: string;
-  faculty_college: string;
-  dob: string;
-  doa: string;
-  poa: string;
-  doc: string;
-  post: string;
-  dopp: string;
-  level: string;
-  image: string;
-  org: string;
-};
+async function getUser(id: string | null, orgId: string | null) {
+  if (id === null || orgId === null) return null;
 
-async function getUser(id: number | null, name: string | null) {
-  console.log(id, name)
-  const users: user[] = await prisma.$queryRawUnsafe(
-    'SELECT * FROM pesuser WHERE id = $1 AND org = $2',
-    Number(id),
-    name
-  );
+  const u = await prisma.pesuser.findFirst({
+    where: { id, org_id: orgId },
+  });
 
-  await prisma.$disconnect();
-
-  if (!users[0]) return null;
+  if (!u) return null;
 
   // Convert dates or decimals to string/number
-  const u = users[0];
   return {
     ...u,
     dob: u.dob?.toString(),
@@ -47,10 +27,24 @@ async function getUser(id: number | null, name: string | null) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { user, org } = await request.json();
+    const token = request.headers.get("authorization")?.split(" ")[1];
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    let orgId;
+    try {
+      const decoded = verifyToken(token) as any;
+    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      orgId = decoded?.orgId;
+    } catch {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    if (!orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+
+    const { user } = await request.json();
 
 
-    const userInfo = await getUser(user, org);
+    const userInfo = await getUser(user, orgId);
 
     if (!userInfo) {
       return NextResponse.json({ data: ['no data'] });

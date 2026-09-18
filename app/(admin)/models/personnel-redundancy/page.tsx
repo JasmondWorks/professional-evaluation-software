@@ -1,9 +1,14 @@
 "use client";
 
+import { notify } from "@/lib/toast";
 import { useState } from "react";
 import { jwtDecode } from "jwt-decode";
-import { getAccessToken } from '@/app/utils/auth';
+import { getAccessToken } from "@/app/utils/auth";
+import Link from "next/link";
 
+import InfoPopover from "@/app/components/ui/InfoPopover";
+import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 type JWTPayload = {
   org?: string;
@@ -12,8 +17,6 @@ type JWTPayload = {
 };
 
 export default function PersonnelRedundancyPage() {
-  const [open, setOpen] = useState(true);
-
   const [actualStaff, setActualStaff] = useState<number>(0);
   const [optimalStaff, setOptimalStaff] = useState<number>(0);
 
@@ -29,10 +32,11 @@ export default function PersonnelRedundancyPage() {
   } | null>(null);
 
   const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const calculatePR = () => {
     if (actualStaff <= 0 || optimalStaff <= 0) {
-      alert("Both Actual and Optimal Staff Strength must be greater than 0");
+      notify.error("Both Actual and Optimal Staff Strength must be greater than 0");
       return;
     }
 
@@ -42,25 +46,27 @@ export default function PersonnelRedundancyPage() {
 
     if (pr < thresholds.low) {
       rating = "Low Redundancy";
-      color = "bg-green-500 text-white";
+      color = "bg-emerald-50 text-emerald-800 border-emerald-200";
     } else if (pr < thresholds.moderate) {
       rating = "Moderate Redundancy";
-      color = "bg-yellow-400 text-black";
+      color = "bg-yellow-50 text-yellow-800 border-yellow-200";
     } else {
       rating = "High Redundancy";
-      color = "bg-red-500 text-white";
+      color = "bg-danger-50 text-danger-700 border-danger-100";
     }
 
     setResult({ pr, rating, color });
+    setSaveMsg(null);
   };
 
   const saveToDatabase = async () => {
     try {
       setSaving(true);
+      setSaveMsg(null);
 
       const token = getAccessToken();
       if (!token) {
-        alert("User not authenticated");
+        setSaveMsg("User not authenticated. Please log in.");
         return;
       }
 
@@ -68,11 +74,11 @@ export default function PersonnelRedundancyPage() {
       const org = decoded.org;
 
       if (!org) {
-        alert("Organization not found in token");
+        setSaveMsg("Organization not found in token");
         return;
       }
 
-      const response = await fetch("/api/personnelRedundancy", {
+      const response = await apiFetch("/api/personnelRedundancy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,116 +97,199 @@ export default function PersonnelRedundancyPage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Redundancy data saved successfully!");
-        setResult(null);
-        setActualStaff(0);
-        setOptimalStaff(0);
+        setSaveMsg("✅ Redundancy data saved successfully!");
       } else {
-        alert("Failed to save data: " + (data.error || "Unknown error"));
+        setSaveMsg("❌ Failed to save data: " + (data.error || "Unknown error"));
       }
     } catch (error) {
       console.error(error);
-      alert("An error occurred while saving data.");
+      setSaveMsg("❌ An error occurred while saving data.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="w-full p-12">
-      <div className="border rounded">
-        <button
-          onClick={() => setOpen(!open)}
-          className="w-full text-left px-4 py-3 bg-gray-100 font-semibold"
-        >
-          25. Determining Real Percentage Redundancy (PR%)
-        </button>
+    <div className="p-8 w-full mx-auto">
+      <div className="mb-4">
+        <BackLink href="/models">Back to Models</BackLink>
+      </div>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Model 25 — Personnel Redundancy</h1>
+          <p className="text-body mb-6 max-w-2xl">
+            Determine the Real Percentage Redundancy (PR%) of personnel within a department or organization.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href="/downloadables/personnel-utilization-table.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-pes text-white px-4 py-2 rounded-md hover:bg-pes-800 font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            Utilization Table
+          </Link>
+          <Link
+            href="/models/personnel-redundancy/history"
+            className="bg-white border border-line shadow-sm text-body px-4 py-2 rounded-md hover:bg-canvas font-medium text-sm transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            View History
+          </Link>
+        </div>
+      </div>
 
-        {open && (
-          <div className="p-4 space-y-6">
-            <a
-              href="/downloadables/personnel-utilization-table.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-pes text-white rounded hover:opacity-90"
-            >
-              View Personnel Utilization Table
-            </a>
-
-            <label className="block">
-              <span className="block mb-1 font-medium">Actual Staff Strength (A)</span>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        {/* Category 1: Staff Configuration */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-strong">Staff Configuration</h2>
+              <p className="text-xs text-muted">Current and theoretical staff counts</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Actual Staff Strength (A)</span>
+                <InfoPopover text="The current number of employees actively working." />
+              </div>
               <input
                 type="number"
                 value={actualStaff}
                 onChange={(e) => setActualStaff(Number(e.target.value))}
-                className="w-full border rounded p-2"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
-            </label>
-
-            <label className="block">
-              <span className="block mb-1 font-medium">Optimal Staff Strength (O)</span>
+            </div>
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Optimal Staff Strength (O)</span>
+                <InfoPopover text="The theoretically perfect number of employees for the workload." />
+              </div>
               <input
                 type="number"
                 value={optimalStaff}
                 onChange={(e) => setOptimalStaff(Number(e.target.value))}
-                className="w-full border rounded p-2"
+                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
-            </label>
+            </div>
+          </div>
+        </div>
 
+        {/* Category 2: Threshold Bounds */}
+        <div className="bg-white rounded-xl border border-line p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-line">
+            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            </div>
             <div>
-              <h3 className="font-semibold mb-2">Redundancy Thresholds</h3>
-              <label className="block mb-3">
-                <span className="block text-sm font-medium">Low &lt;</span>
+              <h2 className="text-lg font-bold text-strong">Redundancy Thresholds</h2>
+              <p className="text-xs text-muted">Boundaries for classifying redundancy severity</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Low Redundancy (&lt; %)</span>
+                <InfoPopover text="Percentage limit for considering redundancy as low." />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  value={thresholds.low}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(e) => setThresholds({ ...thresholds, low: Number(e.target.value) })}
+                  className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
+                />
                 <input
                   type="number"
                   value={thresholds.low}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, low: Number(e.target.value) })
-                  }
-                  className="w-full border rounded p-2"
+                  onChange={(e) => setThresholds({ ...thresholds, low: Number(e.target.value) })}
+                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
                 />
-              </label>
-              <label className="block mb-3">
-                <span className="block text-sm font-medium">Moderate &lt;</span>
+              </div>
+            </div>
+            <div className="block w-full min-w-0">
+              <div className="flex items-center text-sm font-semibold text-body mb-1.5">
+                <span className="truncate">Moderate Redundancy (&lt; %)</span>
+                <InfoPopover text="Percentage limit for considering redundancy as moderate." />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  value={thresholds.moderate}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
+                  className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
+                />
                 <input
                   type="number"
                   value={thresholds.moderate}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, moderate: Number(e.target.value) })
-                  }
-                  className="w-full border rounded p-2"
+                  onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
+                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
                 />
-              </label>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={calculatePR}
-                className="px-6 py-2 bg-pes text-white rounded hover:opacity-90"
-              >
-                Calculate PR%
-              </button>
-
-              <button
-                onClick={saveToDatabase}
-                disabled={!result || saving}
-                className={`px-6 py-2 rounded ${result
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-gray-400 text-gray-100 cursor-not-allowed"
-                  }`}
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-
-            {result && (
-              <div className={`p-4 rounded mt-4 font-semibold ${result.color}`}>
-                PR%: {result.pr.toFixed(2)}% — {result.rating}
               </div>
-            )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
+
+      <button
+        onClick={calculatePR}
+        disabled={actualStaff <= 0 || optimalStaff <= 0}
+        className={`px-4 py-2 rounded text-white ${actualStaff > 0 && optimalStaff > 0 ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
+      >
+        Calculate Redundancy
+      </button>
+
+      {result && (
+        <div className="mt-8 border-t border-line pt-8">
+          <h2 className="text-xl font-bold text-strong mb-6">Model Results</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* PR% Card */}
+            <div className="bg-white rounded-xl border border-line p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted mb-1">Percentage Redundancy (PR%)</p>
+                <p className="text-4xl font-bold text-pes">{result.pr.toFixed(2)}%</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-pes-50 flex items-center justify-center text-pes-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+              </div>
+            </div>
+
+            {/* Rating Card */}
+            <div className={`rounded-xl border p-6 shadow-sm flex items-center justify-between ${result.color}`}>
+              <div>
+                <p className="text-sm font-medium opacity-80 mb-1">Classification Rating</p>
+                <p className="text-3xl font-bold">{result.rating}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={saveToDatabase}
+              disabled={saving}
+              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Result"}
+            </button>
+          </div>
+
+          {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,40 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
-import { jwtDecode } from "jwt-decode";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { effectivePhase } from "../_lib/stressCycle";
+import { notifyDeptHod } from "../_lib/notify";
 
-export async function POST(req: NextRequest) {
+// Saves a staff member's Form 6/7 (theme & feeling) submission. One submission
+// per staff per cycle, only while the feeling phase is open.
+export async function POST(req: Request) {
+  const auth = authorize(tokenFromRequest(req), {
+    roles: ["super-admin", "admin", "lecturer", "industrial-engineer", "hod", "employee-w", "auditor"],
+  });
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org;
+  const orgId = auth.user.orgId ?? null;
+  const pesuser_name = auth.user.name || "Anonymous";
+  const dept = auth.user.dept || "General";
+
   try {
-    const body = await req.json();
-    const { form6, form7 } = body;
+    const { form6, form7 } = await req.json();
 
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    const decoded: any = token ? jwtDecode(token) : {};
-    const pesuser_name = decoded?.name || "Anonymous";
-    const org = decoded?.org || "Unknown Org";
-    const dept = decoded?.dept || "General";
-
-    // Combine both forms into one JSON summary
-    const stress_theme = JSON.stringify({
-      stressFeelings: form6,
-      stressCategories: form7,
+    // The feeling phase must be open.
+    const cycle = await prisma.stressCycle.findFirst({
+      where: { org_id: orgId ?? undefined },
+      orderBy: [{ created_at: "desc" }, { id: "desc" }],
     });
+    if (!cycle || effectivePhase(cycle) !== "feeling_open") {
+      return NextResponse.json(
+        { success: false, message: "The theme & feeling form is not currently open for submissions." },
+        { status: 409 },
+      );
+    }
 
-    // You can also calculate an average feeling frequency or theme keyword
-    const stress_feeling_frequency =
-      form6?.frequency || form7?.frequency || "N/A";
+    const assessment_data = {
+      stressThemes: form6 ?? null,
+      stressFeelings: form7 ?? null,
+      frequency: form6?.frequency ?? form7?.frequency ?? null,
+    };
 
-    // Save record using queryRaw
-    await prisma.$queryRaw`
-      INSERT INTO stress (pesuser_name, org, stress_theme, stress_feeling_frequency, dept)
-      VALUES (${pesuser_name}, ${org}, ${stress_theme}, ${stress_feeling_frequency}, ${dept})
-    `;
+    // If a previous submission was REJECTED (sent back), let the staff member
+    // re-submit by overwriting that same row (clearing the rejection). Only an
+    // active (non-rejected) submission blocks re-submission.
+    const rejectedRow = await prisma.stress.findFirst({
+      where: { pesuser_name, org_id: orgId ?? undefined, cycle_id: cycle.id, rejected: true },
+      select: { id: true },
+    });
+    const activeCount = await prisma.stress.count({
+      where: { pesuser_name, org_id: orgId ?? undefined, cycle_id: cycle.id, rejected: false },
+    });
+    if (activeCount > 0) {
+      return NextResponse.json(
+        { success: false, message: "You have already submitted this form for the current cycle." },
+        { status: 409 },
+      );
+    }
+
+    if (rejectedRow) {
+      await prisma.stress.update({
+        where: { id: rejectedRow.id },
+        data: {
+          dept,
+          assessment_data,
+          rejected: false,
+          rejection_reason: null,
+          rejected_by: null,
+          rejected_at: null,
+        },
+      });
+    } else {
+      await prisma.stress.create({
+        data: { pesuser_name, org_id: orgId, dept, cycle_id: cycle.id, assessment_data },
+      });
+    }
+
+    // Nudge the department's HOD that a submission awaits approval.
+    if (org && dept) {
+      await notifyDeptHod(
+        prisma,
+        org,
+        dept,
+        "Stress submission to approve",
+        `${pesuser_name} submitted their theme & feeling form. It's awaiting your approval.`,
+      );
+    }
 
     return NextResponse.json({ success: true, message: "Stress data saved." });
   } catch (err: any) {
     console.error("Error saving stress data:", err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

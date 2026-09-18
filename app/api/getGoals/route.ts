@@ -1,74 +1,64 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import { authorize, tokenFromRequest, verifyToken } from '../_lib/authGuard'
 
-type Goals = {
-  id: number
-  name: string
-  description: string
-  status: string
-  day_started: string
-  due_date: string
-  user_id: string
-}
-
-async function getData( user: string | null ) {
-  if (!user) return []
-  console.log(user)
-  const goals: Goals[] = await prisma.$queryRawUnsafe('SELECT * FROM goals WHERE user_id = $1', user.toString())
-  
-  await prisma.$disconnect()
-  return goals
+// Goals are set by the organization's admin and apply to the WHOLE org, so every
+// user in that org must see them — not just the admin who created them. Goals are
+// stored against the creator's user_id (no org column), so we resolve the org's
+// member ids and return goals created by any of them. Falls back to the caller's
+// own goals only when the org can't be determined.
+async function getData(orgId: string | null, fallbackUserId: string | null) {
+  console.log("getGoals -> orgId:", orgId, "fallbackUserId:", fallbackUserId);
+  if (orgId) {
+    const orgUsers = await prisma.pesuser.findMany({
+      where: { org_id: orgId },
+      select: { id: true },
+    })
+    const ids = orgUsers.map((u) => String(u.id))
+    console.log("getGoals -> ids length:", ids.length, "first few:", ids.slice(0,5));
+    if (ids.length) {
+      const goals = await prisma.goals.findMany({ where: { user_id: { in: ids } } });
+      console.log("getGoals -> found goals for org:", goals.length);
+      return goals;
+    }
+  }
+  if (fallbackUserId) {
+    const goals = await prisma.goals.findMany({ where: { user_id: fallbackUserId } });
+    console.log("getGoals -> found goals for fallback user:", goals.length);
+    return goals;
+  }
+  return []
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    let payload = body;
+    const user = verifyToken(tokenFromRequest(request));
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
-    // Check if token wrapper exists
-    if (body && typeof body === 'object' && 'token' in body && typeof body.token === 'string') {
-      const decoded = jwt.decode(body.token);
-      if (decoded && typeof decoded === 'object') {
-        payload = decoded;
-      }
-    }
-
     let userIdentifier: string | null = null;
-    if (payload && typeof payload === 'object') {
-      // Direct properties
-      if ('userID' in payload && payload.userID !== undefined && payload.userID !== null) {
-        userIdentifier = String(payload.userID);
-      } else if ('id' in payload && payload.id !== undefined && payload.id !== null) {
-        userIdentifier = String(payload.id);
-      } else if ('name' in payload && payload.name !== undefined && payload.name !== null) {
-        userIdentifier = String(payload.name);
-      } else if ('email' in payload && payload.email !== undefined && payload.email !== null) {
-        userIdentifier = String(payload.email);
-      }
-
-      // Check sub claim
-      if (!userIdentifier && 'sub' in payload) {
-        const sub = payload.sub;
-        if (typeof sub === 'object' && sub !== null) {
-          if ('user_id' in sub && (sub as any).user_id !== undefined && (sub as any).user_id !== null) {
-            userIdentifier = String((sub as any).user_id);
-          } else if ('name' in sub && (sub as any).name !== undefined && (sub as any).name !== null) {
-            userIdentifier = String((sub as any).name);
-          } else if ('email' in sub && (sub as any).email !== undefined && (sub as any).email !== null) {
-            userIdentifier = String((sub as any).email);
-          }
-        } else if (typeof sub === 'string') {
-          userIdentifier = sub;
-        }
+    if (user.userID) userIdentifier = String(user.userID);
+    else if (user.id) userIdentifier = String(user.id);
+    else if (user.name) userIdentifier = String(user.name);
+    else if (user.email) userIdentifier = String(user.email);
+    else if (user.sub) {
+      if (typeof user.sub === 'string') userIdentifier = user.sub;
+      else if (typeof user.sub === 'object') {
+        const sub = user.sub as any;
+        userIdentifier = String(sub.user_id || sub.name || sub.email || '');
       }
     }
 
-    if (!userIdentifier) {
-      console.warn("Could not find user identifier in token:", body);
+    const orgId = user.orgId ?? null;
+
+    if (!orgId && !userIdentifier) {
+      console.warn("Could not find org or user identifier in token");
     }
 
-    const goals = await getData(userIdentifier);
+    const goals = await getData(orgId, userIdentifier);
     return NextResponse.json(goals);
   } catch(err) {
     console.error(err);

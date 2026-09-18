@@ -6,41 +6,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const filesToFix = [
-  'app/(admin)/dashboard/content.tsx',
-  'app/(admin)/data-entry/performance/page.tsx',
-  'app/(admin)/data-entry/employee/page.tsx',
-  'app/(admin)/data-entry/auditor/page.tsx',
-  'app/(admin)/data-entry/appraisal/page.tsx',
-  'app/(admin)/em-database/create-role/page.tsx',
-  'app/(admin)/em-database/[user]/page.tsx',
-  'app/(admin)/goals/goals.tsx',
-  'app/(admin)/maintenance/page.tsx',
-  'app/(admin)/maintenance/inventory/page.tsx',
-  'app/(admin)/models/page.tsx',
-  'app/(admin)/models/redundancy-index/page.tsx',
-  'app/(admin)/models/utility-index/page.tsx',
-  'app/(admin)/models/personnel-utilization/page.tsx',
-  'app/(admin)/models/personnel-utilization/unit-head/page.tsx',
-  'app/(admin)/models/personnel-redundancy/page.tsx',
-  'app/(admin)/models/stress/page.tsx',
-  'app/(admin)/models/productivity-index/page.tsx',
-  'app/(admin)/models/appraisal/page.tsx',
-  'app/(admin)/models/staff-number/util/sharedPost.ts',
-  'app/(admin)/performance/page.tsx',
-  'app/(admin)/pricing/page.tsx',
-  'app/(admin)/maintenance-payment/page.tsx',
-  'app/components/Profilechunk.tsx',
-  'app/components/em-database routes/Roles.tsx',
-  'app/components/em-database routes/Employee.tsx',
-  'app/components/modals/notification.tsx',
-  'app/components/subscription/paypal.tsx',
-  'app/admin/page.tsx',
-  'app/admin/login/page.tsx',
-  'app/admin/(logged_in)/[org]/page.tsx',
-  'app/admin/(logged_in)/[org]/[user]/page.tsx',
-  'app/prices/page.tsx',
-];
+function getAllFiles(dirPath, arrayOfFiles) {
+  const files = fs.readdirSync(dirPath);
+
+  arrayOfFiles = arrayOfFiles || [];
+
+  files.forEach(function(file) {
+    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
+    } else {
+      if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+        arrayOfFiles.push(path.join(dirPath, "/", file));
+      }
+    }
+  });
+
+  return arrayOfFiles;
+}
+
+const filesToFix = getAllFiles('app');
 
 function fixFile(filePath) {
   const fullPath = path.join(process.cwd(), filePath);

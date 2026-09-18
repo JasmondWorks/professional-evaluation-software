@@ -1,11 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "../prisma.dev"; // adjust path as needed
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
 
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireEntitlement } from '../_lib/planGuard';
+import { validateData, personnelRedundancySchema, formatZodErrors } from '@/app/lib/validation'; // adjust path as needed
+
+// A personnel-redundancy run. The org it was filed under came from the body, so anyone
+// could write a run into anyone's history — and the history is not just a log:
+// the future-requirement prediction fits a line through it.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'redundancy.real-percentage');
+  if (!plan.ok) return plan.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+
   try {
     const body = await req.json();
+    const parsed = validateData(personnelRedundancySchema, body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
+    }
+
     const {
-      org,
       actual_staff,
       optimal_staff,
       low_threshold,
@@ -28,13 +53,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const query = `
-      INSERT INTO personnel_redundancy 
-      (org, actual_staff, optimal_staff, low_threshold, moderate_threshold, pr_value, rating)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-
-    await prisma.$queryRawUnsafe(query, org, actual_staff, optimal_staff, low_threshold, moderate_threshold, pr_value, rating);
+    await prisma.personnel_redundancy.create({
+      data: {
+        org_id: orgId,
+        actual_staff: Number(actual_staff),
+        optimal_staff: Number(optimal_staff),
+        low_threshold: Number(low_threshold),
+        moderate_threshold: Number(moderate_threshold),
+        pr_value,
+        rating,
+      },
+    });
 
     return NextResponse.json({ success: true, message: "Record saved successfully" });
   } catch (err: any) {

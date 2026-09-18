@@ -1,68 +1,56 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-import jwt from 'jsonwebtoken'
+import type { Prisma } from '@prisma/client'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
-type user = {
-  id:number
-  name: string
-  email: string 
-  password: string
-  gsm: string
-  role: string
-  address: string
-  faculty_college: string
-  dob: string
-  doa: string
-  poa : string
-  doc : string
-  post : string
-  dopp: string
-  level: string
-  image : string
-  org : string
-}
-
-async function getUser(userNameOrEmail: string | null, userId: number | null) {
+async function getUser(userNameOrEmail: string | null, userId: string | null) {
   if (!userNameOrEmail && userId === null) {
     return null
   }
 
-  let query = 'SELECT * FROM pesuser WHERE 1=0'
-  const params: any[] = []
+  const or: Prisma.pesuserWhereInput[] = []
 
   if (userNameOrEmail) {
-    params.push(userNameOrEmail)
-    query += ` OR name = $${params.length} OR email = $${params.length}`
+    or.push({ name: userNameOrEmail }, { email: userNameOrEmail })
   }
 
-  if (userId !== null && !isNaN(userId)) {
-    params.push(userId)
-    query += ` OR id = $${params.length}`
+  if (userId !== null) {
+    or.push({ id: userId })
   }
 
   try {
-    const users: user[] = await prisma.$queryRawUnsafe(query, ...params)
-    await prisma.$disconnect()
-    return users[0] || null
+    // Never select `password`. This row is returned straight to the browser, and
+    // the navbar and sidebar now request it on every page, so the hash would
+    // otherwise be sent over the wire constantly.
+    return await prisma.pesuser.findFirst({
+      where: { OR: or },
+      select: {
+        id: true, name: true, email: true, gsm: true, role: true,
+        display_role: true, address: true, faculty_college: true,
+        dob: true, doa: true, poa: true, doc: true, post: true, dopp: true,
+        level: true, image: true, org_id: true, dept: true, tier: true,
+        category: true, plan: true,
+      },
+    })
   } catch (err) {
     console.error('Error fetching user in getUser:', err)
-    await prisma.$disconnect()
     return null
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
-    if (!token) {
-      return NextResponse.json({ data: ['no data'] })
-    }
+    const auth = authorize(tokenFromRequest(request), {});
+    if (!auth.ok) return auth.response;
 
-    const decoded = jwt.decode(token);
-    console.log('Decoded token payload:', decoded);
+    const decoded = auth.user;
 
     let identifier: string | null = null;
-    let userId: number | null = null;
+    let userId: string | null = null;
 
     if (decoded && typeof decoded === 'object') {
       // Direct fields
@@ -72,10 +60,10 @@ export async function POST(request: NextRequest) {
         identifier = decoded.email;
       }
 
-      if ('userID' in decoded && (typeof decoded.userID === 'number' || typeof decoded.userID === 'string')) {
-        userId = Number(decoded.userID);
-      } else if ('id' in decoded && (typeof decoded.id === 'number' || typeof decoded.id === 'string')) {
-        userId = Number(decoded.id);
+      if ('userID' in decoded && typeof decoded.userID === 'string') {
+        userId = decoded.userID;
+      } else if ('id' in decoded && typeof decoded.id === 'string') {
+        userId = decoded.id;
       }
 
       // Check nested "sub" claim
@@ -86,14 +74,9 @@ export async function POST(request: NextRequest) {
             identifier = (sub as any).name;
           } else if ('email' in sub && typeof (sub as any).email === 'string') {
             identifier = (sub as any).email;
-          } else if ('user_id' in sub && (typeof (sub as any).user_id === 'number' || typeof (sub as any).user_id === 'string')) {
-            const subUserId = Number((sub as any).user_id);
-            if (!isNaN(subUserId)) {
-              userId = subUserId;
-            } else if (typeof (sub as any).user_id === 'string') {
-              // If it's a UUID string, we can try matching it as a general identifier
-              identifier = (sub as any).user_id;
-            }
+          } else if ('user_id' in sub && typeof (sub as any).user_id === 'string') {
+            // A UUID string; we can try matching it as a general identifier.
+            userId = (sub as any).user_id;
           }
         } else if (typeof sub === 'string') {
           identifier = sub;
@@ -102,7 +85,6 @@ export async function POST(request: NextRequest) {
     }
 
     const userInfo = await getUser(identifier, userId)
-    console.log('userInfo:', userInfo)
 
     if (!userInfo) {
       return NextResponse.json(null)

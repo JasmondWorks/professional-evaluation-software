@@ -1,35 +1,45 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../prisma.dev";
+import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { orgOfStudy, orgOfPosition, notYours } from "../_scope";
+import { validateData, workSamplingPositionSchema, formatZodErrors } from "@/app/lib/validation";
+import { requireEntitlement } from '../../_lib/planGuard';
 
 // POST — add a position to a study
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { studyId, name, department, performanceAllowance } = body;
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
 
-    if (!studyId || !name) {
+  try {
+    const parsed = validateData(workSamplingPositionSchema, await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "studyId and name are required" },
+        { success: false, error: "Validation failed", details: formatZodErrors(parsed.errors!) },
         { status: 400 }
       );
     }
+    const { studyId, name, department, performanceAllowance } = parsed.data!;
 
-    const query = `
-      INSERT INTO "WorkSamplingPosition" ("studyId", name, department, "performanceAllowance")
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
+    // The study id arrives from the browser; it has to be the caller's own.
+    const owner = await orgOfStudy(studyId);
+    if (!owner || owner !== auth.user.orgId) return notYours();
 
-    const result = await prisma.$queryRawUnsafe(
-      query,
-      Number(studyId),
-      name,
-      department ?? null,
-      performanceAllowance ?? null
-    );
+    const result = await prisma.workSamplingPosition.create({
+      data: {
+        studyId: studyId,
+        name: name,
+        department: department ?? null,
+        performanceAllowance: performanceAllowance ?? null,
+      }
+    });
 
-    const rows = result as any[];
-    return NextResponse.json({ success: true, data: rows[0] });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Error saving position:", error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
@@ -38,15 +48,29 @@ export async function POST(req: NextRequest) {
 
 // DELETE — remove a position (and cascades its observations)
 export async function DELETE(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+  const plan = await requireEntitlement(auth.user, 'staff-number.work-sampling');
+  if (!plan.ok) return plan.response;
+
   try {
     const { id } = await req.json();
     if (!id) {
       return NextResponse.json({ success: false, error: "id is required" }, { status: 400 });
     }
-    await prisma.$queryRawUnsafe(
-      `DELETE FROM "WorkSamplingPosition" WHERE id = $1`,
-      Number(id)
-    );
+
+    const owner = await orgOfPosition(id);
+    if (!owner || owner !== auth.user.orgId) return notYours();
+    
+    // Explicitly delete observations first to be safe, then delete the position
+    await prisma.workSamplingObservation.deleteMany({
+      where: { positionId: id }
+    });
+    
+    await prisma.workSamplingPosition.delete({
+      where: { id: id }
+    });
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting position:", error);

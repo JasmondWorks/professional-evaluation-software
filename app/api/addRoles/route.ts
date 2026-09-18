@@ -1,74 +1,87 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 import prisma from '../prisma.dev'
-
+import { PERMISSION_KEYS, resolveBaseRole, PermissionKey } from '@/app/components/utils/roles'
+import { validateData, createRoleSchema, formatZodErrors } from '@/app/lib/validation'
+import { authorize, tokenFromRequest } from '../_lib/authGuard'
 
 type reqInfo = {
     role_name: string
     description: string
     org: string
-    manage_user: string
-    access_em: string
-    ae_all: string
-    ae_sub: string
-    ae_sel: string
-    define_performance: string
-    dp_all: string
-    dp_sub: string
-    dp_sel: string
-    access_hierachy: string
-    manage_review: string
-    mr_all: string
-    mr_sub: string
-    mr_sel: string
-}
-
+    orgId: string
+    base_role: string
+} & Partial<Record<PermissionKey, boolean>>
 
 async function addUser(info: reqInfo) {
-    const { 
-        role_name,
-        description,
-        org,
-        manage_user, 
-        access_em, 
-        ae_all, 
-        ae_sub, 
-        ae_sel, 
-        define_performance, 
-        dp_all, 
-        dp_sub, 
-        dp_sel, 
-        access_hierachy, 
-        manage_review, 
-        mr_all, 
-        mr_sub, 
-        mr_sel } = info
-     
+    const { role_name, org, orgId, base_role } = info
+
+    // Which system preset this custom role behaves as (defaults to baseline).
+    const baseRole = resolveBaseRole(base_role)
+
+    // Copy the granted capabilities (booleans) straight from the body.
+    const permissionData = Object.fromEntries(
+        PERMISSION_KEYS.map((k) => [k, Boolean(info[k])]),
+    )
+
     try {
-        await prisma.$queryRaw`
-            INSERT INTO roles (name, assigned, org)
-            VALUES (${role_name}, ${ 1 }, ${org});
-        `
+        await prisma.roles.create({
+            data: { name: role_name, assigned: 1, org_id: orgId, base_role: baseRole },
+        })
 
-        await prisma.$queryRaw`
-            INSERT INTO permission (manage_user, access_em, ae_all, ae_sub, ae_sel, define_performance, dp_all, dp_sub, dp_sel, access_hierachy, manage_review, mr_all, mr_sub, mr_sel, user_id)
-            VALUES (${manage_user}, ${access_em}, ${ ae_all }, ${ae_sub}, ${ae_sel}, ${define_performance}, ${dp_all}, ${ dp_sub }, ${ dp_sel }, ${access_hierachy}, ${ manage_review }, ${mr_all}, ${mr_sub}, ${mr_sel}, ${org});
-        `
+        // Store this role's permission TEMPLATE, namespaced by role name so it
+        // can be looked up later (e.g. to pre-fill Add-Employee).
+        await prisma.permission.create({
+            data: {
+                ...permissionData,
+                user_id: `role:${orgId}:${role_name}`,
+                org_id: orgId,
+            },
+        })
 
-        await prisma.$disconnect()
         return `success`
     } catch(error) {
         return error
     }
 }
 
+// Creates a custom role, with its permission template, for the org named in the
+// body — unauthenticated, so anyone could mint a role carrying any capability
+// into anyone's organization. Both the permission to do it and the org it lands
+// in now come from the token.
 export async function POST(req: Request) {
-  const reqInfo = await req.json()
-  
+  const auth = authorize(tokenFromRequest(req), {
+    anyOf: ['can_manage_user_roles'],
+  })
+  if (!auth.ok) return auth.response
+
+  const body = await req.json()
+
+  const validation = validateData(createRoleSchema, body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { message: 'Validation failed', details: formatZodErrors(validation.errors!) },
+      { status: 400 }
+    )
+  }
+
+  // The org is not the caller's to choose.
+  const reqInfo = { ...(body as reqInfo), org: String(auth.user.org ?? ''), orgId: auth.user.orgId ?? undefined as any };
+  if (!reqInfo.org || !reqInfo.orgId) {
+    return NextResponse.json(
+      { message: 'This account is not attached to an organization' },
+      { status: 403 },
+    )
+  }
+
    try {
       let data = await addUser(reqInfo)
       console.log(data);
       if (data == 'success') {
-        return NextResponse.json({ message: 'added employee successfully!', status: 200 })      
+        return NextResponse.json({ message: 'Role created successfully!', status: 200 })
       } else {
         return NextResponse.json({ message: 'There was a problem', status: 500})
       }

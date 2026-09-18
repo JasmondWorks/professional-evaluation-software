@@ -3,10 +3,20 @@
 import { useState, useEffect, ReactElement } from "react";
 import { useMultistepForm } from "./useMultistep";
 import { jwtDecode } from "jwt-decode";
+import { notify } from "@/lib/toast";
 
 import Formone from "./multistep-form/form_one";
 import Formtwo from "./multistep-form/form_two";
 import Formthree from "./multistep-form/form_three";
+import { getAccessToken } from '@/app/utils/auth';
+import { apiFetch } from '@/app/utils/apiFetch';
+
+import Button from "@/app/components/ui/Button";
+import PageHeader from "@/app/components/ui/PageHeader";
+import { Progress } from "@/app/components/ui/progress";
+import { Alert } from "@/app/components/ui/alert";
+import { Modal } from "@/app/components/ui/modal";
+import { BackLink } from '@/app/components/ui';
 
 export default function MainForm() {
   const [formdata, setFormdata] = useState({ org: "" });
@@ -23,7 +33,7 @@ export default function MainForm() {
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
     if (!token) return;
 
     try {
@@ -75,10 +85,6 @@ export default function MainForm() {
     next,
   } = useMultistepForm(steps);
 
-  useEffect(() => {
-    setStepValid(false);
-  }, [currentStepIndex]);
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -87,9 +93,12 @@ export default function MainForm() {
     setAdding(true);
 
     try {
-      const res = await fetch("/api/addEmployee", {
+      const res = await apiFetch("/api/addEmployee", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAccessToken()}`,
+        },
         body: JSON.stringify({
           ...formdata,
           credentialData: Object.values(credentialData),
@@ -99,6 +108,7 @@ export default function MainForm() {
       const data = await res.json();
 
       if (data.status === 200) {
+        notify.success("Employee added and credentials emailed.");
         setIsSuccessful(true);
         setTimeout(() => {
           window.location.href = "/em-database";
@@ -110,13 +120,13 @@ export default function MainForm() {
         setFailedName(data.name);
         setAdding(false);
       } else {
-        alert(`error: ${data.message}`);
+        notify.error(data.message || "Could not add employee.");
         setAdding(false);
       }
     } catch (err) {
       console.error(err);
       setAdding(false);
-      alert("Something went wrong");
+      notify.error("Something went wrong. Please try again.");
     }
   }
 
@@ -125,134 +135,80 @@ export default function MainForm() {
   async function handleResendCredentials() {
     setResending(true);
     try {
-      const res = await fetch('/api/resendCredentials', {
+      const res = await apiFetch('/api/resendCredentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: failedEmail }),
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`Credentials resent to ${failedEmail} ✅`);
+        notify.success(`Credentials resent to ${failedEmail}`);
         window.location.href = '/em-database';
       } else {
-        alert(`Failed to resend: ${data.message}`);
+        notify.error(`Failed to resend: ${data.message}`);
       }
     } catch (err) {
-      alert('Error resending credentials');
+      notify.error('Error resending credentials');
     } finally {
       setResending(false);
     }
   }
 
+  const totalSteps = stepList.length;
+  const pct = ((currentStepIndex + 1) / totalSteps) * 100;
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col bg-white m-4">
-      {isSuccessful && (
-        <div className="bg-white border rounded-lg border-pes flex justify-center align-center shadow-md flex-col p-6 absolute left-1/2 w-fit m-auto">
-          <p className="font-bold text-xl text-pes mb-3">
-            Employee Added successfully
-          </p>
-          <p>redirecting...</p>
-        </div>
-      )}
+    <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-6">
+      <BackLink href="/em-database" className="w-fit mb-4">Back to database</BackLink>
+
+      <PageHeader
+        title="Add an employee"
+        subtitle={`Step ${currentStepIndex + 1} of ${totalSteps}`}
+      />
 
       {emailFailed && (
-        <div className="bg-yellow-50 border border-yellow-400 rounded-lg p-6 mb-4 flex flex-col gap-3">
-          <p className="font-bold text-yellow-800 text-lg">Employee created, but the welcome email failed to send.</p>
-          <p className="text-yellow-700 text-sm">
-            The account for <strong>{failedName}</strong> ({failedEmail}) was created successfully.
-            You can resend their login credentials below.
+        <Alert
+          tone="warning"
+          title="Employee created, but the welcome email failed to send."
+          className="mb-5"
+        >
+          <p className="mb-3">
+            The account for <strong>{failedName}</strong> ({failedEmail}) was created
+            successfully. You can resend their login credentials below.
           </p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleResendCredentials}
-              disabled={resending}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded disabled:opacity-50"
-            >
-              {resending ? 'Resending...' : 'Resend Credentials'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { window.location.href = '/em-database'; }}
-              className="border border-gray-400 text-gray-600 px-6 py-2 rounded hover:bg-gray-50"
-            >
-              Skip & Go to Employee List
-            </button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={handleResendCredentials} loading={resending} disabled={resending}>
+              Resend credentials
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => { window.location.href = '/em-database'; }}>
+              Skip &amp; go to employee list
+            </Button>
           </div>
-        </div>
+        </Alert>
       )}
 
-      <div className="w-full h-[4rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold text-xl">
-          Add an Employee
-        </h1>
-      </div>
+      <form onSubmit={handleSubmit}>
+        <Progress value={pct} className="mb-8" />
 
-      <div className="bg-gray-50 h-[3rem] flex justify-between">
-        <h1 className="my-auto mx-6 font-semibold">
-          Step {currentStepIndex + 1}
-        </h1>
+        {step}
 
-        <h1 className="my-auto mx-6 font-semibold">
-          {currentStepIndex + 1} / {stepList.length}
-        </h1>
-      </div>
+        <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5">
+          {!isFirstStep ? (
+            <Button type="button" variant="secondary" onClick={back}>
+              Previous
+            </Button>
+          ) : <span />}
 
-      {step}
+          <Button type="submit" disabled={isDisabled} loading={adding}>
+            {adding ? "Submitting" : isLastStep ? "Finish" : "Next"}
+          </Button>
+        </div>
+      </form>
 
-      <div className="w-full my-4 flex justify-between">
-        {!isFirstStep && (
-          <button
-            type="button"
-            className="btn rounded-sm py-2 px-8 border mx-8 border-pes text-pes"
-            onClick={back}
-          >
-            Previous
-          </button>
-        )}
-
-        <button
-          type="submit"
-          disabled={isDisabled}
-          className={`btn rounded-sm py-2 px-16 mx-8 border border-pes text-white ms-auto 
-            ${
-              isDisabled
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-pes hover:bg-blue-800"
-            }`}
-        >
-          {adding ? (
-            <span className="flex items-center gap-2 justify-center">
-              <svg
-                className="animate-spin h-4 w-4 text-white"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                />
-              </svg>
-
-              Submitting...
-            </span>
-          ) : isLastStep ? (
-            "Finish"
-          ) : (
-            "Next"
-          )}
-        </button>
-      </div>
-    </form>
+      {/* Success confirmation */}
+      <Modal isOpen={isSuccessful} setIsOpen={() => {}} showClose={false} title="Employee added successfully">
+        <p className="text-sm text-muted">Redirecting to the employee list…</p>
+      </Modal>
+    </div>
   );
 }

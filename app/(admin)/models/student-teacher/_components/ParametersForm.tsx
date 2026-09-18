@@ -60,8 +60,8 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-6 rounded-xl shadow mb-8">
-      <h2 className="col-span-full text-lg font-semibold mb-2 text-gray-800">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-canvas p-6 rounded-xl shadow mb-8">
+      <h2 className="col-span-full text-lg font-semibold mb-2 text-strong">
         Model Parameters
       </h2>
 
@@ -69,7 +69,7 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
         .filter(([key]) => !hiddenKeys.includes(key))
         .map(([key, value]) => (
           <div key={key} className="flex flex-col">
-            <label htmlFor={key} className="text-sm font-medium text-gray-600">
+            <label htmlFor={key} className="text-sm font-medium text-body">
               {paramLabels[key] || key}
             </label>
             <input
@@ -79,18 +79,18 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
               name={key}
               value={String(value)}
               onChange={handleChange}
-              className="border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="border rounded-lg p-2 focus:ring-2 focus:ring-pes focus:outline-none"
             />
           </div>
         ))}
 
-      <h3 className="col-span-full text-md font-semibold mt-4 text-gray-700">
+      <h3 className="col-span-full text-md font-semibold mt-4 text-body">
         Staff Mix
       </h3>
 
       {Object.entries(params.staffMix).map(([key, value]) => (
         <div key={key} className="flex flex-col">
-          <label htmlFor={key} className="text-sm font-medium text-gray-600">
+          <label htmlFor={key} className="text-sm font-medium text-body">
             {key}
           </label>
           <input
@@ -100,7 +100,7 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
             name={key}
             value={value}
             onChange={handleChange}
-            className="border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="border rounded-lg p-2 focus:ring-2 focus:ring-pes focus:outline-none"
           />
         </div>
       ))}

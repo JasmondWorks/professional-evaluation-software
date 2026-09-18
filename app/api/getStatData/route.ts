@@ -1,28 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '../prisma.dev'
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
 
-async function getStats( user: string | null ) {
-  const users = await prisma.$queryRawUnsafe<any[]>('SELECT * FROM pesuser WHERE org = $1', user?.toString())
-  const appraisals: any[] = await prisma.$queryRawUnsafe('SELECT * FROM appraisal WHERE org = $1', user?.toString())
-//   const assessments = await prisma.$queryRawUnsafe('SELECT * FROM assesments WHERE org = $1', user?.toString())
-  
-  
-  await prisma.$disconnect()
-  return [ users.length, appraisals.length, 67 ]
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { rosterWhere } from "../_lib/roster";
+
+/** Dashboard headline counts.
+ *
+ *  "employees" is everyone on the roster, administrators included, and is the
+ *  same basis as the employee database page. "assessable" is the subset that
+ *  can actually be assessed, which is the basis the assessment page uses.
+ *  Returning both from one query is what stops the two pages contradicting
+ *  each other: they are different measures of one roster, not two roster
+ *  counts that happen to disagree. */
+async function getStats(orgId: string) {
+  const [employees, assessable, completedAppraisals, pendingAppraisals] =
+    await Promise.all([
+      prisma.pesuser.count({ where: { org_id: orgId } }),
+      prisma.pesuser.count({ where: rosterWhere(orgId) }),
+      prisma.appraisal.count({ where: { org_id: orgId, pending: false } }),
+      prisma.appraisal.count({ where: { org_id: orgId, pending: true } }),
+    ]);
+
+  return { employees, assessable, completedAppraisals, pendingAppraisals };
 }
 
 export async function POST(request: NextRequest) {
-  const { user } = await request.json();
+  // This route used to call jwtDecode() straight on the bearer token, which
+  // reads the payload without checking the signature. Anyone could mint a token
+  // naming any org and read that org's counts. authorize() verifies it.
+  const auth = authorize(tokenFromRequest(request), {});
+  if (!auth.ok) return auth.response;
 
-  if (user) {
-    try {
-      let userInfo = await getStats(user)
-      return NextResponse.json(userInfo)
-
-    } catch(err) {
-      console.error(err)
-      return NextResponse.json([])
-    }    
+  const orgId = auth.user.orgId ?? null;
+  if (!orgId) {
+    return NextResponse.json({
+      employees: 0, assessable: 0, completedAppraisals: 0, pendingAppraisals: 0,
+    });
   }
-  NextResponse.redirect(new URL('/not-found', request.url))
+
+  try {
+    return NextResponse.json(await getStats(orgId));
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to load stats" }, { status: 500 });
+  }
 }

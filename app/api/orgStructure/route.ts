@@ -1,18 +1,44 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
-import { jwtDecode } from "jwt-decode";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { requireModel } from '../_lib/planGuard';
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("authorization")?.split(" ")[1];
-    if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 401 });
+    // jwtDecode read this org without checking the signature, so both storing a
+    // structure run and reading one back could be pointed at any organization.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'org-structure');
+    if (!plan.ok) return plan.response;
+
+    const org = auth.user.org ? String(auth.user.org) : null;
+    const orgId = auth.user.orgId ?? null;
+    if (!org || !orgId) {
+      return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
     }
 
-    const decoded: any = jwtDecode(token);
-    const org = decoded?.org;
-    if (!org) {
-      return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
+    // Org Structure is downstream of Personnel Utilisation: the structure is
+    // derived from the optimal span of control K*, so there is nothing to
+    // compute until that model has been run at least once for this org.
+    // Client-side gating alone is bypassable by posting here directly.
+    const utilisation = await prisma.personnel_utilization.findFirst({
+      where: { org_id: orgId },
+      select: { id: true },
+    });
+    if (!utilisation) {
+      return NextResponse.json(
+        {
+          error:
+            "Run the Personnel Utilisation model first — the organisation structure is derived from its optimal span of control (K*).",
+          code: "PERSONNEL_UTILIZATION_REQUIRED",
+        },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -31,25 +57,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Construct properly typed arrays
-    const numArray = `{${numerator.map(Number).join(",")}}`;
-    const denArray = `{${denominator.map(Number).join(",")}}`;
-
-    // Use proper casting for numeric[]
-    const [record]: any = await prisma.$queryRaw`
-      INSERT INTO org_structure_results (
-        org, section, result, numerator, denominator, extra_data
-      )
-      VALUES (
-        ${org},
-        ${Number(section)},
-        ${Number(result)},
-        ${numArray}::numeric[],
-        ${denArray}::numeric[],
-        ${JSON.stringify(extra_data)}::jsonb
-      )
-      RETURNING *;
-    `;
+    const record = await prisma.org_structure_results.create({
+      data: {
+        org_id: orgId,
+        section: Number(section),
+        result: Number(result),
+        numerator: numerator.map(Number),
+        denominator: denominator.map(Number),
+        extra_data,
+      },
+    });
 
     return NextResponse.json({ success: true, record }, { status: 201 });
   } catch (err: any) {
@@ -57,6 +74,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Internal server error", details: err.message },
       { status: 500 }
+    );
+  }
+}
+
+// Saved section results, newest first. The supervision cost history reads
+// section 21 through this: percentage redundancy is computed on that page now,
+// but it is still an org-structure result and still lives in the same table.
+export async function GET(req: NextRequest) {
+  try {
+    // jwtDecode read this org without checking the signature, so both storing a
+    // structure run and reading one back could be pointed at any organization.
+    const auth = authorize(tokenFromRequest(req), {});
+    if (!auth.ok) return auth.response;
+    const plan = await requireModel(auth.user, 'org-structure');
+    if (!plan.ok) return plan.response;
+
+    const orgId = auth.user.orgId ?? null;
+    if (!orgId) {
+      return NextResponse.json({ error: "Missing org in token" }, { status: 400 });
+    }
+
+    const sectionParam = new URL(req.url).searchParams.get("section");
+    const section = sectionParam == null ? null : Number(sectionParam);
+    if (sectionParam != null && !Number.isFinite(section)) {
+      return NextResponse.json({ error: "Invalid section" }, { status: 400 });
+    }
+
+    const rows = await prisma.org_structure_results.findMany({
+      where: { org_id: orgId, ...(section == null ? {} : { section }) },
+      orderBy: { created_at: "desc" },
+      take: 50,
+    });
+
+    return NextResponse.json(
+      rows.map((r) => ({
+        id: r.id,
+        section: r.section,
+        result: r.result == null ? null : Number(r.result),
+        numerator: r.numerator.map(Number),
+        denominator: r.denominator.map(Number),
+        extra_data: r.extra_data,
+        created_at: r.created_at,
+      })),
+    );
+  } catch (err: any) {
+    console.error("Error reading org structure results:", err);
+    return NextResponse.json(
+      { error: "Internal server error", details: err.message },
+      { status: 500 },
     );
   }
 }

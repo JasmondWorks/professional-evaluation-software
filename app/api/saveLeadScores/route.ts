@@ -1,27 +1,46 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../prisma.dev';
+import { authorize, tokenFromRequest } from '../_lib/authGuard';
+import { validateData, leadScoresSchema, formatZodErrors } from '@/app/lib/validation';
 
 // Table: lead_scores (pesuser_name, dept, competence, integrity, compatibility, use_of_resources)
 
+// Scoring a lead. lead_scores is keyed on (pesuser_name, dept) alone, with no
+// org column, so an unauthenticated caller could overwrite the scores of a
+// same-named lead in any organization. Scoring is a supervisory act, so it needs
+// the capability, not merely a session.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {
+    anyOf: ['can_manage_performance_reviews'],
+    roles: ['hod', 'unit-head'],
+  });
+  if (!auth.ok) return auth.response;
+
   try {
-    const { pesuser_name, dept, scores } = await req.json();
-    if (!pesuser_name || !dept || !scores) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const parsed = validateData(leadScoresSchema, await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: formatZodErrors(parsed.errors!) },
+        { status: 400 },
+      );
     }
+    const { pesuser_name, dept, scores } = parsed.data!;
     // Upsert the lead's scores
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO lead_scores (pesuser_name, dept, competence, integrity, compatibility, use_of_resources)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (pesuser_name, dept)
-       DO UPDATE SET competence = $3, integrity = $4, compatibility = $5, use_of_resources = $6`,
-      pesuser_name,
-      dept,
-      scores.competence ?? null,
-      scores.integrity ?? null,
-      scores.compatibility ?? null,
-      scores.use_of_resources ?? null
-    );
+    const values = {
+      competence: scores.competence ?? null,
+      integrity: scores.integrity ?? null,
+      compatibility: scores.compatibility ?? null,
+      use_of_resources: scores.use_of_resources ?? null,
+    };
+    await prisma.lead_scores.upsert({
+      where: { pesuser_name_dept: { pesuser_name, dept } },
+      update: values,
+      create: { pesuser_name, dept, ...values },
+    });
     return NextResponse.json({ message: 'Lead scores saved' }, { status: 200 });
   } catch (error) {
     console.error('Error saving lead scores:', error);

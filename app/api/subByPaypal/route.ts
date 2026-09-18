@@ -1,7 +1,12 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 // app/api/createSubscription/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePackages } from "../../lib/utils/paypalSetup";
 import prisma from "../prisma.dev"; // assuming you have prisma client set up
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { UUID } from "crypto";
 
 function serialize(obj: any) {
@@ -17,9 +22,15 @@ function serialize(obj: any) {
   return result;
 }
 
+// Same as paypal/subscribe: the account the plan is created for came from the
+// body rather than the token.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
   try {
-    const { plan, userID } = await req.json();
+    const { plan } = await req.json();
+    const userID = auth.user.userID;
     if (!plan || !userID) {
       return NextResponse.json({ error: "Plan & userID are required" }, { status: 400 });
     }
@@ -116,68 +127,49 @@ export async function POST(req: NextRequest) {
     };
 
     const metadataJson = JSON.stringify(metadata);
-    console.log(pkg.name)
 
-    // Insert into your subscriptions table using $queryRaw, using userID passed in
-    // Here, for simplicity, assume `plan` variable matches a local plan key and you have a table "plans" with column "key" that stores that.
-    const planRow = await prisma.$queryRaw<
-      Array<{ id: string }>
-    >`SELECT id FROM "plans" WHERE name = ${pkg.name} LIMIT 1`;
+    // Record the subscription locally — best-effort. A bookkeeping failure here
+    // must NOT fail the actual PayPal subscription (the payment already exists).
+    let createdSub: any = null;
+    try {
+      const planRow = await prisma.plans.findFirst({
+        where: { name: pkg.name }
+      });
 
-    if (!planRow || planRow.length === 0) {
-      return NextResponse.json({ error: "Plan not found in database" }, { status: 500 });
+      if (planRow) {
+        const localPlanId = planRow.id;
+        
+        createdSub = await prisma.subscriptions.create({
+          data: {
+            pesuser_id: userID,
+            plan_id: localPlanId,
+            paypal_subscription_id: paypalSubId,
+            status: status,
+            start_time: startTime ? new Date(startTime) : null,
+            metadata: metadata, // Passing the JSON object directly to JSONB column
+            created_at: new Date(),
+            updated_at: new Date(),
+          }
+        });
+      } else {
+        console.warn("subByPaypal: no local plan row for", pkg.name);
+      }
+    } catch (dbErr) {
+      console.error("subByPaypal: failed to record subscription locally:", dbErr);
     }
-    const localPlanId = planRow[0].id;
-    
-    console.log(localPlanId)
 
-    // Now insert into subscriptions
-    const inserted = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        pesuser_id: string;
-        plan_id: UUID;
-        paypal_subscription_id: string;
-        status: string;
-        start_time: Date | null;
-        metadata: JSON;
-        created_at: Date;
-        updated_at: Date;
-      }>
-    >`
-      INSERT INTO "subscriptions" (
-        pesuser_id,
-        plan_id,
-        paypal_subscription_id,
-        status,
-        start_time,
-        metadata,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ${userID},
-        ${localPlanId}::uuid,
-        ${paypalSubId},
-        ${status},
-        ${startTime ? new Date(startTime) : null},
-        ${metadataJson}::jsonb,
-        now(),
-        now()
-      )
-      RETURNING *
-    `;
-
-    const createdSub = inserted[0];
-
+    // Always return the PayPal subscription so the SDK can proceed to approval.
     return NextResponse.json({
-      subscription: serialize(createdSub),
+      subscription: createdSub ? serialize(createdSub) : null,
       paypal: subJson,
     });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("createSubscription error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 

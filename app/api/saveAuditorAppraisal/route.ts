@@ -1,15 +1,29 @@
+// Reads the caller's token, so this can never be a static route: Next tries to
+// prerender route handlers at build time, and reading headers there throws.
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 
+// Writes an appraisal. The org was decoded, not verified, so the row could be
+// written into any organization's appraisal table.
 export async function POST(req: NextRequest) {
+  const auth = authorize(tokenFromRequest(req), {});
+  if (!auth.ok) return auth.response;
+
+  const org = auth.user.org ? String(auth.user.org) : null;
+  const orgId = auth.user.orgId ?? null;
+
   try {
+
     // ✅ Clone request to avoid body lock
     const clonedReq = req.clone();
     const body = await clonedReq.json();
 
-    const { pesuser_name, org, isCounter = false, isAuditor = false, ...payload } = body;
+    const { pesuser_name, isCounter = false, isAuditor = false, ...payload } = body;
 
-    if (!pesuser_name || !org || Object.keys(payload).length === 0) {
+    if (!pesuser_name || !org || !orgId || Object.keys(payload).length === 0) {
       return NextResponse.json(
         { message: "Missing required fields or empty payload" },
         { status: 400 }
@@ -17,49 +31,46 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch dept from pesuser
-    const userResult = await prisma.$queryRawUnsafe<{ dept: string }[]>(
-      `SELECT dept FROM "pesuser" WHERE name = $1 AND org = $2 LIMIT 1`,
-      pesuser_name,
-      org
-    );
+    const user = await prisma.pesuser.findFirst({
+      where: { name: pesuser_name, org_id: orgId },
+      select: { dept: true },
+    });
 
-    if (userResult.length === 0 || !userResult[0].dept) {
+    if (!user?.dept) {
       return NextResponse.json(
         { message: "User not found or department missing" },
         { status: 404 }
       );
     }
 
-    const dept = userResult[0].dept;
-    const targetTable = isCounter || !isAuditor ? "counter_appraisal" : "appraisal";
+    const dept = user.dept;
+    const targetDelegate: any =
+      isCounter || !isAuditor ? prisma.counter_appraisal : prisma.appraisal;
 
-    // Build dynamic query for insert/update
-    const columns = Object.keys(payload).map((c) => `"${c}"`).join(", ");
-    const placeholders = Object.keys(payload).map((_, i) => `$${i + 4}`).join(", ");
-    const values = Object.values(payload);
+    // payload keys are appraisal score columns; spread them into the row.
+    // counter_appraisal has no unique on (pesuser_name, org, dept), so we can't
+    // rely on upsert — do a constraint-independent find-then-write.
+    const existing = await targetDelegate.findFirst({
+      where: { pesuser_name, org_id: orgId, dept },
+      select: { id: true },
+    });
 
-    const updates = Object.keys(payload)
-      .map((c) => `"${c}" = EXCLUDED."${c}"`)
-      .join(", ");
-
-    // Insert or replace
-    const query = `
-      INSERT INTO "${targetTable}" (pesuser_name, org, dept, ${columns})
-      VALUES ($1, $2, $3, ${placeholders})
-      ON CONFLICT (pesuser_name, org, dept)
-      DO UPDATE SET ${updates};
-    `;
-
-    await prisma.$executeRawUnsafe(query, pesuser_name, org, dept, ...values);
+    if (existing) {
+      await targetDelegate.updateMany({
+        where: { pesuser_name, org_id: orgId, dept },
+        data: { ...payload },
+      });
+    } else {
+      await targetDelegate.create({
+        data: { pesuser_name, org, org_id: orgId, dept, ...payload },
+      });
+    }
 
     // ✅ If this is a main appraisal, delete matching counter_appraisal scores
     if (!isCounter && isAuditor) {
-      await prisma.$executeRawUnsafe(
-        `DELETE FROM "counter_appraisal" WHERE pesuser_name = $1 AND org = $2 AND dept = $3`,
-        pesuser_name,
-        org,
-        dept
-      );
+      await prisma.counter_appraisal.deleteMany({
+        where: { pesuser_name, org_id: orgId, dept },
+      });
       console.log(`Deleted counter_appraisal scores for ${pesuser_name} (${org} / ${dept})`);
     }
 
