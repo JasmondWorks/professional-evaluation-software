@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "../../prisma.dev"; // your Prisma client
 import { rateLimit } from "../../_lib/rateLimit";
+import { escapeHtml } from "../../_lib/escapeHtml";
 import nodemailer from "nodemailer";
 
 // Deliberately public: the staff survey is answered from a link, by people who
@@ -55,16 +56,14 @@ export async function POST(req: Request) {
       html: `
         <div style="font-family:Arial,sans-serif; padding:10px; background:#f9fafb;">
           <h2 style="color:#2563eb;">New Staff Survey Submitted</h2>
-          <p><strong>Name:</strong> ${pesuser_name}</p>
-          <p><strong>Email:</strong> ${pesuser_email}</p>
-          <p><strong>Department:</strong> ${dept || "N/A"}</p>
-          <p><strong>Organization:</strong> ${org || "N/A"}</p>
+          <p><strong>Name:</strong> ${escapeHtml(pesuser_name)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(pesuser_email)}</p>
+          <p><strong>Department:</strong> ${escapeHtml(dept || "N/A")}</p>
+          <p><strong>Organization:</strong> ${escapeHtml(org || "N/A")}</p>
           <hr style="margin:15px 0;"/>
           <h4>Responses:</h4>
-          <pre style="background:#fff;border:1px solid #ddd;padding:10px;border-radius:6px;">${JSON.stringify(
-            responses,
-            null,
-            2
+          <pre style="background:#fff;border:1px solid #ddd;padding:10px;border-radius:6px;">${escapeHtml(
+            JSON.stringify(responses, null, 2)
           )}</pre>
         </div>
       `,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { rateLimit } from "../_lib/rateLimit";
+import { escapeHtml } from "../_lib/escapeHtml";
 import nodemailer from "nodemailer";
 
 // Configure Nodemailer transporter
@@ -73,8 +74,8 @@ export async function POST(req: Request) {
         (question, index) => `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px;">${index + 1}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${question}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${responses[index] || "No response"}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(question)}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${escapeHtml(responses[index] || "No response")}</td>
           </tr>
         `
       )
@@ -82,10 +83,10 @@ export async function POST(req: Request) {
 
     const emailHtml = `
       <h2>New Auditor Response</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email.replaceAll('%40', '@')}</p>
-      <p><strong>GSM:</strong> ${gsm}</p>
-      <p><strong>Address:</strong> ${address}</p>
+      <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email.replaceAll('%40', '@'))}</p>
+      <p><strong>GSM:</strong> ${escapeHtml(gsm)}</p>
+      <p><strong>Address:</strong> ${escapeHtml(address)}</p>
       <p><strong>Date of Birth:</strong> ${dobDate.toDateString()}</p>
       <p><strong>Responses:</strong></p>
       <table style="border-collapse: collapse; width: 100%; text-align: left;">
