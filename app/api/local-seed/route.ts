@@ -1,27 +1,23 @@
 // Local-dev-only: seeds one organization/admin/employee set through a public
 // UI form instead of a hand-edited JSON file. Deliberately unauthenticated —
 // it exists to run before any account exists — so it must refuse to do
-// anything unless it can prove it's talking to a local database:
+// anything unless it can prove it's not talking to a real deployment:
 //
 //   1. NODE_ENV !== 'production' — blocks it in every deployed build, since
 //      Vercel always builds and runs with NODE_ENV=production.
-//   2. DATABASE_URL points at localhost/127.0.0.1 — blocks it even from a
-//      local `next start` accidentally pointed at Neon.
-//   3. isLocalSeeded() — blocks it once an org exists, seeded or real.
+//   2. isLocalSeeded() — blocks it once an org exists, seeded or real.
 //
-// Any one of these failing is enough to refuse; all three must hold to seed.
+// Any one of these failing is enough to refuse; both must hold to seed.
+// (Previously also required DATABASE_URL to contain localhost/127.0.0.1 —
+// dropped because plenty of local dev setups point at a remote dev database,
+// e.g. a separate Neon branch, and NODE_ENV is already the load-bearing check.)
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { isLocalSeeded, readCredentialsFile, seedLocalOrg, type LocalSeedInput } from '../_lib/localSeed';
 
-function isLocalDatabase(): boolean {
-  const url = process.env.DATABASE_URL || '';
-  return /(localhost|127\.0\.0\.1)/.test(url);
-}
-
 function guardOrResponse(): NextResponse | null {
-  if (process.env.NODE_ENV === 'production' || !isLocalDatabase()) {
+  if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
       { message: 'Local seeding is disabled outside local development.' },
       { status: 403 },
