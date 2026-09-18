@@ -1,0 +1,22 @@
+{
+  "org": {
+    "name": "",
+    "category": "",
+    "plan": ""
+  },
+  "admin": {
+    "name": "",
+    "email": "",
+    "password": ""
+  },
+  "employees": [
+    {
+      "name": "",
+      "email": "",
+      "password": "",
+      "dept": "",
+      "role": "",
+      "level": ""
+    }
+  ]
+}
