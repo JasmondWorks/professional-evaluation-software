@@ -6,7 +6,8 @@ import Link from "next/link";
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui';
+import { BackLink, Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 import {
   findOptimalKCost,
   DParams,
@@ -173,11 +174,10 @@ function RedundancyTab() {
                   }}
                 />
               </div>
-              <input
+              <Input
                 type="number"
                 value={wasted}
                 onChange={(e) => setWasted(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -185,11 +185,10 @@ function RedundancyTab() {
                 <span className="truncate">Total Establishment Man-hours</span>
                 <InfoPopover text="Total available man-hours across the organization or department." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={total}
                 onChange={(e) => setTotal(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -198,13 +197,9 @@ function RedundancyTab() {
 
       {errorMsg && <p className="text-danger-600 font-medium mb-4">{errorMsg}</p>}
 
-      <button
-        onClick={evaluateIndex}
-        disabled={!isFilled}
-        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
-      >
+      <Button onClick={evaluateIndex} disabled={!isFilled}>
         Evaluate Redundancy
-      </button>
+      </Button>
 
       {result !== null && (
         <div className="mt-8 border-t border-line pt-8">
@@ -222,13 +217,9 @@ function RedundancyTab() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={handleSubmit} disabled={loading}>
               {loading ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {success && <p className="mt-4 text-sm font-medium text-green-600">✅ Successfully saved.</p>}
@@ -338,13 +329,12 @@ function SupervisionCostTab() {
         <span className="truncate">{label}</span>
         <InfoPopover text={hint} />
       </div>
-      <input
+      <Input
         type="number"
         value={params[key] ?? ""}
         min={opts.min}
         step={opts.step}
         onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-        className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
       />
     </div>
   );
@@ -414,15 +404,9 @@ function SupervisionCostTab() {
         </div>
       )}
 
-      <button
-        onClick={calculate}
-        disabled={!isFormValid()}
-        className={`px-6 py-2 rounded text-white ${
-          isFormValid() ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"
-        }`}
-      >
+      <Button onClick={calculate} disabled={!isFormValid()}>
         Calculate
-      </button>
+      </Button>
 
       {result && (
         <div className="mt-8 border-t border-line pt-8">
@@ -450,14 +434,13 @@ function SupervisionCostTab() {
           </div>
 
           <div className="flex items-center gap-3 mb-6">
-            <button
+            <Button
               onClick={handleSave}
               disabled={saving || lambdaError}
               title={lambdaError ? "λ must be strictly less than μ" : undefined}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
             {saveMsg && <p className="text-sm font-medium">{saveMsg}</p>}
           </div>
 

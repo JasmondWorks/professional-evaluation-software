@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { notify } from "@/lib/toast";
-import { BackLink, Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui";
+import { BackLink, Button, Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
 import AwardArt, { type ArtKind } from "@/app/components/motivation/AwardArt";
 import {
@@ -190,12 +191,12 @@ function SchemeTab() {
           closes the current selection and starts a fresh record, so what a previous
           administration ran on stays readable.
         </p>
-        <input
+        <Input
           value={tenure}
           onChange={(e) => setTenure(e.target.value)}
           readOnly={!isAdmin}
           placeholder="e.g. Prof. A. Balogun, 2026-2030"
-          className="mt-4 block w-full max-w-md rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+          containerClassName="mt-4 max-w-md"
         />
         {active && (
           <p className="mt-2 text-xs text-muted">
@@ -246,37 +247,39 @@ function SchemeTab() {
                   <li key={a} className="flex items-center gap-2 text-sm text-body">
                     <span>• {a}</span>
                     {isAdmin && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => setAdditions((prev) => prev.filter((x) => x !== a))}
-                        className="text-xs text-danger-700 underline"
+                        className="h-auto p-0 text-xs text-danger-700 underline hover:bg-transparent"
                       >
                         remove
-                      </button>
+                      </Button>
                     )}
                   </li>
                 ))}
               </ul>
               {isAdmin && (
                 <div className="mt-2 flex gap-2">
-                  <input
+                  <Input
                     value={newAddition}
                     onChange={(e) => setNewAddition(e.target.value)}
                     placeholder="Add an item of your own"
-                    className="block w-full max-w-sm rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
+                    containerClassName="w-full max-w-sm"
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       const value = newAddition.trim();
                       if (!value) return;
                       setAdditions((prev) => Array.from(new Set([...prev, value])));
                       setNewAddition("");
                     }}
-                    className="rounded-md border border-pes px-3 py-2 text-xs font-medium text-pes hover:bg-pes-50"
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -286,16 +289,9 @@ function SchemeTab() {
 
       {isAdmin ? (
         <div>
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving}
-            className={`rounded-lg px-6 py-3 text-sm font-medium text-white ${
-              saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
-            }`}
-          >
+          <Button type="button" size="lg" onClick={save} loading={saving}>
             {saving ? "Saving…" : "Save adopted scheme"}
-          </button>
+          </Button>
         </div>
       ) : (
         <p className="text-sm text-muted">
@@ -450,19 +446,16 @@ function EntitlementTab() {
             </select>
           </label>
 
-          <label className="text-sm font-semibold text-body">
-            Or an overall percentage
-            <input
-              type="number"
-              value={percentage}
-              onChange={(e) => {
-                const v = e.target.value === "" ? "" : Number(e.target.value);
-                setPercentage(v);
-                if (v !== "" && Number.isFinite(v)) setLevel(levelFromPercentage(Number(v)));
-              }}
-              className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-pes-400"
-            />
-          </label>
+          <Input
+            label="Or an overall percentage"
+            type="number"
+            value={percentage}
+            onChange={(e) => {
+              const v = e.target.value === "" ? "" : Number(e.target.value);
+              setPercentage(v);
+              if (v !== "" && Number.isFinite(v)) setLevel(levelFromPercentage(Number(v)));
+            }}
+          />
         </div>
       </section>
 
@@ -606,22 +599,16 @@ function AwardRecordTab() {
             for the year.
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <label className="text-sm font-semibold text-body">
-              Staff name
-              <input
-                value={form.staff_name}
-                onChange={(e) => setForm((f) => ({ ...f, staff_name: e.target.value }))}
-                className={field}
-              />
-            </label>
-            <label className="text-sm font-semibold text-body">
-              Department
-              <input
-                value={form.dept}
-                onChange={(e) => setForm((f) => ({ ...f, dept: e.target.value }))}
-                className={field}
-              />
-            </label>
+            <Input
+              label="Staff name"
+              value={form.staff_name}
+              onChange={(e) => setForm((f) => ({ ...f, staff_name: e.target.value }))}
+            />
+            <Input
+              label="Department"
+              value={form.dept}
+              onChange={(e) => setForm((f) => ({ ...f, dept: e.target.value }))}
+            />
             <label className="text-sm font-semibold text-body">
               Period
               <select
@@ -636,15 +623,12 @@ function AwardRecordTab() {
                 ))}
               </select>
             </label>
-            <label className="text-sm font-semibold text-body">
-              Period label
-              <input
-                value={form.period_label}
-                onChange={(e) => setForm((f) => ({ ...f, period_label: e.target.value }))}
-                placeholder="2026, Q1 2026, …"
-                className={field}
-              />
-            </label>
+            <Input
+              label="Period label"
+              value={form.period_label}
+              onChange={(e) => setForm((f) => ({ ...f, period_label: e.target.value }))}
+              placeholder="2026, Q1 2026, …"
+            />
             <label className="text-sm font-semibold text-body">
               Performance level
               <select
@@ -661,48 +645,33 @@ function AwardRecordTab() {
                 ))}
               </select>
             </label>
-            <label className="text-sm font-semibold text-body">
-              What was awarded
-              <input
-                value={form.motivator}
-                onChange={(e) => setForm((f) => ({ ...f, motivator: e.target.value }))}
-                placeholder="1st class Certificate of Competence"
-                className={field}
-              />
-            </label>
-            <label className="text-sm font-semibold text-body sm:col-span-2">
-              Detail
-              <input
-                value={form.detail}
-                onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
-                className={field}
-              />
-            </label>
-            <label className="text-sm font-semibold text-body">
-              Cash accompanying it
-              <input
-                type="number"
-                value={form.cash_amount}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    cash_amount: e.target.value === "" ? "" : Number(e.target.value),
-                  }))
-                }
-                className={field}
-              />
-            </label>
+            <Input
+              label="What was awarded"
+              value={form.motivator}
+              onChange={(e) => setForm((f) => ({ ...f, motivator: e.target.value }))}
+              placeholder="1st class Certificate of Competence"
+            />
+            <Input
+              label="Detail"
+              value={form.detail}
+              onChange={(e) => setForm((f) => ({ ...f, detail: e.target.value }))}
+              containerClassName="sm:col-span-2"
+            />
+            <Input
+              label="Cash accompanying it"
+              type="number"
+              value={form.cash_amount}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  cash_amount: e.target.value === "" ? "" : Number(e.target.value),
+                }))
+              }
+            />
           </div>
-          <button
-            type="button"
-            onClick={record}
-            disabled={saving}
-            className={`mt-5 rounded-lg px-6 py-3 text-sm font-medium text-white ${
-              saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
-            }`}
-          >
+          <Button type="button" size="lg" className="mt-5" onClick={record} loading={saving}>
             {saving ? "Recording…" : "Record award"}
-          </button>
+          </Button>
         </section>
       )}
 
@@ -840,13 +809,9 @@ function AppraisalAwardsTab() {
                 {artPreview.title}
                 {artPreview.recipient ? ` — ${artPreview.recipient}` : ""}
               </h3>
-              <button
-                type="button"
-                onClick={() => setArtPreview(null)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-body hover:bg-canvas"
-              >
+              <Button type="button" variant="secondary" size="sm" onClick={() => setArtPreview(null)}>
                 Close
-              </button>
+              </Button>
             </div>
             <div className="flex justify-center">
               <AwardArt
@@ -886,8 +851,9 @@ function AppraisalAwardsTab() {
                       <p className="mt-0.5 text-xs text-muted">{award.criteria}</p>
                     </div>
                     {award.art && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() =>
                           setArtPreview({
                             kind: award.art as ArtKind,
@@ -896,7 +862,7 @@ function AppraisalAwardsTab() {
                           })
                         }
                         title="See the award as it would be issued"
-                        className="shrink-0 rounded-md p-1 hover:bg-canvas"
+                        className="h-auto shrink-0 p-1"
                       >
                         <AwardArt
                           kind={award.art as ArtKind}
@@ -904,7 +870,7 @@ function AppraisalAwardsTab() {
                           title={winners.length === 1 ? award.label : undefined}
                           recipient={winners.length === 1 ? winners[0].name : undefined}
                         />
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -919,8 +885,9 @@ function AppraisalAwardsTab() {
                             <span className="text-muted">· {Number(w.score).toFixed(2)}</span>
                           )}
                           {award.art && (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               onClick={() =>
                                 setArtPreview({
                                   kind: award.art as ArtKind,
@@ -928,10 +895,10 @@ function AppraisalAwardsTab() {
                                   recipient: w.name,
                                 })
                               }
-                              className="text-xs text-pes underline"
+                              className="h-auto p-0 text-xs text-pes underline hover:bg-transparent"
                             >
                               view award
-                            </button>
+                            </Button>
                           )}
                         </li>
                       ))}
@@ -1048,13 +1015,9 @@ function WhoIsDueTab() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {r.entitlement.certificateClass && (
-                      <button
-                        type="button"
-                        onClick={() => setPreview(r)}
-                        className="rounded-md border border-pes px-2.5 py-1 text-xs font-medium text-pes hover:bg-pes-50"
-                      >
+                      <Button type="button" variant="outline" size="sm" onClick={() => setPreview(r)}>
                         View award
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -1124,13 +1087,9 @@ function WhoIsDueTab() {
               <h3 className="text-lg font-bold text-strong">
                 {preview.name} — {preview.entitlement.certificateClass}
               </h3>
-              <button
-                type="button"
-                onClick={() => setPreview(null)}
-                className="rounded-md border border-line px-3 py-1.5 text-sm text-body hover:bg-canvas"
-              >
+              <Button type="button" variant="secondary" size="sm" onClick={() => setPreview(null)}>
                 Close
-              </button>
+              </Button>
             </div>
 
             <div className="flex flex-wrap items-start justify-center gap-8">

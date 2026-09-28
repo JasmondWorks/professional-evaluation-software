@@ -3,11 +3,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
 import prisma from '../prisma.dev'
 import bcrypt from 'bcryptjs'
 import { validateData, changePasswordSchema, formatZodErrors } from '@/app/lib/validation'
 import { authorize, tokenFromRequest } from '../_lib/authGuard'
 import { rateLimit } from '../_lib/rateLimit'
+import { getJWTSecret } from '@/app/lib/jwt'
+import { compactPermissions } from '@/app/components/utils/roles'
 
 // Changing your own password. It knew the current password had to be right, but
 // not who was asking, and with no rate limiting that made it a password oracle
@@ -49,7 +52,18 @@ export async function POST(request: NextRequest) {
     // Find user
     const user = await prisma.pesuser.findUnique({
       where: { email },
-      select: { id: true, password: true }
+      select: {
+        id: true,
+        password: true,
+        name: true,
+        role: true,
+        display_role: true,
+        org_id: true,
+        dept: true,
+        category: true,
+        plan: true,
+        image: true,
+      }
     })
 
     if (!user) {
@@ -88,8 +102,53 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // The old token is still in the browser with mustChangePassword: true baked
+    // in, so without a fresh one PasswordGate keeps bouncing them back here
+    // until the next unrelated token refresh happens to clear it — which is
+    // what made this look intermittent. Issue a token with the updated claim
+    // now, the same shape /api/login and /api/refresh build.
+    const [org, admin, permissionRow] = await Promise.all([
+      user.org_id
+        ? prisma.org.findUnique({
+            where: { id: user.org_id },
+            select: { name: true, logo_url: true, maintenance_model: true },
+          })
+        : Promise.resolve(null),
+      user.org_id
+        ? prisma.pesuser.findFirst({
+            where: { role: 'admin', org_id: user.org_id },
+            select: { image: true },
+          })
+        : Promise.resolve(null),
+      prisma.permission.findFirst({ where: { user_id: String(user.id) } }),
+    ])
+
+    const logo = org?.logo_url || admin?.image || user.image || null
+    const perms = compactPermissions(permissionRow)
+
+    const accessToken = jwt.sign(
+      {
+        userID: user.id,
+        name: user.name,
+        role: user.role,
+        displayRole: user.display_role || user.role,
+        orgId: user.org_id,
+        org: org?.name ?? null,
+        email,
+        logo,
+        dept: user.dept,
+        productCategory: user.category,
+        productPlan: user.plan,
+        maintenance_model: org?.maintenance_model ?? false,
+        mustChangePassword: false,
+        perms,
+      },
+      getJWTSecret(),
+      { expiresIn: '15m' }
+    )
+
     return NextResponse.json(
-      { message: 'Password changed successfully', status: 200 },
+      { message: 'Password changed successfully', status: 200, token: accessToken },
       { status: 200 }
     )
 

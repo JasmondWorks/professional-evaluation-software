@@ -8,7 +8,8 @@ import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 type JWTPayload = {
   org?: string;
@@ -158,11 +159,10 @@ export default function PersonnelRedundancyPage() {
                 <span className="truncate">Actual Staff Strength (A)</span>
                 <InfoPopover text="The current number of employees actively working." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={actualStaff}
                 onChange={(e) => setActualStaff(Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -170,11 +170,10 @@ export default function PersonnelRedundancyPage() {
                 <span className="truncate">Optimal Staff Strength (O)</span>
                 <InfoPopover text="The theoretically perfect number of employees for the workload." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={optimalStaff}
                 onChange={(e) => setOptimalStaff(Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -207,11 +206,12 @@ export default function PersonnelRedundancyPage() {
                   onChange={(e) => setThresholds({ ...thresholds, low: Number(e.target.value) })}
                   className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
                 />
-                <input
+                <Input
                   type="number"
                   value={thresholds.low}
                   onChange={(e) => setThresholds({ ...thresholds, low: Number(e.target.value) })}
-                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
+                  className="w-16 shrink-0 px-1 py-1.5 text-center"
+                  containerClassName="shrink-0"
                 />
               </div>
             </div>
@@ -230,11 +230,12 @@ export default function PersonnelRedundancyPage() {
                   onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
                   className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
                 />
-                <input
+                <Input
                   type="number"
                   value={thresholds.moderate}
                   onChange={(e) => setThresholds({ ...thresholds, moderate: Number(e.target.value) })}
-                  className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
+                  className="w-16 shrink-0 px-1 py-1.5 text-center"
+                  containerClassName="shrink-0"
                 />
               </div>
             </div>
@@ -242,13 +243,9 @@ export default function PersonnelRedundancyPage() {
         </div>
       </div>
 
-      <button
-        onClick={calculatePR}
-        disabled={actualStaff <= 0 || optimalStaff <= 0}
-        className={`px-4 py-2 rounded text-white ${actualStaff > 0 && optimalStaff > 0 ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
-      >
+      <Button onClick={calculatePR} disabled={actualStaff <= 0 || optimalStaff <= 0}>
         Calculate Redundancy
-      </button>
+      </Button>
 
       {result && (
         <div className="mt-8 border-t border-line pt-8">
@@ -278,13 +275,9 @@ export default function PersonnelRedundancyPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={saveToDatabase}
-              disabled={saving}
-              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={saveToDatabase} loading={saving}>
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}

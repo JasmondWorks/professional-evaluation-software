@@ -5,7 +5,8 @@ import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 export default function ProductivityIndex() {
   const [output, setOutput] = useState<number | "">("");
@@ -111,11 +112,10 @@ export default function ProductivityIndex() {
                 <span className="truncate">Output Resources (uninflated)</span>
                 <InfoPopover text="Total output resources generated during the period." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={output}
                 onChange={(e) => setOutput(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -123,11 +123,10 @@ export default function ProductivityIndex() {
                 <span className="truncate">Input Resources (uninflated)</span>
                 <InfoPopover text="Total input resources consumed to generate the output." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={input}
                 onChange={(e) => setInput(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -136,13 +135,9 @@ export default function ProductivityIndex() {
 
       {errorMsg && <p className="text-danger-600 font-medium mb-4">{errorMsg}</p>}
 
-      <button
-        onClick={evaluateProductivity}
-        disabled={!isFilled}
-        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
-      >
+      <Button onClick={evaluateProductivity} disabled={!isFilled}>
         Evaluate Productivity
-      </button>
+      </Button>
 
       {result !== null && (
         <div className="mt-8 border-t border-line pt-8">
@@ -160,13 +155,9 @@ export default function ProductivityIndex() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={handleSubmit} disabled={loading} loading={loading}>
               {loading ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {success && <p className="mt-4 text-sm font-medium text-green-600">✅ Successfully saved.</p>}

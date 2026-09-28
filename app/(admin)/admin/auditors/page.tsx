@@ -3,6 +3,7 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 export default function AdminAuditorsPage() {
   const [auditors, setAuditors] = useState<any[]>([]);
@@ -82,26 +83,28 @@ export default function AdminAuditorsPage() {
                 <td className="p-2 flex gap-2">
                   {a.status === "pending" && (
                     <>
-                      <button
-                        onClick={(e) => {
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={(e: React.MouseEvent) => {
                           e.stopPropagation();
                           // Approve action
                           handleAction(a.id, "approve");
                         }}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:opacity-90"
                       >
                         Approve
-                      </button>
-                      <button
-                        onClick={(e) => {
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e: React.MouseEvent) => {
                           e.stopPropagation();
                           // Reject action
                           handleAction(a.id, "reject");
                         }}
-                        className="px-3 py-1 bg-danger-600 text-white rounded hover:opacity-90"
                       >
                         Reject
-                      </button>
+                      </Button>
                     </>
                   )}
                 </td>

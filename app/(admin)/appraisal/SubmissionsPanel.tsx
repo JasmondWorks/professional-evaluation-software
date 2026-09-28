@@ -131,11 +131,11 @@ export default function SubmissionsPanel({ onGoToSetup }: { onGoToSetup?: () => 
                 <Card key={d.dept}>
                   <CardHeader>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         aria-expanded={openDept === d.dept}
                         onClick={() => setOpenDept(openDept === d.dept ? null : d.dept)}
-                        className="min-w-0 text-left focus:outline-none focus-visible:shadow-focus"
+                        className="h-auto min-w-0 flex-col items-start gap-0 p-0 text-left"
                       >
                         <h2 className="text-base font-semibold text-strong hover:text-pes">
                           {d.dept}
@@ -144,7 +144,7 @@ export default function SubmissionsPanel({ onGoToSetup }: { onGoToSetup?: () => 
                           {d.submitted} of {d.total} submitted, {d.verified} verified ·{' '}
                           {openDept === d.dept ? 'hide staff' : 'view staff'}
                         </p>
-                      </button>
+                      </Button>
                       {approved ? (
                         <Badge tone="success">Approved by the Dean</Badge>
                       ) : (

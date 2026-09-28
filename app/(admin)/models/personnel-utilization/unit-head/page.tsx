@@ -9,7 +9,8 @@ import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 type JWTPayload = {
   org?: string;
@@ -148,11 +149,11 @@ export default function UnitHeadOverloadingPage() {
                 <span className="truncate">Actual Supervisory Hours/Week</span>
                 <InfoPopover text="The real number of hours currently spent managing subordinates." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={actualHours}
                 onChange={(e) => setActualHours(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                containerClassName="mt-1.5"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -160,11 +161,11 @@ export default function UnitHeadOverloadingPage() {
                 <span className="truncate">Number of Subordinates</span>
                 <InfoPopover text="The total headcount directly managed by the unit head." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={numSubs}
                 onChange={(e) => setNumSubs(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                containerClassName="mt-1.5"
               />
             </div>
           </div>
@@ -187,11 +188,11 @@ export default function UnitHeadOverloadingPage() {
                 <span className="truncate">Total Extra Complexity Weight</span>
                 <InfoPopover text="Additional weighting based on task difficulty or organizational structure." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={extraComplexity}
                 onChange={(e) => setExtraComplexity(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                containerClassName="mt-1.5"
               />
             </div>
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -235,11 +236,11 @@ export default function UnitHeadOverloadingPage() {
                   <span className="truncate">Optimal Hrs (H*)</span>
                   <InfoPopover text="Optimal supervisory hours derived from Personnel Utilization (Model 11)." />
                 </div>
-                <input
+                <Input
                   type="number"
                   value={optimalHours}
                   onChange={(e) => setOptimalHours(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                  containerClassName="mt-1.5"
                 />
               </div>
               <div className="block w-full min-w-0">
@@ -247,11 +248,11 @@ export default function UnitHeadOverloadingPage() {
                   <span className="truncate">Optimal Personnel (K*)</span>
                   <InfoPopover text="Optimal head count derived from Personnel Utilization (Model 11)." />
                 </div>
-                <input
+                <Input
                   type="number"
                   value={optimalK}
                   onChange={(e) => setOptimalK(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
+                  containerClassName="mt-1.5"
                 />
               </div>
             </div>
@@ -259,13 +260,9 @@ export default function UnitHeadOverloadingPage() {
         </div>
       </div>
 
-      <button
-        onClick={calculate}
-        disabled={!isFilled}
-        className={`px-4 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
-      >
+      <Button onClick={calculate} disabled={!isFilled}>
         Calculate Ratio
-      </button>
+      </Button>
 
       {result && (
         <div className="mt-8 border-t border-line pt-8">
@@ -295,13 +292,9 @@ export default function UnitHeadOverloadingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={saveResult}
-              disabled={saving}
-              className="bg-pes text-white rounded px-4 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={saveResult} disabled={saving} loading={saving}>
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}

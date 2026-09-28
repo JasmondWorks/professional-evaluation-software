@@ -12,6 +12,8 @@ import { useOrgCategory } from "@/app/lib/useOrgCategory";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
 import { getAccessToken } from "@/app/utils/auth";
 import { jwtDecode } from "jwt-decode";
+import Input from "@/app/components/ui/Input";
+import Button from "@/app/components/ui/Button";
 
 interface HomeProps {
   params: {
@@ -274,13 +276,15 @@ export default function MaintenanceDetail({ params }: HomeProps) {
               over a year of 8,760 operating hours — so the model can be seen working.
               Type over any field to use your own, or clear them all.
             </p>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={clearAll}
-              className="shrink-0 rounded-md border border-warning-200 px-3 py-1.5 text-xs font-medium text-warning-700 hover:bg-warning-100"
+              className="shrink-0 border-warning-200 text-warning-700 hover:bg-warning-100"
             >
               Clear sheets
-            </button>
+            </Button>
           </div>
         )}
 
@@ -295,19 +299,16 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                 {sheet.fields.length > 0 ? (
                   <div className="mt-2 space-y-2">
                     {sheet.fields.map((field) => (
-                      <div key={field}>
-                        <label className="block text-sm capitalize">
-                          {field}
-                        </label>
-                        <input
-                          type="number"
-                          className="border rounded p-2 w-full"
-                          value={formData[sheet.name]?.[field] ?? ""}
-                          onChange={(e) =>
-                            handleChange(sheet.name, field, e.target.value)
-                          }
-                        />
-                      </div>
+                      <Input
+                        key={field}
+                        label={field}
+                        containerClassName="capitalize [&>label]:capitalize"
+                        type="number"
+                        value={formData[sheet.name]?.[field] ?? ""}
+                        onChange={(e) =>
+                          handleChange(sheet.name, field, e.target.value)
+                        }
+                      />
                     ))}
                   </div>
                 ) : (
@@ -320,7 +321,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
           ))}
         </div>
 
-        <button
+        <Button
           onClick={() =>
             mayRun
               ? calculateModel()
@@ -329,12 +330,10 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                 )
           }
           aria-disabled={!mayRun}
-          className={`m-4 flex items-center rounded px-4 py-2 text-white ${
-            mayRun ? "bg-pes" : "bg-gray-400 opacity-70"
-          }`}
+          className={`m-4 ${mayRun ? "" : "bg-gray-400 opacity-70 hover:bg-gray-400"}`}
         >
           Conduct P.M Model
-        </button>
+        </Button>
 
         {/* Results */}
         {Object.keys(results).length > 0 && (
@@ -421,7 +420,7 @@ export default function MaintenanceDetail({ params }: HomeProps) {
 
         {Object.keys(results).length > 0 && (
           <div className="flex flex-wrap items-center gap-3 border-t p-4">
-            <button
+            <Button
               type="button"
               onClick={() =>
                 mayRun
@@ -431,13 +430,11 @@ export default function MaintenanceDetail({ params }: HomeProps) {
                     )
               }
               aria-disabled={!mayRun}
-              disabled={saving}
-              className={`rounded px-6 py-2 text-sm font-medium text-white ${
-                saving || !mayRun ? "bg-gray-400 opacity-70" : "bg-pes hover:opacity-90"
-              }`}
+              loading={saving}
+              className={!mayRun ? "bg-gray-400 opacity-70 hover:bg-gray-400" : ""}
             >
               {saving ? "Saving…" : "Save result and plan"}
-            </button>
+            </Button>
             <Link
               href={`/maintenance/history${
                 machine ? `?facility=${encodeURIComponent(facilityName)}` : ""

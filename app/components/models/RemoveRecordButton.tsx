@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Trash } from 'iconsax-react';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
+import Button from '@/app/components/ui/Button';
 
 // Taking one run back out of a model's history.
 //
@@ -73,16 +74,17 @@ export default function RemoveRecordButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="sm"
       onClick={remove}
       disabled={busy}
       aria-label={`Remove ${label ?? 'record'}`}
       title="Remove this record"
-      className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-danger-700 transition-colors hover:bg-danger-50 disabled:cursor-not-allowed disabled:opacity-50"
+      className="text-danger-700 hover:bg-danger-50"
     >
       <Trash size={14} />
       {busy ? 'Removing…' : 'Remove'}
-    </button>
+    </Button>
   );
 }

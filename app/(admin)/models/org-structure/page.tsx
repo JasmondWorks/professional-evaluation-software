@@ -7,7 +7,8 @@ import InfoPopover from "@/app/components/ui/InfoPopover";
 import CascadePanel from "./CascadePanel";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 export default function OrgStructurePage() {
   const [loading, setLoading] = useState(false);
@@ -147,11 +148,10 @@ export default function OrgStructurePage() {
         <span className="truncate">{label}</span>
         {desc && <InfoPopover text={desc} />}
       </div>
-      <input
+      <Input
         type="number"
         value={value}
         onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
-        className="mt-1.5 block w-full rounded-md border border-line bg-canvas focus:bg-white px-3 py-2 text-sm focus:border-pes outline-none transition-all"
       />
     </div>
   );
@@ -167,7 +167,7 @@ export default function OrgStructurePage() {
         {list.map((val, idx) => (
           <div key={idx} className="flex gap-2 items-center">
             <span className="text-xs font-bold text-muted w-4">{idx + 1}.</span>
-            <input
+            <Input
               type="number"
               value={val}
               onChange={(e) => {
@@ -175,30 +175,33 @@ export default function OrgStructurePage() {
                 newList[idx] = Number(e.target.value);
                 setList(newList);
               }}
-              className="block w-full rounded border-line px-3 py-1.5 text-sm shadow-sm outline-none focus:border-pes"
+              containerClassName="flex-1"
             />
             {list.length > 1 && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => {
                   const newList = list.filter((_, i) => i !== idx);
                   setList(newList);
                 }}
-                type="button"
-                className="text-danger-600 hover:text-danger-700 p-1"
                 title="Remove row"
+                aria-label="Remove row"
+                className="text-danger-600 hover:text-danger-700"
               >
                 <BoxRemove size="18" />
-              </button>
+              </Button>
             )}
           </div>
         ))}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setList([...list, 0])}
-          type="button"
-          className="flex items-center gap-1 text-xs font-medium text-pes hover:text-pes-800 transition-colors mt-2 ml-6"
+          className="mt-2 ml-6"
         >
           <BoxAdd size="16" /> Add Row
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -221,10 +224,11 @@ export default function OrgStructurePage() {
       </div>
       {onCalc && (
         <div className="p-6 bg-canvas border-t border-line">
-          <button
+          <Button
             onClick={onCalc}
             disabled={loading}
-            className="w-full py-2.5 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+            loading={loading}
+            className="w-full"
           >
             {loading ? "Saving..." : (
               <>
@@ -232,7 +236,7 @@ export default function OrgStructurePage() {
                 Calculate & Save
               </>
             )}
-          </button>
+          </Button>
 
           {result !== null && result !== undefined && (
             <div className="mt-4 p-4 rounded-lg border text-center bg-pes-50 border-blue-100 text-blue-900">

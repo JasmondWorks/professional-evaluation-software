@@ -40,7 +40,7 @@ export const PRESET_ROLE_LABELS: Record<PresetRole, string> = {
   'unit-head': 'Faculty / Division Head',
   lecturer: 'Employee — Academic',
   'industrial-engineer': 'Employee — Non-Academic',
-  'employee-w': 'Employee (baseline)',
+  'employee-w': 'Employee (regular)',
   auditor: 'Auditor',
 };
 

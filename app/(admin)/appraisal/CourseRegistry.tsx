@@ -1,14 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, CardBody, CardHeader, Field } from '@/app/components/ui';
+import { Alert, Button, Card, CardBody, CardHeader, Field, Input } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
 
 type Course = { id: number; title: string; code: string; unit: string; dept: string | null };
-
-const input =
-  'block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus';
 
 /** Form 2, the course registry. Course units feed the teaching quantity, so a
  *  course has to exist here before a lecturer can be appraised on it. */
@@ -85,23 +82,22 @@ export default function CourseRegistry({ periodId }: { periodId: number }) {
           <div className="sm:col-span-2">
             <Field label="Course title">
               {(f) => (
-                <input id={f.id} className={input} value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input id={f.id} value={title} onChange={(e) => setTitle(e.target.value)} />
               )}
             </Field>
           </div>
           <Field label="Code">
             {(f) => (
-              <input id={f.id} className={input} value={code} onChange={(e) => setCode(e.target.value)} />
+              <Input id={f.id} value={code} onChange={(e) => setCode(e.target.value)} />
             )}
           </Field>
           <Field label="Units">
             {(f) => (
-              <input
+              <Input
                 id={f.id}
                 type="number"
                 min={0}
                 step="0.5"
-                className={input}
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
               />
@@ -146,13 +142,14 @@ export default function CourseRegistry({ periodId }: { periodId: number }) {
                       {c.dept ? ` · ${c.dept}` : ''}
                     </p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => remove(c.id)}
-                    className="text-sm font-medium text-danger-700 hover:underline"
+                    className="text-danger-700 hover:underline"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

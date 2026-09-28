@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Award, Download } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 interface HallOfFameMember {
   id: string;
@@ -150,39 +151,37 @@ useEffect(() => {
         {/* Pagination Footer */}
         <div className="border-t bg-canvas p-4">
           <div className="flex items-center justify-between mb-3">
-            <button
+            <Button
               onClick={handlePrevPage}
               disabled={currentPage === 1}
-              className="flex items-center gap-2 bg-pes hover:bg-pes disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg font-medium shadow-md transition-all duration-200 disabled:shadow-none"
+              className="shadow-md disabled:shadow-none"
             >
               <ChevronLeft className="w-5 h-5" />
               Previous
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={handleNextPage}
               disabled={currentPage === totalPages}
-              className="flex items-center gap-2 bg-pes hover:bg-pes disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg font-medium shadow-md transition-all duration-200 disabled:shadow-none"
+              className="shadow-md disabled:shadow-none"
             >
               Next
               <ChevronRight className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
 
           {/* Page Numbers */}
           <div className="flex justify-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button
+              <Button
                 key={page}
                 onClick={() => handlePageClick(page)}
-                className={`w-10 h-10 rounded-lg font-medium transition-all duration-200 ${
-                  page === currentPage
-                    ? 'bg-pes text-white shadow-md'
-                    : 'bg-white text-body hover:bg-pes border border-line'
-                }`}
+                size="icon"
+                variant={page === currentPage ? "primary" : "outline"}
+                className={`w-10 h-10 rounded-lg ${page === currentPage ? "shadow-md" : ""}`}
               >
                 {page}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

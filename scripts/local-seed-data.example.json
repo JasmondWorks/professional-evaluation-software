@@ -1,59 +1,50 @@
 {
-  "_comment": "Reference only — shows every allowed value. Not read by the script; fill in local-seed-data.json instead.",
+  "_comment": "Reference only — shows every allowed value. Not read by the script; fill in local-seed-data.json instead. Use the top-level 'orgs' array (this shape) to seed several organizations in one run — one per institution type, or as many as you like. A single { org, admin, employees } object (no 'orgs' wrapper) still works too, for seeding just one.",
 
-  "org": {
-    "name": "Acme University",
-    "category": "academic",
-    "_category_options": ["company", "public", "academic"],
-    "plan": "premium",
-    "_plan_options": ["basic", "standard", "premium"]
-  },
-
-  "admin": {
-    "name": "Ada Lovelace",
-    "email": "admin@acme.edu",
-    "password": "Str0ngPassw0rd!"
-  },
-
-  "employees": [
+  "orgs": [
     {
-      "name": "Grace Hopper",
-      "email": "grace@acme.edu",
-      "password": "AnotherPassw0rd!",
-      "dept": "Computer Science",
-      "role": "hod",
-      "_role_options": [
-        "admin",
-        "hod",
-        "dept-admin",
-        "unit-head",
-        "lecturer",
-        "industrial-engineer",
-        "employee-w",
-        "auditor"
+      "org": {
+        "name": "Acme University",
+        "category": "academic",
+        "_category_options": ["company", "public", "academic"],
+        "plan": "premium",
+        "_plan_options": ["basic", "standard", "premium"]
+      },
+
+      "admin": {
+        "name": "Ada Lovelace",
+        "email": "admin@acme.edu",
+        "password": "Str0ngPassw0rd!"
+      },
+
+      "employees": [
+        {
+          "name": "Grace Hopper",
+          "email": "grace@acme.edu",
+          "password": "AnotherPassw0rd!",
+          "level": "Senior"
+        },
+        {
+          "name": "Alan Turing",
+          "email": "alan@acme.edu",
+          "password": "YetAnotherPassw0rd!",
+          "level": ""
+        }
       ],
-      "_role_notes": "'lecturer' only resolves if org.category is 'academic'. Omit role (or leave blank) to default to 'employee-w'. role does NOT have to be one of these — any other text (e.g. 'Snr. Supt', 'Chief Admin Officer') is created as a new custom role in this org the first time it's used.",
-      "level": "Senior"
-    },
-    {
-      "name": "Ada King",
-      "email": "ada@acme.edu",
-      "password": "YetAnotherPassw0rd2!",
-      "dept": "Fire",
-      "role": "Snr. Supt",
-      "baseRole": "unit-head",
-      "_baseRole_notes": "Only used the first time this custom role name appears. Sets which preset's permissions the new role starts with — same _role_options list above. Omit to default to 'employee-w'; an admin can fine-tune permissions afterwards from the Roles page.",
-      "level": "Level 10"
-    },
-    {
-      "name": "Alan Turing",
-      "email": "alan@acme.edu",
-      "password": "YetAnotherPassw0rd!",
-      "dept": "Mathematics",
-      "role": "employee-w",
-      "level": ""
-    }
-  ],
 
-  "_employees_notes": "employees is optional — use an empty array [] to seed only the org + admin. dept and level are free text; level is optional and can be left as an empty string or omitted."
+      "_employees_notes": "employees is optional — use an empty array [] to seed only the org + admin. Each is created as a regular (baseline) employee with no department or role — the org admin assigns those from within the app, since department/head-of-department roles depend on the department actually existing there first. level is free text, optional, and can be left empty."
+    },
+    {
+      "org": { "name": "Acme Corp", "category": "company", "plan": "standard" },
+      "admin": { "name": "Sam Founder", "email": "admin@acmecorp.example", "password": "Str0ngPassw0rd!" },
+      "employees": [
+        { "name": "Pat Worker", "email": "pat@acmecorp.example", "password": "AnotherPassw0rd!" }
+      ]
+    },
+    {
+      "org": { "name": "Acme Public Agency", "category": "public", "plan": "basic" },
+      "admin": { "name": "Jo Director", "email": "admin@acmeagency.example", "password": "Str0ngPassw0rd!" },
+      "employees": []
+    }
+  ]
 }

@@ -15,6 +15,7 @@ import {
   Skeleton,
   inputBase,
 } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 
 // A department needs this many staff submissions before its data can be assessed.
 const MIN_SUBMISSIONS = 15;
@@ -158,11 +159,11 @@ export default function Assesment() {
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
               />
-              <input
+              <Input
                 type="search"
                 aria-label="Search departments"
                 placeholder="Search departments"
-                className={`${inputBase} pl-9`}
+                className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

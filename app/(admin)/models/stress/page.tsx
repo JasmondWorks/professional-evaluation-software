@@ -22,7 +22,7 @@ import Link from "next/link";
 import { Calculator, Chart2, Save2, DocumentText, Warning2 } from 'iconsax-react';
 import { useModelAccess, hasEntitlement } from '@/app/components/useModelAccess';
 import { getAccessToken } from '@/app/utils/auth';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
 import { Tabs, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/app/components/ui/dialog";
@@ -601,13 +601,9 @@ export default function StressAnalysisTool() {
         </div>
         <div className="flex gap-3">
           {isAdmin && inSession && (
-            <button
-              onClick={handleEndCycle}
-              disabled={ending}
-              className="bg-white border border-danger-100 text-danger-700 shadow-sm px-4 py-2 rounded-md hover:bg-danger-50 font-medium text-sm transition-colors disabled:opacity-50"
-            >
+            <Button variant="secondary" className="border-danger-100 text-danger-700 hover:bg-danger-50" onClick={handleEndCycle} disabled={ending}>
               {ending ? "Ending…" : "End cycle"}
-            </button>
+            </Button>
           )}
           <Link
             href="/models/stress/history"
@@ -672,28 +668,30 @@ export default function StressAnalysisTool() {
             </div>
             <div className="flex gap-2 flex-wrap">
               {form?.status === "not_yet" && (
-                <button onClick={handleOpenWindow} disabled={opening}
-                  className="px-5 py-2.5 border border-green-200 text-green-700 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50">
+                <Button variant="secondary" size="lg" className="border-green-200 text-green-700 hover:bg-green-50" onClick={handleOpenWindow} disabled={opening}>
                   {opening ? "Opening…" : `Open ${inSettings ? "Form 5" : "Form 6/7"} now`}
-                </button>
+                </Button>
               )}
               {form?.status === "open" && (
-                <button onClick={handleCloseWindow} disabled={closing}
-                  className="px-5 py-2.5 border border-danger-100 text-danger-700 rounded-lg font-medium hover:bg-danger-50 transition-colors disabled:opacity-50">
+                <Button variant="secondary" size="lg" className="border-danger-100 text-danger-700 hover:bg-danger-50" onClick={handleCloseWindow} disabled={closing}>
                   {closing ? "Closing…" : `Close ${inSettings ? "Form 5" : "Form 6/7"} now`}
-                </button>
+                </Button>
               )}
               {(cycleStatus.phase === "settings_closed" || cycleStatus.phase === "feeling_closed") && (
-                <button onClick={handleReopenWindow} disabled={reopening}
-                  className="px-5 py-2.5 border border-line text-body rounded-lg font-medium hover:bg-canvas transition-colors disabled:opacity-50">
+                <Button variant="secondary" size="lg" onClick={handleReopenWindow} disabled={reopening}>
                   {reopening ? "Reopening…" : `Reopen ${inSettings ? "Form 5" : "Form 6/7"}`}
-                </button>
+                </Button>
               )}
-              <button onClick={handleEndCycle} disabled={ending}
+              <Button
+                variant="secondary"
+                size="lg"
+                className="border-danger-100 text-danger-700 hover:bg-danger-50"
+                onClick={handleEndCycle}
+                disabled={ending}
                 title="Close this cycle off for the whole organization"
-                className="px-5 py-2.5 border border-danger-100 text-danger-700 rounded-lg font-medium hover:bg-danger-50 transition-colors disabled:opacity-50">
+              >
                 {ending ? "Ending…" : "End cycle"}
-              </button>
+              </Button>
             </div>
           </div>
         );
@@ -708,12 +706,9 @@ export default function StressAnalysisTool() {
               Open a new stress exercise for your organization. Only one cycle can run at a time.
             </p>
           </div>
-          <button
-            onClick={() => setSettingsModalOpen(true)}
-            className="px-6 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm"
-          >
+          <Button size="lg" onClick={() => setSettingsModalOpen(true)}>
             Manage stress settings
-          </button>
+          </Button>
         </div>
       )}
 
@@ -746,9 +741,9 @@ export default function StressAnalysisTool() {
                     Form 5 closes (optional)
                     <input type="datetime-local" value={cycleWindows.settingsClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, settingsClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
-                  <button onClick={() => handleStartCycle(true)} disabled={startingCycle || !cycleWindows.settingsOpensAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                  <Button className="mt-2 w-full" onClick={() => handleStartCycle(true)} disabled={startingCycle || !cycleWindows.settingsOpensAt}>
                     {startingCycle ? "Starting..." : "Start full cycle"}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -803,9 +798,9 @@ export default function StressAnalysisTool() {
                     Form 6/7 closes (optional)
                     <input type="datetime-local" value={cycleWindows.feelingClosesAt} onChange={(e) => setCycleWindows((w) => ({ ...w, feelingClosesAt: e.target.value }))} className="mt-1 px-2 py-1.5 border border-line rounded" />
                   </label>
-                  <button onClick={() => handleStartCycle(false)} disabled={startingCycle || !selectedHistoryId || !cycleWindows.feelingOpensAt} className="mt-2 py-2 bg-pes text-white rounded font-medium disabled:opacity-50">
+                  <Button className="mt-2 w-full" onClick={() => handleStartCycle(false)} disabled={startingCycle || !selectedHistoryId || !cycleWindows.feelingOpensAt}>
                     {startingCycle ? "Starting..." : "Start feeling-only cycle"}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -863,14 +858,16 @@ export default function StressAnalysisTool() {
                         </td>
                         <td className="px-4 py-2 text-right">
                           {d.pendingApproval > 0 && (
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="border border-pes/30"
                               onClick={() => handleAdminApprove(group, d.name)}
                               disabled={approvingUnit === `${group}:${d.name}`}
                               title={noHead ? `No ${headLabel} is assigned — approve on their behalf so evaluation isn't blocked` : "Approve on behalf (admin override)"}
-                              className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
                             >
                               {approvingUnit === `${group}:${d.name}` ? "Approving…" : "Approve"}
-                            </button>
+                            </Button>
                           )}
                         </td>
                       </tr>
@@ -948,21 +945,23 @@ export default function StressAnalysisTool() {
                 />
               </label>
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="border-pes-200 text-pes-700 hover:bg-pes-50"
                   onClick={handlePreviewSetting}
                   disabled={previewing || !cycleStatus?.active}
-                  className="px-5 py-3 border border-pes-200 text-pes-700 rounded-lg hover:bg-pes-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {previewing ? "Loading…" : "View Form 5 results"}
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="lg"
                   onClick={handleRunSetting}
                   disabled={runningSetting || cycleStatus?.phase !== "settings_closed"}
                   title={cycleStatus?.phase !== "settings_closed" ? "Close Form 5 first to lock in the setting" : undefined}
-                  className="px-6 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {runningSetting ? "Computing…" : "Run / Evaluate Setting"}
-                </button>
+                </Button>
               </div>
               {cycleStatus?.active && cycleStatus.phase !== "settings_closed" && (
                 <span className="text-xs text-muted">
@@ -1013,15 +1012,16 @@ export default function StressAnalysisTool() {
             
             {isAdmin ? (
               <div className="flex flex-col gap-2">
-                <button
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto"
                   onClick={runANOVA}
                   disabled={!canRunAnova}
                   title={anovaBlockedReason ?? undefined}
-                  className="w-full sm:w-auto px-8 py-3 bg-pes text-white rounded-lg hover:bg-pes-800 transition-colors font-medium shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Chart2 size="18" />
                   Run ANOVA & Generate Report
-                </button>
+                </Button>
                 {anovaBlockedReason && (
                   <div className="flex items-start gap-2 rounded-lg border border-warning-100 bg-warning-50 px-4 py-3 text-sm text-warning-700 max-w-xl">
                     <Warning2 size="18" className="text-warning-600 mt-0.5 shrink-0" variant="Bold" />
@@ -1182,10 +1182,10 @@ export default function StressAnalysisTool() {
                   </div>
                 )}
                 {isAdmin && (
-                  <button
+                  <Button
+                    className="w-full mb-3 bg-green-600 hover:bg-green-700"
                     onClick={handleSave}
                     disabled={saving}
-                    className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2 mb-3"
                   >
                     {saving ? "Saving..." : (
                       <>
@@ -1193,15 +1193,12 @@ export default function StressAnalysisTool() {
                         Save Results to Database
                       </>
                     )}
-                  </button>
+                  </Button>
                 )}
-                <button
-                  onClick={() => window.print()}
-                  className="w-full py-2.5 bg-white border border-line text-body rounded-lg hover:bg-canvas transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
-                >
+                <Button variant="secondary" className="w-full" onClick={() => window.print()}>
                   <DocumentText size="18" />
                   Print Report
-                </button>
+                </Button>
               </div>
             </div>
 

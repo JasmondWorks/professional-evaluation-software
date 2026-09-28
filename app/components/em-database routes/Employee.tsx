@@ -15,6 +15,7 @@ import { jwtDecode } from "jwt-decode";
 import { apiFetch } from "@/app/utils/apiFetch";
 import BulkUploadModal from "@/app/components/bulk-upload/BulkUploadModal";
 import { employeeUploadSpec } from "@/app/lib/bulk-upload/specs/employees";
+import Button from "@/app/components/ui/Button";
 
 // Every system preset role, built from the canonical list so this dropdown can
 // never diverge from the roles that actually exist (Roles table, seeding, etc.).
@@ -25,6 +26,18 @@ const buildAssignOptions = (category?: string | null) =>
   PRESET_ROLES.map((r) => ({ value: r, label: presetRoleLabel(r, category) }));
 // A staff member counts as "assigned" once they hold one of these management roles.
 const ASSIGNED_ROLES = ["hod", "dept-admin", "industrial-engineer"];
+
+// display_role only holds something worth showing on its own for a custom
+// role (e.g. "Paginator") — for anyone on a plain preset it's either unset or
+// just a copy of the preset key, and rendering that key directly showed raw
+// values like "employee-w" instead of "Employee (regular)".
+function roleLabel(user: { role: string; display_role?: string }, category?: string | null) {
+  const isPreset = (PRESET_ROLES as readonly string[]).includes(user.role);
+  if (user.display_role && (!isPreset || user.display_role !== user.role)) {
+    return user.display_role;
+  }
+  return isPreset ? presetRoleLabel(user.role as (typeof PRESET_ROLES)[number], category) : user.role;
+}
 
 type User = {
   id: number;
@@ -264,14 +277,15 @@ export default function Employee() {
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => setBulkOpen(true)}
-              className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-pes-700 bg-surface border border-line rounded-lg shadow-xs hover:bg-pes-50 transition-colors"
+              className="text-pes-700 hover:bg-pes-50"
             >
               <DocumentUpload size={18} />
               <span>Create multiple employees</span>
-            </button>
+            </Button>
             <Link
               href="/em-database/add-auditor"
               className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-pes-700 bg-surface border border-line rounded-lg shadow-xs hover:bg-pes-50 transition-colors"
@@ -329,8 +343,8 @@ export default function Employee() {
                 align: "center",
                 render: (i) => (
                   <div className="flex justify-center">
-                    <Badge tone={roleTone(i.role)} className="capitalize">
-                      {i.display_role || i.role}
+                    <Badge tone={roleTone(i.role)}>
+                      {roleLabel(i, orgCategory)}
                     </Badge>
                   </div>
                 ),
@@ -351,8 +365,10 @@ export default function Employee() {
                     {(() => {
                       const assigned = ASSIGNED_ROLES.includes(i.role);
                       return (
-                        <button
-                          onClick={(e) => {
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e: React.MouseEvent) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setSelectedEmployee(i);
@@ -361,27 +377,28 @@ export default function Employee() {
                           title={
                             assigned ? "Click to reassign" : "Assign a role"
                           }
-                          className={`text-xs border rounded px-3 py-1 font-medium transition-colors ${
+                          className={
                             assigned
                               ? "border-green-200 bg-green-50 text-green-600 hover:bg-green-100"
                               : "border-blue-200 bg-pes-50 text-pes hover:bg-pes-100"
-                          }`}
+                          }
                         >
                           {assigned ? "Role Assigned" : "Assign Role"}
-                        </button>
+                        </Button>
                       );
                     })()}
-                    <button
-                      onClick={(e) => {
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e: React.MouseEvent) => {
                         e.preventDefault();
                         e.stopPropagation();
                         handleResend(i.email, i.id);
                       }}
                       disabled={resendingId === i.id}
-                      className="text-xs border border-line rounded px-3 py-1 hover:bg-line/50 disabled:opacity-50 transition-colors"
                     >
                       {resendingId === i.id ? "Sending..." : "Resend creds"}
-                    </button>
+                    </Button>
                   </div>
                 ),
               },
@@ -409,7 +426,7 @@ export default function Employee() {
               <span className="inline-block mt-2">
                 Current Role:{" "}
                 <span className="font-medium px-2.5 py-0.5 rounded-full bg-canvas text-body ml-1 text-xs">
-                  {selectedEmployee.display_role || selectedEmployee.role}
+                  {roleLabel(selectedEmployee, orgCategory)}
                 </span>
               </span>
             </p>
@@ -430,47 +447,23 @@ export default function Employee() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-line">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setIsModalOpen(false)}
                 disabled={assigning}
-                className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg transition-colors disabled:opacity-50"
+                className="text-body hover:bg-line/50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleModalAssign}
                 disabled={assigning || !!headConflict}
                 title={headConflict ? headConflict.message : undefined}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-30"
+                loading={assigning}
+                className="min-w-30"
               >
-                {assigning ? (
-                  <span className="flex items-center gap-2">
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Assigning...
-                  </span>
-                ) : (
-                  "Assign Role"
-                )}
-              </button>
+                {assigning ? "Assigning..." : "Assign Role"}
+              </Button>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { saveResult } from "../util/sharedPost";
 import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
 
 export default function Method3Page() {
   const [A, setA] = useState<number | "">("");
@@ -132,13 +132,9 @@ export default function Method3Page() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={saveToDb}
-              disabled={saving}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={saveToDb} disabled={saving}>
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}

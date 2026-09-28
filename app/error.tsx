@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
+import Button from '@/app/components/ui/Button'
 
 export default function Error({
   error,
@@ -18,12 +19,9 @@ export default function Error({
     <div style={styles.container}>
       <h1 style={styles.title}>Something went wrong!</h1>
       <p style={styles.text}>{error.message || 'An unexpected error occurred.'}</p>
-      <button
-        style={styles.button}
-        onClick={() => reset()}
-      >
+      <Button onClick={() => reset()}>
         Try again
-      </button>
+      </Button>
     </div>
   )
 }
@@ -44,15 +42,5 @@ const styles: { [key: string]: React.CSSProperties } = {
    text: {
      fontSize: '18px',
      marginBottom: '20px',
-   },
-   button: {
-     padding: '10px 20px',
-     fontSize: '16px',
-     cursor: 'pointer',
-     backgroundColor: '#322b80',
-     color: 'white',
-     border: 'none',
-     borderRadius: '5px',
-     fontWeight: 'bold',
    },
 };

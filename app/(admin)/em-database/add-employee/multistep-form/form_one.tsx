@@ -3,6 +3,8 @@
 import { ChangeEvent, useEffect, useState, Dispatch, SetStateAction, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import RoleSelect from '@/app/components/ui/RoleSelect';
+import StandardInput from '@/app/components/ui/Input';
+import Button from '@/app/components/ui/Button';
 import { PRESET_ROLES } from '@/app/components/utils/roles';
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -70,30 +72,28 @@ function Input({
   }
 
   return (
-    <div className={`formgroup flex flex-col gap-1.5 mb-3 w-full ${classNameProp}`}>
-      <label className="text-sm font-medium text-body">{label}</label>
-      <input
-        name={name}
-        type={type}
-        value={localValue}
-        placeholder={placeholder}
-        tabIndex={tabIndex}
-        onChange={(e) => {
-          setLocalValue(e.target.value);
-          commitValue(e.target.value);
-        }}
-        onBlur={(e) => commitValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            commitValue(localValue);
-            advanceFocus(e.currentTarget);
-          }
-        }}
-        className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted transition-shadow focus:outline-none focus:border-pes-400 focus:shadow-focus"
-      />
-      {errors[name] && <p className="text-danger-600 text-xs mt-1">{errors[name]}</p>}
-    </div>
+    <StandardInput
+      containerClassName={`formgroup mb-3 w-full ${classNameProp}`}
+      label={label}
+      name={name}
+      type={type}
+      value={localValue}
+      placeholder={placeholder}
+      tabIndex={tabIndex}
+      onChange={(e) => {
+        setLocalValue(e.target.value);
+        commitValue(e.target.value);
+      }}
+      onBlur={(e) => commitValue(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commitValue(localValue);
+          advanceFocus(e.currentTarget);
+        }
+      }}
+      error={errors[name] || undefined}
+    />
   );
 }
 
@@ -146,33 +146,29 @@ function PhoneInput({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 mb-3 w-full">
-      {label && (
-        <label className="text-sm font-medium text-body">{label}</label>
-      )}
-      <input
-        type="text"
-        name={name}
-        value={localValue}
-        placeholder={placeholder}
-        onChange={(e) => {
-          const val = e.target.value.replace(/[^\d+]/g, '');
-          setLocalValue(val);
-          onChange(val);
-        }}
-        onBlur={handleBlur}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleBlur();
-            advanceFocus(e.currentTarget);
-          }
-        }}
-        tabIndex={tabIndex}
-        className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted transition-shadow focus:outline-none focus:border-pes-400 focus:shadow-focus"
-        maxLength={16}
-      />
-    </div>
+    <StandardInput
+      containerClassName="mb-3 w-full"
+      label={label}
+      type="text"
+      name={name}
+      value={localValue}
+      placeholder={placeholder}
+      onChange={(e) => {
+        const val = e.target.value.replace(/[^\d+]/g, '');
+        setLocalValue(val);
+        onChange(val);
+      }}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleBlur();
+          advanceFocus(e.currentTarget);
+        }
+      }}
+      tabIndex={tabIndex}
+      maxLength={16}
+    />
   );
 }
 
@@ -366,16 +362,17 @@ export default function FormOne({
               return (
                 <p className="text-xs text-warning-700 mt-1">
                   Did you mean{" "}
-                  <button
+                  <Button
                     type="button"
-                    className="underline font-medium"
+                    variant="ghost"
+                    className="h-auto p-0 inline align-baseline underline font-medium text-warning-700 hover:bg-transparent"
                     onClick={() => {
                       updateFields({ email: suggestion });
                       validateField("email", suggestion);
                     }}
                   >
                     {suggestion}
-                  </button>
+                  </Button>
                   ?
                 </p>
               );
@@ -483,18 +480,15 @@ export default function FormOne({
         hint="Attach the certificate for the qualification given."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 items-start">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-body">Title or qualification</label>
-            <input
-              id="title"
-              type="text"
-              placeholder="e.g. B.Sc. Mechanical Engineering"
-              name="qualification"
-              value={formdata.qualification || ''}
-              onChange={handleChange}
-              className="w-full h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm placeholder:text-muted focus:outline-none focus:border-pes-400 focus:shadow-focus"
-            />
-          </div>
+          <StandardInput
+            id="title"
+            label="Title or qualification"
+            type="text"
+            placeholder="e.g. B.Sc. Mechanical Engineering"
+            name="qualification"
+            value={formdata.qualification || ''}
+            onChange={handleChange}
+          />
 
           <Input {...inputProps} name="year" label="Year obtained" type="date" />
 

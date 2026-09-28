@@ -7,6 +7,8 @@ import { useStickyState } from "@/app/lib/models/useStickyState";
 import { getAccessToken } from "@/app/utils/auth";
 import HistoryPicker from "@/app/components/models/HistoryPicker";
 import { useCurrentUser } from "@/app/components/useCurrentUser";
+import { Button } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 import { findOptimalKCost } from "../personnel-utilization/lib/util-models11-16";
 import {
   runCostCascade,
@@ -283,9 +285,6 @@ export default function CostCascadePanel() {
     }
   }
 
-  const field =
-    "mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition-shadow focus:border-pes-400 focus:shadow-focus";
-
   return (
     <div className="mt-10 flex flex-col gap-6">
       {/* ===== Supervisory size ===== */}
@@ -336,13 +335,14 @@ export default function CostCascadePanel() {
                           {new Date(r.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <button
+                          <Button
                             type="button"
+                            size="sm"
+                            variant="outline"
                             onClick={() => setSelectedStaffId(r.id)}
-                            className="rounded-md border border-pes px-2.5 py-1 text-xs font-medium text-pes hover:bg-pes-50"
                           >
                             {r.id === selectedStaffId ? "Selected" : "Use"}
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -376,14 +376,13 @@ export default function CostCascadePanel() {
                 }}
               />
             </div>
-            <input
+            <Input
               type="number"
               value={supervisoryKstar}
               onChange={(e) =>
                 setSupervisoryKstar(e.target.value === "" ? "" : Number(e.target.value))
               }
               readOnly={!mayExecute}
-              className={field}
               placeholder="K* from a supervision cost run"
             />
 
@@ -421,48 +420,44 @@ export default function CostCascadePanel() {
                 ["a", "a — boss cost/hr", "1"],
                 ["b", "b — staff cost/hr", "1"],
               ] as const).map(([key, label, step]) => (
-                <label key={key} className="text-xs font-medium text-muted">
-                  {label}
-                  <input
-                    type="number"
-                    step={step}
-                    value={r[key]}
-                    onChange={(e) =>
-                      updateLevel(i, {
-                        [key]: e.target.value === "" ? "" : Number(e.target.value),
-                        run: null,
-                        error: null,
-                      } as Partial<LevelRates>)
-                    }
-                    readOnly={!mayExecute}
-                    className={field}
-                  />
-                </label>
+                <Input
+                  key={key}
+                  label={label}
+                  containerClassName="text-xs font-medium text-muted"
+                  type="number"
+                  step={step}
+                  value={r[key]}
+                  onChange={(e) =>
+                    updateLevel(i, {
+                      [key]: e.target.value === "" ? "" : Number(e.target.value),
+                      run: null,
+                      error: null,
+                    } as Partial<LevelRates>)
+                  }
+                  readOnly={!mayExecute}
+                />
               ))}
 
               <div className="flex items-end gap-2">
                 {mayExecute && (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
                     onClick={() => executeLevel(i)}
                     disabled={r.lambda === "" || r.mu === ""}
-                    className={`rounded-md px-3 py-2 text-xs font-medium text-white ${
-                      r.lambda === "" || r.mu === ""
-                        ? "cursor-not-allowed bg-gray-400"
-                        : "bg-pes hover:opacity-90"
-                    }`}
                   >
                     {r.run ? "Re-execute" : "Execute"}
-                  </button>
+                  </Button>
                 )}
                 {mayExecute && levelRates.length > 1 && (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="destructive"
                     onClick={() => setLevelRates((prev) => prev.filter((_, j) => j !== i))}
-                    className="rounded-md border border-line px-3 py-2 text-xs text-danger-700 hover:bg-danger-50"
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -512,13 +507,14 @@ export default function CostCascadePanel() {
             </div>
           ))}
           {mayExecute && (
-            <button
+            <Button
               type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setLevelRates((prev) => [...prev, emptyLevel()])}
-              className="rounded-md border border-pes px-3 py-2 text-xs font-medium text-pes hover:bg-pes-50"
             >
               + Add another management level
-            </button>
+            </Button>
           )}
         </div>
 
@@ -622,7 +618,7 @@ export default function CostCascadePanel() {
                     <td className="px-4 py-2 font-medium text-strong">{r.level}</td>
                     <td className="px-4 py-2">{r.ideal}</td>
                     <td className="px-4 py-2">
-                      <input
+                      <Input
                         type="number"
                         value={realCounts[r.level] ?? ""}
                         onChange={(e) =>
@@ -631,7 +627,7 @@ export default function CostCascadePanel() {
                             [r.level]: e.target.value === "" ? "" : Number(e.target.value),
                           }))
                         }
-                        className="w-28 rounded-md border border-line bg-surface px-2 py-1 text-sm outline-none focus:border-pes-400"
+                        containerClassName="inline-flex w-28"
                       />
                       {employeeCounts?.[r.level] !== undefined && (
                         <span className="ml-2 text-xs text-muted">
@@ -692,16 +688,9 @@ export default function CostCascadePanel() {
           )}
 
           <div className="mt-5 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={saveRedundancy}
-              disabled={saving}
-              className={`rounded-lg px-6 py-3 text-sm font-medium text-white transition-colors ${
-                saving ? "cursor-not-allowed bg-gray-400" : "bg-pes hover:opacity-90"
-              }`}
-            >
+            <Button type="button" size="lg" onClick={saveRedundancy} disabled={saving}>
               {saving ? "Saving…" : "Save results to history"}
-            </button>
+            </Button>
             <Link
               href="/models/redundancy-index/supervision-cost-history"
               className="text-sm text-pes underline"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button, Input } from '@/app/components/ui';
 
 export default function AddAuditorPage() {
   const [email, setEmail] = useState("");
@@ -50,26 +50,18 @@ export default function AddAuditorPage() {
       <h1 className="text-2xl font-semibold mb-6">Add External Auditor</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            placeholder="Enter email address"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-3 py-2 border rounded-lg focus:ring focus:ring-blue-400 focus:outline-none"
-          />
-        </div>
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          placeholder="Enter email address"
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full py-2 px-4 rounded-lg text-white font-medium transition 
-            ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-pes hover:bg-pes-800"}`}
-        >
+        <Button type="submit" disabled={isLoading} loading={isLoading} className="w-full">
           {isLoading ? "Sending..." : "Send Invitation"}
-        </button>
+        </Button>
       </form>
 
       {message && (

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from '@/app/components/ui/Button';
+import Input from '@/app/components/ui/Input';
 import PageHeader from '@/app/components/ui/PageHeader';
 import Badge from '@/app/components/ui/Badge';
 import { CRITERIA, CriterionKey, PERFORMANCE_TARGET } from '@/app/lib/performance/instrument';
@@ -266,34 +267,30 @@ export default function PerformanceConsole() {
                 className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
               />
             </Field>
-            <Field label="RTP target" hint="55 unless your institution has set its own.">
-              <input
-                type="number"
-                min={1}
-                max={100}
-                value={form.target}
-                onChange={(e) => setForm({ ...form, target: e.target.value })}
-                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-              />
-            </Field>
-            <Field label="Staff drawn per head">
-              <input
-                type="number"
-                min={1}
-                value={form.raterSample}
-                onChange={(e) => setForm({ ...form, raterSample: e.target.value })}
-                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-              />
-            </Field>
-            <Field label="Returns needed" hint="Below this, a head's result is withheld.">
-              <input
-                type="number"
-                min={1}
-                value={form.raterMinimum}
-                onChange={(e) => setForm({ ...form, raterMinimum: e.target.value })}
-                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-              />
-            </Field>
+            <Input
+              label="RTP target"
+              hint="55 unless your institution has set its own."
+              type="number"
+              min={1}
+              max={100}
+              value={form.target}
+              onChange={(e) => setForm({ ...form, target: e.target.value })}
+            />
+            <Input
+              label="Staff drawn per head"
+              type="number"
+              min={1}
+              value={form.raterSample}
+              onChange={(e) => setForm({ ...form, raterSample: e.target.value })}
+            />
+            <Input
+              label="Returns needed"
+              hint="Below this, a head's result is withheld."
+              type="number"
+              min={1}
+              value={form.raterMinimum}
+              onChange={(e) => setForm({ ...form, raterMinimum: e.target.value })}
+            />
           </div>
           <div className="pt-5">
             <Button disabled={busy} onClick={open}>

@@ -1,22 +1,22 @@
 {
   "org": {
-    "name": "",
-    "category": "",
-    "plan": ""
+    "name": "Jasmonds Works",
+    "category": "Company",
+    "plan": "Premium"
   },
   "admin": {
-    "name": "",
-    "email": "",
-    "password": ""
+    "name": "Jasmond Thompson",
+    "email": "obafemilared@gmail.com",
+    "password": "olaola03"
   },
   "employees": [
     {
-      "name": "",
-      "email": "",
-      "password": "",
-      "dept": "",
-      "role": "",
-      "level": ""
+      "name": "Olaoluwa Olorede",
+      "email": "olaoluwaolorede8@gmail.com",
+      "password": "olaola03",
+      "dept": "Fire",
+      "role": "Snr.",
+      "level": "Level 8"
     }
   ]
 }

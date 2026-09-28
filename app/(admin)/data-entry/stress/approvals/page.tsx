@@ -9,6 +9,7 @@ import { notify } from "@/lib/toast";
 import StressSubmissionModal from "@/app/components/StressSubmissionModal";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 type Row = { name: string | null; submitted: boolean; approved: boolean };
 type Status = {
@@ -140,13 +141,9 @@ export default function StressApprovals() {
       </div>
 
       <div className="flex justify-end mb-3">
-        <button
-          onClick={() => approve()}
-          disabled={working || c.pendingApproval === 0}
-          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-pes-800 transition-colors disabled:opacity-50"
-        >
+        <Button onClick={() => approve()} disabled={working || c.pendingApproval === 0}>
           Approve all pending ({c.pendingApproval})
-        </button>
+        </Button>
       </div>
 
       <div className="bg-white border border-line rounded-xl overflow-hidden">
@@ -180,28 +177,34 @@ export default function StressApprovals() {
                 <td className="px-6 py-3 text-right">
                   {r.submitted && (
                     <div className="flex justify-end gap-2">
-                      <button
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setViewing(r.name!)}
-                        className="text-body text-xs font-medium border border-line rounded-md px-3 py-1.5 hover:bg-canvas"
+                        className="text-body"
                       >
                         View
-                      </button>
+                      </Button>
                       {!r.approved && (
                         <>
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => { setRejecting(r.name!); setReason(""); }}
                             disabled={working}
-                            className="text-danger-600 text-xs font-medium border border-danger-100 rounded-md px-3 py-1.5 hover:bg-danger-50 disabled:opacity-50"
+                            className="text-danger-600 border-danger-100 hover:bg-danger-50"
                           >
                             Send back
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => approve(r.name!)}
                             disabled={working}
-                            className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
+                            className="text-pes border-pes/30 hover:bg-pes/5"
                           >
                             Approve
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -230,20 +233,17 @@ export default function StressApprovals() {
               className="w-full border border-line rounded-lg p-3 text-sm outline-none focus:border-pes"
             />
             <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setRejecting(null)}
-                disabled={working}
-                className="px-4 py-2 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50"
-              >
+              <Button variant="ghost" onClick={() => setRejecting(null)} disabled={working}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={submitReject}
                 disabled={working || !reason.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                loading={working}
               >
                 {working ? "Sending…" : "Send back"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 const CATEGORIES = [
   { key: "organizational", label: "Organization" },
@@ -72,7 +73,15 @@ export default function StressSubmissionModal({ name, onClose }: { name: string;
             <h2 className="text-xl font-bold text-strong">{name}</h2>
             <p className="text-sm text-muted">Theme &amp; feeling submission for the current cycle</p>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-body text-2xl leading-none">&times;</button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Close"
+            onClick={onClose}
+            className="text-muted hover:text-body text-2xl leading-none h-8 w-8"
+          >
+            &times;
+          </Button>
         </div>
 
         {loading && <p className="text-muted py-8 text-center">Loading submission…</p>}

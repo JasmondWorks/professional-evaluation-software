@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 export default function StaffSurveyPage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
@@ -135,13 +136,9 @@ export default function StaffSurveyPage() {
       ))}
 
       <div className="mt-8">
-        <button
-          onClick={submitSurvey}
-          disabled={submitting}
-          className="bg-pes text-white px-6 py-3 rounded-md hover:bg-pes-800 disabled:opacity-50"
-        >
+        <Button onClick={submitSurvey} loading={submitting}>
           {submitting ? "Submitting..." : "Submit Survey"}
-        </button>
+        </Button>
         {message && <p className="mt-3 text-sm text-body">{message}</p>}
       </div>
     </main>

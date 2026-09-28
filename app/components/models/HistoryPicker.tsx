@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from '@/app/components/ui/Button';
 
 // Choosing which stored run feeds the field in front of you.
 //
@@ -81,13 +82,14 @@ export default function HistoryPicker<T extends { id: number; created_at: string
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="rounded-md border border-pes px-3 py-1.5 text-xs font-medium text-pes transition-colors hover:bg-pes-50"
+        className="border-pes text-pes hover:bg-pes-50"
       >
         {label}
-      </button>
+      </Button>
 
       {open && (
         <div
@@ -109,13 +111,14 @@ export default function HistoryPicker<T extends { id: number; created_at: string
                   changed in the history itself.
                 </p>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-1 text-sm text-muted hover:bg-canvas"
+                className="text-muted hover:bg-canvas"
               >
                 Close
-              </button>
+              </Button>
             </div>
 
             <div className="max-h-[60vh] overflow-auto">
@@ -152,16 +155,15 @@ export default function HistoryPicker<T extends { id: number; created_at: string
                           </td>
                         ))}
                         <td className="px-6 py-3 text-right">
-                          <button
-                            type="button"
+                          <Button
+                            size="sm"
                             onClick={() => {
                               onSelect(row);
                               setOpen(false);
                             }}
-                            className="rounded-md bg-pes px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                           >
                             Use this run
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}

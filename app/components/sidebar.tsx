@@ -15,7 +15,6 @@ import {
    Setting2,
    Data2,
    Verify,
-   Lock1,
    MessageQuestion
 } from 'iconsax-react';
 import jwt from 'jsonwebtoken'
@@ -30,6 +29,7 @@ import { getAccessToken } from '@/app/utils/auth';
 import UserAvatar from '@/app/components/ui/UserAvatar';
 import { useCurrentUser } from './useCurrentUser';
 import { useModelAccess } from './useModelAccess';
+import Button from '@/app/components/ui/Button';
 
 export default function Sidebar({is_sidebar_active, handleSideBar}:
    {is_sidebar_active: boolean, handleSideBar:any}): JSX.Element{
@@ -94,12 +94,11 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       { key: 13, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
       { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['admin'] },
-      // The page existed and nothing linked to it, so the only way to change a
-      // password was to know the URL. Every role gets this one: it is the
-      // account you are signed in as, whoever you are.
-      { key: 13, name: 'Change Password', icon: Lock1, href: '/change-password', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+      // Changing your password now lives on /profile itself, not as a
+      // separate nav item.
       { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
-      { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['admin'] }
+      { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['admin'] },
+      { key: 14, name: 'Organization Settings', icon: Setting4, href: '/organization', group: 'Organization', role_access: ['admin'] }
    ]
 
    // Filter tabs by capability first, then role. Unknown/custom roles fall back
@@ -171,13 +170,15 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
                </div>
             </div>
             {/* Close button for mobile drawer */}
-            <button
+            <Button
+               variant="ghost"
+               size="icon"
                onClick={onNavigate}
-               className="lg:hidden p-1.5 -mr-2 text-muted hover:text-strong hover:bg-line/50 rounded-lg transition-colors focus:outline-none focus-visible:shadow-focus shrink-0"
+               className="lg:hidden -mr-2 text-muted hover:text-strong hover:bg-line/50 shrink-0"
                aria-label="Close menu"
             >
                <CloseSquare size={24} />
-            </button>
+            </Button>
          </div>
 
          {/* Links */}

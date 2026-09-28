@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
 
 interface PerformanceRun {
   id: number;
@@ -54,12 +54,9 @@ export default function PerformanceHistory() {
             Review past staff performance evaluations.
           </p>
         </div>
-        <button
-          onClick={fetchHistory}
-          className="px-4 py-2 bg-white border border-line rounded-md text-sm font-medium hover:bg-canvas transition-colors shadow-sm"
-        >
+        <Button variant="secondary" onClick={fetchHistory}>
           Refresh Data
-        </button>
+        </Button>
       </div>
 
       {error && (

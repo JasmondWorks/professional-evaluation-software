@@ -7,6 +7,8 @@ import Link from "next/link";
 import { SearchNormal1, Add, DocumentText, Setting2, CloseCircle, Buildings2, ClipboardText } from 'iconsax-react';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink } from '@/app/components/ui';
+import Input from '@/app/components/ui/Input';
+import Button from '@/app/components/ui/Button';
 
 export default function MaintenancePage() {
   const [toolView, setToolView] = useState(false);
@@ -134,23 +136,24 @@ export default function MaintenancePage() {
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted">
             <SearchNormal1 size="18" />
           </div>
-          <input
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search any tool or facility..."
-            className="pl-10 pr-4 py-2.5 bg-canvas border border-line rounded-lg w-full text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
+            className="pl-10 pr-4"
           />
         </div>
-        
+
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setToolView(true)}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-pes text-pes font-medium text-sm rounded-lg hover:bg-pes-50 transition-colors shadow-sm"
+            className="flex-1 md:flex-none border-pes text-pes hover:bg-pes-50"
           >
             <Add size="18" />
             Add Facility
-          </button>
+          </Button>
           <Link
             href="/maintenance/inventory"
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-pes text-white font-medium text-sm rounded-lg hover:bg-pes-800 transition-colors shadow-sm"
@@ -214,77 +217,65 @@ export default function MaintenancePage() {
                 <h2 className="text-lg font-bold text-strong">Add Tool or Facility</h2>
                 <p className="text-xs text-muted mt-1">Register a new asset to the maintenance inventory.</p>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Close"
                 onClick={() => setToolView(false)}
-                className="text-muted hover:text-body transition-colors p-2"
+                className="text-muted hover:text-body"
               >
                 <CloseCircle size="24" />
-              </button>
+              </Button>
             </div>
             
             <div className="p-6 overflow-y-auto">
               <form id="add-facility-form" className="space-y-5" onSubmit={addFacility}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Description</label>
-                    <input
-                      onChange={handleChange}
-                      name="description"
-                      type="text"
-                      required
-                      placeholder="e.g. Backup Generator 500kVA"
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Identification Symbol</label>
-                    <input
-                      onChange={handleChange}
-                      name="symbol"
-                      type="text"
-                      required
-                      placeholder="e.g. GEN-01"
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Location</label>
-                    <input
-                      onChange={handleChange}
-                      name="location"
-                      type="text"
-                      required
-                      placeholder="e.g. Server Room B"
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Facility Register ID</label>
-                    <input
-                      onChange={handleChange}
-                      name="id"
-                      type="text"
-                      required
-                      placeholder="e.g. RE-2023-892"
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Type</label>
-                    <input
-                      onChange={handleChange}
-                      name="type"
-                      type="text"
-                      required
-                      placeholder="e.g. Electrical"
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
-                  
+                  <Input
+                    label="Description"
+                    onChange={handleChange}
+                    name="description"
+                    type="text"
+                    required
+                    placeholder="e.g. Backup Generator 500kVA"
+                  />
+
+                  <Input
+                    label="Identification Symbol"
+                    onChange={handleChange}
+                    name="symbol"
+                    type="text"
+                    required
+                    placeholder="e.g. GEN-01"
+                  />
+
+                  <Input
+                    label="Location"
+                    onChange={handleChange}
+                    name="location"
+                    type="text"
+                    required
+                    placeholder="e.g. Server Room B"
+                  />
+
+                  <Input
+                    label="Facility Register ID"
+                    onChange={handleChange}
+                    name="id"
+                    type="text"
+                    required
+                    placeholder="e.g. RE-2023-892"
+                  />
+
+                  <Input
+                    label="Type"
+                    onChange={handleChange}
+                    name="type"
+                    type="text"
+                    required
+                    placeholder="e.g. Electrical"
+                  />
+
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-body flex justify-between">
                       Priority Rating
@@ -302,43 +293,33 @@ export default function MaintenancePage() {
                     </select>
                   </div>
                   
-                  <div className="md:col-span-2 space-y-1.5">
-                    <label className="text-sm font-semibold text-body">Remarks</label>
-                    <input
-                      onChange={handleChange}
-                      name="remark"
-                      type="text"
-                      placeholder="Any additional notes..."
-                      className="w-full px-4 py-2.5 bg-canvas border border-line rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pes focus:bg-white transition-all"
-                    />
-                  </div>
+                  <Input
+                    label="Remarks"
+                    containerClassName="md:col-span-2"
+                    onChange={handleChange}
+                    name="remark"
+                    type="text"
+                    placeholder="Any additional notes..."
+                  />
                 </div>
               </form>
             </div>
             
             <div className="px-6 py-4 border-t border-line bg-canvas flex justify-end gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setToolView(false)}
-                className="px-5 py-2.5 text-sm font-medium text-body bg-white border border-line rounded-lg hover:bg-canvas transition-colors shadow-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 form="add-facility-form"
-                disabled={loading}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-pes rounded-lg hover:bg-pes-800 transition-colors shadow-sm flex items-center gap-2"
+                loading={loading}
               >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Saving...
-                  </>
-                ) : (
-                  "Save Facility"
-                )}
-              </button>
+                {loading ? "Saving..." : "Save Facility"}
+              </Button>
             </div>
           </div>
         </div>

@@ -12,7 +12,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { BackLink, PageHeader } from "@/app/components/ui";
+import { BackLink, Button, PageHeader } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { fitLine, predict, type Point } from "@/app/lib/models/regression";
@@ -188,18 +189,14 @@ export default function FutureRequirementsPage() {
       {/* Which prediction */}
       <div className="mb-6 flex flex-wrap gap-2">
         {SERIES.map((s) => (
-          <button
+          <Button
             key={s.key}
             type="button"
+            variant={s.key === seriesKey ? "primary" : "secondary"}
             onClick={() => setSeriesKey(s.key)}
-            className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-              s.key === seriesKey
-                ? "border-pes bg-pes text-white"
-                : "border-line bg-white text-body hover:bg-canvas"
-            }`}
           >
             {s.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -322,16 +319,13 @@ export default function FutureRequirementsPage() {
 
             <div className="rounded-xl border border-line bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-sm font-semibold text-strong">Predict</h2>
-              <label className="block text-sm font-semibold text-body">
-                {series.xLabel}
-                <input
-                  type="number"
-                  value={x}
-                  onChange={(e) => setX(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition-shadow focus:border-pes-400 focus:shadow-focus"
-                  placeholder="Enter a value to extrapolate to"
-                />
-              </label>
+              <Input
+                label={series.xLabel}
+                type="number"
+                value={x}
+                onChange={(e) => setX(e.target.value === "" ? "" : Number(e.target.value))}
+                placeholder="Enter a value to extrapolate to"
+              />
 
               {predicted !== null && (
                 <div className="mt-4 rounded-lg border border-pes-200 bg-pes-50 px-4 py-3">

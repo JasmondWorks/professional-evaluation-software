@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Input from "@/app/components/ui/Input";
 
 type Params = {
   D: number;
@@ -68,20 +69,16 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
       {Object.entries(params)
         .filter(([key]) => !hiddenKeys.includes(key))
         .map(([key, value]) => (
-          <div key={key} className="flex flex-col">
-            <label htmlFor={key} className="text-sm font-medium text-body">
-              {paramLabels[key] || key}
-            </label>
-            <input
-              type="number"
-              step="any"
-              id={key}
-              name={key}
-              value={String(value)}
-              onChange={handleChange}
-              className="border rounded-lg p-2 focus:ring-2 focus:ring-pes focus:outline-none"
-            />
-          </div>
+          <Input
+            key={key}
+            label={paramLabels[key] || key}
+            type="number"
+            step="any"
+            id={key}
+            name={key}
+            value={String(value)}
+            onChange={handleChange}
+          />
         ))}
 
       <h3 className="col-span-full text-md font-semibold mt-4 text-body">
@@ -89,20 +86,16 @@ export default function ParametersForm({ params, setParams, mode }: Props) {
       </h3>
 
       {Object.entries(params.staffMix).map(([key, value]) => (
-        <div key={key} className="flex flex-col">
-          <label htmlFor={key} className="text-sm font-medium text-body">
-            {key}
-          </label>
-          <input
-            type="number"
-            step="any"
-            id={key}
-            name={key}
-            value={value}
-            onChange={handleChange}
-            className="border rounded-lg p-2 focus:ring-2 focus:ring-pes focus:outline-none"
-          />
-        </div>
+        <Input
+          key={key}
+          label={key}
+          type="number"
+          step="any"
+          id={key}
+          name={key}
+          value={value}
+          onChange={handleChange}
+        />
       ))}
     </div>
   );

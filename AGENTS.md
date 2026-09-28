@@ -12,6 +12,22 @@ Evaluation Software) codebase. Keep this file short and additive.
 > make further UI changes, append a dated entry there, and update DESIGN.md if you
 > add or change a token, component, or pattern.
 
+### Check for an existing component before writing a raw HTML element
+
+Before writing `<input>`, `<button>`, `<select>`, `<textarea>`, or any other
+raw form/interactive element, check `app/components/ui/` for a component that
+already covers it (`Input`, `Button`, `RoleSelect`, etc.) and use that instead.
+This applies to new code and to touching existing code — do not extend a raw
+`<button>` you happen to be editing anyway without first checking whether it
+should become `Button`.
+
+A raw element is acceptable only when the standard component genuinely cannot
+do the job — e.g. Radix's `asChild` needs a ref-forwarding child and `Button`
+does not forward refs, or a page runs its own separate theme (see
+`app/help/GuideClient.tsx`) where the shared design tokens don't apply. State
+the reason in a comment next to the element when you skip the standard
+component; an unexplained raw element reads as an oversight, not a decision.
+
 ### Disabled controls must always explain themselves
 A button (or any control) that is disabled MUST tell the user **why**, right next
 to it — never leave a bare greyed-out control with no context. Use one of:

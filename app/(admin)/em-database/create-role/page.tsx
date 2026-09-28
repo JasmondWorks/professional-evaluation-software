@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import jwt from "jsonwebtoken";
@@ -8,9 +7,13 @@ import { useRouter } from "next/navigation";
 import { getAccessToken } from "@/app/utils/auth";
 import { PRESET_ROLES, presetRoleLabel } from "@/app/components/utils/roles";
 import { useOrgCategory } from "@/app/lib/useOrgCategory";
+
+// Mirrors ACADEMIC_ONLY_ROLES in app/api/_lib/createEmployee.ts, which can't be
+// imported here — it pulls in Prisma/bcrypt, which don't belong in a client bundle.
+const ACADEMIC_ONLY_BASE_ROLES = ["lecturer"];
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
-import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { apiFetch } from "@/app/utils/apiFetch";
+import { BackLink, Button, Input } from "@/app/components/ui";
 
 export default function CreateRole() {
   // Preset names read differently by institution type — see presetRoleLabel.
@@ -20,6 +23,10 @@ export default function CreateRole() {
     base_role: "employee-w",
   });
   const router = useRouter();
+
+  const availableBaseRoles = PRESET_ROLES.filter(
+    (r) => !ACADEMIC_ONLY_BASE_ROLES.includes(r) || orgCategory === "academic",
+  );
 
   function handleChange(
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -80,28 +87,24 @@ export default function CreateRole() {
               <h1 className="my-auto mx-4 font-semibold">Role Details</h1>
             </div>
             <div className=" placeholder-slate-200 m-4">
-              <label htmlFor="role_name" className="flex flex-col mb-4">
-                Role Name:
-                <input
-                  onChange={handleChange}
-                  name="role_name"
-                  type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-strong placeholder:font-thin placeholder:text-muted px-4 py-2 pb-4"
-                  id="name"
-                  placeholder="Enter a name that represents the role's responsibilities and purpose."
-                />
-              </label>
-              <label htmlFor="description" className="flex flex-col mb-4">
-                Role Description:
-                <input
-                  onChange={handleChange}
-                  name="description"
-                  type="text"
-                  className="border outline-1 outline-gray-200 rounded-[0.25rem] mt-1 font-medium text-strong placeholder:font-thin placeholder:text-muted px-4 py-2 pb-16"
-                  id="description"
-                  placeholder="Provide a brief description outlining the role's key responsibilities and purpose."
-                />
-              </label>
+              <Input
+                label="Role Name:"
+                onChange={handleChange}
+                name="role_name"
+                type="text"
+                id="name"
+                placeholder="Enter a name that represents the role's responsibilities and purpose."
+                containerClassName="mb-4"
+              />
+              <Input
+                label="Role Description:"
+                onChange={handleChange}
+                name="description"
+                type="text"
+                id="description"
+                placeholder="Provide a brief description outlining the role's key responsibilities and purpose."
+                containerClassName="mb-4"
+              />
             </div>
           </div>
           <div className="w-1/2">
@@ -143,7 +146,7 @@ export default function CreateRole() {
                   onChange={handleChange}
                   className="p-4 mx-2 border rounded-sm"
                 >
-                  {PRESET_ROLES.map((r) => (
+                  {availableBaseRoles.map((r) => (
                     <option key={r} value={r}>
                       {presetRoleLabel(r, orgCategory)}
                     </option>
@@ -153,11 +156,9 @@ export default function CreateRole() {
             </div>
           </div>
           <div className="flex justify-center my-6 w-full">
-            <input
-              type="submit"
-              className="bg-pes text-white px-32 py-3 rounded-sm"
-              value={"Create role"}
-            />
+            <Button type="submit" size="lg" className="px-32">
+              Create role
+            </Button>
           </div>
         </div>
       </form>

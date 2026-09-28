@@ -37,7 +37,8 @@ import {
 import InfoPopover from "@/app/components/ui/InfoPopover";
 import { boundaryViolations } from "@/app/lib/models/boundaryConditions";
 import { apiFetch } from "@/app/utils/apiFetch";
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 export default function PersonnelUtilizationPage() {
   const access = useModelAccess();
@@ -227,7 +228,7 @@ export default function PersonnelUtilizationPage() {
             }
             className="w-full min-w-0 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pes"
           />
-          <input
+          <Input
             type="number"
             value={params[key] ?? ""}
             min={opts.min}
@@ -236,18 +237,18 @@ export default function PersonnelUtilizationPage() {
             onChange={(e) =>
               handleChange(key, parseFloat(e.target.value || "0"))
             }
-            className="w-16 shrink-0 rounded-lg border border-line bg-surface px-1 py-1.5 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-all text-center font-medium"
+            className="w-16 shrink-0 text-center"
+            containerClassName="shrink-0"
           />
         </div>
       ) : (
-        <input
+        <Input
           type="number"
           value={params[key] ?? ""}
           min={opts.min}
           max={opts.max}
           step={opts.step}
           onChange={(e) => handleChange(key, parseFloat(e.target.value || "0"))}
-          className="block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
         />
       )}
     </div>
@@ -525,7 +526,7 @@ export default function PersonnelUtilizationPage() {
 
       {/* AGENTS.md: a blocked control looks disabled but still takes the click,
           so pressing it says why instead of doing nothing. */}
-      <button
+      <Button
         onClick={() => {
           if (lambdaMuInvalid) {
             setViolations(["λ must be strictly less than μ. Adjust the two rates to continue."]);
@@ -538,10 +539,9 @@ export default function PersonnelUtilizationPage() {
           calculate();
         }}
         aria-disabled={!isFormValid() || lambdaMuInvalid}
-        className={`px-4 py-2 rounded text-white ${isFormValid() && !lambdaMuInvalid ? "bg-pes hover:bg-pes-800" : "bg-gray-400"}`}
       >
         Calculate
-      </button>
+      </Button>
 
       {result && (
         <>
@@ -665,7 +665,7 @@ export default function PersonnelUtilizationPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               onClick={() => {
                 if (lambdaMuInvalid) {
                   setSaveMsg("λ must be strictly less than μ. This result cannot be saved.");
@@ -675,10 +675,10 @@ export default function PersonnelUtilizationPage() {
                 handleSave();
               }}
               aria-disabled={saving || lambdaMuInvalid}
-              className={`rounded px-4 py-2 text-white ${saving || lambdaMuInvalid ? "bg-gray-400" : "bg-pes hover:opacity-90"}`}
+              loading={saving}
             >
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
 
             {/* 🔗 Show link here when results exist — and only when unit head
                 overloading is in the plan. It is a separately sold line, so an

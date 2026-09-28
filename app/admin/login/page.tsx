@@ -7,8 +7,8 @@ import * as Yup from "yup";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/components/useAuth";
 import { getAccessToken } from "@/app/utils/auth";
-import { Eye } from "iconsax-react";
-import { EyeOff } from "lucide-react";
+import Input from "@/app/components/ui/Input";
+import Button from "@/app/components/ui/Button";
 
 type formdata = {
   email: string;
@@ -22,7 +22,6 @@ export default function Home() {
     text: "",
     color: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const schema = Yup.object({
@@ -106,12 +105,10 @@ export default function Home() {
           <Form className="form w-1/2 h-screen flex flex-col p-28 justify-center">
             <p className="text-4xl text-semibold mb-8">Sign In(admin)</p>
 
-            <div className="input flex flex-col justify-center mb-4">
-              <label htmlFor="email" className="mb-1">
-                Email Address:
-              </label>
+            <div className="mb-4">
               <Field
-                className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg"
+                as={Input}
+                label="Email Address"
                 type="email"
                 name="email"
                 id="email"
@@ -119,37 +116,24 @@ export default function Home() {
               />
             </div>
 
-            <div className="input flex flex-col justify-center mb-4">
-              <label htmlFor="password" className="mb-1">
-                Password:
-              </label>
-              <div className="relative w-full">
-                <Field
-                  className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  id="password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-body focus:outline-none"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+            <div className="mb-4">
+              <Field
+                as={Input}
+                label="Password"
+                type="password"
+                name="password"
+                id="password"
+                required
+              />
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="btn bg-pes text-white px-4 py-3 flex justify-center rounded-lg mb-2 
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mb-2"
               disabled={!(dirty && isValid)}
             >
               Sign In
-            </button>
+            </Button>
           </Form>
         )}
       </Formik>

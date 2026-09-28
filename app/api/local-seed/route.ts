@@ -1,11 +1,14 @@
-// Local-dev-only: seeds one organization/admin/employee set through a public
-// UI form instead of a hand-edited JSON file. Deliberately unauthenticated —
-// it exists to run before any account exists — so it must refuse to do
-// anything unless it can prove it's not talking to a real deployment:
+// Local-dev-only: seeds an organization/admin/employee set through a public UI
+// form instead of a hand-edited JSON file — repeatable, so several orgs can be
+// built up one after another in the same database. Deliberately
+// unauthenticated — it exists to run before any account exists — so it must
+// refuse to do anything unless it can prove it's not talking to a real
+// deployment:
 //
 //   1. NODE_ENV !== 'production' — blocks it in every deployed build, since
 //      Vercel always builds and runs with NODE_ENV=production.
-//   2. isLocalSeeded() — blocks it once an org exists, seeded or real.
+//   2. isOrgSeeded(name) — blocks re-seeding an org with the same name, but
+//      lets other org names through (see app/api/_lib/localSeed.ts).
 //
 // Any one of these failing is enough to refuse; both must hold to seed.
 // (Previously also required DATABASE_URL to contain localhost/127.0.0.1 —
@@ -14,7 +17,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { isLocalSeeded, readCredentialsFile, seedLocalOrg, type LocalSeedInput } from '../_lib/localSeed';
+import { listSeededOrgs, readCredentialsFile, seedLocalOrg, type LocalSeedInput } from '../_lib/localSeed';
 
 function guardOrResponse(): NextResponse | null {
   if (process.env.NODE_ENV === 'production') {
@@ -30,10 +33,10 @@ export async function GET() {
   const blocked = guardOrResponse();
   if (blocked) return blocked;
 
-  const seeded = await isLocalSeeded();
+  const orgs = listSeededOrgs();
   return NextResponse.json({
-    seeded,
-    credentialsText: seeded ? readCredentialsFile() : null,
+    orgs,
+    credentialsText: orgs.length > 0 ? readCredentialsFile() : null,
   });
 }
 

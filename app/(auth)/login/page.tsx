@@ -7,7 +7,8 @@ import * as Yup from "yup";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/components/useAuth";
 import { notify } from "@/lib/toast";
-import { Eye, EyeOff } from "lucide-react";
+import Input from "@/app/components/ui/Input";
+import Button from "@/app/components/ui/Button";
 import { getAccessToken, setAccessToken } from '@/app/utils/auth';
 
 type formdata = {
@@ -20,7 +21,6 @@ export default function Home() {
   const { setRole } = useAuth();
   // Inline error state for the specific network/server error message.
   const [errorMessage, setErrorMessage] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const schema = Yup.object({
@@ -130,12 +130,10 @@ export default function Home() {
               </div>
             )}
 
-            <div className="input flex flex-col justify-center mb-4">
-              <label htmlFor="email" className="mb-1">
-                Email Address:
-              </label>
+            <div className="mb-4">
               <Field
-                className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg"
+                as={Input}
+                label="Email Address"
                 type="email"
                 name="email"
                 id="email"
@@ -145,29 +143,17 @@ export default function Home() {
               />
             </div>
 
-            <div className="input flex flex-col justify-center mb-4">
-              <label htmlFor="password" className="mb-1">
-                Password:
-              </label>
-              <div className="relative w-full">
-                <Field
-                  className="bg-transparent border border-line text-body focus:outline-pes ps-4 py-2 rounded-lg w-full pr-10"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  id="password"
-                  autoComplete="current-password"
-                  required
-                  tabIndex={2}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-body focus:outline-none"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
+            <div className="mb-4">
+              <Field
+                as={Input}
+                label="Password"
+                type="password"
+                name="password"
+                id="password"
+                autoComplete="current-password"
+                required
+                tabIndex={2}
+              />
             </div>
 
             <div className="flex flex-row justify-between mb-8">
@@ -188,15 +174,14 @@ export default function Home() {
               </Link>
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="btn bg-pes text-white px-4 py-3 flex justify-center rounded-lg mb-2 
-                         disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pes-800 transition-colors"
+              className="w-full mb-2"
               disabled={!(dirty && isValid)}
               tabIndex={4}
             >
               Sign In
-            </button>
+            </Button>
             {/* No "Sign Up" link. An organization is created by buying a
                 plan on the PES website, and signup will not proceed without a
                 payment reference it can verify with PayPal — so a link here

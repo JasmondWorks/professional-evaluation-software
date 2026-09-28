@@ -1,7 +1,8 @@
 // utils/packages.js
 // productId / planId are the PayPal sandbox catalog product + billing plan IDs
 // (created via the PayPal API). Having them here stops resolvePackages() from
-// re-creating a new product/plan on every subscribe.
+// re-creating a new product/plan on every subscribe. `price` is in cents —
+// all payment is in dollars, through PayPal only.
 export const packages = {
   basic: {
     name: "Basic Package",

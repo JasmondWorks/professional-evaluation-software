@@ -1,6 +1,7 @@
 "use client";
 import { notify } from "@/lib/toast";
 import { useState } from "react";
+import Button from "@/app/components/ui/Button";
 
 export default function AuditorSurveyPage() {
   const [formData, setFormData] = useState<Record<string, Record<string, string>>>({});
@@ -142,12 +143,9 @@ export default function AuditorSurveyPage() {
         </section>
 
         {/* Submit */}
-        <button
-          type="submit"
-          className="w-full bg-pes text-white py-3 rounded-lg hover:bg-pes-800"
-        >
+        <Button type="submit" className="w-full">
           Submit Survey
-        </button>
+        </Button>
       </form>
     </main>
   );

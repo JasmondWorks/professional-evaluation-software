@@ -10,10 +10,21 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { GUIDE_SECTIONS } from './sections';
 import PlansSection from './PlansSection';
 import { normalizeInstitution, type InstitutionType } from '@/app/lib/billing/catalog';
 import { guideRoleFor } from './roles';
+import { useAuth } from '@/app/components/useAuth';
+
+// This page renders inside its own self-contained "guide" theme (guide.css,
+// data- attributes, --text-*/--brand-* CSS custom properties) that is
+// intentionally separate from the app's Tailwind/ui-token design system. The
+// standard Input/Button components render app-theme classes (bg-surface,
+// border-line, text-pes, etc.) that would not follow this page's light/dark
+// toggle or its guide.css selectors (e.g. [data-drawer-btn]). Raw <input>/
+// <button> elements are kept here deliberately, styled to match this page's
+// own theme instead.
 
 
 const ROLE_CHIPS: { key: string; label: string }[] = [
@@ -68,6 +79,13 @@ export default function GuideClient() {
     return ROLE_CHIPS.some((c) => c.key === asked) ? asked : guideRoleFor(asked);
   }, [params]);
   const institution: InstitutionType | null = normalizeInstitution(params.get('type'));
+
+  // /help is public and works signed out, but AuthProvider (mounted at the
+  // root layout, so it wraps this page too) silently tries a token refresh on
+  // every load. Signed in, that succeeds and this becomes non-null — which is
+  // what tells a reader who arrived here from Get help that there is
+  // somewhere to go back to.
+  const { role: sessionRole } = useAuth();
 
   const [role, setRole] = useState(initialRole);
   const [query, setQuery] = useState('');
@@ -259,6 +277,27 @@ export default function GuideClient() {
               Contents
             </button>
             <div style={{ flex: 1 }} />
+            {sessionRole && (
+              <Link
+                href="/dashboard"
+                style={{ ...buttonStyle, display: 'inline-flex', textDecoration: 'none' }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to dashboard
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
