@@ -6,7 +6,8 @@ import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import { jwtDecode } from "jwt-decode";
 import { TableColumn } from "@/app/components/ui/Table";
-import { DataTable } from "@/app/components/ui";
+import { Button, DataTable } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 import PermissionSelector from "@/app/components/ui/PermissionSelector";
 import {
   PRESET_ROLES,
@@ -15,8 +16,8 @@ import {
   PERMISSION_TREE,
   PermissionKey,
 } from "@/app/components/utils/roles";
-import { apiFetch } from '@/app/utils/apiFetch';
-import { useOrgCategory } from '@/app/lib/useOrgCategory';
+import { apiFetch } from "@/app/utils/apiFetch";
+import { useOrgCategory } from "@/app/lib/useOrgCategory";
 
 type Role = {
   id: string | number;
@@ -28,7 +29,9 @@ type Role = {
 const isPreset = (name: string) =>
   (PRESET_ROLES as readonly string[]).includes(name);
 const roleLabel = (name: string) =>
-  isPreset(name) ? PRESET_ROLE_LABELS[name as keyof typeof PRESET_ROLE_LABELS] : name;
+  isPreset(name)
+    ? PRESET_ROLE_LABELS[name as keyof typeof PRESET_ROLE_LABELS]
+    : name;
 
 export default function Roles() {
   // Role names differ by institution type — see presetRoleLabel.
@@ -81,7 +84,9 @@ export default function Roles() {
     loadRoles();
   }, []);
 
-  async function fetchPermsFor(roleName: string): Promise<Record<string, boolean>> {
+  async function fetchPermsFor(
+    roleName: string,
+  ): Promise<Record<string, boolean>> {
     const token = getAccessToken();
     const res = await apiFetch("/api/getRolePermissions", {
       method: "POST",
@@ -123,7 +128,10 @@ export default function Roles() {
       const token = getAccessToken();
       const res = await apiFetch("/api/updateRole", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           roleName: editRole.name,
           base_role: isPreset(editRole.name) ? undefined : editBase,
@@ -152,7 +160,10 @@ export default function Roles() {
       const token = getAccessToken();
       const res = await apiFetch("/api/deleteRole", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           roleName: delRole.name,
           replacementRole: delRole.assigned > 0 ? replacement : undefined,
@@ -212,7 +223,8 @@ export default function Roles() {
       });
       const data = await res.json();
       notify.dismiss(toastId);
-      if (data.status !== 200) throw new Error(data.message || "Failed to create role");
+      if (data.status !== 200)
+        throw new Error(data.message || "Failed to create role");
       notify.success("Role created");
       setCreateOpen(false);
       loadRoles();
@@ -261,9 +273,13 @@ export default function Roles() {
       width: "12%",
       render: (r) =>
         isPreset(r.name) ? (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-pes-50 text-pes-700">Preset</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-pes-50 text-pes-700">
+            Preset
+          </span>
         ) : (
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-warning-50 text-warning-700">Custom</span>
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-warning-50 text-warning-700">
+            Custom
+          </span>
         ),
     },
     {
@@ -292,29 +308,27 @@ export default function Roles() {
       width: "30%",
       render: (r) => (
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => openPermissions(r)}
-            className="text-pes text-xs font-medium border border-pes/30 rounded-md px-2.5 py-1.5 hover:bg-pes/5 transition-colors"
-          >
+          <Button variant="secondary" size="sm" onClick={() => openPermissions(r)}>
             View
-          </button>
-          <button
-            onClick={() => openEdit(r)}
-            className="text-body text-xs font-medium border border-line rounded-md px-2.5 py-1.5 hover:bg-canvas transition-colors inline-flex items-center gap-1"
-          >
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => openEdit(r)}>
             <Edit2 size={14} /> Edit
-          </button>
-          <button
-            onClick={() => {
-              setDelRole(r);
-              setReplacement("employee-w");
-            }}
-            disabled={isPreset(r.name)}
-            title={isPreset(r.name) ? "System roles can't be deleted" : "Delete role"}
-            className="text-danger-600 text-xs font-medium border border-danger-100 rounded-md px-2.5 py-1.5 hover:bg-danger-50 transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Trash size={14} /> Delete
-          </button>
+          </Button>
+          {/* Preset roles are system-defined and can't be deleted — only a
+              custom role, which someone here actually created, can be. */}
+          {!isPreset(r.name) && (
+            <Button
+              variant="destructive"
+              size="sm"
+              title="Delete role"
+              onClick={() => {
+                setDelRole(r);
+                setReplacement("employee-w");
+              }}
+            >
+              <Trash size={14} /> Delete
+            </Button>
+          )}
         </div>
       ),
     },
@@ -325,25 +339,27 @@ export default function Roles() {
       <div className="m-4 bg-white w-full h-full">
         <div className="flex justify-between h-[5rem] max-md:h-fit w-full max-md:py-2 max-md:flex-col max-md:gap-2">
           <div className="flex justify-between my-auto mx-4 bg-white">
-            <label htmlFor="em-search" className="relative h-fit max-md:w-full">
-              <SearchNormal1 className="text-gray-300 absolute top-1/2 left-6 -translate-y-1/2" size={20} />
-              <input
+            <div className="relative h-fit max-md:w-full">
+              <SearchNormal1
+                className="text-muted absolute top-1/2 left-3 -translate-y-1/2 pointer-events-none"
+                size={18}
+              />
+              <Input
+                id="em-search"
                 type="text"
+                aria-label="Search for role"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search for Role"
-                className="placeholder:text-xs placeholder:text-gray-300 focus:ring-gray-400 focus:border-gray-400 bg-[#fafafa] border-gray-50 h-[2.5rem] ps-16 max-md:w-full"
+                className="pl-10 max-md:w-full"
               />
-            </label>
+            </div>
           </div>
           <div className="flex justify-between my-auto mx-3 max-md:mx-0 max-md:self-center text-xs">
-            <button
-              onClick={openCreate}
-              className="flex justify-center bg-pes text-white px-10 py-2 m-4 border h-fit border-pes my-auto text-center"
-            >
-              <span className="my-auto">Create Role</span>
-              <Add size={20} className="my-auto ms-2" />
-            </button>
+            <Button onClick={openCreate} className="m-4">
+              Create Role
+              <Add size={20} />
+            </Button>
           </div>
         </div>
 
@@ -359,14 +375,19 @@ export default function Roles() {
 
       {/* VIEW PERMISSIONS MODAL */}
       {permRole && (
-        <Modal title={`Permissions for ${roleLabel(permRole.name)}`} onClose={() => setPermRole(null)}>
+        <Modal
+          title={`Permissions for ${roleLabel(permRole.name)}`}
+          onClose={() => setPermRole(null)}
+        >
           <p className="text-sm text-muted mb-5">
             {isPreset(permRole.name) ? "System preset role" : "Custom role"}
           </p>
           {permsLoading ? (
             <p className="text-sm text-muted py-6 text-center">Loading…</p>
           ) : grantedList.length === 0 ? (
-            <p className="text-sm text-muted py-6 text-center">No permissions granted to this role.</p>
+            <p className="text-sm text-muted py-6 text-center">
+              No permissions granted to this role.
+            </p>
           ) : (
             <ul className="space-y-2 max-h-80 overflow-y-auto">
               {PERMISSION_TREE.filter((n) => perms?.[n.key]).map((n) => (
@@ -377,7 +398,10 @@ export default function Roles() {
                   </div>
                   {n.children.filter((c) => perms?.[c.key]).length > 0 && (
                     <div className="ms-5 text-xs text-muted">
-                      {n.children.filter((c) => perms?.[c.key]).map((c) => c.label).join(" · ")}
+                      {n.children
+                        .filter((c) => perms?.[c.key])
+                        .map((c) => c.label)
+                        .join(" · ")}
                     </div>
                   )}
                 </li>
@@ -389,39 +413,48 @@ export default function Roles() {
 
       {/* EDIT MODAL */}
       {editRole && (
-        <Modal title={`Edit ${roleLabel(editRole.name)}`} onClose={() => setEditRole(null)} wide>
+        <Modal
+          title={`Edit ${roleLabel(editRole.name)}`}
+          onClose={() => setEditRole(null)}
+          wide
+        >
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-body">Role Name</label>
-              <input
-                value={roleLabel(editRole.name)}
-                disabled
-                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg bg-canvas text-muted"
-              />
-              <p className="text-xs text-muted mt-1">Role name can't be changed.</p>
-            </div>
+            <Input
+              label="Role Name"
+              value={roleLabel(editRole.name)}
+              disabled
+              hint="Role name can't be changed."
+            />
 
             {!isPreset(editRole.name) && (
               <div>
-                <label className="text-sm font-medium text-body">Behaves Like</label>
+                <label className="text-sm font-medium text-body">
+                  Behaves Like
+                </label>
                 <select
                   value={editBase}
                   onChange={(e) => setEditBase(e.target.value)}
                   className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
                 >
                   {PRESET_ROLES.map((r) => (
-                    <option key={r} value={r}>{presetRoleLabel(r, orgCategory)}</option>
+                    <option key={r} value={r}>
+                      {presetRoleLabel(r, orgCategory)}
+                    </option>
                   ))}
                 </select>
               </div>
             )}
 
             <div>
-              <label className="text-sm font-medium text-body">Permissions</label>
+              <label className="text-sm font-medium text-body">
+                Permissions
+              </label>
               <div className="mt-1 border rounded-md">
                 <PermissionSelector
                   value={editPerms}
-                  onChange={(patch) => setEditPerms((prev) => ({ ...prev, ...patch }))}
+                  onChange={(patch) =>
+                    setEditPerms((prev) => ({ ...prev, ...patch }))
+                  }
                 />
               </div>
             </div>
@@ -432,32 +465,44 @@ export default function Roles() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
-            <button onClick={() => setEditRole(null)} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={saveEdit} disabled={editSaving} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg disabled:opacity-70">
+            <Button variant="ghost" className="text-body hover:bg-line/50" onClick={() => setEditRole(null)} disabled={editSaving}>
+              Cancel
+            </Button>
+            <Button onClick={saveEdit} loading={editSaving}>
               {editSaving ? "Saving…" : "Save Changes"}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
 
       {/* DELETE MODAL */}
       {delRole && (
-        <Modal title={`Delete "${roleLabel(delRole.name)}"?`} onClose={() => setDelRole(null)}>
+        <Modal
+          title={`Delete "${roleLabel(delRole.name)}"?`}
+          onClose={() => setDelRole(null)}
+        >
           {delRole.assigned > 0 ? (
             <>
               <p className="text-sm text-body mb-4">
-                <span className="font-semibold text-strong">{delRole.assigned}</span>{" "}
-                staff member{delRole.assigned === 1 ? "" : "s"} currently hold this role. They must be
-                reassigned to another role before it can be deleted.
+                <span className="font-semibold text-strong">
+                  {delRole.assigned}
+                </span>{" "}
+                staff member{delRole.assigned === 1 ? "" : "s"} currently hold
+                this role. They must be reassigned to another role before it can
+                be deleted.
               </p>
-              <label className="text-sm font-medium text-body">Reassign them to</label>
+              <label className="text-sm font-medium text-body">
+                Reassign them to
+              </label>
               <select
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
                 className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg mb-2"
               >
                 {replacementOptions.map((r) => (
-                  <option key={r.name} value={r.name}>{roleLabel(r.name)}</option>
+                  <option key={r.name} value={r.name}>
+                    {roleLabel(r.name)}
+                  </option>
                 ))}
               </select>
             </>
@@ -468,10 +513,16 @@ export default function Roles() {
           )}
 
           <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
-            <button onClick={() => setDelRole(null)} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={confirmDelete} disabled={deleting} className="px-5 py-2.5 text-sm font-medium text-white bg-danger-600 hover:bg-danger-700 rounded-lg disabled:opacity-70">
-              {deleting ? "Deleting…" : delRole.assigned > 0 ? "Reassign & Delete" : "Delete Role"}
-            </button>
+            <Button variant="ghost" className="text-body hover:bg-line/50" onClick={() => setDelRole(null)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} loading={deleting}>
+              {deleting
+                ? "Deleting…"
+                : delRole.assigned > 0
+                  ? "Reassign & Delete"
+                  : "Delete Role"}
+            </Button>
           </div>
         </Modal>
       )}
@@ -480,55 +531,60 @@ export default function Roles() {
       {createOpen && (
         <Modal title="Create a role" onClose={() => setCreateOpen(false)} wide>
           <div className="space-y-4">
+            <Input
+              label="Role Name"
+              value={cName}
+              onChange={(e) => setCName(e.target.value)}
+              placeholder="e.g. Registry Officer"
+            />
+            <Input
+              label="Role Description"
+              value={cDesc}
+              onChange={(e) => setCDesc(e.target.value)}
+              placeholder="Brief description of the role's purpose"
+            />
             <div>
-              <label className="text-sm font-medium text-body">Role Name</label>
-              <input
-                value={cName}
-                onChange={(e) => setCName(e.target.value)}
-                placeholder="e.g. Registry Officer"
-                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-body">Role Description</label>
-              <input
-                value={cDesc}
-                onChange={(e) => setCDesc(e.target.value)}
-                placeholder="Brief description of the role's purpose"
-                className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-body">Behaves Like</label>
+              <label className="text-sm font-medium text-body">
+                Behaves Like
+              </label>
               <select
                 value={cBase}
                 onChange={(e) => setCBase(e.target.value)}
                 className="mt-1 w-full px-4 py-2.5 border border-line rounded-lg"
               >
                 {PRESET_ROLES.map((r) => (
-                  <option key={r} value={r}>{presetRoleLabel(r, orgCategory)}</option>
+                  <option key={r} value={r}>
+                    {presetRoleLabel(r, orgCategory)}
+                  </option>
                 ))}
               </select>
               <p className="text-xs text-muted mt-1">
-                Which system role this custom role behaves as (screens & navigation).
+                Which system role this custom role behaves as (screens &
+                navigation).
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-body">Permissions</label>
+              <label className="text-sm font-medium text-body">
+                Permissions
+              </label>
               <div className="mt-1 border rounded-md">
                 <PermissionSelector
                   value={cPerms}
-                  onChange={(patch) => setCPerms((prev) => ({ ...prev, ...patch }))}
+                  onChange={(patch) =>
+                    setCPerms((prev) => ({ ...prev, ...patch }))
+                  }
                 />
               </div>
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 mt-4 border-t border-line">
-            <button onClick={() => setCreateOpen(false)} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-body hover:bg-line/50 rounded-lg disabled:opacity-50">Cancel</button>
-            <button onClick={submitCreate} disabled={creating} className="px-5 py-2.5 text-sm font-medium text-white bg-pes hover:bg-pes-800 rounded-lg disabled:opacity-70">
+            <Button variant="ghost" className="text-body hover:bg-line/50" onClick={() => setCreateOpen(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button onClick={submitCreate} loading={creating}>
               {creating ? "Creating…" : "Create Role"}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -550,12 +606,14 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className={`bg-white rounded-xl shadow-xl w-full ${wide ? "max-w-lg" : "max-w-md"} p-6 border border-line max-h-[90vh] overflow-y-auto`}>
+      <div
+        className={`bg-white rounded-xl shadow-xl w-full ${wide ? "max-w-lg" : "max-w-md"} p-6 border border-line max-h-[90vh] overflow-y-auto`}
+      >
         <div className="flex justify-between items-start mb-1">
           <h2 className="text-xl font-bold text-strong">{title}</h2>
-          <button onClick={onClose} aria-label="Close">
-            <CloseCircle className="text-muted hover:text-danger-600" />
-          </button>
+          <Button variant="ghost" size="icon" className="text-muted hover:text-danger-600" onClick={onClose} aria-label="Close">
+            <CloseCircle />
+          </Button>
         </div>
         <div className="mt-3">{children}</div>
       </div>

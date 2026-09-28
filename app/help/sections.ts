@@ -102,7 +102,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 
       <ol style="margin:0 0 24px;padding:0 0 0 20px;font-size:15px;line-height:1.75;color:var(--text-strong-secondary)">
         <li style="margin:0 0 10px"><strong style="font-weight:600;color:var(--text-primary)">Open Pricing.</strong> Choose a product category — public, company or academic — and a plan: basic, standard or premium.</li>
-        <li style="margin:0 0 10px"><strong style="font-weight:600;color:var(--text-primary)">Pay.</strong> Payment is taken through Paystack or PayPal.</li>
+        <li style="margin:0 0 10px"><strong style="font-weight:600;color:var(--text-primary)">Pay.</strong> Payment is taken through PayPal, in US dollars.</li>
         <li style="margin:0 0 10px"><strong style="font-weight:600;color:var(--text-primary)">Complete signup.</strong> This creates the organization and its first administrator together.</li>
         <li style="margin:0 0 10px"><strong style="font-weight:600;color:var(--text-primary)">Fill in the organization profile</strong> — name, details and logo.</li>
         <li><strong style="font-weight:600;color:var(--text-primary)">Check what your plan includes.</strong> The combination of category and plan determines which of the fourteen models your organization has at all.</li>
@@ -155,7 +155,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
             <tr><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Faculty / Division Head</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">unit-head</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Dean or divisional head. Sits above the HODs.</td></tr>
             <tr><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Employee — Academic</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">lecturer</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Academic staff. Fills their own forms.</td></tr>
             <tr><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Employee — Non-Academic</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">industrial-engineer</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Non-academic staff, and the data-entry role for the models. Enters model data; never runs an evaluation.</td></tr>
-            <tr><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Employee (baseline)</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">employee-w</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Fallback surface for anyone whose role is not recognised.</td></tr>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Employee (regular)</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">employee-w</td><td style="padding:12px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">The default employee surface — anyone not on one of the more specific presets.</td></tr>
             <tr><td style="padding:12px 16px;font-weight:600">Auditor</td><td style="padding:12px 16px;color:var(--text-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px">auditor</td><td style="padding:12px 16px;color:var(--text-strong-secondary)">External appraisal auditor. Decides contested appraisals; the decision is final.</td></tr>
           </tbody>
         </table>
@@ -181,7 +181,13 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       </div>
 
       <h3 style="font-size:18px;font-weight:600;letter-spacing:-.2px;margin:32px 0 8px">The two stress-visibility toggles</h3>
-      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 12px;max-width:66ch">Two read toggles are set per person: <strong style="font-weight:600;color:var(--text-primary)">view department stress</strong> and <strong style="font-weight:600;color:var(--text-primary)">view faculty stress</strong>. They decide whether that staff member may see their own department's or faculty's aggregated stress results. Nothing else grants that access.</p>`,
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 12px;max-width:66ch">Two read toggles are set per person: <strong style="font-weight:600;color:var(--text-primary)">view department stress</strong> and <strong style="font-weight:600;color:var(--text-primary)">view faculty stress</strong>. They decide whether that staff member may see their own department's or faculty's aggregated stress results. Nothing else grants that access.</p>
+
+      <h3 style="font-size:18px;font-weight:600;letter-spacing:-.2px;margin:32px 0 8px">Organization Settings — logo and branding</h3>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 12px;max-width:66ch">Organization Settings, under the Organization group in the sidebar, is where the logo shown in the sidebar and on the login screen is uploaded or replaced. JPG, PNG, WEBP or GIF, up to 5MB. With no logo set, the organization's initial is shown instead. This is separate from your own personal profile photo, set on the Profile page.</p>
+      <div style="display:flex;gap:12px;border-left:3px solid var(--danger-500);background:var(--danger-50);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 24px">
+        <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--danger-900);margin:0 0 4px">Admin only</div><div style="font-size:14px;line-height:1.6;color:var(--danger-900)">Only Admin and Super Admin may change the organization's logo.</div></div>
+      </div>`,
   },
   {
     id: "p3",
@@ -200,7 +206,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     title: "3.1 Employee \u2014 academic and non-academic staff",
     html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.1 Employee — academic and non-academic</h3>
       <div style="display:flex;gap:12px;border-left:3px solid var(--brand-600);background:var(--brand-50);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 20px">
-        <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-900);margin:0 0 4px">Who can do this</div><div style="font-size:14px;line-height:1.6;color:var(--brand-900)">Employee — Academic, Employee — Non-Academic, and the baseline Employee role.</div></div>
+        <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-900);margin:0 0 4px">Who can do this</div><div style="font-size:14px;line-height:1.6;color:var(--brand-900)">Employee — Academic, Employee — Non-Academic, and the regular Employee role.</div></div>
       </div>
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
@@ -237,7 +243,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you must do</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Print the blank forms for your department, record Forms 8 and 9, and verify submitted appraisals against the paper originals before they reach the head of department.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Print the blank forms for your department, record Forms 8 and 9, and verify submitted appraisals against the paper originals before they reach the head of department. Student data entries for your department are also yours to record, in Data Entry — this is scoped to the departmental administrator specifically, not to every head of department.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What is waiting on you</div>
@@ -630,11 +636,15 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:15px;font-weight:600;margin:0 0 6px">Profile</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Your personal details and profile image, and where you change your password. There is a forgotten-password route if you cannot sign in. Staff-level roles have this tab.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Your personal details and profile image, and where you change your password. There is a forgotten-password route if you cannot sign in. Everyone has this tab, whatever their role.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:15px;font-weight:600;margin:0 0 6px">Pricing, subscriptions and renewals</div>
           <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Plans, renewals and subscription events sit under Pricing, which is visible to Admin and Super Admin only. Your plan and product category determine which models your organization has.</p>
+        </div>
+        <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
+          <div style="font-size:15px;font-weight:600;margin:0 0 6px">Get help</div>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">The account menu's Get help opens this guide, scoped to your own role. Signed in, the guide keeps a Back to dashboard link so you can return without hunting for the sidebar.</p>
         </div>
       </div>`,
   },
@@ -703,7 +713,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Organization · All Organizations</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Super Admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Organization · Goals</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Everyone except Auditor and Departmental Administrator</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Organization · Model Access</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Admin, Super Admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
-            <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Evaluate · Data Entry</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">All staff-level roles (not Admin / Super Admin)</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
+            <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Organization · Organization Settings</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
+            <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Evaluate · Data Entry</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">All staff-level roles (not Admin / Super Admin). Student data entries within it are Departmental Administrator only.</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Evaluate · Assessment</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Admin, Super Admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">Manage Performance Reviews</td></tr>
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Evaluate · Staff Determination</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Admin, Super Admin, Employee — Non-Academic</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">Define Performance Metrics</td></tr>
             <tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);font-weight:600">Evaluate · Performance Review</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-strong-secondary)">Staff-level roles</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);color:var(--text-secondary)">—</td></tr>

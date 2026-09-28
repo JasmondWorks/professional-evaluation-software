@@ -7,6 +7,7 @@
 // only one pad is open at a time (managed by the parent via `open`).
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Button from "@/app/components/ui/Button";
 
 const PAD_W = 168;
 const PAD_H = 96;
@@ -26,7 +27,7 @@ export default function RatingCell({
   onClose: () => void;
   max?: number;
 }) {
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const btnRef = useRef<HTMLSpanElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -53,19 +54,23 @@ export default function RatingCell({
 
   return (
     <>
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={() => (open ? onClose() : onOpen())}
-        aria-label={value ? `Rated ${value} of ${max}` : "Not rated"}
-        className={`mx-auto flex h-9 w-12 items-center justify-center rounded-md border text-sm font-semibold transition-colors ${
-          value
-            ? "border-green-400 bg-green-50 text-green-700"
-            : "border-line text-muted hover:border-gray-400"
-        }`}
-      >
-        {value ?? "–"}
-      </button>
+      {/* Wrapped in a ref'd span — Button isn't a forwardRef component (React 18),
+          so the position-tracking ref goes on this tightly-fitting wrapper instead. */}
+      <span ref={btnRef} className="mx-auto block w-fit">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => (open ? onClose() : onOpen())}
+          aria-label={value ? `Rated ${value} of ${max}` : "Not rated"}
+          className={`flex h-9 w-12 p-0 items-center justify-center text-sm font-semibold ${
+            value
+              ? "border-green-400 bg-green-50 text-green-700 hover:bg-green-50"
+              : "border-line text-muted hover:border-gray-400"
+          }`}
+        >
+          {value ?? "–"}
+        </Button>
+      </span>
       {open && pos && (
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -74,19 +79,18 @@ export default function RatingCell({
             style={{ top: pos.top, left: pos.left, width: PAD_W }}
           >
             {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
-              <button
+              <Button
                 key={n}
                 type="button"
+                variant={value === n ? "primary" : "ghost"}
                 onClick={() => {
                   onChange(n);
                   onClose();
                 }}
-                className={`h-8 w-8 rounded-md text-sm font-medium transition-colors ${
-                  value === n ? "bg-pes text-white" : "text-body hover:bg-line/50"
-                }`}
+                className="h-8 w-8 p-0 text-sm font-medium"
               >
                 {n}
-              </button>
+              </Button>
             ))}
           </div>
         </>

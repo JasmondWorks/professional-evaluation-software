@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from '@/app/components/ui/Button';
+import Input from '@/app/components/ui/Input';
 import PageHeader from '@/app/components/ui/PageHeader';
 import { CRITERIA, CriterionKey } from '@/app/lib/performance/instrument';
 
@@ -137,33 +138,27 @@ export default function PerformanceAuditor() {
                       </p>
                     )}
                     <div className="flex flex-wrap gap-3">
-                      <label className="w-40">
-                        <span className="block text-xs font-medium text-muted mb-1">
-                          Final score (0&ndash;100)
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step="0.01"
-                          value={d.score}
-                          onChange={(e) =>
-                            setDraft((prev) => ({ ...prev, [key]: { ...d, score: e.target.value } }))
-                          }
-                          className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-                        />
-                      </label>
-                      <label className="flex-1 min-w-[200px]">
-                        <span className="block text-xs font-medium text-muted mb-1">Note (optional)</span>
-                        <input
-                          type="text"
-                          value={d.note}
-                          onChange={(e) =>
-                            setDraft((prev) => ({ ...prev, [key]: { ...d, note: e.target.value } }))
-                          }
-                          className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-                        />
-                      </label>
+                      <Input
+                        label="Final score (0–100)"
+                        containerClassName="w-40"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step="0.01"
+                        value={d.score}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, [key]: { ...d, score: e.target.value } }))
+                        }
+                      />
+                      <Input
+                        label="Note (optional)"
+                        containerClassName="flex-1 min-w-[200px]"
+                        type="text"
+                        value={d.note}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, [key]: { ...d, note: e.target.value } }))
+                        }
+                      />
                     </div>
                     <Button size="sm" disabled={busy} onClick={() => decide(entry.id, row.criterion)}>
                       Record final decision

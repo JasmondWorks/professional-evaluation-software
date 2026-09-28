@@ -1,5 +1,14 @@
 # PES — working notes
 
+## UI conventions
+
+Before writing a raw `<input>`, `<button>`, `<select>`, or `<textarea>`, check
+`app/components/ui/` for a standard component that already covers it (`Input`,
+`Button`, `RoleSelect`, etc.) and use that instead — including when you're
+just editing a raw element that's already there. Full rule and exceptions:
+see "Check for an existing component before writing a raw HTML element" in
+AGENTS.md.
+
 ## Database schema changes
 
 **Never run `prisma db push`** against the local or production database. Use

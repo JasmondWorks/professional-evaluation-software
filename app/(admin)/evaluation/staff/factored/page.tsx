@@ -14,8 +14,8 @@ import {
   CardHeader,
   Empty,
   PageHeader,
-  inputBase,
 } from '@/app/components/ui';
+import Input from '@/app/components/ui/Input';
 
 interface Task {
   id: number;
@@ -136,32 +136,29 @@ export default function FactoredEstimatingPage() {
           <CardBody className="flex flex-col gap-5">
             <div className="rounded-lg border border-line bg-canvas p-4 flex flex-col gap-3">
               <h3 className="text-sm font-medium text-strong">Add a task</h3>
-              <input
+              <Input
                 type="text"
                 aria-label="Task name"
                 placeholder="Task name"
                 value={newTaskName}
                 onChange={(e) => setNewTaskName(e.target.value)}
-                className={inputBase}
               />
               <div className="grid grid-cols-2 gap-3">
-                <input
+                <Input
                   type="number"
                   step="0.01"
                   aria-label="Observed time in hours"
                   placeholder="Observed (hrs)"
                   value={newTaskObserved}
                   onChange={(e) => setNewTaskObserved(e.target.value)}
-                  className={inputBase}
                 />
-                <input
+                <Input
                   type="number"
                   step="0.01"
                   aria-label="Estimated time in hours"
                   placeholder="Estimated (hrs)"
                   value={newTaskEstimated}
                   onChange={(e) => setNewTaskEstimated(e.target.value)}
-                  className={inputBase}
                 />
               </div>
               {taskError && (
@@ -195,48 +192,48 @@ export default function FactoredEstimatingPage() {
                     className="rounded-lg border border-line p-3 flex flex-col gap-3"
                   >
                     <div className="flex items-start gap-2">
-                      <input
+                      <Input
                         type="text"
                         aria-label="Task name"
                         value={task.name}
                         onChange={(e) => updateTask(task.id, 'name', e.target.value)}
-                        className={inputBase}
+                        containerClassName="flex-1"
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => removeTask(task.id)}
                         aria-label={`Remove ${task.name}`}
-                        className="p-2 rounded-lg text-muted hover:text-danger-700 hover:bg-danger-50 transition-colors focus-visible:outline-none focus-visible:shadow-focus"
+                        className="text-muted hover:text-danger-700 hover:bg-danger-50"
                       >
                         <Trash2 size={16} />
-                      </button>
+                      </Button>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
-                      <label className="flex flex-col">
-                        <span className="text-xs font-medium text-muted mb-1">Observed</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={task.observedTime}
-                          onChange={(e) =>
-                            updateTask(task.id, 'observedTime', parseFloat(e.target.value) || 0)
-                          }
-                          className={inputBase}
-                        />
-                      </label>
-                      <label className="flex flex-col">
-                        <span className="text-xs font-medium text-muted mb-1">Estimated</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={task.estimatedTime}
-                          onChange={(e) =>
-                            updateTask(task.id, 'estimatedTime', parseFloat(e.target.value) || 0)
-                          }
-                          className={inputBase}
-                        />
-                      </label>
+                      <Input
+                        label="Observed"
+                        containerClassName="gap-1"
+                        className="text-xs"
+                        type="number"
+                        step="0.01"
+                        value={task.observedTime}
+                        onChange={(e) =>
+                          updateTask(task.id, 'observedTime', parseFloat(e.target.value) || 0)
+                        }
+                      />
+                      <Input
+                        label="Estimated"
+                        containerClassName="gap-1"
+                        className="text-xs"
+                        type="number"
+                        step="0.01"
+                        value={task.estimatedTime}
+                        onChange={(e) =>
+                          updateTask(task.id, 'estimatedTime', parseFloat(e.target.value) || 0)
+                        }
+                      />
                       <div className="flex flex-col">
                         <span className="text-xs font-medium text-muted mb-1">
                           Correction factor
@@ -278,46 +275,29 @@ export default function FactoredEstimatingPage() {
 
           <CardBody className="flex flex-col gap-5">
             <div className="flex flex-col gap-4">
-              <label className="flex flex-col">
-                <span className="text-sm font-medium text-body mb-1.5">
-                  Original estimate (hours)
-                </span>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={originalEstimate}
-                  onChange={(e) => setOriginalEstimate(parseFloat(e.target.value) || 0)}
-                  className={inputBase}
-                />
-              </label>
+              <Input
+                label="Original estimate (hours)"
+                type="number"
+                step="0.1"
+                value={originalEstimate}
+                onChange={(e) => setOriginalEstimate(parseFloat(e.target.value) || 0)}
+              />
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium text-body mb-1.5">
-                  Performance rating (%)
-                </span>
-                <input
-                  type="number"
-                  value={performanceRating}
-                  onChange={(e) => setPerformanceRating(parseFloat(e.target.value) || 100)}
-                  className={inputBase}
-                />
-                <span className="text-xs text-muted mt-1">
-                  100% is standard performance; above 100% is faster than standard.
-                </span>
-              </label>
+              <Input
+                label="Performance rating (%)"
+                hint="100% is standard performance; above 100% is faster than standard."
+                type="number"
+                value={performanceRating}
+                onChange={(e) => setPerformanceRating(parseFloat(e.target.value) || 100)}
+              />
 
-              <label className="flex flex-col">
-                <span className="text-sm font-medium text-body mb-1.5">Allowance (%)</span>
-                <input
-                  type="number"
-                  value={allowancePercentage}
-                  onChange={(e) => setAllowancePercentage(parseFloat(e.target.value) || 0)}
-                  className={inputBase}
-                />
-                <span className="text-xs text-muted mt-1">
-                  Covers breaks, fatigue and unavoidable delays.
-                </span>
-              </label>
+              <Input
+                label="Allowance (%)"
+                hint="Covers breaks, fatigue and unavoidable delays."
+                type="number"
+                value={allowancePercentage}
+                onChange={(e) => setAllowancePercentage(parseFloat(e.target.value) || 0)}
+              />
             </div>
 
             <div className="border-t border-line pt-5">
@@ -366,31 +346,25 @@ export default function FactoredEstimatingPage() {
             <div className="border-t border-line pt-5 flex flex-col gap-4">
               <h3 className="text-sm font-medium text-strong">Staff determination</h3>
               <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col">
-                  <span className="text-xs font-medium text-muted mb-1">Available hours</span>
-                  <input
-                    type="number"
-                    placeholder="e.g. 2080"
-                    value={availableHours}
-                    onChange={(e) =>
-                      setAvailableHours(e.target.value === '' ? '' : Number(e.target.value))
-                    }
-                    className={inputBase}
-                  />
-                </label>
-                <label className="flex flex-col">
-                  <span className="text-xs font-medium text-muted mb-1">Use factor</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="e.g. 0.85"
-                    value={useFactor}
-                    onChange={(e) =>
-                      setUseFactor(e.target.value === '' ? '' : Number(e.target.value))
-                    }
-                    className={inputBase}
-                  />
-                </label>
+                <Input
+                  label="Available hours"
+                  type="number"
+                  placeholder="e.g. 2080"
+                  value={availableHours}
+                  onChange={(e) =>
+                    setAvailableHours(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                />
+                <Input
+                  label="Use factor"
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g. 0.85"
+                  value={useFactor}
+                  onChange={(e) =>
+                    setUseFactor(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                />
               </div>
 
               {canEvaluate ? (

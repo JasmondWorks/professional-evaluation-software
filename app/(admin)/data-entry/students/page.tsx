@@ -1,14 +1,26 @@
 'use client'
 import { notify } from "@/lib/toast";
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { jwtDecode } from 'jwt-decode'
 import Button from "@/app/components/ui/Button";
+import Input from "@/app/components/ui/Input";
 import PageHeader from "@/app/components/ui/PageHeader";
-import { inputBase } from "@/app/components/ui/Input";
+import { getAccessToken } from "@/app/utils/auth";
 
 export default function StudentEvaluationTotals() {
+  const router = useRouter();
   const [students, setStudents] = useState(
     Array.from({ length: 15 }, () => ({ name: '', score: '' }))
   )
+
+  // Student data entries are for the department's assigned departmental
+  // administrator only — not every HOD, and not a plain employee.
+  useEffect(() => {
+    const token = getAccessToken();
+    const role = token ? jwtDecode<any>(token)?.role : null;
+    if (role !== 'dept-admin') router.replace('/data-entry');
+  }, [router]);
 
   const handleChange = (index: number, field: 'name' | 'score', value: string) => {
     const updated = [...students]
@@ -34,21 +46,22 @@ export default function StudentEvaluationTotals() {
         {students.map((student, index) => (
           <div key={index} className="flex gap-3 items-center px-4 py-3">
             <span className="w-8 text-sm text-muted font-medium tabular-nums">#{index + 1}</span>
-            <input
+            <Input
               type="text"
               placeholder="Student name"
               aria-label={`Student ${index + 1} name`}
               value={student.name}
               onChange={e => handleChange(index, 'name', e.target.value)}
-              className={`${inputBase} flex-1`}
+              containerClassName="flex-1"
             />
-            <input
+            <Input
               type="number"
               placeholder="Score"
               aria-label={`Student ${index + 1} total score`}
               value={student.score}
               onChange={e => handleChange(index, 'score', e.target.value)}
-              className={`${inputBase} w-28 text-right tabular-nums`}
+              className="text-right tabular-nums"
+              containerClassName="w-28"
             />
           </div>
         ))}

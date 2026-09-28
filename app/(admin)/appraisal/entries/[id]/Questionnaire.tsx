@@ -92,19 +92,15 @@ export default function Questionnaire({
                           { label: 'No', value: false },
                         ]
                     ).map((opt) => (
-                      <button
+                      <Button
                         key={opt.label}
-                        type="button"
+                        variant={a.answer === opt.value ? 'subtle' : 'outline'}
+                        size="sm"
                         disabled={locked}
                         onClick={() => update(item.key, { answer: opt.value })}
-                        className={`rounded-lg border px-3 py-1 text-sm transition-colors disabled:opacity-50 ${
-                          a.answer === opt.value
-                            ? 'border-pes bg-pes-50 font-medium text-pes-700'
-                            : 'border-line text-body hover:bg-canvas'
-                        }`}
                       >
                         {opt.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ) : null}

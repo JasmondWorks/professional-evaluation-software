@@ -18,6 +18,7 @@ import { getAccessToken, removeAccessToken } from "@/app/utils/auth";
 import { clearCurrentUser } from "@/app/components/useCurrentUser";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { formatRelativeTime } from "@/lib/utils";
+import { guideRoleFor } from "@/app/help/roles";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -101,6 +102,19 @@ export default function Navbar({
     typeof user === "object" && user !== null && "role" in user
       ? String(user.role)
       : "";
+  const category =
+    typeof user === "object" && user !== null
+      ? String((user as any).productCategory || (user as any).category || "")
+      : "";
+  // /help is public, so it works signed out too; these two only decide where
+  // it opens.
+  const helpHref = (() => {
+    const q = new URLSearchParams();
+    if (role) q.set("role", guideRoleFor(role));
+    if (category) q.set("type", category);
+    const qs = q.toString();
+    return qs ? `/help?${qs}` : "/help";
+  })();
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const recent = notifications.slice(0, 6);
 
@@ -120,6 +134,9 @@ export default function Navbar({
         {/* Notifications dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            {/* Kept as a raw <button>: Radix's `asChild` clones this element and
+                attaches a ref to it, but Button isn't a forwardRef component,
+                so swapping it in here would break the dropdown's positioning. */}
             <button
               type="button"
               aria-label={
@@ -183,6 +200,8 @@ export default function Navbar({
         {/* Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            {/* Same reasoning as the notifications trigger above: asChild needs
+                a ref-forwarding element, which Button does not provide. */}
             <button
               type="button"
               className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg hover:bg-line/60 transition-colors focus-visible:outline-none focus-visible:shadow-focus data-[state=open]:bg-line/60"
@@ -211,7 +230,7 @@ export default function Navbar({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/">
+              <Link href={helpHref}>
                 <InfoCircle size={18} /> Get help
               </Link>
             </DropdownMenuItem>

@@ -13,6 +13,7 @@
 
 import { useRef } from 'react';
 import Image from 'next/image';
+import Button from '@/app/components/ui/Button';
 
 export type ArtKind =
   | 'badge-1st'
@@ -154,13 +155,14 @@ export default function AwardArt({
         </div>
         <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>
         {printable && (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={print}
-            className="rounded-md border border-pes px-3 py-1.5 text-xs font-medium text-pes hover:bg-pes-50"
+            className="border-pes text-pes hover:bg-pes-50"
           >
             Print this certificate
-          </button>
+          </Button>
         )}
       </figure>
     );
@@ -205,13 +207,14 @@ export default function AwardArt({
       </div>
       <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>
       {printable && (
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={print}
-          className="rounded-md border border-pes px-3 py-1.5 text-xs font-medium text-pes hover:bg-pes-50"
+          className="border-pes text-pes hover:bg-pes-50"
         >
           Print this badge
-        </button>
+        </Button>
       )}
     </figure>
   );

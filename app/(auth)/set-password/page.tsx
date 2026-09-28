@@ -10,6 +10,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { notify } from '@/lib/toast';
+import Input from '@/app/components/ui/Input';
+import Button from '@/app/components/ui/Button';
 
 type Check =
   | { state: 'checking' }
@@ -121,26 +123,19 @@ export default function SetPasswordPage() {
           </div>
         ) : (
           <div>
-            <label htmlFor="resend" className="block text-sm font-medium text-strong mb-1.5">
-              Send me a new link
-            </label>
-            <div className="flex gap-2">
-              <input
+            <div className="flex gap-2 items-end">
+              <Input
+                containerClassName="flex-1"
+                label="Send me a new link"
                 id="resend"
                 type="email"
                 value={resendEmail}
                 onChange={(e) => setResendEmail(e.target.value)}
                 placeholder="you@organization.com"
-                className="flex-1 h-11 px-3 rounded-lg border border-line text-sm outline-none focus:border-pes"
               />
-              <button
-                type="button"
-                onClick={requestNew}
-                disabled={!resendEmail.includes('@')}
-                className="h-11 px-5 rounded-lg bg-pes text-white text-sm font-medium disabled:opacity-50"
-              >
+              <Button onClick={requestNew} disabled={!resendEmail.includes('@')}>
                 Send
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -187,42 +182,28 @@ export default function SetPasswordPage() {
       </div>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-strong mb-1.5">
-            New password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full h-11 px-3 rounded-lg border border-line text-sm outline-none focus:border-pes"
-          />
-          <p className="mt-1.5 text-xs text-muted">At least 8 characters.</p>
-        </div>
+        <Input
+          label="New password"
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          hint="At least 8 characters."
+        />
 
-        <div>
-          <label htmlFor="confirm" className="block text-sm font-medium text-strong mb-1.5">
-            Confirm password
-          </label>
-          <input
-            id="confirm"
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className="w-full h-11 px-3 rounded-lg border border-line text-sm outline-none focus:border-pes"
-          />
-        </div>
+        <Input
+          label="Confirm password"
+          id="confirm"
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
 
-        <button
-          type="submit"
-          disabled={saving || password.length < 8 || !confirm}
-          className="h-11 rounded-lg bg-pes text-white text-sm font-medium disabled:opacity-50"
-        >
+        <Button type="submit" loading={saving} disabled={password.length < 8 || !confirm}>
           {saving ? 'Saving…' : setup ? 'Set password and continue' : 'Save new password'}
-        </button>
+        </Button>
       </form>
     </div>
   );

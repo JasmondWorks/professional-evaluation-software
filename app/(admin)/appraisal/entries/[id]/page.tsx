@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { BackLink,
-  Alert, Badge, Button, Card, CardBody, CardHeader, PageHeader, Textarea,
+  Alert, Badge, Button, Card, CardBody, CardHeader, Input, PageHeader, Textarea,
 } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
@@ -527,17 +527,15 @@ function ReviewPanel({
               score only if you disagree, and say why.
             </p>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-body">Your score</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={hodScore}
-                  onChange={(e) => setHodScore(e.target.value)}
-                  className="w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm tabular-nums outline-none focus:border-pes-400 focus-visible:shadow-focus"
-                />
-              </label>
+              <Input
+                type="number"
+                label="Your score"
+                min={0}
+                max={100}
+                value={hodScore}
+                onChange={(e) => setHodScore(e.target.value)}
+                className="w-24 tabular-nums"
+              />
             </div>
             <Textarea
               value={justification}

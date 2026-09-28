@@ -1,5 +1,7 @@
 import { apiFetch } from '@/app/utils/apiFetch';
-"use client";  
+"use client";
+
+import Button from '@/app/components/ui/Button';
 
 export default function StripeCheckoutButton({ plan }: { plan: string }) {
   const handleCheckout = async () => {
@@ -13,11 +15,12 @@ export default function StripeCheckoutButton({ plan }: { plan: string }) {
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
       onClick={handleCheckout}
-      className="p-2 bg-white text-pes rounded-xl border border-pes"
+      className="border-pes text-pes bg-white"
     >
       Pay with Stripe
-    </button>
+    </Button>
   );
 }

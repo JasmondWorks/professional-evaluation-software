@@ -10,6 +10,7 @@ import { notify } from "@/lib/toast";
 import { orgTerms } from "@/app/lib/orgTerms";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 type DeptRow = {
   dept: string;
@@ -137,13 +138,12 @@ export default function FacultyApprovals() {
       </div>
 
       <div className="flex flex-col items-end gap-2 mb-3">
-        <button
+        <Button
           onClick={() => approve()}
           disabled={working || c.pendingApproval === 0 || !c.allHodApproved}
-          className="bg-pes text-white px-5 py-2.5 rounded-lg font-medium hover:bg-pes-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Approve entire {terms.unit.toLowerCase()} ({c.pendingApproval})
-        </button>
+        </Button>
         {/* Never a bare disabled button — say why it's disabled (see AGENTS.md). */}
         {(c.pendingApproval === 0 || !c.allHodApproved) && (
           <div className="w-full sm:max-w-md text-sm rounded-lg border border-line bg-canvas px-4 py-3 text-body">
@@ -190,13 +190,15 @@ export default function FacultyApprovals() {
                       Awaiting HOD ({d.pendingHod})
                     </span>
                   ) : d.pendingApproval > 0 ? (
-                    <button
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => approve(d.dept)}
                       disabled={working}
-                      className="text-pes text-xs font-medium border border-pes/30 rounded-md px-3 py-1.5 hover:bg-pes/5 disabled:opacity-50"
+                      className="text-pes border-pes/30 hover:bg-pes/5"
                     >
                       Approve ({d.pendingApproval})
-                    </button>
+                    </Button>
                   ) : (
                     <span className="text-xs text-green-600">Approved</span>
                   )}

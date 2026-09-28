@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Badge, Button, Modal } from '@/app/components/ui';
+import { Alert, Badge, Button, Input, Modal } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
 import {
@@ -144,13 +144,13 @@ export default function TemplateTargets({
     const dirty = draft !== undefined && draft !== String(current ?? '');
     return (
       <div className="flex items-center gap-1.5">
-        <input
+        <Input
           type="number"
           min={0}
           value={draft ?? (current ?? '')}
           onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
           aria-label={`Target for ${key.replace(/[:_]/g, ' ')}`}
-          className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-sm tabular-nums outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus"
+          className="w-20 tabular-nums"
         />
         {dirty ? (
           <Button size="sm" variant="subtle" loading={saving === key} onClick={() => save(key, body)}>

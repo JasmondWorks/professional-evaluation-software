@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "iconsax-react";
 import Link from "next/link";
 import Button from "@/app/components/ui/Button";
+import Input from "@/app/components/ui/Input";
 import { notify } from "@/lib/toast";
 import { apiFetch } from '@/app/utils/apiFetch';
 
@@ -79,17 +80,14 @@ export default function ForgotPassword() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="input flex flex-col justify-center mb-6">
-            <label htmlFor="email" className="mb-2 font-medium">
-              Email Address:
-            </label>
-            <input
+          <div className="flex flex-col justify-center mb-6">
+            <Input
               type="email"
               id="email"
               name="email"
+              label="Email Address:"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-transparent border border-line text-body focus:outline-blue-600 px-4 py-3 rounded-lg"
               placeholder="Enter your email"
               required
               disabled={isSubmitting}

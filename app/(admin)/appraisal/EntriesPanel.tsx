@@ -174,12 +174,12 @@ export default function EntriesPanel() {
             const open = openDept === dept;
             return (
               <Card key={dept}>
-                <CardHeader>
-                  <button
-                    type="button"
+                <CardHeader className="p-0">
+                  <Button
+                    variant="ghost"
                     aria-expanded={open}
                     onClick={() => setOpenDept(open ? null : dept)}
-                    className="flex w-full items-center gap-2 text-left focus:outline-none focus-visible:shadow-focus"
+                    className="h-auto w-full justify-start gap-2 rounded-none p-4 text-left"
                   >
                     {open ? (
                       <ArrowDown2 size={18} className="shrink-0 text-muted" />
@@ -192,7 +192,7 @@ export default function EntriesPanel() {
                         {submitted} of {rows.length} submitted
                       </span>
                     </span>
-                  </button>
+                  </Button>
                 </CardHeader>
 
                 {open ? (

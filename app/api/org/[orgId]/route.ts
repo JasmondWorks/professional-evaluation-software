@@ -31,7 +31,7 @@ export async function GET(
   try {
     const org = await prisma.org.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true, evaluation: true, ongoing: true },
+      select: { id: true, name: true, evaluation: true, ongoing: true, logo_url: true },
     })
     console.log("Org fetched:", org)
 

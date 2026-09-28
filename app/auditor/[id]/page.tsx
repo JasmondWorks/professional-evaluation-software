@@ -3,6 +3,7 @@
 import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Button, Input } from '@/app/components/ui';
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -182,33 +183,32 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Personal Information</h2>
 
-          <input
+          <Input
             type="text"
             placeholder="Full Name"
             value={formData.name}
             onChange={(e) => handleFormChange("name", e.target.value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
           />
 
-          <input
+          <Input
             type="text"
             placeholder="GSM (Plus country code)"
             value={formData.gsm}
             onChange={(e) => handleFormChange("gsm", e.target.value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
           />
 
-          <input
+          <Input
             type="text"
             placeholder="Office Address"
             value={formData.address}
             onChange={(e) => handleFormChange("address", e.target.value)}
             required
-            className="w-full px-3 py-2 border rounded-lg"
           />
 
+          {/* type="date" is excluded from this sweep per instructions (dedicated
+              date component territory); left as a raw input. */}
           <label htmlFor="dob" className="mt-2">
             <span className="text-muted mt-2 m-1">Date of birth</span>
             <input
@@ -219,7 +219,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
               onChange={(e) => handleFormChange("dob", e.target.value)}
               required
               className="w-full px-3 py-2 border rounded-lg"
-            />            
+            />
           </label>
 
         </div>
@@ -290,19 +290,14 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
             <p className="bg-canvas p-3">As deemed necessary</p>
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={!isFormComplete || loading}
-          className={`w-full py-2 px-4 rounded-lg text-white font-medium transition ${
-            isFormComplete
-              ? "bg-pes hover:opacity-90 cursor-pointer"
-              : "bg-gray-400 cursor-not-allowed opacity-60"
-          }`}
+          loading={loading}
+          className="w-full"
         >
-          {
-            loading? "Loading..." : "Submit"
-          }
-        </button>
+          Submit
+        </Button>
       </form>
 
       {message && (

@@ -7,6 +7,7 @@ import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/ut
 
 import React, { useEffect, useState } from 'react'
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from '@/app/components/ui/Button';
 
 type User = {
   id: string
@@ -63,12 +64,13 @@ export default function Page({ params }: { params: { orgId: string } }) {
           Users — {users[0]?.org ?? `Org #${orgId}`}
         </h1>
 
-        <button
+        <Button
+          variant="ghost"
           onClick={logout}
           className="text-muted hover:text-danger-600"
         >
           Logout
-        </button>
+        </Button>
       </div>
 
       {/* Content */}

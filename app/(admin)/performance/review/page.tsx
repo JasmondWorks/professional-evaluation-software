@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { notify } from '@/lib/toast';
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from '@/app/components/ui/Button';
+import Input from '@/app/components/ui/Input';
 import PageHeader from '@/app/components/ui/PageHeader';
 import Badge from '@/app/components/ui/Badge';
 import { CRITERIA, CriterionKey } from '@/app/lib/performance/instrument';
@@ -141,10 +142,11 @@ export default function PerformanceReview() {
           const expanded = open === String(entry.id);
           return (
             <div key={entry.id} className="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setOpen(expanded ? null : String(entry.id))}
-                className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-canvas/60 transition-colors"
+                className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-canvas/60 transition-colors rounded-none h-auto"
               >
                 <span className="font-medium text-strong">{entry.pesuser_name}</span>
                 <span className="flex items-center gap-2">
@@ -156,7 +158,7 @@ export default function PerformanceReview() {
                   {entry.status === 'awaiting_staff' && <Badge tone="warning">Awaiting their response</Badge>}
                   <span className="text-muted text-sm">{expanded ? 'Hide' : 'Review'}</span>
                 </span>
-              </button>
+              </Button>
 
               {expanded && (
                 <div className="border-t border-line divide-y divide-line">
@@ -246,22 +248,18 @@ export default function PerformanceReview() {
                         ) : (
                           <div className="space-y-3">
                             <div className="flex flex-wrap gap-3">
-                              <label className="flex-1 min-w-[140px]">
-                                <span className="block text-xs font-medium text-muted mb-1">
-                                  Your score (0&ndash;100)
-                                </span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  step="0.01"
-                                  value={d.score}
-                                  onChange={(e) =>
-                                    setDraft((prev) => ({ ...prev, [key]: { ...d, score: e.target.value } }))
-                                  }
-                                  className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-strong focus-visible:outline-none focus-visible:shadow-focus"
-                                />
-                              </label>
+                              <Input
+                                label="Your score (0–100)"
+                                containerClassName="flex-1 min-w-[140px]"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="0.01"
+                                value={d.score}
+                                onChange={(e) =>
+                                  setDraft((prev) => ({ ...prev, [key]: { ...d, score: e.target.value } }))
+                                }
+                              />
                             </div>
                             <label className="block">
                               <span className="block text-xs font-medium text-muted mb-1">

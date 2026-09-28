@@ -146,12 +146,18 @@ export default function DataEntryPage() {
         Icon: Book1,
         color: "bg-warning-50 text-warning-600",
       },
+      {
+        title: "Student data entries",
+        description: "Record student data for your department.",
+        href: "/data-entry/students",
+        Icon: Book1,
+        color: "bg-warning-50 text-warning-600",
+      },
     );
   }
   if (role === "hod") {
     roleCards.push(
       { title: "Staff data entries", description: "Enter data on behalf of your department's staff.", href: "/data-entry/employee", Icon: People, color: "bg-pes-50 text-pes-600" },
-      { title: "Student data entries", description: "Record student data for your department.", href: "/data-entry/students", Icon: Book1, color: "bg-warning-50 text-warning-600" },
       { title: "Approve department stress", description: "Verify and approve your department's stress submissions.", href: "/data-entry/stress/approvals", Icon: Verify, color: "bg-rose-50 text-rose-600" },
     );
   }

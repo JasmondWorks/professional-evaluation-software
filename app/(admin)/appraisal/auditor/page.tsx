@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, CardBody, CardHeader, Empty, PageHeader, Textarea } from '@/app/components/ui';
+import { Alert, Button, Card, CardBody, CardHeader, Empty, Input, PageHeader, Textarea } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
 import { useIsAcademicOrg } from '@/app/lib/useOrgCategory';
@@ -159,17 +159,15 @@ function AuditCase({
       ) : null}
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-body">Your final score</span>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={score}
-            onChange={(e) => setScore(e.target.value)}
-            className="w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm tabular-nums outline-none focus:border-pes-400 focus-visible:shadow-focus"
-          />
-        </label>
+        <Input
+          label="Your final score"
+          type="number"
+          min={0}
+          max={100}
+          value={score}
+          onChange={(e) => setScore(e.target.value)}
+          className="w-24 tabular-nums"
+        />
       </div>
       <Textarea
         className="mt-3"

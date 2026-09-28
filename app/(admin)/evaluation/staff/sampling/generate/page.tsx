@@ -1,6 +1,7 @@
 'use client'
 import { useState } from "react"
 import LoadingButton from '../../../../../components/ui/LoadingButton';
+import Input from '../../../../../components/ui/Input';
 import { Calendar, Clock, RefreshCw } from 'lucide-react';
 
 // Month day multiplier constants for eq 6.4–6.6
@@ -148,43 +149,37 @@ export default function GeneratePage() {
           </select>
         </label>
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Number of Months
-          <input type="number" name="numMonths" min={1} max={12} value={params.numMonths}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-        </label>
+        <Input
+          label="Number of Months"
+          type="number" name="numMonths" min={1} max={12} value={params.numMonths}
+          onChange={handleChange} />
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Days Per Month (desired)
-          <input type="number" name="daysPerMonth" min={1} max={27} value={params.daysPerMonth}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-        </label>
+        <Input
+          label="Days Per Month (desired)"
+          type="number" name="daysPerMonth" min={1} max={27} value={params.daysPerMonth}
+          onChange={handleChange} />
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Work Start Time (hr)
-          <input type="number" name="workStartTime" min={0} max={23} step={0.5} value={params.workStartTime}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-          <span className="text-xs text-muted mt-1">Y₀ — e.g. 8 = 08:00</span>
-        </label>
+        <Input
+          label="Work Start Time (hr)"
+          hint="Y₀ — e.g. 8 = 08:00"
+          type="number" name="workStartTime" min={0} max={23} step={0.5} value={params.workStartTime}
+          onChange={handleChange} />
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Min Cycle Duration A (min)
-          <input type="number" name="minDuration" min={1} max={120} value={params.minDuration}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-          <span className="text-xs text-muted mt-1">Time to complete one tour + rest</span>
-        </label>
+        <Input
+          label="Min Cycle Duration A (min)"
+          hint="Time to complete one tour + rest"
+          type="number" name="minDuration" min={1} max={120} value={params.minDuration}
+          onChange={handleChange} />
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Working Hours/Day (W)
-          <input type="number" name="workingHours" min={1} max={24} step={0.5} value={params.workingHours}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-        </label>
+        <Input
+          label="Working Hours/Day (W)"
+          type="number" name="workingHours" min={1} max={24} step={0.5} value={params.workingHours}
+          onChange={handleChange} />
 
-        <label className="flex flex-col text-sm font-medium text-body">
-          Observations/Day (n)
-          <input type="number" name="obsPerDay" min={1} max={50} value={params.obsPerDay}
-            onChange={handleChange} className="mt-1 border rounded px-3 py-2" />
-        </label>
+        <Input
+          label="Observations/Day (n)"
+          type="number" name="obsPerDay" min={1} max={50} value={params.obsPerDay}
+          onChange={handleChange} />
 
         {/* Derived B */}
         <div className="flex flex-col text-sm font-medium text-body">

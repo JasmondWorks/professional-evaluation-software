@@ -6,7 +6,8 @@ import { saveResult } from "./util/sharedPost";
 import Link from "next/link";
 
 import InfoPopover from "@/app/components/ui/InfoPopover";
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
+import Input from "@/app/components/ui/Input";
 
 export default function Method1Page() {
   const [basicTime, setBasicTime] = useState<number | "">("");
@@ -121,11 +122,10 @@ export default function Method1Page() {
                 <span className="truncate">Basic Time</span>
                 <InfoPopover text="Base time taken to complete a single task (without allowances)." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={basicTime}
                 onChange={(e) => setBasicTime(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -133,11 +133,10 @@ export default function Method1Page() {
                 <span className="truncate">Number of Tasks</span>
                 <InfoPopover text="Total quantity of tasks to be processed." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={numTasks}
                 onChange={(e) => setNumTasks(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -145,11 +144,10 @@ export default function Method1Page() {
                 <span className="truncate">Time per Task (hours)</span>
                 <InfoPopover text="Time allocated for a specific task grouping." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={timePerTask}
                 onChange={(e) => setTimePerTask(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -190,11 +188,10 @@ export default function Method1Page() {
                 <span className="truncate">Relaxation Allowance (%)</span>
                 <InfoPopover text="Percentage of additional time allowed for breaks/fatigue." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={relaxAllowance}
                 onChange={(e) => setRelaxAllowance(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -202,11 +199,10 @@ export default function Method1Page() {
                 <span className="truncate">Load Classification Factor</span>
                 <InfoPopover text="Factor applied to account for the physical/mental load." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={loadFactor}
                 onChange={(e) => setLoadFactor(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
             <div className="block w-full min-w-0">
@@ -214,11 +210,10 @@ export default function Method1Page() {
                 <span className="truncate">Available Man-hours per Person/Year</span>
                 <InfoPopover text="Total workable hours available from a single employee in a year." />
               </div>
-              <input
+              <Input
                 type="number"
                 value={availableHoursPerPerson}
                 onChange={(e) => setAvailableHoursPerPerson(e.target.value === "" ? "" : Number(e.target.value))}
-                className="mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-pes-400 focus:shadow-focus outline-none transition-shadow"
               />
             </div>
           </div>
@@ -227,13 +222,9 @@ export default function Method1Page() {
 
       {error && <p className="text-danger-600 font-medium mb-4">{error}</p>}
 
-      <button
-        onClick={calculate}
-        disabled={!isFilled}
-        className={`px-6 py-2 rounded text-white ${isFilled ? "bg-pes hover:bg-pes-800" : "bg-gray-400 cursor-not-allowed"}`}
-      >
+      <Button onClick={calculate} disabled={!isFilled}>
         Calculate Staff Estimate
-      </button>
+      </Button>
 
       {result !== null && (
         <div className="mt-8 border-t border-line pt-8">
@@ -251,13 +242,9 @@ export default function Method1Page() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={saveToDb}
-              disabled={saving}
-              className="bg-pes text-white rounded px-6 py-2 hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={saveToDb} disabled={saving}>
               {saving ? "Saving..." : "Save Result"}
-            </button>
+            </Button>
           </div>
 
           {saveMsg && <p className="mt-4 text-sm font-medium">{saveMsg}</p>}

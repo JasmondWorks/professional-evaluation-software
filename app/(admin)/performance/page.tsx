@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import jwt from "jsonwebtoken";
 import Link from "next/link";import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Empty } from '@/app/components/ui';
+import { Chart } from 'iconsax-react';
 
 
 function grader(num: number) {
@@ -66,7 +68,14 @@ export default function Home() {
     </div>
   );
   if (!data?.performance && !data?.appraisal)
-    return <p className="p-8 text-danger-600">No data found.</p>;
+    return (
+      <Empty
+        className="m-8"
+        icon={<Chart size={22} variant="Bulk" />}
+        title="No performance data yet"
+        description="Your appraisal and performance results will appear here once they have been recorded."
+      />
+    );
 
   const perf = data.performance || {};
   const appr = data.appraisal || {};

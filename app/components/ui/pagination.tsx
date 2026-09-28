@@ -3,6 +3,7 @@
 import * as React from "react";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Button from "@/app/components/ui/Button";
 
 /**
  * Controlled pagination. Renders first/last, a windowed page range with
@@ -38,40 +39,43 @@ export function Pagination({
   if (pageCount > 1) pages.push(pageCount);
 
   const btn =
-    "inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-line bg-surface px-2.5 text-sm font-medium text-body transition-colors hover:bg-line/50 hover:text-strong disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:shadow-focus";
+    "h-9 min-w-9 rounded-lg border border-line bg-surface px-2.5 text-sm font-medium text-body hover:bg-line/50 hover:text-strong";
 
   return (
     <nav aria-label="Pagination" className={cn("flex items-center gap-1.5", className)}>
-      <button
+      <Button
+        variant="outline"
         className={cn(btn, "px-3")}
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
       >
         Previous
-      </button>
+      </Button>
       {pages.map((p, i) =>
         p === "ellipsis" ? (
           <span key={`e${i}`} className="grid h-9 w-9 place-items-center text-muted">
             <MoreHorizontal className="h-4 w-4" />
           </span>
         ) : (
-          <button
+          <Button
             key={p}
+            variant="outline"
             onClick={() => onPageChange(p)}
             aria-current={p === page ? "page" : undefined}
             className={cn(btn, p === page && "bg-pes text-white border-pes hover:bg-pes-800 hover:text-white")}
           >
             {p}
-          </button>
+          </Button>
         ),
       )}
-      <button
+      <Button
+        variant="outline"
         className={cn(btn, "px-3")}
         onClick={() => onPageChange(page + 1)}
         disabled={page >= pageCount}
       >
         Next
-      </button>
+      </Button>
     </nav>
   );
 }

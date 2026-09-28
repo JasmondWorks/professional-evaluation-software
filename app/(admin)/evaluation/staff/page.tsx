@@ -5,7 +5,7 @@ import grand_total_man_hours from "@/app/api/modules/numberOfstaff/method1/main"
 import { useAuth } from "@/app/components/useAuth";
 import Button from "@/app/components/ui/Button";
 import PageHeader from "@/app/components/ui/PageHeader";
-import { inputBase } from "@/app/components/ui/Input";
+import Input from "@/app/components/ui/Input";
 import { Trash } from "iconsax-react";
 
 type DataEntry = {
@@ -153,31 +153,29 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-semibold text-strong">{`Task ${index + 1}`}</h2>
               {index > 0 && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={(e) => handleTaskRemove(e, index)}
-                  className="text-muted hover:text-danger-600 flex items-center gap-1.5 text-sm font-medium hover:bg-danger-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                  className="text-muted hover:text-danger-600 hover:bg-danger-50"
                 >
                   <Trash size={16} />
                   Remove
-                </button>
+                </Button>
               )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {TASK_FIELDS.map(({ key, label }) => (
-                <label key={key} className="flex flex-col">
-                  <span className="text-sm font-medium text-body mb-1.5">
-                    {label}
-                  </span>
-                  <input
-                    required
-                    className={inputBase}
-                    type="number"
-                    value={(arrayDataEntry[key][index] as number) || ""}
-                    onChange={(e) => handleDataEntry(e, index, key)}
-                  />
-                </label>
+                <Input
+                  key={key}
+                  label={label}
+                  required
+                  type="number"
+                  value={(arrayDataEntry[key][index] as number) || ""}
+                  onChange={(e) => handleDataEntry(e, index, key)}
+                />
               ))}
             </div>
           </div>
@@ -194,30 +192,20 @@ export default function Home() {
       <div className="bg-surface border border-line rounded-xl shadow-card p-5 mt-6">
         <h2 className="font-semibold text-strong mb-4">Calculation parameters</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-body mb-1.5">
-              Available hours
-            </span>
-            <input
-              name="available_hours"
-              required
-              className={inputBase}
-              type="number"
-              onChange={handleNumberDataEntry}
-            />
-          </label>
-          <label className="flex flex-col">
-            <span className="text-sm font-medium text-body mb-1.5">
-              Use factor
-            </span>
-            <input
-              name="use_factor"
-              required
-              className={inputBase}
-              type="number"
-              onChange={handleNumberDataEntry}
-            />
-          </label>
+          <Input
+            label="Available hours"
+            name="available_hours"
+            required
+            type="number"
+            onChange={handleNumberDataEntry}
+          />
+          <Input
+            label="Use factor"
+            name="use_factor"
+            required
+            type="number"
+            onChange={handleNumberDataEntry}
+          />
         </div>
       </div>
 

@@ -13,6 +13,8 @@ import {
   hasConstraintParams,
   type ConstraintParams,
 } from "@/app/lib/models/boundaryConditions";
+import { Button } from "@/app/components/ui";
+import Input from "@/app/components/ui/Input";
 
 // Sections 17, 18 and 19 as one screen.
 //
@@ -230,8 +232,6 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
     }
   }
 
-  const field =
-    "mt-1.5 block w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition-shadow focus:border-pes-400 focus:shadow-focus";
 
   return (
     <div className="flex flex-col gap-6">
@@ -283,13 +283,13 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                           {new Date(r.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <button
-                            type="button"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setSelectedStaffId(r.id)}
-                            className="rounded-md border border-pes px-2.5 py-1 text-xs font-medium text-pes hover:bg-pes-50"
                           >
                             {r.id === selectedStaffId ? "Selected" : "Use"}
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -340,7 +340,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                 }}
               />
             </div>
-            <input
+            <Input
               type="number"
               value={supervisoryKstar}
               onChange={(e) => {
@@ -350,7 +350,7 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
                 setUtilizationRunId(null);
                 setInherited(null);
               }}
-              className={field}
+              containerClassName="mt-1.5"
               placeholder="K* from Personnel Utilization"
             />
 
@@ -387,80 +387,67 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
               <p className="text-sm font-semibold text-body sm:col-span-4">
                 Level {i + 2} rates
               </p>
-              <label className="text-xs font-medium text-muted">
-                λ — arrival rate
-                <input
-                  type="number"
-                  step="0.0001"
-                  value={r.lambda}
-                  onChange={(e) =>
-                    updateLevel(i, {
-                      lambda: e.target.value === "" ? "" : Number(e.target.value),
-                      run: null,
-                      error: null,
-                    })
-                  }
-                  readOnly={!mayExecute}
-                  className={field}
-                />
-              </label>
-              <label className="text-xs font-medium text-muted">
-                μ — service rate
-                <input
-                  type="number"
-                  step="0.0001"
-                  value={r.mu}
-                  onChange={(e) =>
-                    updateLevel(i, {
-                      mu: e.target.value === "" ? "" : Number(e.target.value),
-                      run: null,
-                      error: null,
-                    })
-                  }
-                  readOnly={!mayExecute}
-                  className={field}
-                />
-              </label>
-              <label className="text-xs font-medium text-muted">
-                A — availability
-                <input
-                  type="number"
-                  step="0.1"
-                  value={r.A}
-                  onChange={(e) =>
-                    updateLevel(i, {
-                      A: e.target.value === "" ? "" : Number(e.target.value),
-                      run: null,
-                      error: null,
-                    })
-                  }
-                  readOnly={!mayExecute}
-                  className={field}
-                />
-              </label>
+              <Input
+                label="λ — arrival rate"
+                type="number"
+                step="0.0001"
+                value={r.lambda}
+                onChange={(e) =>
+                  updateLevel(i, {
+                    lambda: e.target.value === "" ? "" : Number(e.target.value),
+                    run: null,
+                    error: null,
+                  })
+                }
+                readOnly={!mayExecute}
+              />
+              <Input
+                label="μ — service rate"
+                type="number"
+                step="0.0001"
+                value={r.mu}
+                onChange={(e) =>
+                  updateLevel(i, {
+                    mu: e.target.value === "" ? "" : Number(e.target.value),
+                    run: null,
+                    error: null,
+                  })
+                }
+                readOnly={!mayExecute}
+              />
+              <Input
+                label="A — availability"
+                type="number"
+                step="0.1"
+                value={r.A}
+                onChange={(e) =>
+                  updateLevel(i, {
+                    A: e.target.value === "" ? "" : Number(e.target.value),
+                    run: null,
+                    error: null,
+                  })
+                }
+                readOnly={!mayExecute}
+              />
               <div className="flex items-end gap-2">
                 {mayExecute && (
-                  <button
-                    type="button"
+                  <Button
+                    size="sm"
                     onClick={() => executeLevel(i)}
                     disabled={r.lambda === "" || r.mu === ""}
-                    className={`rounded-md px-3 py-2 text-xs font-medium text-white ${
-                      r.lambda === "" || r.mu === ""
-                        ? "cursor-not-allowed bg-gray-400"
-                        : "bg-pes hover:opacity-90"
-                    }`}
                   >
                     {r.run ? "Re-execute" : "Execute"}
-                  </button>
+                  </Button>
                 )}
                 {mayExecute && levelRates.length > 1 && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-danger-700 hover:bg-danger-50"
                     onClick={() => setLevelRates((prev) => prev.filter((_, j) => j !== i))}
-                    className="rounded-md border border-line px-3 py-2 text-xs text-danger-700 hover:bg-danger-50"
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -508,13 +495,14 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
             </div>
           ))}
           {mayExecute && (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-pes text-pes hover:bg-pes-50"
             onClick={() => setLevelRates((prev) => [...prev, emptyLevel()])}
-            className="rounded-md border border-pes px-3 py-2 text-xs font-medium text-pes hover:bg-pes-50"
           >
             + Add another management level
-          </button>
+          </Button>
           )}
         </div>
 
@@ -597,18 +585,14 @@ export default function CascadePanel({ onSave }: { onSave: (section: number, res
       )}
 
       <div>
-        <button
-          type="button"
+        <Button
+          size="lg"
           onClick={saveStructure}
           disabled={!cascade?.reachedTop || saving}
-          className={`rounded-lg px-6 py-3 text-sm font-medium text-white transition-colors ${
-            cascade?.reachedTop && !saving
-              ? "bg-pes hover:opacity-90"
-              : "cursor-not-allowed bg-gray-400"
-          }`}
+          loading={saving}
         >
           {saving ? "Saving…" : "Save structure"}
-        </button>
+        </Button>
         {!cascade?.reachedTop && (
           <p className="mt-2 text-xs text-muted">
             The structure is saved once the cascade reaches a single post at the top.

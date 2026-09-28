@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/ut
 
 import React, { useEffect, useState } from 'react'
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from '@/app/components/ui/Button';
 
 type user = {
   id: number
@@ -75,12 +76,13 @@ export default function Page({ params }: { params: { user: string } }) {
         <h1 className='text-2xl font-semibold'>{user.name}</h1>
 
         <div className="flex gap-4">
-          <button
+          <Button
+            variant="ghost"
             onClick={logout}
             className="text-muted hover:text-pes"
           >
             Logout
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -122,13 +124,15 @@ export default function Page({ params }: { params: { user: string } }) {
 
         {/* 🔴 Danger Zone */}
         <div className="pt-4 border-t">
-          <button
+          <Button
+            variant="destructive"
             onClick={deleteUser}
             disabled={deleting}
-            className="w-full bg-danger-600 hover:bg-danger-700 text-white py-2 rounded-lg disabled:opacity-50"
+            loading={deleting}
+            className="w-full"
           >
             {deleting ? "Deleting..." : "Delete User"}
-          </button>
+          </Button>
         </div>
 
       </div>

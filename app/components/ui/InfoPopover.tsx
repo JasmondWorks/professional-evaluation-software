@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { InfoCircle } from "iconsax-react";
+import Button from "./Button";
 
 export default function InfoPopover({ text }: { text: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,17 +25,18 @@ export default function InfoPopover({ text }: { text: string }) {
 
   return (
     <div className="relative inline-flex items-center ml-1.5 align-middle" ref={popoverRef}>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={(e) => {
           e.preventDefault();
           setIsOpen(!isOpen);
         }}
-        className="text-muted hover:text-pes transition-colors rounded-full focus:outline-none focus:text-pes"
+        className="h-auto w-auto p-0.5 text-muted hover:bg-transparent hover:text-pes focus-visible:text-pes"
         aria-label="More information"
       >
         <InfoCircle size={16} variant="Bulk" />
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 p-3 bg-gray-800 border border-gray-700 text-gray-50 text-xs rounded-xl shadow-2xl z-50 font-normal leading-relaxed">

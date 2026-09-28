@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, CardBody, CardHeader } from '@/app/components/ui';
+import { Alert, Button, Card, CardBody, CardHeader, Input } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
 import { AppraisalModel, CATEGORY_KEYS, CategoryKey } from '@/app/lib/appraisal/instrument';
@@ -180,24 +180,25 @@ export default function IndicatorPicker({
                         className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-1.5 text-sm"
                       >
                         <span className="min-w-0 truncate text-body">{r.label}</span>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             setChosen((prev) =>
                               prev.filter((c) => !(c.category === category && c.label === r.label)),
                             )
                           }
-                          className="shrink-0 text-xs font-medium text-danger-700 hover:underline"
+                          className="h-auto shrink-0 p-0 text-xs text-danger-700 hover:underline"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </li>
                     ))}
                   </ul>
                 ) : null}
 
                 <div className="flex flex-wrap gap-2">
-                  <input
+                  <Input
                     value={drafts[category] ?? ''}
                     onChange={(e) => setDrafts((d) => ({ ...d, [category]: e.target.value }))}
                     onKeyDown={(e) => {
@@ -212,7 +213,7 @@ export default function IndicatorPicker({
                         : `Name of the ${CATEGORY_LABELS[category].toLowerCase()} work`
                     }
                     aria-label={`Add a ${CATEGORY_LABELS[category]} indicator`}
-                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm outline-none focus:border-pes-400 focus-visible:shadow-focus"
+                    containerClassName="min-w-0 flex-1"
                   />
                   <Button
                     size="sm"

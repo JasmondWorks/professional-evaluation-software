@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 interface RecordType {
   id: string;
@@ -95,21 +96,25 @@ export default function SecondBookViewer() {
         </div>
 
         {/* PAGE CONTROLS */}
-        <button
+        <Button
           onClick={prevPage}
           disabled={currentPage === 1}
-          className="absolute left-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-canvas0"
+          size="icon"
+          aria-label="Previous page"
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full disabled:bg-canvas0"
         >
           <ChevronLeft />
-        </button>
+        </Button>
 
-        <button
+        <Button
           onClick={nextPage}
           disabled={currentPage === totalPages}
-          className="absolute right-3 top-1/2 -translate-y-1/2 bg-pes text-white p-3 rounded-full disabled:bg-canvas0"
+          size="icon"
+          aria-label="Next page"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full disabled:bg-canvas0"
         >
           <ChevronRight />
-        </button>
+        </Button>
 
         {/* FOOTER PAGE NUMBER */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-6 py-1 rounded-full shadow text-sm text-body">
@@ -151,9 +156,9 @@ function PageContent({
             </p>
           </Link>
 
-          <button className="mt-3 text-pes flex items-center gap-2 text-sm font-medium">
+          <Button variant="ghost" size="sm" className="mt-3 text-pes px-0 h-auto">
             <Download size={16} /> Download
-          </button>
+          </Button>
         </div>
       ))}
     </div>

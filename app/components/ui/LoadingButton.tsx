@@ -4,6 +4,14 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean;
 };
 
+// NOTE: kept as a raw <button> rather than wrapping Button. Button's default
+// variant applies its own `bg-pes text-white` styling, and most callers of
+// LoadingButton (app/admin/(logged_in)/layout.tsx, dashboard/page.tsx, the
+// sampling/generate page — all outside this conversion batch) pass a fully
+// custom className that assumes an unstyled base button. Routing through
+// Button would leak its primary-variant background into those call sites
+// wherever they don't already set their own `bg-*`. Safer to leave this
+// component's internals alone.
 export default function LoadingButton({ children, className = '', onClick, disabled, loading, ...rest }: Props) {
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = loading ?? internalLoading;

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { RATING_MAX, RATING_MIN, WorkParameter } from '@/app/lib/performance/instrument';
+import Button from '@/app/components/ui/Button';
 
 /** The document's summative response scale: every work parameter is rated from
  *  "less likely" to "most likely" on the same 1-10 row (full document, page 102).
@@ -56,21 +57,20 @@ export default function RatingTable({
                       aria-label={`Rating for ${p.label}`}
                     >
                       {scale.map((value) => (
-                        <button
+                        <Button
                           key={value}
-                          type="button"
                           role="radio"
+                          size="icon"
                           disabled={disabled}
                           aria-checked={rating === value}
                           onClick={() => onChange(i, value)}
-                          className={`w-8 h-8 rounded-full border font-semibold text-sm transition-colors focus-visible:shadow-focus disabled:opacity-50 disabled:pointer-events-none ${
-                            rating === value
-                              ? 'bg-pes text-white border-pes'
-                              : 'bg-surface text-body border-line hover:border-pes-300 hover:text-pes-700'
+                          variant={rating === value ? 'primary' : 'outline'}
+                          className={`h-8 w-8 rounded-full text-sm ${
+                            rating === value ? 'border-pes' : 'hover:border-pes-300 hover:text-pes-700'
                           }`}
                         >
                           {value}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </td>

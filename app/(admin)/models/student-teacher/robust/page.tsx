@@ -12,6 +12,7 @@ import {
 import ParametersForm from "../_components/ParametersForm";
 import ResultsCard from "../_components/ResultsCard";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Button } from '@/app/components/ui';
 
 export default function RobustOptimization() {
   const [params, setParams] = useState({
@@ -134,13 +135,9 @@ export default function RobustOptimization() {
 
       <div className="print:hidden">
         {isAdmin ? (
-          <button
-            onClick={handleCalculate}
-            disabled={loading}
-            className="px-4 py-2 bg-pes text-white rounded hover:bg-pes-800 mt-4"
-          >
+          <Button onClick={handleCalculate} disabled={loading} loading={loading} className="mt-4">
             {loading ? "Calculating..." : "Calculate"}
-          </button>
+          </Button>
         ) : (
           <p className="mt-4 text-danger-600 font-semibold text-sm">Only admins can perform calculations.</p>
         )}
@@ -160,12 +157,9 @@ export default function RobustOptimization() {
         <div className="mt-6">
           <ResultsCard results={results} />
           {isAdmin && (
-            <button 
-              onClick={() => window.print()}
-              className="mt-4 px-4 py-2 bg-pes text-white rounded hover:bg-pes-800 print:hidden"
-            >
+            <Button onClick={() => window.print()} className="mt-4 print:hidden">
               Print Results
-            </button>
+            </Button>
           )}
         </div>
       )}

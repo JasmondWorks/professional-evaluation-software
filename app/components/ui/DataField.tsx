@@ -10,7 +10,7 @@ export default function DataField({
   return (
     <div className="my-2 flex flex-col">
       <p className="text-muted">{label}:</p>
-      <p className="font-semibold text-lg">{value ? value : "N/A"}</p>
+      <p className="font-semibold text-lg">{value ? value : "—"}</p>
     </div>
   );
 }

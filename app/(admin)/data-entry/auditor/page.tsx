@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from "@/app/components/ui/Button";
+import Input from "@/app/components/ui/Input";
 import PageHeader from "@/app/components/ui/PageHeader";
 
 
@@ -157,16 +158,17 @@ export default function AuditorScoresPage() {
       {!selectedGroup && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {(["appraisal", "performance"] as GroupKey[]).map((g) => (
-            <button
+            <Button
               key={g}
+              variant="secondary"
               onClick={() => setSelectedGroup(g)}
-              className="p-6 bg-surface border border-line hover:border-pes-200 hover:shadow-md rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left transition-[box-shadow,border-color] focus-visible:shadow-focus"
+              className="h-auto p-6 !justify-start flex-col items-start rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left hover:border-pes-200 hover:shadow-md"
             >
               {g}
               <span className="block mt-1 text-sm font-normal text-muted">
                 Resolve flagged {g} scores
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -247,10 +249,10 @@ export default function AuditorScoresPage() {
 
                     {/* Auditor input */}
                     <div>
-                      <input
+                      <Input
                         type="number"
                         aria-label={`Auditor resolution for ${metric.replace(/_/g, " ")}`}
-                        className="w-24 h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm text-right tabular-nums focus:outline-none focus:border-pes-400 focus:shadow-focus"
+                        className="w-24 text-right tabular-nums"
                         value={auditorScores[metric] ?? ""}
                         onChange={(e) => handleAuditorChange(metric, e.target.value)}
                         placeholder="—"

@@ -1,13 +1,37 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { notify } from '@/lib/toast';
 import { getAccessToken, setAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { BackLink, Alert, Card, CardBody } from '@/app/components/ui';
+import Skeleton from '@/app/components/ui/Skeleton';
 import PayPalOrderProvider from '@/app/components/subscription/paypalOrderWrapper';
+
+// Renders the actual buttons only once the PayPal script has resolved, so a
+// slow load shows a skeleton instead of a moment with no button at all.
+// Static — see app/components/subscription/paypal.tsx for why this has to be
+// a stable reference: the SDK tears down and rebuilds the buttons whenever
+// `style` or any callback prop changes identity, and this page's several
+// state updates (org, price, error, done) were recreating an inline object
+// here on every render, which sometimes left the buttons blank until reload.
+const BUTTON_STYLE = { layout: 'vertical' as const };
+
+function PayPalButtonsGate(props: React.ComponentProps<typeof PayPalButtons>) {
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
+
+  if (isRejected) {
+    return (
+      <Alert tone="danger">Payment options could not be loaded. Refresh the page to try again.</Alert>
+    );
+  }
+  if (isPending) {
+    return <Skeleton className="h-11 rounded-md" />;
+  }
+  return <PayPalButtons {...props} />;
+}
 
 // Buying the maintenance model add-on.
 //
@@ -35,36 +59,50 @@ function MaintenancePayment() {
   }, []);
 
   /** Ask the server to open a PayPal order and hand back its id. */
-  async function createOrder() {
+  const createOrder = useCallback(async () => {
     setError('');
-    const res = await apiFetch('/api/maintenance/initialize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message ?? 'Could not start the payment.');
-    setPrice(data.price ?? null);
-    return data.orderId as string;
-  }
+    try {
+      const res = await apiFetch('/api/maintenance/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message ?? 'Could not start the payment.');
+      setPrice(data.price ?? null);
+      return data.orderId as string;
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not start the payment.');
+      throw err;
+    }
+  }, []);
 
   /** Capture it, switch the model on, and take the new token so the sidebar and
    *  the models list pick the entitlement up without a fresh sign-in. */
-  async function onApprove(orderId: string) {
-    const res = await apiFetch('/api/maintenance/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.message ?? 'Could not confirm the payment.');
+  const onApprove = useCallback(async (data: { orderID?: string | null }) => {
+    try {
+      const res = await apiFetch('/api/maintenance/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.orderID }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.message ?? 'Could not confirm the payment.');
 
-    if (data.access_token) setAccessToken(data.access_token);
-    setDone(true);
-    notify.success('The maintenance model is now active.');
-    setTimeout(() => {
-      window.location.href = '/maintenance';
-    }, 1500);
-  }
+      if (json.access_token) setAccessToken(json.access_token);
+      setDone(true);
+      notify.success('The maintenance model is now active.');
+      setTimeout(() => {
+        window.location.href = '/maintenance';
+      }, 1500);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not confirm the payment.');
+    }
+  }, []);
+
+  const onError = useCallback((err: Record<string, unknown>) => {
+    console.error('PayPal maintenance error:', err);
+    setError('The payment could not be completed. Try again.');
+  }, []);
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 py-10 sm:px-6">
@@ -104,29 +142,18 @@ function MaintenancePayment() {
             <Alert tone="success" className="mt-5">
               Payment received. Taking you to the maintenance model…
             </Alert>
+          ) : !process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+            <Alert tone="warning" className="mt-5">
+              Payments are not configured on this server yet — the PayPal client ID is missing.
+              Ask whoever manages deployment to set it before this page can take a payment.
+            </Alert>
           ) : (
-            <div className="mt-6">
-              <PayPalButtons
-                style={{ layout: 'vertical' }}
-                createOrder={async () => {
-                  try {
-                    return await createOrder();
-                  } catch (err: any) {
-                    setError(err?.message ?? 'Could not start the payment.');
-                    throw err;
-                  }
-                }}
-                onApprove={async (data) => {
-                  try {
-                    await onApprove(data.orderID as string);
-                  } catch (err: any) {
-                    setError(err?.message ?? 'Could not confirm the payment.');
-                  }
-                }}
-                onError={(err) => {
-                  console.error('PayPal maintenance error:', err);
-                  setError('The payment could not be completed. Try again.');
-                }}
+            <div className="isolate mt-6">
+              <PayPalButtonsGate
+                style={BUTTON_STYLE}
+                createOrder={createOrder}
+                onApprove={onApprove}
+                onError={onError}
               />
             </div>
           )}

@@ -11,6 +11,7 @@ import {
   CardBody,
   CardHeader,
   Empty,
+  Input,
   Modal,
   PageHeader,
 } from '@/app/components/ui';
@@ -161,14 +162,15 @@ export default function AppraisalTemplatesPage() {
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setOpen(t)}
-                            className="text-left font-medium text-strong underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
+                            className="h-auto p-0 text-left font-medium text-strong underline decoration-transparent underline-offset-4 hover:decoration-current"
                           >
                             {t.name}
                             {t.version > 1 ? ` (v${t.version})` : ''}
-                          </button>
+                          </Button>
                           {t.isSystem ? <Badge tone="neutral">PES standard</Badge> : null}
                           {t.inForce ? <Badge tone="brand">In force</Badge> : null}
                           {t.status === 'draft' ? <Badge tone="warning">Draft</Badge> : null}
@@ -278,15 +280,12 @@ export default function AppraisalTemplatesPage() {
           </div>
         }
       >
-        <label className="block text-sm">
-          <span className="mb-1 block font-medium text-body">Name</span>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="For example, Unilag scheme 2026"
-            className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus"
-          />
-        </label>
+        <Input
+          label="Name"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="For example, Unilag scheme 2026"
+        />
       </Modal>
 
       {open ? (

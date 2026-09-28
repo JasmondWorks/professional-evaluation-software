@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/app/utils/apiFetch';
+import { Button, Input } from '@/app/components/ui';
 
 export default function AddSuperAdminPage() {
   const router = useRouter()
@@ -27,12 +28,12 @@ export default function AddSuperAdminPage() {
       <h1 className="text-2xl font-semibold mb-6">Add New Super Admin</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3 bg-white p-6 rounded-xl shadow-sm">
-        <input name="name" type="text" placeholder="Name" required className="p-2 border rounded-md" />
-        <input name="email" type="email" placeholder="Email" required className="p-2 border rounded-md" />
-        <input name="org" type="text" placeholder="Organisation" required className="p-2 border rounded-md" />
-        <button type="submit" className="bg-pes text-white px-4 py-2 rounded-md hover:bg-pes-dark">
+        <Input name="name" type="text" placeholder="Name" required />
+        <Input name="email" type="email" placeholder="Email" required />
+        <Input name="org" type="text" placeholder="Organisation" required />
+        <Button type="submit">
           Add Super Admin
-        </button>
+        </Button>
       </form>
     </div>
   )

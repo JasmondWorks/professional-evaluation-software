@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
 
 interface StressEvaluationRun {
   id: number;
@@ -68,16 +68,12 @@ export default function StressEvaluationHistory() {
             Review past organizational stress evaluations and ANOVA results.
           </p>
         </div>
-        <button
-          onClick={fetchHistory}
-          disabled={refreshing}
-          className="px-4 py-2 bg-white border border-line rounded-md text-sm font-medium hover:bg-canvas transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
-        >
+        <Button variant="secondary" onClick={fetchHistory} disabled={refreshing}>
           {refreshing && (
             <span className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full" />
           )}
           {refreshing ? "Refreshing…" : "Refresh Data"}
-        </button>
+        </Button>
       </div>
 
       {error && (

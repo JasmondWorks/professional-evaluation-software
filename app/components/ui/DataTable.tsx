@@ -24,6 +24,8 @@ export function DataTable<T extends Record<string, any>>({
   pageSize = 10,
   toolbar,
   className,
+  skeletonRows,
+  renderSkeletonRow,
 }: {
   columns: TableColumn<T>[];
   data: T[];
@@ -38,6 +40,11 @@ export function DataTable<T extends Record<string, any>>({
   pageSize?: number;
   toolbar?: React.ReactNode;
   className?: string;
+  /** Rows to show while `loading` is true. Defaults to 4. */
+  skeletonRows?: number;
+  /** Full control over one loading row — see Table's own prop of the same
+   *  name. When given, the default per-column skeleton cells are not used. */
+  renderSkeletonRow?: (index: number) => React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -58,7 +65,9 @@ export function DataTable<T extends Record<string, any>>({
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = Math.min(page, pageCount);
-  const paged = filtered.slice((current - 1) * pageSize, current * pageSize);
+  const paged = Array.isArray(filtered)
+    ? filtered?.slice((current - 1) * pageSize, current * pageSize)
+    : [];
 
   // Reset to page 1 whenever the query changes the result set size.
   React.useEffect(() => {
@@ -101,6 +110,8 @@ export function DataTable<T extends Record<string, any>>({
         loading={loading}
         emptyMessage={query ? `No matches for “${query}”.` : emptyMessage}
         onRowClick={onRowClick}
+        skeletonRows={skeletonRows}
+        renderSkeletonRow={renderSkeletonRow}
       />
 
       {/* Always shown, even for a single page of rows. A footer that appears and

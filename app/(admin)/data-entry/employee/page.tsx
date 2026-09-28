@@ -5,6 +5,7 @@ import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from "@/lib/toast";
 import Button from "@/app/components/ui/Button";
+import Input from "@/app/components/ui/Input";
 import PageHeader from "@/app/components/ui/PageHeader";
 
 
@@ -185,16 +186,17 @@ export default function EmployeeScoresPage() {
             </span>
           </a>
           {(["appraisal"] as GroupKey[]).map((g) => (
-            <button
+            <Button
               key={g}
+              variant="secondary"
               onClick={() => setSelectedGroup(g)}
-              className="p-6 bg-surface border border-line hover:border-pes-200 hover:shadow-md rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left transition-[box-shadow,border-color] focus-visible:shadow-focus"
+              className="h-auto p-6 !justify-start flex-col items-start rounded-xl shadow-card text-lg font-semibold text-strong capitalize text-left hover:border-pes-200 hover:shadow-md"
             >
               {g}
               <span className="block mt-1 text-sm font-normal text-muted">
                 Review and counter {g} scores
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -248,11 +250,11 @@ export default function EmployeeScoresPage() {
                       <span className="text-success-700 font-semibold tabular-nums">{score}</span>
                     </p>
                   </div>
-                  <input
+                  <Input
                     type="number"
                     aria-label={`HOD counter score for ${metric.replace(/_/g, " ")}`}
                     placeholder="—"
-                    className="w-24 h-10 px-3 rounded-lg bg-surface border border-line text-strong text-sm text-right tabular-nums focus:outline-none focus:border-pes-400 focus:shadow-focus"
+                    className="w-24 text-right tabular-nums"
                     onChange={(e) => handleCounterChange(metric, e.target.value)}
                   />
                 </div>

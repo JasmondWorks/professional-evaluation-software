@@ -64,6 +64,11 @@ export async function POST(req: Request) {
       productCategory: user.category,
       productPlan: user.plan,
       maintenance_model: maintenance?.maintenance_model ?? false,
+      // Without this, a token refresh (which happens automatically as the
+      // 15-minute access token expires) silently dropped the claim, and
+      // anyone forced to change their password could clear the gate just by
+      // waiting rather than actually changing it.
+      mustChangePassword: user.must_change_password === true,
       perms
     };
 

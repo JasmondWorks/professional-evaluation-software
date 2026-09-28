@@ -7,6 +7,7 @@ import { apiFetch } from '@/app/utils/apiFetch';
 import { PERMISSION_TREE, PermissionKey } from './utils/roles';
 import { usePermissions } from './usePermissions';
 import ProfileChunk from './Profilechunk';
+import ChangePasswordForm from './ChangePasswordForm';
 import { useCurrentUser } from './useCurrentUser';
 
 type ReportingLine = {
@@ -38,6 +39,15 @@ export default function Profile() {
           </CardHeader>
           <CardBody>
             <ProfileChunk editable />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-strong">Change password</h2>
+          </CardHeader>
+          <CardBody>
+            <ChangePasswordForm />
           </CardBody>
         </Card>
 

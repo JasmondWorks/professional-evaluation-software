@@ -7,6 +7,7 @@ import { Alert } from './ui';
 import UserAvatar from './ui/UserAvatar';
 import AvatarUploader from './AvatarUploader';
 import { useCurrentUser } from './useCurrentUser';
+import Button from './ui/Button';
 
 /** `editable` adds the photo controls. The profile page passes it; the dashboard
  *  shows the same details read-only. */
@@ -113,14 +114,15 @@ export default function ProfileChunk({ editable = false }: { editable?: boolean 
          ) : null}
 
          <div className='mt-4 flex justify-end'>
-            <button
+            <Button
                type="button"
+               variant="ghost"
                onClick={() => setExpanded(prev => !prev)}
                aria-expanded={expanded}
-               className="rounded-lg px-2 py-1 text-sm font-medium text-pes underline underline-offset-2 transition-colors hover:text-pes-800 focus:outline-none focus-visible:shadow-focus"
+               className="h-auto px-2 py-1 text-pes underline underline-offset-2 hover:text-pes-800 hover:bg-transparent"
             >
                {expanded ? 'See less' : 'See more'}
-            </button>
+            </Button>
          </div>
       </div>
    )

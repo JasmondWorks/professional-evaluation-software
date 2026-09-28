@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { TickCircle } from 'iconsax-react';
-import { Alert, Badge, Button, Card, CardBody, CardHeader } from '@/app/components/ui';
+import { Alert, Badge, Button, Card, CardBody, CardHeader, Input } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
 import { notify } from '@/lib/toast';
 import {
@@ -87,8 +87,7 @@ function EvidenceUpload({
   );
 }
 
-const numberInput =
-  'w-24 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm tabular-nums outline-none transition-shadow focus:border-pes-400 focus-visible:shadow-focus';
+const numberInput = 'w-24 tabular-nums';
 
 /** One appraisal form. Handles the three shapes the model uses: line items
  *  scored out of a maximum, a single direct score (Forms 11 and 12), and the
@@ -270,17 +269,15 @@ export default function FormCard({
             {/* Course details share the form's surface rather than floating above
                 it, so the whole card reads as one thing to fill in. */}
             <div className="flex flex-wrap gap-4 rounded-lg border border-line bg-canvas p-4">
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-body">Students on the course</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={studentCount}
-                  onChange={(e) => { touch(); setStudentCount(e.target.value); }}
-                  disabled={locked}
-                  className={numberInput}
-                />
-              </label>
+              <Input
+                type="number"
+                label="Students on the course"
+                min={0}
+                value={studentCount}
+                onChange={(e) => { touch(); setStudentCount(e.target.value); }}
+                disabled={locked}
+                className={numberInput}
+              />
               <label className="text-sm">
                 <span className="mb-1 block font-medium text-body">Basic units for the course</span>
                 {/* Course units are whole numbers, so this is a choice rather
@@ -332,13 +329,14 @@ export default function FormCard({
                           Copy {ci + 1}
                         </span>
                         {!locked ? (
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => { touch(); setCopies((c) => c.filter((_, i) => i !== ci)); }}
-                            className="text-xs font-medium text-danger-700 hover:underline"
+                            className="h-auto p-0 text-xs text-danger-700 hover:underline"
                           >
                             Remove
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                       <div className="grid gap-2 sm:grid-cols-3">
@@ -347,7 +345,7 @@ export default function FormCard({
                             <span className="mb-0.5 block text-muted">
                               {item.label} <span className="tabular-nums">/{item.max}</span>
                             </span>
-                            <input
+                            <Input
                               type="number"
                               min={0}
                               max={item.max}
@@ -362,7 +360,7 @@ export default function FormCard({
                                   ),
                                 );
                               }}
-                              className="w-full rounded-lg border border-line bg-surface px-2 py-1 text-sm tabular-nums outline-none focus:border-pes-400 focus-visible:shadow-focus"
+                              className="tabular-nums"
                             />
                           </label>
                         ))}
@@ -374,10 +372,10 @@ export default function FormCard({
             </div>
           </div>
         ) : form.directScore ? (
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-body">Quality score for this indicator</span>
-            <input
+          <div className="flex items-end gap-2 text-sm">
+            <Input
               type="number"
+              label="Quality score for this indicator"
               min={0}
               max={100}
               value={directScore}
@@ -385,8 +383,8 @@ export default function FormCard({
               onChange={(e) => { touch(); setDirectScore(clampScore(e.target.value, 100)); }}
               className={numberInput}
             />
-            <span className="ml-2 text-muted">out of 100</span>
-          </label>
+            <span className="pb-2.5 text-muted">out of 100</span>
+          </div>
         ) : (
           <div className="space-y-2">
             {form.items.map((item, i) => (
@@ -398,7 +396,7 @@ export default function FormCard({
                   ) : null}
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="number"
                     min={0}
                     max={item.max}
@@ -470,7 +468,7 @@ export default function FormCard({
                       </select>
                       <label className="text-xs">
                         <span className="mb-0.5 block text-muted">{MEASURE_LABEL[rule.per]}</span>
-                        <input
+                        <Input
                           type="number"
                           min={0}
                           value={row.measure}
@@ -486,7 +484,7 @@ export default function FormCard({
                       {rule.perScript ? (
                         <label className="text-xs">
                           <span className="mb-0.5 block text-muted">Assessed scripts</span>
-                          <input
+                          <Input
                             type="number"
                             min={0}
                             value={row.scripts}
@@ -512,14 +510,15 @@ export default function FormCard({
                           }
                         />
                       </div>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         disabled={locked}
                         onClick={() => setEvidence((all) => all.filter((_, j) => j !== i))}
-                        className="pb-1.5 text-xs font-medium text-danger-700 hover:underline disabled:opacity-50"
+                        className="h-auto pb-1.5 text-xs text-danger-700 hover:underline"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </div>
                   );
                 })}

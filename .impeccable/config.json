@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/help/sections.ts"
+        ],
+        "createdAt": "2026-09-28T18:12:05.434Z",
+        "reason": "User confirmed: pre-existing pattern transcribed verbatim from the approved design bundle, used consistently across this content document"
+      }
+    ]
+  }
+}

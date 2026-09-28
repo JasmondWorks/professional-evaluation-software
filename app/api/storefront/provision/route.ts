@@ -294,6 +294,15 @@ export async function POST(req: Request) {
     try {
       const { seedPresetRoles } = await import('@/app/api/_lib/seedRoles');
       await seedPresetRoles(orgId, input.product_category.toLowerCase());
+
+      // The admin was created above, not through createEmployee (the only
+      // place that increments a role's `assigned` counter) — without this,
+      // the Roles & Permissions table shows 0 users against Admin even
+      // though the org's own admin holds it.
+      await prisma.roles.updateMany({
+        where: { org_id: orgId, name: 'admin' },
+        data: { assigned: { increment: 1 } },
+      });
     } catch (seedErr) {
       console.error('provision: preset role seeding failed (non-fatal):', seedErr);
     }

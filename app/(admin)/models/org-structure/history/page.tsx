@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 
 import HistoryChart from "@/app/components/ui/HistoryChart";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { BackLink } from '@/app/components/ui';
+import { BackLink, Button } from '@/app/components/ui';
 
 interface OrgStructureRun {
   id: string;
@@ -108,13 +108,9 @@ export default function OrgStructureHistory() {
             Review past calculations for organizational design and structure models.
           </p>
         </div>
-        <button
-          onClick={fetchHistory}
-          disabled={loading}
-          className="px-4 py-2 bg-white border border-line rounded-md text-sm font-medium hover:bg-canvas transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-        >
+        <Button variant="secondary" onClick={fetchHistory} disabled={loading} loading={loading}>
           {loading ? "Refreshing…" : "Refresh Data"}
-        </button>
+        </Button>
       </div>
 
       {error && (

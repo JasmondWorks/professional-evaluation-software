@@ -7,6 +7,7 @@ import Form7 from "./_compoonents/form7";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 function StatusScreen({ title, body, ctaLabel, ctaHref }: { title: string; body: string; ctaLabel?: string; ctaHref?: string }) {
   return (
@@ -140,12 +141,9 @@ export default function MultiStepStressForm() {
         </div>
       )}
       <div className="flex justify-end mb-4 print:hidden">
-        <button
-          onClick={() => window.print()}
-          className="text-sm border border-line rounded-md px-4 py-2 text-body hover:bg-canvas"
-        >
+        <Button variant="secondary" size="sm" onClick={() => window.print()}>
           Print this form (guide)
-        </button>
+        </Button>
       </div>
       {loading && <p className="text-muted">Saving your responses...</p>}
       {success && (
@@ -160,32 +158,28 @@ export default function MultiStepStressForm() {
       <div className="mt-8 flex flex-col items-end gap-1">
         <div className="w-full flex justify-between">
           {step > 1 ? (
-            <button
-              onClick={prevStep}
-              className="px-6 py-2 rounded bg-gray-300 hover:bg-gray-400"
-            >
+            <Button variant="secondary" onClick={prevStep}>
               Back
-            </button>
+            </Button>
           ) : <span />}
           {step < 2 && (
-            <button
+            <Button
               onClick={nextStep}
               disabled={!form6Data?.complete}
               title={!form6Data?.complete ? "Fill every cell in Form 6 to continue" : undefined}
-              className="px-6 py-2 rounded text-white bg-purple-600 hover:bg-pes-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
-            </button>
+            </Button>
           )}
           {step === 2 && (
-            <button
+            <Button
               disabled={loading || !form7Data?.complete}
               onClick={handleFinalSubmit}
               title={!form7Data?.complete ? "Fill every cell in Form 7 before submitting" : undefined}
-              className="px-6 py-2 rounded text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={loading}
             >
               {loading ? "Submitting..." : "Submit All"}
-            </button>
+            </Button>
           )}
         </div>
         {step === 1 && !form6Data?.complete && (

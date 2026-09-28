@@ -6,6 +6,12 @@
 // the divider, hence this listbox.
 
 import { useEffect, useRef, useState } from 'react';
+import Button from './Button';
+
+const optionClass = (selected: boolean) =>
+  `w-full justify-start text-left h-auto px-3 py-2 text-sm font-normal rounded-md ${
+    selected ? 'bg-pes-50 text-pes-700 font-medium hover:bg-pes-50' : 'text-body hover:bg-canvas'
+  }`;
 
 export type RoleOption = { value: string; label: string };
 
@@ -45,15 +51,10 @@ export default function RoleSelect({
     setOpen(false);
   }
 
-  const optionClass = (v: string) =>
-    `w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-      value === v ? 'bg-pes-50 text-pes-700 font-medium' : 'text-body hover:bg-canvas'
-    }`;
-
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
+      <Button
+        variant="outline"
         tabIndex={tabIndex}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => {
@@ -63,7 +64,7 @@ export default function RoleSelect({
             setOpen(true);
           }
         }}
-        className={`w-full h-10 flex items-center justify-between gap-2 px-3 border rounded-lg bg-surface text-sm text-left outline-none transition-shadow ${
+        className={`w-full justify-between gap-2 px-3 bg-surface text-sm font-normal text-left ${
           hasError ? 'border-danger-600' : open ? 'border-pes-400 shadow-focus' : 'border-line'
         } ${selectedLabel ? 'text-strong' : 'text-muted'}`}
       >
@@ -76,7 +77,7 @@ export default function RoleSelect({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </Button>
 
       {open && (
         <ul
@@ -85,9 +86,13 @@ export default function RoleSelect({
         >
           {presetRoles.map((o) => (
             <li key={o.value}>
-              <button type="button" onClick={() => choose(o.value)} className={optionClass(o.value)}>
+              <Button
+                variant="ghost"
+                onClick={() => choose(o.value)}
+                className={optionClass(value === o.value)}
+              >
                 {o.label}
-              </button>
+              </Button>
             </li>
           ))}
 
@@ -102,9 +107,13 @@ export default function RoleSelect({
               </li>
               {customRoles.map((r) => (
                 <li key={r.name}>
-                  <button type="button" onClick={() => choose(r.name)} className={optionClass(r.name)}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => choose(r.name)}
+                    className={optionClass(value === r.name)}
+                  >
                     {r.name}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </>

@@ -23,7 +23,21 @@
       "Bash(npx --yes dotenv-cli -e .env.production.local -- npx prisma migrate resolve *)",
       "Bash(cat)",
       "Bash(cp /tmp/inspect_sm.mjs ./scripts/_tmp_inspect_sm.mjs)",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(python3 -)",
+      "Bash(cp /tmp/query_role.mjs ./scripts/_tmp_query_role.mjs *)",
+      "Bash(python3 -c ' *)",
+      "Bash(/impeccable hooks *)",
+      "Skill(impeccable)",
+      "Skill(impeccable:*)",
+      "Bash(find /Users/gracethompson/.claude/skills/impeccable -iname \"hooks.md\" 2>/dev/null)",
+      "Read(//Users/gracethompson/.claude/skills/impeccable/**)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN -t)",
+      "Bash(grep -n \"flex flex-col gap-2 \\\\${payDisabled}\" \"app/\\(admin\\)/pricing/page.tsx\")",
+      "Bash(tee /tmp/tsc_final.log)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
     ]
   }
 }

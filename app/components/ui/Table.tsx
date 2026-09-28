@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import Skeleton from './Skeleton';
 
 export type TableColumn<T> = {
   key: string;
@@ -14,7 +15,19 @@ interface TableProps<T> {
   loading?: boolean;
   emptyMessage?: string;
   onRowClick?: (item: T) => void;
+  /** Rows to show while `loading` is true. Defaults to 4. */
+  skeletonRows?: number;
+  /** Full control over one loading row — return the `<tr>` yourself (so you
+   *  can shape cells for this specific table, e.g. an avatar + two lines in
+   *  the first column). Called once per skeleton row with its index. When
+   *  given, the default per-column skeleton cells below are not rendered. */
+  renderSkeletonRow?: (index: number) => ReactNode;
 }
+
+// A handful of inset widths so skeleton cells don't all read as one solid
+// bar — varying them (and never running edge-to-edge) is what makes this
+// look like text loading in a cell rather than a background color.
+const SKELETON_WIDTHS = ['70%', '45%', '85%', '55%'];
 
 export default function Table<T extends Record<string, any>>({
   columns,
@@ -22,6 +35,8 @@ export default function Table<T extends Record<string, any>>({
   loading = false,
   emptyMessage = "No records found",
   onRowClick,
+  skeletonRows = 4,
+  renderSkeletonRow,
 }: TableProps<T>) {
   const alignCls = (a?: 'left' | 'center' | 'right') =>
     a === 'center' ? 'text-center' : a === 'right' ? 'text-right' : 'text-left';
@@ -44,13 +59,25 @@ export default function Table<T extends Record<string, any>>({
         </thead>
         <tbody className="divide-y divide-line">
           {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <tr key={`loading-${i}`}>
-                <td colSpan={columns.length} className="p-0">
-                  <div className="h-12 w-full bg-canvas animate-pulse my-0.5 rounded-sm"></div>
-                </td>
-              </tr>
-            ))
+            Array.from({ length: skeletonRows }).map((_, i) =>
+              renderSkeletonRow ? (
+                <React.Fragment key={`loading-${i}`}>{renderSkeletonRow(i)}</React.Fragment>
+              ) : (
+                <tr key={`loading-${i}`}>
+                  {columns.map((col, colIndex) => (
+                    <td
+                      key={col.key}
+                      className={`py-3 px-4 ${alignCls(col.align)}`}
+                    >
+                      <Skeleton
+                        className={`h-4 rounded-full ${col.align === 'center' ? 'mx-auto' : col.align === 'right' ? 'ml-auto' : ''}`}
+                        style={{ width: SKELETON_WIDTHS[(i + colIndex) % SKELETON_WIDTHS.length] }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ),
+            )
           ) : data.length > 0 ? (
             data.map((item, rowIndex) => (
               <tr

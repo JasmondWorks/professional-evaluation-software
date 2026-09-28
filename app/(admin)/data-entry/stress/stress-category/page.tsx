@@ -8,6 +8,7 @@ import { notify } from "@/lib/toast";
 import { useActiveCycle } from "@/app/components/useActiveCycle";
 import { getAccessToken } from '@/app/utils/auth';
 import { apiFetch } from '@/app/utils/apiFetch';
+import Button from "@/app/components/ui/Button";
 
 type JWTPayload = {
   name?: string;
@@ -255,38 +256,34 @@ export default function StressForm5() {
 
       <div className="flex justify-between">
         {currentStep > 0 && (
-          <button
-            onClick={() => setCurrentStep((prev) => prev - 1)}
-            className="bg-surface border border-line text-body px-4 py-2 rounded-lg hover:bg-line/50 transition-colors"
-          >
+          <Button variant="secondary" onClick={() => setCurrentStep((prev) => prev - 1)}>
             Back
-          </button>
+          </Button>
         )}
 
         {currentStep < STRESS_INSTRUMENT.length - 1 ? (
           <div className="ml-auto flex flex-col items-end gap-1">
-            <button
+            <Button
               onClick={() => setCurrentStep((prev) => prev + 1)}
               disabled={!currentComplete}
               title={!currentComplete ? "Answer every item in this category to continue" : undefined}
-              className="bg-pes text-white px-4 py-2 rounded-lg hover:bg-pes-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next
-            </button>
+            </Button>
             {!currentComplete && (
               <span className="text-xs text-muted">Answer every item to continue.</span>
             )}
           </div>
         ) : (
           <div className="ml-auto flex flex-col items-end gap-1">
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={!allComplete || submitting}
               title={!allComplete ? "Answer every item in all categories before submitting" : undefined}
-              className="bg-pes text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              loading={submitting}
             >
               {submitting ? "Submitting…" : "Submit Totals"}
-            </button>
+            </Button>
             {!allComplete && (
               <span className="text-xs text-muted">Every item in all categories must be answered.</span>
             )}
