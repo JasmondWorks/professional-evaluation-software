@@ -32,6 +32,11 @@ LOCAL_SEED_CREDENTIALS.json
 # data) stays tracked.
 # scripts/local-seed-data.json
 
+# Filled in with real org/admin/employee passwords once someone uses it —
+# never commit. scripts/local-seed-data.example.json (reference, no real
+# data) stays tracked.
+scripts/local-seed-data.json
+
 # macOS
 .DS_Store
 
