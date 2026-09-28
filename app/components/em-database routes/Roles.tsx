@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Add, SearchNormal1, CloseCircle, Edit2, Trash } from "iconsax-react";
+import { Add, CloseCircle, Edit2, Trash } from "iconsax-react";
 import { getAccessToken } from "@/app/utils/auth";
 import { notify } from "@/lib/toast";
 import { jwtDecode } from "jwt-decode";
@@ -38,7 +38,6 @@ export default function Roles() {
   const orgCategory = useOrgCategory();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
 
   // View-permissions modal
   const [permRole, setPermRole] = useState<Role | null>(null);
@@ -236,17 +235,20 @@ export default function Roles() {
     }
   }
 
+  // `label` is the human-facing name DataTable's own search matches against
+  // (its filtering compares raw field values, and a preset's raw `name` is a
+  // key like "hod" rather than what's shown or searched for, "Department
+  // Lead (HOD)").
   const orderedRoles = useMemo(() => {
-    const filtered = roles.filter((r) =>
-      roleLabel(r.name).toLowerCase().includes(search.toLowerCase()),
-    );
-    return [...filtered].sort((a, b) => {
-      const ap = isPreset(a.name) ? 0 : 1;
-      const bp = isPreset(b.name) ? 0 : 1;
-      if (ap !== bp) return ap - bp;
-      return roleLabel(a.name).localeCompare(roleLabel(b.name));
-    });
-  }, [roles, search]);
+    return [...roles]
+      .sort((a, b) => {
+        const ap = isPreset(a.name) ? 0 : 1;
+        const bp = isPreset(b.name) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return roleLabel(a.name).localeCompare(roleLabel(b.name));
+      })
+      .map((r) => ({ ...r, label: roleLabel(r.name) }));
+  }, [roles]);
 
   // Roles a holder can be reassigned to when deleting (everything except the
   // role being deleted).
@@ -335,42 +337,23 @@ export default function Roles() {
   ];
 
   return (
-    <div className="flex justify-center w-full h-full">
-      <div className="m-4 bg-white w-full h-full">
-        <div className="flex justify-between h-[5rem] max-md:h-fit w-full max-md:py-2 max-md:flex-col max-md:gap-2">
-          <div className="flex justify-between my-auto mx-4 bg-white">
-            <div className="relative h-fit max-md:w-full">
-              <SearchNormal1
-                className="text-muted absolute top-1/2 left-3 -translate-y-1/2 pointer-events-none"
-                size={18}
-              />
-              <Input
-                id="em-search"
-                type="text"
-                aria-label="Search for role"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for Role"
-                className="pl-10 max-md:w-full"
-              />
-            </div>
-          </div>
-          <div className="flex justify-between my-auto mx-3 max-md:mx-0 max-md:self-center text-xs">
-            <Button onClick={openCreate} className="m-4">
+    <div className="w-full">
+      <div className="w-full flex flex-col px-4 sm:px-6 lg:px-8 py-5">
+        <DataTable
+          columns={columns}
+          data={orderedRoles}
+          loading={loading}
+          emptyMessage="No roles found. Create a role to get started."
+          searchable
+          searchKeys={["label"]}
+          searchPlaceholder="Search for Role"
+          toolbar={
+            <Button onClick={openCreate}>
               Create Role
               <Add size={20} />
             </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between">
-          <DataTable
-            columns={columns}
-            data={orderedRoles}
-            loading={loading}
-            emptyMessage="No roles found. Create a role to get started."
-          />
-        </div>
+          }
+        />
       </div>
 
       {/* VIEW PERMISSIONS MODAL */}

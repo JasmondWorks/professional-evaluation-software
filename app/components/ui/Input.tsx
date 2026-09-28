@@ -17,6 +17,9 @@ type InputProps = {
   error?: string;
   className?: string;
   containerClassName?: string;
+  /** A leading icon (e.g. a search glyph), inset inside the field. Sizes and
+   *  positions itself — pass just the icon element, no wrapper needed. */
+  icon?: React.ReactNode;
 } & InputHTMLAttributes<HTMLInputElement>;
 
 /**
@@ -29,7 +32,7 @@ type InputProps = {
  * separate component.
  */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, className, containerClassName, id, type, ...props },
+  { label, hint, error, className, containerClassName, id, type, icon, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -48,13 +51,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
         </label>
       )}
       <div className="relative">
+        {icon && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none *:block">
+            {icon}
+          </span>
+        )}
         <input
           ref={ref}
           id={inputId}
           type={isPassword ? (revealed ? "text" : "password") : type}
           aria-invalid={error ? true : undefined}
           aria-describedby={cn(errorId, hintId) || undefined}
-          className={cn(inputBase, isPassword && "pr-10", className)}
+          className={cn(inputBase, icon && "pl-9", isPassword && "pr-10", className)}
           {...props}
         />
         {isPassword && (
