@@ -127,11 +127,11 @@ export default function PersonnelUtilizationPage() {
     // app/lib/models/boundaryConditions.ts.
     const fails = usePdfConstraints
       ? boundaryViolations(
-          params as any,
-          r.Kstar,
-          params.lambda ?? 0,
-          params.mu ?? 0,
-        )
+        params as any,
+        r.Kstar,
+        params.lambda ?? 0,
+        params.mu ?? 0,
+      )
       : [];
     setResult(r);
     setViolations(fails);
