@@ -69,10 +69,18 @@ export default function Table<T extends Record<string, any>>({
                       key={col.key}
                       className={`py-3 px-4 ${alignCls(col.align)}`}
                     >
-                      <Skeleton
-                        className={`h-4 rounded-full ${col.align === 'center' ? 'mx-auto' : col.align === 'right' ? 'ml-auto' : ''}`}
-                        style={{ width: SKELETON_WIDTHS[(i + colIndex) % SKELETON_WIDTHS.length] }}
-                      />
+                      {/* min-h-8 matches Button's "sm" height (the most common
+                          control real cells render — actions, badges) so the
+                          row doesn't grow once real content replaces this. The
+                          bar itself stays a slim pill, centered inside. */}
+                      <div
+                        className={`min-h-8 flex items-center ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : ''}`}
+                      >
+                        <Skeleton
+                          className="h-4 rounded-full"
+                          style={{ width: SKELETON_WIDTHS[(i + colIndex) % SKELETON_WIDTHS.length] }}
+                        />
+                      </div>
                     </td>
                   ))}
                 </tr>
