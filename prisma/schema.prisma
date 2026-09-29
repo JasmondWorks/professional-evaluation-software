@@ -1456,3 +1456,22 @@ model model_access {
   @@unique([org_id, role, model_key], map: "model_access_unique")
   @@index([org_id, role])
 }
+
+// One row per org seeded through /local-seed. Plaintext admin/employee
+// passwords are deliberate — this is the only place they're shown in full,
+// mirrored back to the /local-seed UI after a reload. Previously a
+// gitignored JSON/MD file under the repo root; moved to the database because
+// a deployed (Vercel) environment's filesystem is read-only outside /tmp, and
+// /tmp doesn't persist between invocations either.
+model seed_credential {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id     String   @unique @db.Uuid
+  org_name   String   @db.VarChar(255)
+  category   String   @db.VarChar(100)
+  plan       String   @db.VarChar(100)
+  admin_name String   @db.VarChar(255)
+  admin_email String  @db.VarChar(255)
+  admin_password String @db.VarChar(255)
+  employees  Json     @default("[]")
+  seeded_at  DateTime @default(now()) @db.Timestamp(6)
+}

@@ -22,10 +22,7 @@ pnpm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Plaintext credentials written by the /local-seed form — never commit
-LOCAL_SEED_CREDENTIALS.md
-LOCAL_SEED_CREDENTIALS.json
+.env.preview.local
 
 # Filled in with real org/admin/employee passwords once someone uses it —
 # never commit. scripts/local-seed-data.example.json (reference, no real
