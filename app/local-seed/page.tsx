@@ -189,10 +189,8 @@ export default function LocalSeedPage() {
       <div className="max-w-3xl mx-auto px-4 py-10">
         <PageHeader title="Local seed" />
         <Alert tone="danger" title="Not available">
-          This page only works against a local database with{" "}
-          <code>NODE_ENV</code> other than
-          <code> production</code>. It refuses to run against a deployed
-          environment.
+          This page is disabled. Set <code>LOCAL_SEED_ENABLED=true</code> in
+          this environment's variables to enable it.
         </Alert>
       </div>
     );
