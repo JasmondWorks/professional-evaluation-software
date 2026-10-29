@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node api.js && next dev",
-    "build": "node api.js && prisma generate && next build",
-    "start": "node api.js && next start",
+    "dev": "node init && next dev",
+    "build": "node init && prisma generate && next build",
+    "start": "node init && next start",
     "lint": "next lint",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
@@ -18,8 +18,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:wait": "wait-on -t 60000 tcp:localhost:5434",
     "db:local:push": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon \u2014 refusing db push outside local Docker.')\" && prisma db push --skip-generate --accept-data-loss",
-    "db:reset": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon \u2014 refusing to reset outside local Docker.')\" && prisma db push --force-reset --skip-generate --accept-data-loss && node -e \"require('fs').rmSync('LOCAL_SEED_CREDENTIALS.md',{force:true})\"",
-    "dev:local": "npm run db:up && npm run db:wait && npm run db:local:push && concurrently -n docker,next -c blue,green \"docker compose logs -f db\" \"next dev\""
+    "db:reset": "node -e \"if(/neon\\.tech/.test(process.env.DATABASE_URL||''))throw new Error('DATABASE_URL points at Neon \u2014 refusing to reset outside local Docker.')\" && prisma db push --force-reset --skip-generate --accept-data-loss",
+    "dev:local": "node init && npm run db:up && npm run db:wait && npm run db:local:push && concurrently -n docker,next -c blue,green \"docker compose logs -f db\" \"next dev\""
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
