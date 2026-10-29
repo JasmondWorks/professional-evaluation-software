@@ -86,3 +86,4 @@ docs/
 *.sql
 !prisma/migrations/**/*.sql
 !prisma/manual-migrations/*.sql
+.env*

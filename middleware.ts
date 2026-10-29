@@ -38,6 +38,7 @@ export const config = {
     "/organization/:path*",
     "/organizations/:path*",
     "/admin/auditors/:path*",
+    "/admin/auditor/:path*",
     "/goals/:path*",
     "/data-entry/:path*",
     "/appraisal/:path*",
