@@ -11,14 +11,12 @@
  *
  *  Callers (the API route) are responsible for refusing to run this outside
  *  local development — this module only enforces the data-safety half:
- *  refuse whenever an org with the same name already exists. It also appends
- *  the plaintext passwords to LOCAL_SEED_CREDENTIALS.json/.md — the only
- *  place they're ever shown in full — so the caller must only ever run with
- *  that guard in place. */
+ *  refuse whenever an org with the same name already exists. It also writes
+ *  the plaintext passwords to the seed_credential table — the only place
+ *  they're ever shown in full — so the caller must only ever run with that
+ *  guard in place. */
 import prisma from '../prisma.dev';
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
 import { seedPresetRoles } from './seedRoles';
 import { createEmployee, resolveRoleName, type EmployeeInput } from './createEmployee';
 import { PRESET_ROLES, resolveBaseRole, presetPermissionMap } from '@/app/components/utils/roles';
@@ -105,9 +103,6 @@ export type SeedRecord = {
   employees: LocalSeedEmployee[];
 };
 
-export const CREDENTIALS_JSON_FILE = path.join(process.cwd(), 'LOCAL_SEED_CREDENTIALS.json');
-export const CREDENTIALS_FILE = path.join(process.cwd(), 'LOCAL_SEED_CREDENTIALS.md');
-
 /** Whether any org has been seeded — used only to gate the /local-seed page's
  *  "outside local dev" message, never to refuse seeding itself (that's
  *  per-org-name, see `isOrgSeeded`). */
@@ -126,31 +121,30 @@ export async function isOrgSeeded(name: string): Promise<boolean> {
   return existing != null;
 }
 
-function readCredentialsStore(): SeedRecord[] {
-  try {
-    const raw = fs.readFileSync(CREDENTIALS_JSON_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+async function readCredentialsStore(): Promise<SeedRecord[]> {
+  const rows = await prisma.seed_credential.findMany({ orderBy: { seeded_at: 'asc' } });
+  return rows.map((row) => ({
+    org: row.org_name,
+    category: row.category,
+    plan: row.plan,
+    seededAt: row.seeded_at.toISOString(),
+    admin: { name: row.admin_name, email: row.admin_email, password: row.admin_password },
+    employees: row.employees as LocalSeedEmployee[],
+  }));
 }
 
 /** All orgs seeded so far, most recent first — what the /local-seed page
  *  lists and filters by institution type. */
-export function listSeededOrgs(): SeedRecord[] {
-  return [...readCredentialsStore()].reverse();
+export async function listSeededOrgs(): Promise<SeedRecord[]> {
+  return [...(await readCredentialsStore())].reverse();
 }
 
 /** The full credentials document across every seeded org — read back so the
  *  /local-seed page can show the same details after a reload. Returns null if
  *  nothing has been seeded through this path yet. */
-export function readCredentialsFile(): string | null {
-  try {
-    return fs.readFileSync(CREDENTIALS_FILE, 'utf-8');
-  } catch {
-    return null;
-  }
+export async function readCredentialsFile(): Promise<string | null> {
+  const records = await readCredentialsStore();
+  return records.length > 0 ? buildCredentialsDoc(records) : null;
 }
 
 function buildCredentialsDoc(records: SeedRecord[]): string {
@@ -194,12 +188,22 @@ function buildCredentialsDoc(records: SeedRecord[]): string {
   return lines.join('\n');
 }
 
-function appendCredentials(record: SeedRecord): string {
-  const records = [...readCredentialsStore(), record];
-  fs.writeFileSync(CREDENTIALS_JSON_FILE, JSON.stringify(records, null, 2), 'utf-8');
-  const doc = buildCredentialsDoc(records);
-  fs.writeFileSync(CREDENTIALS_FILE, doc, 'utf-8');
-  return doc;
+async function appendCredentials(orgId: string, record: SeedRecord): Promise<string> {
+  await prisma.seed_credential.create({
+    data: {
+      org_id: orgId,
+      org_name: record.org,
+      category: record.category,
+      plan: record.plan,
+      admin_name: record.admin.name,
+      admin_email: record.admin.email,
+      admin_password: record.admin.password,
+      employees: record.employees,
+      seeded_at: new Date(record.seededAt),
+    },
+  });
+  const records = [...(await readCredentialsStore())];
+  return buildCredentialsDoc(records);
 }
 
 export async function seedLocalOrg(input: LocalSeedInput): Promise<LocalSeedResult> {
@@ -312,7 +316,7 @@ export async function seedLocalOrg(input: LocalSeedInput): Promise<LocalSeedResu
     }
   }
 
-  const credentialsText = appendCredentials({
+  const credentialsText = await appendCredentials(org.id, {
     org: org.name,
     category: input.org.category,
     plan,
