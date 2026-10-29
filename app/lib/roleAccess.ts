@@ -52,6 +52,9 @@ export const ROUTE_ACCESS: RouteRule[] = [
   { path: '/organization', roles: ['admin'] },
   { path: '/organizations', roles: ['super-admin'] },
   { path: '/admin/auditors', roles: ['admin', 'super-admin'] },
+  // The cross-org auditor overview (grouped by organization) — platform
+  // operator only, matching the sidebar's role_access for this tab.
+  { path: '/admin/auditor', roles: ['super-admin'] },
 
   // Goals.
   { path: '/goals', roles: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
