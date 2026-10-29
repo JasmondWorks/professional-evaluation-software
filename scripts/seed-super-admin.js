@@ -26,7 +26,7 @@ async function main() {
   // explicitly nulled (not just omitted) so re-running this after someone
   // else has edited the row in Neon/Studio always clears it back out.
   const noOrgFields = {
-    org: null,
+    org_id: null,
     dept: null,
     faculty_college: null,
     address: null,
@@ -60,7 +60,7 @@ async function main() {
       display_role: 'Super Admin',
       ...noOrgFields,
     },
-    select: { id: true, email: true, role: true, org: true },
+    select: { id: true, email: true, role: true, org_id: true },
   });
 
   console.log('Super admin ready:', user);
