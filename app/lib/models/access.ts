@@ -132,6 +132,13 @@ export function assertMayRunModels(viewer: ModelViewer): void {
   }
 }
 
+/** The model keys the organization's plan actually includes, for annotating the
+ *  manage grid — a model absent here should render disabled, not grantable. */
+export async function entitledModelKeys(viewer: ModelViewer): Promise<ModelKey[]> {
+  const { keys } = await resolveEntitlements(viewer);
+  return modelsFor(keys);
+}
+
 /** The whole grid the admin edits: one row per model, per managed role. */
 export async function accessMatrix(orgId: string, role: string = MODEL_DATA_ENTRY_ROLE) {
   const rows = await prisma.model_access.findMany({
@@ -164,6 +171,18 @@ export async function setModelAccess(
     // The admin's own access is not a toggle — switching it off would lock the
     // organization out of its own models with no way back in.
     throw new ModelAccessError('The organization administrator always has access.', 400);
+  }
+
+  // The plan bounds this grid the same way it bounds a direct request: an
+  // admin cannot switch a role into a model the organization has not bought.
+  if (input.enabled) {
+    const { keys } = await resolveEntitlements(viewer);
+    if (!modelsFor(keys).includes(input.model)) {
+      throw new ModelAccessError(
+        "This model is not included in your organization's plan. Upgrade to grant access to it.",
+        400,
+      );
+    }
   }
 
   await prisma.model_access.upsert({
