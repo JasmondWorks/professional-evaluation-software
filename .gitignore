@@ -17,15 +17,10 @@ yarn-error.log*
 pnpm-debug.log*
 
 # environment variables
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Plaintext credentials written by the /local-seed form — never commit
-LOCAL_SEED_CREDENTIALS.md
-LOCAL_SEED_CREDENTIALS.json
+.env.preview.local
 
 # Filled in with real org/admin/employee passwords once someone uses it —
 # never commit. scripts/local-seed-data.example.json (reference, no real
@@ -44,7 +39,6 @@ scripts/local-seed-data.json
 Thumbs.db
 
 # IDEs
-.vscode/
 .idea/
 
 # TypeScript
@@ -86,3 +80,4 @@ docs/
 *.sql
 !prisma/migrations/**/*.sql
 !prisma/manual-migrations/*.sql
+config.bat

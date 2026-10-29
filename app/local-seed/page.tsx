@@ -494,8 +494,7 @@ export default function LocalSeedPage() {
 
         {orgs.length > 0 && (
           <p className="text-xs text-muted">
-            Also saved to <code>LOCAL_SEED_CREDENTIALS.json</code> and{" "}
-            <code>LOCAL_SEED_CREDENTIALS.md</code> in the project root.
+            Also saved to the <code>seed_credential</code> table — visible here again on reload.
           </p>
         )}
       </div>

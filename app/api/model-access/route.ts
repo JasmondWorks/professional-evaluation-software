@@ -8,6 +8,7 @@ import {
   ModelViewer,
   accessForViewer,
   accessMatrix,
+  entitledModelKeys,
   isModelAdmin,
   setModelAccess,
 } from '@/app/lib/models/access';
@@ -71,7 +72,15 @@ export async function GET(req: Request) {
         );
       }
       const role = url.searchParams.get('role') ?? MODEL_DATA_ENTRY_ROLE;
-      return NextResponse.json({ role, catalog: MODEL_CATALOG, access: await accessMatrix(viewer.orgId, role) });
+      const entitled = await entitledModelKeys(viewer);
+      return NextResponse.json({
+        role,
+        catalog: MODEL_CATALOG,
+        // Models the org's plan does not include, so the client can disable
+        // rather than hide them — "not purchased" should be visible, not grantable.
+        entitledKeys: entitled,
+        access: await accessMatrix(viewer.orgId, role),
+      });
     }
 
     return NextResponse.json({ ...(await accessForViewer(viewer)), catalog: MODEL_CATALOG });

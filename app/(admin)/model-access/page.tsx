@@ -24,6 +24,7 @@ type AccessRow = {
 export default function ModelAccessPage() {
   const [catalog, setCatalog] = useState<ModelDefinition[]>([]);
   const [access, setAccess] = useState<AccessRow[]>([]);
+  const [entitledKeys, setEntitledKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -39,6 +40,7 @@ export default function ModelAccessPage() {
         }
         setCatalog(data.catalog ?? []);
         setAccess(data.access ?? []);
+        setEntitledKeys(data.entitledKeys ?? []);
       } catch {
         setError('Could not reach the server.');
       } finally {
@@ -114,15 +116,23 @@ export default function ModelAccessPage() {
               {catalog.map((model) => {
                 const row = access.find((r) => r.key === model.key);
                 const enabled = row?.enabled ?? false;
+                const purchased = entitledKeys.includes(model.key);
                 return (
                   <li
                     key={model.key}
                     className="flex flex-wrap items-center justify-between gap-4 px-5 py-4"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-strong">{model.label}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-strong">{model.label}</p>
+                        {!purchased ? <Badge tone="neutral">Not purchased</Badge> : null}
+                      </div>
                       <p className="mt-0.5 text-sm text-muted">{model.description}</p>
-                      {row?.updatedAt && row.updatedBy ? (
+                      {!purchased ? (
+                        <p className="mt-1 text-xs text-muted">
+                          Not included in your organization's plan. Upgrade to grant access.
+                        </p>
+                      ) : row?.updatedAt && row.updatedBy ? (
                         <p className="mt-1 text-xs text-muted">
                           Last changed by {row.updatedBy} on{' '}
                           {new Date(row.updatedAt).toLocaleDateString()}
@@ -131,7 +141,7 @@ export default function ModelAccessPage() {
                     </div>
                     <Switch
                       checked={enabled}
-                      disabled={saving === model.key}
+                      disabled={saving === model.key || !purchased}
                       onCheckedChange={(next: boolean) => toggle(model.key, next)}
                       aria-label={`${enabled ? 'Remove' : 'Grant'} access to ${model.label}`}
                     />

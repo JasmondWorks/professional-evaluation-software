@@ -13,12 +13,21 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return auth.response;
   if (!auth.viewer.isPlatform) return NextResponse.json({ error: "Platform access required" }, { status: 403 });
 
+  // Two unrelated tables carry a subscription's status, not one. `subscriptions`
+  // is written only by the PayPal webhook; `subscriptions_info` is the
+  // Paystack-style table that storefront provisioning, plan upgrades, and
+  // local-seeding (see app/api/_lib/localSeed.ts) all write to instead. A
+  // seeded or Paystack-paid org is real and active but has no `subscriptions`
+  // row at all, so reading only that table understates — or for an all-seeded
+  // database, zeroes out — this count.
   const [
     orgCount,
     userCount,
     usersByRole,
-    activeSubCount,
-    subsByStatus,
+    activePaypalCount,
+    activeInfoCount,
+    paypalByStatus,
+    infoByStatus,
     plans,
     recentOrgs,
   ] = await Promise.all([
@@ -26,7 +35,10 @@ export async function GET(req: NextRequest) {
     prisma.pesuser.count(),
     prisma.pesuser.groupBy({ by: ["role"], _count: { role: true } }),
     prisma.subscriptions.count({ where: { status: "ACTIVE" } }),
+    // Matches the definition /api/subscriptions/active already uses for "paid and current".
+    prisma.subscriptions_info.count({ where: { status: { in: ["success", "active"] } } }),
     prisma.subscriptions.groupBy({ by: ["status"], _count: { status: true } }),
+    prisma.subscriptions_info.groupBy({ by: ["status"], _count: { status: true } }),
     prisma.plans.findMany({
       where: { is_active: true },
       select: { id: true, name: true, price_cents: true, currency_code: true },
@@ -38,12 +50,24 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  // Combined by status label (lowercased) so the two vocabularies don't show
+  // as accidental duplicates if they ever do overlap (e.g. both using "active").
+  const combinedStatus = new Map<string, number>();
+  for (const s of paypalByStatus) {
+    const key = s.status.toLowerCase();
+    combinedStatus.set(key, (combinedStatus.get(key) ?? 0) + s._count.status);
+  }
+  for (const s of infoByStatus) {
+    const key = (s.status ?? "pending").toLowerCase();
+    combinedStatus.set(key, (combinedStatus.get(key) ?? 0) + s._count.status);
+  }
+
   return NextResponse.json({
     orgCount,
     userCount,
-    activeSubCount,
+    activeSubCount: activePaypalCount + activeInfoCount,
     usersByRole: usersByRole.map((r) => ({ role: r.role ?? "unassigned", count: r._count.role })),
-    subsByStatus: subsByStatus.map((s) => ({ status: s.status, count: s._count.status })),
+    subsByStatus: [...combinedStatus.entries()].map(([status, count]) => ({ status, count })),
     plans,
     recentOrgs,
   });
