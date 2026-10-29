@@ -36,10 +36,10 @@ export async function GET() {
   const blocked = guardOrResponse();
   if (blocked) return blocked;
 
-  const orgs = listSeededOrgs();
+  const orgs = await listSeededOrgs();
   return NextResponse.json({
     orgs,
-    credentialsText: orgs.length > 0 ? readCredentialsFile() : null,
+    credentialsText: orgs.length > 0 ? await readCredentialsFile() : null,
   });
 }
 
