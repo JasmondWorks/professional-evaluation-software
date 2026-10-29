@@ -95,7 +95,7 @@ async function main() {
   }
 
   console.log(`\n${seededCount}/${inputs.length} organization(s) seeded.`);
-  console.log('Credentials written to LOCAL_SEED_CREDENTIALS.json and LOCAL_SEED_CREDENTIALS.md.');
+  console.log('Credentials written to the seed_credential table.');
   if (hadFailure) process.exit(1);
 }
 
