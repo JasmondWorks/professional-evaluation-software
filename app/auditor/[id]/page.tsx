@@ -3,7 +3,8 @@
 import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { Button, Input } from '@/app/components/ui';
+import { Button, Input, Label } from '@/app/components/ui';
+import { AUDITOR_QUESTIONS, CREDENTIAL_SLOTS } from '@/app/lib/auditor/questions';
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -12,7 +13,9 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState("");
   
-  const [responses, setResponses] = useState<string[]>(Array(13).fill("")); // updated to match 12 questions
+  const [responses, setResponses] = useState<string[]>(
+    Array(AUDITOR_QUESTIONS.length).fill(""),
+  );
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false)
 
@@ -24,12 +27,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
     image: "",
   });
 
-  const [credentialData, setCredentialData] = useState({
-    c_origin: '',
-    c_prof: '',
-    c_acad: '',
-    others: '',
-  })
+  const [credentialData, setCredentialData] = useState<Record<string, string>>({})
   const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: string }>({}); 
 
   const handleResponseChange = (index: number, value: string) => {
@@ -85,7 +83,16 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
       const response = await apiFetch("/api/auditor-responses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, responses, ...formData, credentialData: Object.values(credentialData) }),
+        // `credentials` is sent as a slot -> URL map. It used to go as
+        // Object.values(), which threw away which certificate each URL was.
+        // `token` is what the route derives the email and inviting org from;
+        // neither is trusted from this body.
+        body: JSON.stringify({
+          ...formData,
+          responses,
+          credentials: credentialData,
+          token,
+        }),
       });
 
       if (response.ok) {
@@ -100,21 +107,6 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
     }
   };
 
-  const questions = [
-    "Will you be validating the input data for the current Appraisal and evaluation period?",
-    "Will you be validating the entire process based on accountability and fair judgment?",
-    "Will your validating of the process be based on Guided Standard which you will make available at the end of the process?",
-    "Will exceptions be raised for conflicts detected in the system?",
-    "Will your roles as an invited external auditor be independent?",
-    "Are you ready to suggest workable frameworks where you deem it fit?",
-    "Do you accept that your Management letter at the end of the process be made available globally for use? (After the excercise, ensure to upload the letter of service given to you by the management)",
-    "Where awards are applicable for motivation purposes as suggested by the system software, will you validate to ensure that there isn’t marginalization or nepotism?",
-    "Are you welcome to open criticism?",
-    "Will you be executing on proxy this exercise you are called on to do?",
-    "Will this exercise you are called on to do be done remotely?",
-    "If invited again in the future, will you accept the invitation even if you were openly criticized?",
-    "Do you want your role to be recognized globally by this app?",
-  ];
 
     async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
       const file = e.target.files?.[0];
@@ -185,6 +177,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
           <Input
             type="text"
+            label="Full name"
             placeholder="Full Name"
             value={formData.name}
             onChange={(e) => handleFormChange("name", e.target.value)}
@@ -193,6 +186,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
           <Input
             type="text"
+            label="GSM"
             placeholder="GSM (Plus country code)"
             value={formData.gsm}
             onChange={(e) => handleFormChange("gsm", e.target.value)}
@@ -201,6 +195,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
           <Input
             type="text"
+            label="Office address"
             placeholder="Office Address"
             value={formData.address}
             onChange={(e) => handleFormChange("address", e.target.value)}
@@ -209,8 +204,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
 
           {/* type="date" is excluded from this sweep per instructions (dedicated
               date component territory); left as a raw input. */}
-          <label htmlFor="dob" className="mt-2">
-            <span className="text-muted mt-2 m-1">Date of birth</span>
+          <div className="mt-2 flex flex-col gap-1.5">
+            <Label htmlFor="dob">Date of birth</Label>
             <input
               type="date"
               id="dob"
@@ -220,7 +215,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
               required
               className="w-full px-3 py-2 border rounded-lg"
             />
-          </label>
+          </div>
 
         </div>
 
@@ -228,12 +223,13 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         <div className="space-y-4 mt-6">
           <h2 className="text-lg font-semibold">Auditor's Questionnaire</h2>
 
-          {questions.map((question, index) => (
+          {AUDITOR_QUESTIONS.map((question, index) => (
             <div key={index} className="space-y-2">
-              <label className="block font-medium">
+              <Label htmlFor={`question-${index}`} className="block font-medium">
                 {index + 1}. {question}
-              </label>
+              </Label>
                 <select
+                  id={`question-${index}`}
                   value={responses[index]}
                   onChange={(e) => handleResponseChange(index, e.target.value)}
                   required
@@ -251,41 +247,26 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         </div>
 
         <div className="credentials">
-            <label htmlFor="c_origin" className="my-2.5 flex justify-between">
-              <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-muted">Certificate of recognition</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
-              </div>
-              <input id="c_origin" type="file" onChange={handleFileUpload} className="hidden" />
-              <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_origin }</p>
-            </label>
+            <h2 className="text-lg font-semibold mb-2">Credentials</h2>
 
-            <label htmlFor="c_prof" className="my-2.5 flex justify-between">
-              <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-muted">Professional certificate</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
+            {/* One block per slot in CREDENTIAL_SLOTS — the four were copy-pasted,
+                so the input id, its label and the key the URL is stored under
+                had to be kept in sync by hand in three places each. */}
+            {CREDENTIAL_SLOTS.map(({ key, label }) => (
+              <div key={key} className="my-2.5 flex justify-between">
+                <Label
+                  htmlFor={key}
+                  className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer font-normal"
+                >
+                  <span className="m-auto text-sm text-muted">{label}</span>
+                  <span className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">
+                    Browse Files
+                  </span>
+                </Label>
+                <input id={key} type="file" onChange={handleFileUpload} className="hidden" />
+                <p className="text-xs w-4/12 my-auto ms-3">{selectedFiles?.[key]}</p>
               </div>
-              <input id="c_prof" type="file" onChange={handleFileUpload} className="hidden" />
-              <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_prof }</p>
-            </label>
-
-            <label htmlFor="c_acad" className="my-2.5 flex justify-between">
-              <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-muted">Academic certificate</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
-              </div>
-              <input id="c_acad" type="file" onChange={handleFileUpload} className="hidden" />
-              <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.c_acad }</p>
-            </label>
-
-            <label htmlFor="others" className="my-2.5 flex justify-between">
-              <div className="flex justify-end bg-white rounded-sm w-8/12 my-2.5 border relative cursor-pointer">
-                <p className="m-auto text-sm text-muted">Others</p>
-                <div className="bg-gray-200 hover:bg-pes hover:text-white rounded-sm px-5 py-3 text-sm text-body">Browse Files</div>
-              </div>
-              <input id="others" type="file" onChange={handleFileUpload} className="hidden" />
-              <p className="text-xs w-4/12 my-auto ms-3">{ selectedFiles?.others }</p>
-            </label>
+            ))}
 
             <p className="bg-canvas p-3">As deemed necessary</p>
         </div>

@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 import prisma from "../prisma.dev";
 import { rateLimit } from "../_lib/rateLimit";
 import { escapeHtml } from "../_lib/escapeHtml";
+import { getJWTSecret } from "@/app/lib/jwt";
+import {
+  AUDITOR_QUESTIONS,
+  hasRecognitionConsent,
+  sanitizeCredentials,
+} from "@/app/lib/auditor/questions";
 import nodemailer from "nodemailer";
 
 // Configure Nodemailer transporter
@@ -17,18 +24,6 @@ const transporter = nodemailer.createTransport({
  * CREATE (Submit Responses)
  */
 
-const questions = [
-  "Will you be validating the input data for the current Appraisal and evaluation period?",
-  "Will you be validating the entire process based on accountability and fair judgment?",
-  "Will your validating of the process be based on Guided Standard which you will make available at the end of the process?",
-  "Will exceptions be raised for conflicts detected in the system?",
-  "Will your roles as an invited external auditor be independent?",
-  "Are you ready to suggest workable frameworks where you deem it fit?",
-  "Do you accept that your Management letter at the end of the process be made available to the management?",
-  "Where awards are applicable for motivation purposes as suggested by the system software, will you validate to ensure that there isn’t marginalization or nepotism?",
-  "Are you welcome to open criticism?",
-  "If invited again in the future, will you accept the invitation even if you were openly criticized?",
-];
 
 // Deliberately public: an invited external auditor answers this before they
 // have an account. Submissions land in a queue an admin must approve
@@ -40,10 +35,46 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, email, gsm, address, dob, image, responses } = body;
+    const { name, gsm, address, dob, image, responses, credentials, token } = body;
 
-    if (!name || !email || !gsm || !address || !dob || !responses) {
+    // Identity comes from the signed invite, never from the request body. This
+    // route is public, so a posted `email` was self-asserted: anyone could file
+    // a submission under somebody else's address (the upsert is keyed on email,
+    // so that also overwrote their pending record). The same token carries the
+    // inviting org, which is the only trustworthy source for it.
+    if (!token || typeof token !== "string") {
+      return NextResponse.json(
+        { error: "Missing invitation token" },
+        { status: 400 },
+      );
+    }
+
+    let email: string;
+    let orgId: string | null;
+    try {
+      const decoded = jwt.verify(token, getJWTSecret()) as {
+        email?: string;
+        orgId?: string | null;
+      };
+      if (!decoded?.email) throw new Error("token carries no email");
+      email = decoded.email;
+      orgId = decoded.orgId ?? null;
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or expired invitation" },
+        { status: 401 },
+      );
+    }
+
+    if (!name || !gsm || !address || !dob || !responses) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!Array.isArray(responses)) {
+      return NextResponse.json(
+        { error: "Responses must be an array" },
+        { status: 400 },
+      );
     }
 
     // Convert dob to a Date object
@@ -51,6 +82,12 @@ export async function POST(req: Request) {
     if (isNaN(dobDate.getTime())) {
       return NextResponse.json({ error: "Invalid date format for dob" }, { status: 400 });
     }
+
+    // The accept form uploads the credential files to Cloudinary and sends back
+    // their URLs. Those were previously dropped here — the column did not
+    // exist — leaving every uploaded certificate orphaned in storage with no
+    // reference, which is why there was nothing for an admin to review.
+    const credentialUrls = sanitizeCredentials(credentials);
 
     // Save into auditor_responses table
     const auditorData = {
@@ -60,6 +97,11 @@ export async function POST(req: Request) {
       dob: dobDate,
       image: image || null,
       responses,
+      credentials: credentialUrls,
+      // Stored as a named flag, not re-derived from `responses` at each read:
+      // it decides who may see the credentials above.
+      recognition_consent: hasRecognitionConsent(responses),
+      org_id: orgId,
       status: "pending",
     };
     await prisma.auditor_responses.upsert({
@@ -69,7 +111,7 @@ export async function POST(req: Request) {
     });
 
     // Generate HTML table for the email
-    const tableRows = questions
+    const tableRows = AUDITOR_QUESTIONS
       .map(
         (question, index) => `
           <tr>

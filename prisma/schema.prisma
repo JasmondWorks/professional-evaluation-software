@@ -166,16 +166,34 @@ model appraisal {
 }
 
 model auditor_responses {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String    @db.VarChar(255)
-  email      String    @unique @db.VarChar(255)
-  gsm        String    @db.VarChar(50)
-  address    String
-  dob        DateTime  @db.Date
-  image      String?   @db.VarChar(255)
-  responses  Json
-  status     String?   @default("pending") @db.VarChar(50)
-  created_at DateTime? @default(now()) @db.Timestamp(6)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String    @db.VarChar(255)
+  email               String    @unique @db.VarChar(255)
+  gsm                 String    @db.VarChar(50)
+  address             String
+  dob                 DateTime  @db.Date
+  image               String?   @db.VarChar(255)
+  // Answers to AUDITOR_QUESTIONS, stored positionally. The order in
+  // app/lib/auditor/questions.ts is therefore persisted data — append only.
+  responses           Json
+  // Uploaded credential files: slot key -> URL, keyed by CREDENTIAL_SLOTS
+  // ("c_origin" | "c_prof" | "c_acad" | "others"). JSONB because the "Others"
+  // slot is open-ended by design. See AuditorCredentials.
+  credentials         Json?
+  // Denormalized from the recognition question, and the gate on who may view
+  // `credentials`. A named NOT NULL column rather than a positional index into
+  // `responses`, because an authorization check should not break silently when
+  // the questionnaire is reordered.
+  recognition_consent Boolean   @default(false)
+  // The organization whose admin issued the invite, read off the invite token.
+  // Null only for submissions predating this column — their inviting org was
+  // never recorded anywhere and is not recoverable.
+  org_id              String?   @db.Uuid
+  status              String?   @default("pending") @db.VarChar(50)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([org_id], map: "idx_auditor_responses_org_id")
+  @@index([recognition_consent], map: "idx_auditor_responses_recognition_consent")
 }
 
 model auditor_survey_responses {
