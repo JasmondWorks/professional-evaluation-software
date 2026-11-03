@@ -63,7 +63,64 @@ type Props = {
   date?: string;
   issuer?: string;
   size?: number;
+  /** The institution's own logo, and the national coat of arms.
+   *
+   *  Page 1 of the specification puts both on "all documents — award
+   *  certificates, Books of records and Hall of Fame record", set once by the
+   *  software administrator alongside the institutional name. Until now the
+   *  artwork printed only `issuer` as text, so the marks never appeared on
+   *  anything a member of staff took away.
+   *
+   *  Both are optional and independent: an organization that has uploaded one
+   *  and not the other gets the one it has, centred, rather than a gap. */
+  logoUrl?: string | null;
+  coatOfArmsUrl?: string | null;
 };
+
+/** The two marks, laid along one horizontal band inside the frame.
+ *
+ *  Plain <img> rather than next/image: these are remote, and the print window
+ *  below is handed raw outerHTML, where a next/image srcset pointing at
+ *  /_next/image has no loader to run. A direct src prints as-is. */
+function Marks({
+  logoUrl,
+  coatOfArmsUrl,
+  top,
+  height,
+}: {
+  logoUrl?: string | null;
+  coatOfArmsUrl?: string | null;
+  /** Where the band sits, as a percentage of the frame. */
+  top: string;
+  height: string;
+}) {
+  const marks = [
+    { src: coatOfArmsUrl, alt: 'National coat of arms' },
+    { src: logoUrl, alt: 'Institution logo' },
+  ].filter((m): m is { src: string; alt: string } => Boolean(m.src));
+
+  if (marks.length === 0) return null;
+
+  return (
+    <div
+      className="absolute inset-x-0 flex items-center justify-center"
+      style={{ top, height, gap: '6%' }}
+    >
+      {marks.map((m) => (
+        // data-award-mark is what the print stylesheet keys off to stop the
+        // `.frame img { width: 100% }` rule from blowing these up to the full
+        // width of the page.
+        <img
+          key={m.alt}
+          data-award-mark=""
+          src={m.src}
+          alt={m.alt}
+          style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function AwardArt({
   kind,
@@ -73,6 +130,8 @@ export default function AwardArt({
   issuer,
   printable = false,
   size = 160,
+  logoUrl,
+  coatOfArmsUrl,
 }: Props) {
   const frame = useRef<HTMLDivElement>(null);
 
@@ -91,6 +150,10 @@ export default function AwardArt({
       body { margin: 0; display: flex; align-items: center; justify-content: center; }
       .frame { position: relative; width: 100%; max-width: 1000px; }
       .frame img { width: 100%; height: auto; display: block; }
+      /* The logo and coat of arms are also <img> inside .frame, and the rule
+         above would stretch each one across the whole sheet. They size off
+         their band's height instead, exactly as on screen. */
+      .frame img[data-award-mark] { width: auto; height: 100%; display: inline-block; object-fit: contain; }
       .overlay { position: absolute; text-align: center; color: #000; }
     </style></head><body>${node.outerHTML}</body></html>`);
     w.document.close();
@@ -119,6 +182,14 @@ export default function AwardArt({
             fill
             sizes={`${width}px`}
             className="object-contain"
+          />
+          {/* Along the head of the certificate, above its own wording. The
+              template's first ruled line is at 50%, so this band is clear. */}
+          <Marks
+            logoUrl={logoUrl}
+            coatOfArmsUrl={coatOfArmsUrl}
+            top="7%"
+            height="11%"
           />
           {recipient && (
             <span
@@ -203,6 +274,19 @@ export default function AwardArt({
               </span>
             )}
           </div>
+        )}
+
+        {/* Below the band on a badge, not inside it — the band already carries
+            the award and the recipient, and the hexagon has no other clear
+            ground. Smaller than on a certificate because the badge itself is
+            rendered small. */}
+        {isBadge && (
+          <Marks
+            logoUrl={logoUrl}
+            coatOfArmsUrl={coatOfArmsUrl}
+            top="45%"
+            height="9%"
+          />
         )}
       </div>
       <figcaption className="text-xs text-muted">{LABELS[kind]}</figcaption>

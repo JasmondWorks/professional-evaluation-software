@@ -31,7 +31,17 @@ export async function GET(
   try {
     const org = await prisma.org.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true, evaluation: true, ongoing: true, logo_url: true },
+      // coat_of_arms_url joins logo_url here because the award artwork needs
+      // both marks and the session token carries only the logo — growing the
+      // token for a value one page reads is the worse trade.
+      select: {
+        id: true,
+        name: true,
+        evaluation: true,
+        ongoing: true,
+        logo_url: true,
+        coat_of_arms_url: true,
+      },
     })
     console.log("Org fetched:", org)
 

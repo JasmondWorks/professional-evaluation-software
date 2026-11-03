@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/app/utils/apiFetch";
 import { BackLink } from "@/app/components/ui";
 import AwardArt, { type ArtKind } from "@/app/components/motivation/AwardArt";
+import { useOrgMarks } from "@/app/components/motivation/useOrgMarks";
 import { PERIODS, type Period } from "@/app/lib/motivation/scheme";
 
 // What this member of staff has earned, and a way to take it away with them.
@@ -40,6 +41,7 @@ const badgeArt = (cls: string | null): ArtKind | null =>
 
 export default function MyAwardsPage() {
   const [period, setPeriod] = useState<Period>("annual");
+  const { logoUrl, coatOfArmsUrl, org } = useOrgMarks();
   const [mine, setMine] = useState<Mine | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,8 +152,10 @@ export default function MyAwardsPage() {
                     size={520}
                     recipient={mine.name}
                     title={`${mine.level} performance${mine.dept ? ` · ${mine.dept}` : ""}`}
-                    issuer="PES"
+                    issuer={org}
                     date={new Date().toLocaleDateString()}
+                    logoUrl={logoUrl}
+                    coatOfArmsUrl={coatOfArmsUrl}
                   />
                 )}
                 {badgeArt(cls) && (
@@ -161,6 +165,8 @@ export default function MyAwardsPage() {
                     size={200}
                     title={mine.level ?? undefined}
                     recipient={mine.name}
+                    logoUrl={logoUrl}
+                    coatOfArmsUrl={coatOfArmsUrl}
                   />
                 )}
               </div>

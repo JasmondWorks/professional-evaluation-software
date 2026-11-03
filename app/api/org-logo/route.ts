@@ -21,6 +21,25 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+/** The two marks page 1 of the specification requires on the software and on
+ *  every award document, Book of Records and Hall of Fame record.
+ *
+ *  One route rather than two because the upload, the validation, the size
+ *  limits and the Cloudinary handling are identical — only the column and the
+ *  stored public_id differ. `mark` defaults to 'logo' so every existing caller
+ *  keeps working unchanged. */
+const MARKS = {
+  logo: { column: 'logo_url', slug: 'org', label: 'logo' },
+  'coat-of-arms': { column: 'coat_of_arms_url', slug: 'coa', label: 'coat of arms' },
+} as const;
+
+type MarkKey = keyof typeof MARKS;
+
+function markFrom(value: unknown): MarkKey | null {
+  if (value === null || value === undefined || value === '') return 'logo';
+  return typeof value === 'string' && value in MARKS ? (value as MarkKey) : null;
+}
+
 /** Upload the signed-in admin's organization logo. Only an org admin may
  *  change branding, so this is restricted to the admin tiers rather than any
  *  signed-in user (unlike the personal profile photo). */
@@ -42,6 +61,13 @@ export async function POST(req: Request) {
     }
 
     const form = await req.formData();
+
+    const mark = markFrom(form.get('mark'));
+    if (!mark) {
+      return NextResponse.json({ error: 'Unknown mark.' }, { status: 400 });
+    }
+    const spec = MARKS[mark];
+
     const file = form.get('file');
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Choose an image to upload.' }, { status: 400 });
@@ -66,8 +92,9 @@ export async function POST(req: Request) {
         .upload_stream(
           {
             folder: 'pes/org-logos',
-            // One logo per organization, replaced in place.
-            public_id: `org_${claims.orgId}`,
+            // One of each mark per organization, replaced in place. The slug
+            // keeps the coat of arms from overwriting the logo.
+            public_id: `${spec.slug}_${claims.orgId}`,
             overwrite: true,
             invalidate: true,
             resource_type: 'image',
@@ -82,13 +109,19 @@ export async function POST(req: Request) {
     });
 
     const url: string = uploaded.secure_url;
-    await prisma.org.update({ where: { id: claims.orgId }, data: { logo_url: url } });
+    await prisma.org.update({
+      where: { id: claims.orgId },
+      data: { [spec.column]: url },
+    });
 
-    return NextResponse.json({ logo: url });
+    // `logo` is kept in the response for both marks: it is what every existing
+    // caller reads, and renaming it would break the logo uploader for the sake
+    // of a tidier key. `mark` says which one came back.
+    return NextResponse.json({ logo: url, mark });
   } catch (err) {
     console.error('org-logo upload failed:', err);
     return NextResponse.json(
-      { error: 'The logo could not be uploaded. Try again.' },
+      { error: 'The image could not be uploaded. Try again.' },
       { status: 500 },
     );
   }
@@ -105,17 +138,31 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Your account has no organization.' }, { status: 400 });
     }
 
+    const mark = markFrom(new URL(req.url).searchParams.get('mark'));
+    if (!mark) {
+      return NextResponse.json({ error: 'Unknown mark.' }, { status: 400 });
+    }
+    const spec = MARKS[mark];
+
     try {
-      await cloudinary.uploader.destroy(`pes/org-logos/org_${claims.orgId}`, { invalidate: true });
+      await cloudinary.uploader.destroy(`pes/org-logos/${spec.slug}_${claims.orgId}`, {
+        invalidate: true,
+      });
     } catch {
-      // The database is the source of truth for whether a logo is shown, so a
+      // The database is the source of truth for whether a mark is shown, so a
       // failed remote delete must not block clearing it here.
     }
 
-    await prisma.org.update({ where: { id: claims.orgId }, data: { logo_url: null } });
-    return NextResponse.json({ logo: null });
+    await prisma.org.update({
+      where: { id: claims.orgId },
+      data: { [spec.column]: null },
+    });
+    return NextResponse.json({ logo: null, mark });
   } catch (err) {
     console.error('org-logo delete failed:', err);
-    return NextResponse.json({ error: 'The logo could not be removed. Try again.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'The image could not be removed. Try again.' },
+      { status: 500 },
+    );
   }
 }

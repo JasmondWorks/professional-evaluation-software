@@ -18,11 +18,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No name on this account" }, { status: 403 });
     }
 
+    // Name alone matched across every organization on PES: two staff members
+    // who share a name — and these are real names, so that is not rare — each
+    // saw the other's records as their own. Scoped to the caller's org as well.
+    const orgId = (auth.user as any)?.orgId;
+    if (!orgId) {
+      return NextResponse.json({ error: "Your account has no organization." }, { status: 400 });
+    }
+    const mine = { name, org_id: orgId };
+
     const [first, second, hall, badges] = await Promise.all([
-      prisma.first_book_of_record.findMany({ where: { name } }),
-      prisma.second_book_of_record.findMany({ where: { name } }),
-      prisma.hall_of_fame.findMany({ where: { name } }),
-      prisma.badges.findMany({ where: { name } }),
+      prisma.first_book_of_record.findMany({ where: mine }),
+      prisma.second_book_of_record.findMany({ where: mine }),
+      prisma.hall_of_fame.findMany({ where: mine }),
+      prisma.badges.findMany({ where: mine }),
     ]);
 
     // Map sources to URLs

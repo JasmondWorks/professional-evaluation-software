@@ -81,6 +81,7 @@ export default function MotivationPage() {
           <TabsTrigger value="due">Who is due what</TabsTrigger>
           <TabsTrigger value="appraisal">Appraisal awards</TabsTrigger>
           <TabsTrigger value="record">Award record</TabsTrigger>
+          <TabsTrigger value="books">Books &amp; Hall of Fame</TabsTrigger>
         </TabsList>
 
         <TabsContent value="scheme">
@@ -100,6 +101,9 @@ export default function MotivationPage() {
         </TabsContent>
         <TabsContent value="record">
           <AwardRecordTab />
+        </TabsContent>
+        <TabsContent value="books">
+          <BooksTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -1117,6 +1121,181 @@ function WhoIsDueTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+type Standing = {
+  name: string;
+  dept: string | null;
+  overall: number;
+  periods: number;
+  className: string;
+  descriptive: string;
+  destination: string | null;
+};
+
+type WindowSummary = {
+  label: string | null;
+  periodCount?: number;
+  standings: Standing[];
+  message?: string;
+};
+
+/** The Books of Records and the Hall of Fame.
+ *
+ *  Page 105 awards these on three-year overall performance, not on a single
+ *  period: "Very Good" earns the 2nd Book, "Excellent" the 1st, and "Very
+ *  Outstanding" membership of the Hall of Fame. The standings are shown before
+ *  anything is written, because a promotion is visible to every member of staff
+ *  as soon as it lands. */
+function BooksTab() {
+  const { user } = useCurrentUser();
+  const isAdmin = user?.role === "admin" || user?.role === "super-admin";
+
+  const [summary, setSummary] = useState<WindowSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/api/motivation-records", { method: "GET" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not read the standings.");
+      setSummary(body);
+    } catch (err: any) {
+      notify.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const run = async () => {
+    setRunning(true);
+    try {
+      const res = await apiFetch("/api/motivation-records", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "The records could not be awarded.");
+
+      const total =
+        body.added["Very Outstanding"].length +
+        body.added.Excellent.length +
+        body.added["Very Good"].length;
+
+      notify.success(
+        total === 0
+          ? `Nothing new for ${body.window} — everyone who qualifies is already recorded.`
+          : `${total} ${total === 1 ? "record" : "records"} awarded for ${body.window}.`,
+      );
+      await load();
+    } catch (err: any) {
+      notify.error(err.message);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  if (loading) {
+    return <p className="text-body">Reading the three-year standings…</p>;
+  }
+
+  if (!summary?.label) {
+    return (
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Nothing to award yet</h2>
+        <p className="mt-2 max-w-2xl text-body">
+          {summary?.message ??
+            "No performance results have been released yet."}{" "}
+          A place in the Books of Records or the Hall of Fame is earned on three-year
+          overall performance, so at least one released performance period is needed
+          before anyone can qualify.
+        </p>
+      </section>
+    );
+  }
+
+  const eligible = summary.standings.filter((s) => s.destination);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">
+          Three-year window {summary.label}
+        </h2>
+        <p className="mt-2 max-w-2xl text-body">
+          Built from {summary.periodCount}{" "}
+          {summary.periodCount === 1 ? "released period" : "released periods"}. Each staff
+          member&apos;s overall is the mean of their results across the window, and the
+          classification of that mean decides the book, exactly as page 105 sets out.
+        </p>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[520px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                <th className="py-2 pr-4 font-semibold">Staff member</th>
+                <th className="py-2 pr-4 font-semibold">Department</th>
+                <th className="py-2 pr-4 font-semibold">Overall</th>
+                <th className="py-2 pr-4 font-semibold">Periods</th>
+                <th className="py-2 pr-4 font-semibold">Classification</th>
+                <th className="py-2 font-semibold">Earns</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.standings.map((s) => (
+                <tr key={s.name} className="border-b border-line/60">
+                  <td className="py-2 pr-4 font-medium text-strong">{s.name}</td>
+                  <td className="py-2 pr-4 text-body">{s.dept ?? "—"}</td>
+                  <td className="py-2 pr-4 text-body tabular-nums">{s.overall}%</td>
+                  <td className="py-2 pr-4 text-body tabular-nums">{s.periods}</td>
+                  <td className="py-2 pr-4 text-body">
+                    {s.className} · {s.descriptive}
+                  </td>
+                  <td className="py-2 text-body">
+                    {s.destination === "Very Outstanding"
+                      ? "Hall of Fame"
+                      : s.destination === "Excellent"
+                        ? "1st Book of Records"
+                        : s.destination === "Very Good"
+                          ? "2nd Book of Records"
+                          : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-line bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-strong">Award the records</h2>
+        <p className="mt-2 max-w-2xl text-body">
+          {eligible.length === 0
+            ? "Nobody in this window reaches \u201cVery Good\u201d or above, so there is nothing to award."
+            : `${eligible.length} ${eligible.length === 1 ? "staff member" : "staff members"} qualify. Running this writes them into their book for ${summary.label}; it is safe to run again after another period is released, and will not duplicate anyone.`}
+        </p>
+        {!isAdmin ? (
+          <p className="mt-3 text-sm text-muted">
+            Only the organization administrator can award records.
+          </p>
+        ) : (
+          <Button
+            className="mt-4"
+            onClick={run}
+            loading={running}
+            disabled={eligible.length === 0}
+          >
+            Award records for {summary.label}
+          </Button>
+        )}
+      </section>
     </div>
   );
 }

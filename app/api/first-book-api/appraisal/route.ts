@@ -9,6 +9,16 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
+  // Scoped to the caller's own organization. This table carried no org column
+  // until 20261103120000_records_org_scope_and_logos, and this query filtered
+  // on category alone — so every organization's book listed every other
+  // organization's records. It was invisible only because nothing wrote to the
+  // table; the promotion run in app/lib/motivation/records.ts does.
+  const orgId = (auth.user as any)?.orgId;
+  if (!orgId) {
+    return NextResponse.json({ error: "Your account has no organization." }, { status: 400 });
+  }
+
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
@@ -17,12 +27,12 @@ export async function GET(req: Request) {
   try {
     const [records, total] = await Promise.all([
       prisma.first_book_of_record.findMany({
-        where: { category: "appraisal" },
+        where: { org_id: orgId, category: "appraisal" },
         orderBy: { date_achieved: "desc" },
         skip: offset,
         take: limit,
       }),
-      prisma.first_book_of_record.count({ where: { category: "appraisal" } }),
+      prisma.first_book_of_record.count({ where: { org_id: orgId, category: "appraisal" } }),
     ]);
 
     const data = records.map((r) => ({

@@ -9,19 +9,37 @@ import { notify } from '@/lib/toast';
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
-/** Choose or remove the organization's logo. Mirrors AvatarUploader, but
- *  targets `/api/org-logo` (admin-only, org-scoped) instead of the personal
+/** Which of the two marks this uploader manages. Page 1 of the specification
+ *  asks for both the institution's own logo and the national coat of arms, and
+ *  they appear side by side on every award document. */
+type Mark = 'logo' | 'coat-of-arms';
+
+const COPY: Record<Mark, { noun: string; add: string; change: string }> = {
+  logo: { noun: 'logo', add: 'Add a logo', change: 'Change logo' },
+  'coat-of-arms': {
+    noun: 'coat of arms',
+    add: 'Add the coat of arms',
+    change: 'Change the coat of arms',
+  },
+};
+
+/** Choose or remove one of the organization's marks. Mirrors AvatarUploader,
+ *  but targets `/api/org-logo` (admin-only, org-scoped) instead of the personal
  *  profile photo endpoint.
  *
- *  The new logo appears in the sidebar on the next token refresh, since the
- *  sidebar reads it from the JWT rather than a live record. */
+ *  A new logo appears in the sidebar on the next token refresh, since the
+ *  sidebar reads it from the JWT rather than a live record. Both marks reach
+ *  the award artwork immediately, which reads the org record directly. */
 export default function OrgLogoUploader({
   orgName,
   logo,
+  mark = 'logo',
 }: {
   orgName?: string | null;
   logo?: string | null;
+  mark?: Mark;
 }) {
+  const copy = COPY[mark];
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<'upload' | 'remove' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,12 +71,13 @@ export default function OrgLogoUploader({
     try {
       const body = new FormData();
       body.append('file', file);
+      body.append('mark', mark);
       const res = await apiFetch('/api/org-logo', { method: 'POST', body });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'The logo could not be uploaded.');
+      if (!res.ok) throw new Error(data.error ?? `The ${copy.noun} could not be uploaded.`);
 
       setOverride(data.logo);
-      notify.success('Organization logo updated. It will appear in the sidebar shortly.');
+      notify.success(`Organization ${copy.noun} updated.`);
     } catch (err: any) {
       setError(err.message);
       setPreview(null);
@@ -73,12 +92,12 @@ export default function OrgLogoUploader({
     setBusy('remove');
     setError(null);
     try {
-      const res = await apiFetch('/api/org-logo', { method: 'DELETE' });
+      const res = await apiFetch(`/api/org-logo?mark=${mark}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'The logo could not be removed.');
+      if (!res.ok) throw new Error(data.error ?? `The ${copy.noun} could not be removed.`);
       setPreview(null);
       setOverride(null);
-      notify.success('Logo removed.');
+      notify.success(`${copy.noun.charAt(0).toUpperCase()}${copy.noun.slice(1)} removed.`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -117,7 +136,7 @@ export default function OrgLogoUploader({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         className="sr-only"
-        aria-label="Choose an organization logo"
+        aria-label={`Choose an organization ${copy.noun}`}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) upload(file);
@@ -132,7 +151,7 @@ export default function OrgLogoUploader({
           onClick={() => inputRef.current?.click()}
         >
           <Gallery size={16} className="mr-1.5" />
-          {shown ? 'Change logo' : 'Add a logo'}
+          {shown ? copy.change : copy.add}
         </Button>
 
         {shown ? (

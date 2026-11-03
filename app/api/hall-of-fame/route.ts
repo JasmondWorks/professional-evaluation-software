@@ -9,8 +9,17 @@ export async function GET(req: Request) {
   const auth = authorize(tokenFromRequest(req), {});
   if (!auth.ok) return auth.response;
 
+  // Scoped to the caller's own organization — see the note in
+  // app/api/first-book-api/appraisal/route.ts; the Hall of Fame had the same
+  // missing-org_id defect.
+  const orgId = (auth.user as any)?.orgId;
+  if (!orgId) {
+    return NextResponse.json({ error: 'Your account has no organization.' }, { status: 400 });
+  }
+
   try {
     const rows = await prisma.hall_of_fame.findMany({
+      where: { org_id: orgId },
       select: {
         id: true,
         name: true,

@@ -214,6 +214,9 @@ model badges {
   image_url    String?   @db.VarChar(500)
   description  String?
   created_at   DateTime? @default(now()) @db.Timestamp(6)
+  org_id       String?   @db.Uuid
+
+  @@index([org_id], map: "idx_badges_org")
 }
 
 model counter_appraisal {
@@ -265,9 +268,18 @@ model first_book_of_record {
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
   sub_category  String?   @db.VarChar(100)
+  // Nullable only because these tables predate any org scoping and were never
+  // populated; every row written from now on carries one. The read routes
+  // filter on an exact org_id, so a NULL row is invisible rather than global.
+  org_id        String?   @db.Uuid
+  // The multi-year window that earned the place, e.g. '2024-2026'. Part of the
+  // uniqueness that makes the promotion run repeatable.
+  window_label  String?   @db.VarChar(50)
 
+  @@unique([org_id, name, window_label], map: "uq_first_book_org_name_window")
   @@index([category], map: "idx_first_book_category")
   @@index([date_achieved], map: "idx_first_book_date")
+  @@index([org_id, category], map: "idx_first_book_org")
 }
 
 model goals {
@@ -282,17 +294,22 @@ model goals {
 }
 
 model hall_of_fame {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String    @db.VarChar(255)
-  title       String?   @db.VarChar(255)
-  image_url   String?   @db.VarChar(500)
-  year        String?   @db.VarChar(4)
-  description String?
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String    @db.VarChar(255)
+  title        String?   @db.VarChar(255)
+  image_url    String?   @db.VarChar(500)
+  year         String?   @db.VarChar(4)
+  description  String?
+  org_id       String?   @db.Uuid
+  // The multi-year window that earned the place, e.g. '2024-2026'.
+  window_label String?   @db.VarChar(50)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
 
+  @@unique([org_id, name, window_label], map: "uq_hall_of_fame_org_name_window")
   @@index([name], map: "idx_hall_of_fame_name")
   @@index([year], map: "idx_hall_of_fame_year")
+  @@index([org_id], map: "idx_hall_of_fame_org")
 }
 
 model index {
@@ -428,6 +445,10 @@ model org {
   // two organizations may legitimately share a name.
   name              String    @db.VarChar(255)
   logo_url          String?   @db.VarChar(255)
+  // The second of the two marks page 1 of the specification requires on every
+  // award document, the Books of Records and the Hall of Fame record: the
+  // national coat of arms alongside the institution's own logo.
+  coat_of_arms_url  String?   @db.VarChar(255)
   category          String    @db.VarChar(100)
   plan              String    @db.VarChar(100)
   created_at        DateTime? @default(now()) @db.Timestamp(6)
@@ -661,9 +682,18 @@ model second_book_of_record {
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
   sub_category  String?   @db.VarChar(100)
+  // Nullable only because these tables predate any org scoping and were never
+  // populated; every row written from now on carries one. The read routes
+  // filter on an exact org_id, so a NULL row is invisible rather than global.
+  org_id        String?   @db.Uuid
+  // The multi-year window that earned the place, e.g. '2024-2026'. Part of the
+  // uniqueness that makes the promotion run repeatable.
+  window_label  String?   @db.VarChar(50)
 
+  @@unique([org_id, name, window_label], map: "uq_second_book_org_name_window")
   @@index([category], map: "idx_second_book_category")
   @@index([date_achieved], map: "idx_second_book_date")
+  @@index([org_id, category], map: "idx_second_book_org")
 }
 
 model staff_appraisal_results {
@@ -1482,14 +1512,14 @@ model model_access {
 // a deployed (Vercel) environment's filesystem is read-only outside /tmp, and
 // /tmp doesn't persist between invocations either.
 model seed_credential {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  org_id     String   @unique @db.Uuid
-  org_name   String   @db.VarChar(255)
-  category   String   @db.VarChar(100)
-  plan       String   @db.VarChar(100)
-  admin_name String   @db.VarChar(255)
-  admin_email String  @db.VarChar(255)
-  admin_password String @db.VarChar(255)
-  employees  Json     @default("[]")
-  seeded_at  DateTime @default(now()) @db.Timestamp(6)
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  org_id         String   @unique @db.Uuid
+  org_name       String   @db.VarChar(255)
+  category       String   @db.VarChar(100)
+  plan           String   @db.VarChar(100)
+  admin_name     String   @db.VarChar(255)
+  admin_email    String   @db.VarChar(255)
+  admin_password String   @db.VarChar(255)
+  employees      Json     @default("[]")
+  seeded_at      DateTime @default(now()) @db.Timestamp(6)
 }

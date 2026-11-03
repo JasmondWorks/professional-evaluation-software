@@ -12,11 +12,9 @@
 // own hand-placed text, and an html2canvas download that wrote a PNG to a file
 // named .pdf.
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { jwtDecode } from 'jwt-decode';
-import { getAccessToken } from '@/app/utils/auth';
 import AwardArt, { ArtKind, artLabel } from './AwardArt';
+import { useOrgMarks } from './useOrgMarks';
 
 export default function AwardPage({
   kind,
@@ -29,20 +27,7 @@ export default function AwardPage({
   /** What the award is for. The templates leave a caption line for it. */
   award?: string;
 }) {
-  const [org, setOrg] = useState('');
-
-  // The token is only there in the browser, so read it after mount rather than
-  // during render; otherwise the server and client markup disagree.
-  useEffect(() => {
-    try {
-      const token = getAccessToken();
-      if (!token) return;
-      const decoded: any = jwtDecode(token);
-      setOrg(decoded?.org || '');
-    } catch {
-      setOrg('');
-    }
-  }, []);
+  const { logoUrl, coatOfArmsUrl, org } = useOrgMarks();
 
   // Next gives the segment still encoded. decodeURIComponent handles every
   // escape, not just the spaces the old pages replaced by hand.
@@ -62,6 +47,8 @@ export default function AwardPage({
         issuer={org}
         date={new Date().toLocaleDateString()}
         size={960}
+        logoUrl={logoUrl}
+        coatOfArmsUrl={coatOfArmsUrl}
         printable
       />
 
