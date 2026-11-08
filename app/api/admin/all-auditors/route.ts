@@ -67,9 +67,13 @@ export async function GET(req: NextRequest) {
       submittedAt: record?.created_at ?? null,
       /** Null when the viewer may not see them, which is different from an
        *  auditor who simply uploaded nothing (an empty array). */
+      // record.org_id, not the pesuser's: the submission is upserted by email
+      // and its org_id follows the most recent inviting organization, so the
+      // two can name different tenants for the same person.
       documents: auditorDocumentsFor(auth.viewer, {
         recognition_consent: consented,
         credentials: record?.credentials,
+        org_id: record?.org_id ?? null,
       }),
     };
   });

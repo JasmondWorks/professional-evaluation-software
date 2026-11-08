@@ -64,7 +64,11 @@ export async function GET(req: Request) {
     const auditors = rows.map(({ credentials, recognition_consent, ...rest }) => ({
       ...rest,
       recognitionConsent: recognition_consent,
-      documents: auditorDocumentsFor(auth.viewer, { recognition_consent, credentials }),
+      documents: auditorDocumentsFor(auth.viewer, {
+        recognition_consent,
+        credentials,
+        org_id: rest.org_id ?? null,
+      }),
     }));
 
     return NextResponse.json(auditors);
