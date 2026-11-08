@@ -121,50 +121,76 @@ export async function consumePasswordToken(
   });
 }
 
+/** The origins this deployment may send people to.
+ *
+ *  APP_ORIGINS (comma-separated) when several are legitimate — a custom domain
+ *  plus a preview deployment — otherwise NEXT_PUBLIC_APP_URL alone. */
+function allowedOrigins(): string[] {
+  const raw = process.env.APP_ORIGINS || process.env.NEXT_PUBLIC_APP_URL || '';
+  return raw
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+}
+
 /** The link that goes in the email.
  *
- *  `origin` is the host the request arrived on, and is preferred when given.
- *  NEXT_PUBLIC_APP_URL is routinely empty — it is empty in .env.local and the
- *  invite route already carries a comment about it being empty in production —
- *  and this function used to fall through to `''`, producing the bare relative
- *  path `/set-password?token=…`. That is not a link: mail clients autolink it
- *  into something like `http://set-password/?token=…`, with the path as the
- *  hostname, so every set-password and reset-password mail sent while the
- *  variable was unset was undeliverable in practice.
+ *  The host here is security-sensitive, because the URL carries a live
+ *  single-use credential. /api/password/request and /api/resetPassword are
+ *  public — anyone may ask for a reset on anyone's address — so an attacker who
+ *  can choose the host chooses where the victim's token is delivered. Sending
+ *  `Origin: https://evil.example` would have mailed the real account holder a
+ *  genuine link pointing at the attacker, and clicking it hands over the token.
+ *  That is password reset poisoning, and an earlier revision of this function
+ *  was open to it: it accepted any origin whose protocol was http or https.
  *
- *  Falls back to localhost so a developer still gets a working link, and logs
- *  loudly, because a silent wrong link is only discovered by the person who
- *  cannot use it. */
+ *  So `origin` is now a selector, not a source. It is honoured only when it
+ *  exactly matches a configured origin, which lets a multi-domain deployment
+ *  send people back to the domain they arrived on and gives an attacker
+ *  nothing to inject. Anything unrecognised falls back to the first configured
+ *  origin.
+ *
+ *  With nothing configured at all: a deployment fails closed rather than mail
+ *  a link nobody can use, and local development falls back to localhost.
+ *  NEXT_PUBLIC_APP_URL being empty is how this function previously produced
+ *  the bare path `/set-password?token=…`, which mail clients autolink into
+ *  `http://set-password/?token=…` — a link with the path as its hostname. */
 export function passwordLink(
   token: string,
   purpose: TokenPurpose,
   origin?: string | null,
 ): string {
   const path = purpose === 'setup' ? '/set-password' : '/reset-password';
+  const allowed = allowedOrigins();
 
-  // Validated rather than trusted: this value ends up in an href in an email.
   let base = '';
   if (origin) {
     try {
-      const parsed = new URL(origin);
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        base = parsed.origin;
-      }
+      const candidate = new URL(origin).origin;
+      if (allowed.includes(candidate)) base = candidate;
     } catch {
-      // Fall through to the configured value.
+      // Unparseable — fall through to the configured value.
     }
   }
 
-  if (!base) base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+  if (!base) base = allowed[0] ?? '';
 
   if (!base) {
+    // VERCEL rather than NODE_ENV: Next bakes NODE_ENV=production into every
+    // build, so it cannot distinguish a deployment from a local production
+    // build (see the note in /api/local-seed).
+    if (process.env.VERCEL) {
+      throw new Error(
+        'passwordLink: NEXT_PUBLIC_APP_URL (or APP_ORIGINS) is not configured. ' +
+          'Refusing to send a password link rather than send an unusable or ' +
+          'attacker-chosen one.',
+      );
+    }
     console.error(
-      'passwordLink: no request origin and NEXT_PUBLIC_APP_URL is unset — ' +
-        'falling back to localhost. Emails sent from a deployment will carry ' +
-        'an unusable link until NEXT_PUBLIC_APP_URL is configured.',
+      'passwordLink: no configured origin — falling back to localhost for development.',
     );
     base = 'http://localhost:3000';
   }
 
-  return `${base}${path}?token=${token}`;
+  return `${base}${path}?token=${encodeURIComponent(token)}`;
 }

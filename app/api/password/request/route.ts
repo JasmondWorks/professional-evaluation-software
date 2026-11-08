@@ -44,7 +44,19 @@ export async function POST(req: Request) {
   // the email should say so, or it reads as though something has gone wrong.
   const purpose = user.first_login_at ? 'reset' : 'setup';
   const { token, expiresAt } = await issuePasswordToken(user.id, purpose);
-  const link = passwordLink(token, purpose, req.headers.get('origin'));
+
+  // passwordLink throws on a deployment with no configured origin, rather than
+  // mail a link that is unusable or attacker-chosen. Caught here so the route
+  // still answers with the same neutral body it gives every other outcome —
+  // this endpoint deliberately never reveals whether an address has an account,
+  // and a 500 on one address and a 200 on another would reveal exactly that.
+  let link: string;
+  try {
+    link = passwordLink(token, purpose, req.headers.get('origin'));
+  } catch (err) {
+    console.error('password/request: could not build the link:', err);
+    return same;
+  }
 
   try {
     await sendMail({
