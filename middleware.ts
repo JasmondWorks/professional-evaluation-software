@@ -40,6 +40,7 @@ export const config = {
     "/admin/auditors/:path*",
     "/admin/auditor/:path*",
     "/admin/super/:path*",
+    "/platform-operators/:path*",
     "/external-auditors/:path*",
     "/goals/:path*",
     "/data-entry/:path*",

@@ -9,7 +9,7 @@ import { consoleViewer, canReachOrg, PUBLIC_USER_COLUMNS } from "../../_scope";
 // their own people. DELETE previously ran deleteMany off the URL with no auth at
 // all: anyone who could reach the deployment could walk the ids and empty the
 // table.
-async function resolve(req: NextRequest, rawId: string) {
+async function resolve(req: NextRequest, rawId: string, destructive = false) {
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return { ok: false as const, response: auth.response };
 
@@ -32,7 +32,27 @@ async function resolve(req: NextRequest, rawId: string) {
     };
   }
 
-  if (!canReachOrg(auth.viewer, target.org_id ?? "")) {
+  // Reads use canReachOrg, which lets the platform operator see across tenants
+  // — that is what the console is for. Destructive calls do not: deleting
+  // another organization's staff is their decision, not the operator's, and the
+  // operator's reach here was never a decision at all. It fell out of reusing a
+  // helper written for listings on a destructive verb.
+  //
+  // Two further reasons the capability should not sit here. `pesuser` is
+  // referenced by `subscriptions` with onDelete: NoAction, so deleting anyone
+  // who has ever had one fails on a foreign key rather than reporting
+  // anything useful. And seventeen columns record a person by `pesuser_name`
+  // as plain text — appraisals, performance entries, awards, the Hall of Fame,
+  // both Books of Records — so the account goes and every named record stays.
+  // It is destructive without being an erasure, which is the only thing an
+  // operator-level delete would be for.
+  //
+  // Reversing this is one argument: pass destructive = false.
+  const reachable = destructive
+    ? auth.viewer.orgId != null && target.org_id === auth.viewer.orgId
+    : canReachOrg(auth.viewer, target.org_id ?? "");
+
+  if (!reachable) {
     // Same body as "not found": which ids exist in another org is not something
     // this caller should be able to learn either.
     return {
@@ -55,7 +75,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const r = await resolve(req, params.id);
+  const r = await resolve(req, params.id, true);
   if (!r.ok) return r.response;
 
   await prisma.pesuser.delete({ where: { id: r.id } });

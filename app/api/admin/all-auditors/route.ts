@@ -57,12 +57,28 @@ export async function GET(req: NextRequest) {
     select: PUBLIC_USER_COLUMNS,
   });
 
+  // The organization's display name. PUBLIC_USER_COLUMNS carries org_id only,
+  // and the roster groups its rows by organization — so without this every
+  // auditor fell into a single group headed "undefined", and each row linked
+  // to /admin/undefined/<id>.
+  const orgIds = Array.from(
+    new Set(auditors.map((a) => a.org_id).filter((id): id is string => Boolean(id))),
+  );
+  const orgs = orgIds.length
+    ? await prisma.org.findMany({
+        where: { id: { in: orgIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const orgNameById = new Map(orgs.map((o) => [o.id, o.name]));
+
   const enriched = auditors.map((a) => {
     const record = a.email ? byEmail.get(a.email) : undefined;
     const consented = record?.recognition_consent ?? false;
 
     return {
       ...a,
+      org: (a.org_id && orgNameById.get(a.org_id)) || 'Unassigned',
       recognitionConsent: consented,
       submittedAt: record?.created_at ?? null,
       /** Null when the viewer may not see them, which is different from an

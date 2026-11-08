@@ -1,6 +1,5 @@
 'use client'
 
-import { ArrowRight2 } from 'iconsax-react'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { apiFetch } from '@/app/utils/apiFetch';
@@ -118,14 +117,6 @@ export default function PlatformAuditorRoster() {
                               )}
                             </div>
                           </div>
-
-                          <Link
-                            href={`/admin/${user.org}/${user.id}`}
-                            aria-label={`Open ${user.name}`}
-                            className="shrink-0 rounded-lg p-2 hover:bg-canvas"
-                          >
-                            <ArrowRight2 />
-                          </Link>
                         </div>
 
                         {/* Uploaded credential documents. These were stored at

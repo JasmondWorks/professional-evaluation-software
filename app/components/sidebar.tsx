@@ -133,6 +133,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       // routes already differ by one letter, which is trap enough.
       { key: 13, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
       { key: 16, name: 'Recognised auditors', icon: Verify, href: '/external-auditors', group: 'Organization', role_access: ['super-admin'] },
+      { key: 17, name: 'Platform operators', icon: ProfileCircle, href: '/platform-operators', group: 'Organization', role_access: ['super-admin'] },
 
       // Account — you, and the settings hub.
       { key: 14, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
