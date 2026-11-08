@@ -112,6 +112,44 @@ export default function AdminAuditorsPage() {
               {expandedRows.includes(a.id) && (
                 <tr className="bg-canvas">
                   <td colSpan={7} className="p-4">
+                    <h3 className="font-bold mb-2">Uploaded documents:</h3>
+                    {a.documents === null ? (
+                      <p className="mb-4 text-sm text-muted">
+                        Withheld &mdash; this auditor did not consent to recognition by PES.
+                      </p>
+                    ) : a.documents.length === 0 ? (
+                      <p className="mb-4 text-sm text-muted">
+                        This auditor uploaded no credential documents.
+                      </p>
+                    ) : (
+                      <ul className="mb-4 flex flex-wrap gap-2">
+                        {a.documents.map((doc: { key: string; label: string; url: string }) => (
+                          <li key={doc.key}>
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center rounded-lg border border-line bg-white px-2.5 py-1 text-sm text-pes hover:bg-canvas"
+                            >
+                              {doc.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mb-4 text-sm">
+                      Recognition by PES:{" "}
+                      <span
+                        className={
+                          a.recognitionConsent
+                            ? "font-semibold text-success-600"
+                            : "text-muted"
+                        }
+                      >
+                        {a.recognitionConsent ? "Granted" : "Not granted"}
+                      </span>
+                    </p>
+
                     <h3 className="font-bold mb-2">Responses:</h3>
                     <table className="w-full border border-line rounded-lg">
                       <thead className="bg-gray-200">
