@@ -4,23 +4,12 @@ import React from "react";
 import { useEffect, useState } from "react";
 import { apiFetch } from '@/app/utils/apiFetch';
 import Button from "@/app/components/ui/Button";
+import { AUDITOR_QUESTIONS } from "@/app/lib/auditor/questions";
 
 export default function AdminAuditorsPage() {
   const [auditors, setAuditors] = useState<any[]>([]);
   const [expandedRows, setExpandedRows] = useState<number[]>([]); // Tracks expanded rows
   const [message, setMessage] = useState("");
-  const questions = [
-    "Will you be validating the input data for the current Appraisal and evaluation period?",
-    "Will you be validating the entire process based on accountability and fair judgment?",
-    "Will your validating of the process be based on Guided Standard which you will make available at the end of the process?",
-    "Will exceptions be raised for conflicts detected in the system?",
-    "Will your roles as an invited external auditor be independent?",
-    "Are you ready to suggest workable frameworks where you deem it fit?",
-    "Do you accept that your Management letter at the end of the process be made available to the management?",
-    "Where awards are applicable for motivation purposes as suggested by the system software, will you validate to ensure that there isn’t marginalization or nepotism?",
-    "Are you welcome to open criticism?",
-    "If invited again in the future, will you accept the invitation even if you were openly criticized?",
-  ];
 
   const fetchAuditors = async () => {
     const res = await apiFetch("/api/admin/auditors");
@@ -163,7 +152,7 @@ export default function AdminAuditorsPage() {
                         {a.responses.map((response: string, index: number) => (
                           <tr key={index} className="border-b">
                             <td className="p-2">{index + 1}</td>
-                            <td className="p-2 text-xs">{ questions[index] }</td>
+                            <td className="p-2 text-xs">{ AUDITOR_QUESTIONS[index] }</td>
                             <td className={`p-2 ${ (response.toString().toLowerCase() === 'yes') ? 'text-success-600' : 'text-danger-600'}`}>{ response }</td>
                           </tr>
                         ))}

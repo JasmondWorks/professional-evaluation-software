@@ -18,14 +18,29 @@ export default function HallOfFame() {
   const [members, setMembers] = useState<HallOfFameMember[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchMembers = async () => {
       try {
         const res = await apiFetch('/api/hall-of-fame');
         const data = await res.json();
+
+        // The response was assigned straight to `members` and then mapped over.
+        // Any non-array reply — an expired token answering 401, the route's own
+        // 400 for an account with no organization, a 500 — became
+        // "members.map is not a function" and took the whole page down behind
+        // the error boundary. Token expiry alone makes that a routine event,
+        // and this page is one of the two the client is shown.
+        if (!res.ok) throw new Error(data?.error || 'Could not load the Hall of Fame.');
+        if (!Array.isArray(data)) throw new Error('Unexpected response.');
+
         setMembers(data);
-      } catch (error) {
-        console.error('Error fetching Hall of Fame:', error);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching Hall of Fame:', err);
+        setMembers([]);
+        setError(err?.message || 'Could not load the Hall of Fame.');
       } finally {
         setLoading(false);
       }
@@ -79,6 +94,14 @@ export default function HallOfFame() {
         </h1>
 
         <div className="flex flex-col items-center overflow-y-auto h-[calc(100vh-200px)]">
+          {error ? (
+            <p className="px-8 text-center text-lg text-yellow-900">{error}</p>
+          ) : !loading && members.length === 0 ? (
+            <p className="px-8 text-center text-lg text-yellow-900">
+              No one has been inducted yet. A place here is earned by Very Outstanding
+              performance across three years.
+            </p>
+          ) : null}
           {members?.map((member) => (
             <Link
                 href={`/reward/certificates/1st/${encodeURIComponent(member.name)}`}

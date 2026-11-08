@@ -84,3 +84,6 @@ docs/
 !prisma/migrations/**/*.sql
 !prisma/manual-migrations/*.sql
 .env*
+
+# Captured by scripts/capture-screenshots.ts from a running dev server.
+/screenshots/
