@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { ArrowRight2 } from 'iconsax-react';
 import { Alert, Badge, PageHeader, Skeleton } from '@/app/components/ui';
 import { apiFetch } from '@/app/utils/apiFetch';
+import { useCurrentUser } from '@/app/components/useCurrentUser';
 
 type Standing = { total: number; includesMe: boolean };
 
@@ -54,11 +55,23 @@ const ROWS = [
 ];
 
 export default function RecognitionPage() {
+  const { user } = useCurrentUser();
+  // A platform operator belongs to no organization by design, so there is no
+  // organization whose Hall of Fame and Books of Records this could show. The
+  // rail no longer offers them the page; this covers arriving at the URL
+  // anyway, and explains the situation instead of reporting their own account
+  // as broken.
+  const isPlatformOperator = user?.role === 'super-admin';
+
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isPlatformOperator) {
+      setLoading(false);
+      return;
+    }
     let live = true;
     (async () => {
       try {
@@ -76,7 +89,27 @@ export default function RecognitionPage() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [isPlatformOperator]);
+
+  if (isPlatformOperator) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+        <PageHeader
+          title="Recognition"
+          subtitle="Each organization's own Hall of Fame and Books of Records."
+        />
+        <p className="max-w-prose text-sm text-body">
+          You are signed in as the platform operator, which belongs to no single
+          organization — and recognition is always one organization's own. Open an
+          organization from{' '}
+          <Link href="/organizations" className="text-pes underline">
+            All Organizations
+          </Link>{' '}
+          to see its staff and records.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">

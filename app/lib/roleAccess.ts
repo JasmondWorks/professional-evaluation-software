@@ -55,6 +55,14 @@ export const ROUTE_ACCESS: RouteRule[] = [
   // The cross-org auditor overview (grouped by organization) — platform
   // operator only, matching the sidebar's role_access for this tab.
   { path: '/admin/auditor', roles: ['super-admin'] },
+  // The legacy console. These pages had no rule at all and no matcher entry,
+  // so any signed-in account reached them; /admin/super needed no account at
+  // all. The cookie these rules read is browser-set and forgeable, so this is
+  // a second line only — each page and API authorizes the bearer token too.
+  { path: '/admin/super', roles: ['super-admin'] },
+  { path: '/admin/dashboard', roles: ['super-admin', 'admin'] },
+  // The same roster, in the main shell. /admin/auditor redirects here.
+  { path: '/external-auditors', roles: ['super-admin'] },
 
   // Goals.
   { path: '/goals', roles: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },

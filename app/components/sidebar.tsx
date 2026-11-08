@@ -114,15 +114,25 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       { key: 7, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
       { key: 8, name: 'Goals', icon: Setting4, href: '/goals', group: 'Evaluate', role_access: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
       { key: 9, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
-      { key: 10, name: 'Recognition', icon: Award, href: '/recognition', group: 'Evaluate', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+      // Not the platform operator: recognition is one organization's own Hall of
+      // Fame and Books of Records, and an operator belongs to no organization
+      // (consoleViewer gives them a null orgId deliberately). Listing it for
+      // them pointed at a page that could only ever answer "your account has no
+      // organization".
+      { key: 10, name: 'Recognition', icon: Award, href: '/recognition', group: 'Evaluate', role_access: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
 
       // Organization — people and tenancy.
       { key: 11, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: ['admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
       // The vetting queue for invited external auditors. Had a roleAccess rule
       // and a middleware entry but no link anywhere.
       { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin'] },
-      // Platform-wide, not org-scoped: the only "Organization" item a super-admin sees.
+      // Platform-wide, not org-scoped: the two "Organization" items a
+      // super-admin sees. "Recognised auditors" is deliberately not called
+      // "External Auditors" like the org admin's item above it — they are
+      // different screens (approved roster vs. vetting queue) and the two
+      // routes already differ by one letter, which is trap enough.
       { key: 13, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
+      { key: 16, name: 'Recognised auditors', icon: Verify, href: '/external-auditors', group: 'Organization', role_access: ['super-admin'] },
 
       // Account — you, and the settings hub.
       { key: 14, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
