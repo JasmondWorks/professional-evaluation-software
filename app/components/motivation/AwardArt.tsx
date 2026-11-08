@@ -104,18 +104,19 @@ function Marks({
   return (
     <div
       className="absolute inset-x-0 flex items-center justify-center"
-      style={{ top, height, gap: '6%' }}
+      style={{ top, height, gap: '6%', padding: '0 8%' }}
     >
       {marks.map((m) => (
         // data-award-mark is what the print stylesheet keys off to stop the
         // `.frame img { width: 100% }` rule from blowing these up to the full
-        // width of the page.
+        // width of the page. Shorter than the band itself (82% rather than
+        // 100%) so the marks don't sit flush against its top and bottom edges.
         <img
           key={m.alt}
           data-award-mark=""
           src={m.src}
           alt={m.alt}
-          style={{ height: '100%', width: 'auto', objectFit: 'contain' }}
+          style={{ height: '82%', width: 'auto', objectFit: 'contain' }}
         />
       ))}
     </div>
@@ -143,9 +144,22 @@ export default function AwardArt({
     if (!node) return;
     const w = window.open('', '_blank', 'width=1100,height=850');
     if (!w) return;
+
+    // The frame's layout — every absolutely-positioned name/title/mark on it —
+    // comes from Tailwind utility classes, not inline styles. outerHTML copies
+    // the class names but not the stylesheet that gives them meaning, so the
+    // popup needs its own copy of this page's stylesheets or the whole frame
+    // collapses to default document flow. Cloning the <link>/<style> tags is
+    // what makes the print preview match what's on screen.
+    const styleTags = Array.from(
+      document.querySelectorAll('link[rel="stylesheet"], style'),
+    )
+      .map((el) => el.outerHTML)
+      .join('\n');
+
     w.document.write(`<!doctype html><html><head><title>${
       [title, recipient].filter(Boolean).join(' - ') || 'Award'
-    }</title><style>
+    }</title>${styleTags}<style>
       @page { size: landscape; margin: 10mm; }
       body { margin: 0; display: flex; align-items: center; justify-content: center; }
       .frame { position: relative; width: 100%; max-width: 1000px; }
@@ -157,8 +171,40 @@ export default function AwardArt({
       .overlay { position: absolute; text-align: center; color: #000; }
     </style></head><body>${node.outerHTML}</body></html>`);
     w.document.close();
+
     // The artwork has to be decoded before the print dialog freezes the page.
-    w.addEventListener('load', () => {
+    // The window's own `load` event is not trustworthy here: `window.open('')`
+    // already opens (and loads) about:blank, so a later document.write/close
+    // does not reliably refire `load` in every browser before the cloned
+    // stylesheets and the remote logo/coat-of-arms images — slower than the
+    // local certificate PNG — have actually finished loading. Wait on those
+    // directly instead, with a timeout so one slow or failed load never blocks
+    // printing forever.
+    const links = Array.from(
+      w.document.querySelectorAll('link[rel="stylesheet"]'),
+    ) as HTMLLinkElement[];
+    const whenLinkLoaded = (link: HTMLLinkElement) =>
+      link.sheet
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            link.addEventListener('load', () => resolve(), { once: true });
+            link.addEventListener('error', () => resolve(), { once: true });
+          });
+    const images = Array.from(w.document.images);
+    const whenImageLoaded = (img: HTMLImageElement) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            img.addEventListener('load', () => resolve(), { once: true });
+            img.addEventListener('error', () => resolve(), { once: true });
+          });
+    const ready = Promise.all([
+      ...links.map(whenLinkLoaded),
+      ...images.map(whenImageLoaded),
+    ]);
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+
+    Promise.race([ready, timeout]).then(() => {
       w.focus();
       w.print();
     });

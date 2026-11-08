@@ -739,6 +739,9 @@ function AwardRecordTab() {
 // ---------------------------------------------------------------------------
 
 function AppraisalAwardsTab() {
+  const { user } = useCurrentUser();
+  const isAdmin = user?.role === "admin" || user?.role === "super-admin";
+
   const [data, setData] = useState<{
     periods: number;
     period: { starts_on: string; ends_on: string } | null;
@@ -747,32 +750,58 @@ function AppraisalAwardsTab() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const [artPreview, setArtPreview] = useState<{
     kind: ArtKind;
     title: string;
     recipient?: string;
   } | null>(null);
 
+  const load = async () => {
+    try {
+      const res = await apiFetch("/api/appraisal-awards", { method: "GET" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not work out the awards.");
+      setData(body);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message ?? "Could not work out the awards.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await apiFetch("/api/appraisal-awards", { method: "GET" });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? "Could not work out the awards.");
-        setData(body);
-      } catch (err: any) {
-        setError(err.message ?? "Could not work out the awards.");
-      } finally {
-        setLoading(false);
-      }
-    })();
+    load();
   }, []);
+
+  async function recordAwards() {
+    setRecording(true);
+    try {
+      const res = await apiFetch("/api/appraisal-awards", { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? "Could not record the awards.");
+      notify.success(
+        body.added.length === 0
+          ? `Nothing new for ${body.periodLabel} — everyone who qualifies is already recorded.`
+          : `${body.added.length} ${body.added.length === 1 ? "award" : "awards"} recorded for ${body.periodLabel}.`,
+      );
+      await load();
+    } catch (err: any) {
+      notify.error(err.message ?? "Could not record the awards.");
+    } finally {
+      setRecording(false);
+    }
+  }
 
   if (loading) return <p className="text-muted">Working out who has won what…</p>;
   if (error) return <p className="rounded-lg bg-danger-50 px-4 py-3 text-danger-700">{error}</p>;
   if (!data) return null;
 
   const outcomeFor = (key: string) => data.outcomes.find((o) => o.award.key === key);
+  const winnerCount = data.outcomes
+    .filter((o) => o.award.rule.kind !== "manual")
+    .reduce((n, o) => n + o.winners.length, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -796,6 +825,30 @@ function AppraisalAwardsTab() {
             criteria below are still shown, so the scheme can be checked before results
             exist.
           </p>
+        )}
+
+        {data.period && (
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-sm text-body">
+              {winnerCount === 0
+                ? "Nobody currently qualifies for a computed award — the \"awarded by the establishment\" ones below are still recorded by hand."
+                : `${winnerCount} ${winnerCount === 1 ? "award" : "awards"} below can be decided automatically. Recording writes each winner into the award record below; it is safe to run again after another period is released, and will not duplicate anyone already recorded.`}
+            </p>
+            {!isAdmin ? (
+              <p className="mt-2 text-sm text-muted">
+                Only the organization administrator can record these awards.
+              </p>
+            ) : (
+              <Button
+                className="mt-3"
+                onClick={recordAwards}
+                loading={recording}
+                disabled={winnerCount === 0}
+              >
+                Record these awards
+              </Button>
+            )}
+          </div>
         )}
       </section>
 

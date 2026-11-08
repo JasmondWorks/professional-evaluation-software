@@ -116,7 +116,7 @@ export async function openPeriod(
     },
   });
 
-  await seedTargets(viewer.org, viewer.orgId, period.id, bound);
+  await seedTargets(viewer.orgId, period.id, bound);
   return period;
 }
 
@@ -205,7 +205,6 @@ export async function listEntries(viewer: Viewer, periodId: string) {
  *  Copying rather than referencing is deliberate — a closed period must keep the
  *  numbers it was scored against for good. */
 async function seedTargets(
-  org: string,
   orgId: string,
   periodId: string,
   templateIds: Partial<Record<TemplateScope, string>>,
@@ -219,7 +218,6 @@ async function seedTargets(
     });
     for (const t of targets) {
       rows.push({
-        org,
         org_id: orgId,
         period_id: periodId,
         model: scope,
