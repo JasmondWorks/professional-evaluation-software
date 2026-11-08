@@ -54,5 +54,10 @@ export const config = {
     "/models/:path*",
     "/model-access/:path*",
     "/my-awards/:path*",
+    "/recognition/:path*",
+    "/settings/:path*",
+    "/hall-of-fame/:path*",
+    "/book-of-record/:path*",
+    "/reward/:path*",
   ],
 };

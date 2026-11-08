@@ -108,8 +108,29 @@ export const ROUTE_ACCESS: RouteRule[] = [
   // Billing.
   { path: '/pricing', roles: ['admin'] },
 
+  // The hub over Organization / Model access / Plan and billing. Gated to the
+  // same tier as the screens it links to, so it cannot advertise a destination
+  // the caller would be redirected away from.
+  { path: '/settings', roles: ['admin'] },
+
   // Awards — read-only recognition screen, open to everyone who is scored.
   { path: '/my-awards', roles: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
+
+  // Recognition: the Hall of Fame, both Books of Records, and a single award
+  // opened from any of them. Read-only and open to everyone in the
+  // organization — the whole point of the client's "beautifully designed"
+  // books is that staff can see who is in them. The APIs behind these are
+  // org-scoped, so a reader only ever sees their own organization's records.
+  //
+  // These had no rule at all and were absent from middleware's matcher, so
+  // they were ungated: reachable by any signed-in account, of any role, from
+  // any organization. The data is not sensitive, but "no rule" was an
+  // oversight rather than a decision.
+  // The hub that replaced the three Recognition rail items.
+  { path: '/recognition', roles: EVERYONE },
+  { path: '/hall-of-fame', roles: EVERYONE },
+  { path: '/book-of-record', roles: EVERYONE },
+  { path: '/reward', roles: EVERYONE },
 ];
 
 // The same rules, inverted: for each role, the route prefixes it may reach.

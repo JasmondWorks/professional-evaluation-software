@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Award, Download } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from '@/app/utils/apiFetch';
+import { BackLink } from '@/app/components/ui';
 
 interface HallOfFameMember {
   id: string;
@@ -35,6 +36,13 @@ export default function HallOfFame() {
   return (
       // {/* LEFT GATE */}
     <>
+      {/* This page is outside the (admin) route group, so it has no sidebar —
+          the gates and the scroll are meant to fill the screen. Without this
+          there was no way back, and no way in but the URL. */}
+      <div className="absolute left-4 top-4 z-30">
+        <BackLink href="/dashboard">Back to dashboard</BackLink>
+      </div>
+
       <div
         className={`absolute bottom-0 left-0 w-1/2 h-[75vh] transition-transform duration-[2000ms] ease-in-out cursor-pointer z-20 ${
           isOpen ? '-translate-x-[75%]' : 'translate-x-0'

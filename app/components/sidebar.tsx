@@ -81,24 +81,55 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    }, [role])
 
     // Definition of all tabs
+   // Definition of all tabs.
+   //
+   // Kept deliberately short. An organization admin was carrying thirteen items
+   // across five groups, and three of those thirteen were read-only trophy
+   // cabinets (Hall of Fame, both Books of Records) that nobody opens daily. Two
+   // kinds of item earn a rail slot: somewhere you go to work, and somewhere you
+   // go often. Everything else lives one click deeper, on a hub page that lists
+   // it with a line of explanation — which is also a better home for it than a
+   // bare nav label ever was.
+   //
+   // Hubs: /recognition (the three award surfaces) and /settings (an admin's
+   // org configuration). `My Awards` deliberately stays on the rail for staff
+   // even though the hub lists it too: it is personal and checked often, unlike
+   // the browse-y pages beside it.
+   //
+   // Keys must be unique — React renders this list directly. 14 was used twice
+   // (Hall of Fame and Organization Settings) when the Recognition items were
+   // added, so the numbering is now contiguous and commented.
    const tabs = [
       { key: 1, name: 'Dashboard', icon: Home3, href: '/dashboard', group: '', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 4, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: [ 'admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
+
+      // Evaluate — the work itself.
+      { key: 2, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+      { key: 3, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
+      // An auditor's actual job: the criteria referred to them for a ruling.
+      // roleAccess has always allowed this route; the rail never listed it, so
+      // the one role whose work lives here could not reach it.
+      { key: 4, name: 'Audit Queue', icon: Verify, href: '/performance/auditor', group: 'Evaluate', role_access: ['auditor'] },
+      { key: 5, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
+      { key: 6, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
+      { key: 7, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
+      { key: 8, name: 'Goals', icon: Setting4, href: '/goals', group: 'Evaluate', role_access: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
+      { key: 9, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
+      { key: 10, name: 'Recognition', icon: Award, href: '/recognition', group: 'Evaluate', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+
+      // Organization — people and tenancy.
+      { key: 11, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: ['admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
+      // The vetting queue for invited external auditors. Had a roleAccess rule
+      // and a middleware entry but no link anywhere.
+      { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin'] },
       // Platform-wide, not org-scoped: the only "Organization" item a super-admin sees.
-      { key: 41, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: [ 'super-admin' ] },
-      { key: 5, name: 'Goals', icon: Setting4, href: '/goals', group: 'Organization', role_access: ['admin', 'lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
-      { key: 3, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 6, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
-      { key: 11, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
-      { key: 7, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
-      { key: 13, name: 'My Awards', icon: Award, href: '/my-awards', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w', 'dept-admin', 'auditor'] },
-      { key: 2, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
-      { key: 8, name: 'Pricing', icon: DollarCircle, href: '/pricing', group: 'Account', role_access: ['admin'] },
-      // Changing your password now lives on /profile itself, not as a
-      // separate nav item.
-      { key: 10, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
-      { key: 12, name: 'Model Access', icon: Verify, href: '/model-access', group: 'Organization', role_access: ['admin'] },
-      { key: 14, name: 'Organization Settings', icon: Setting4, href: '/organization', group: 'Organization', role_access: ['admin'] }
+      { key: 13, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
+
+      // Account — you, and the settings hub.
+      { key: 14, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
+      // Organization Settings, Model Access and Pricing used to sit here and
+      // under Organization as four separate rail items. They are configuration,
+      // visited rarely, and now share one hub.
+      { key: 15, name: 'Settings', icon: Setting4, href: '/settings', group: 'Account', role_access: ['admin'] },
    ]
 
    // Filter tabs by capability first, then role. Unknown/custom roles fall back
@@ -122,6 +153,8 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
    // Nav is grouped so a long list stays scannable. Order is deliberate: what a
    // user does daily first, what they administer second, their own account last.
+   // A whitelist, not just an ordering: a group name missing from here is
+   // silently dropped along with every item in it.
    const GROUP_ORDER = ['', 'Evaluate', 'Organization', 'Account'];
    const grouped = GROUP_ORDER
       .map(group => ({ group, items: allowedTabs.filter(t => (t as any).group === group) }))
