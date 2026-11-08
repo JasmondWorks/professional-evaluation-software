@@ -28,10 +28,19 @@ export default function RootLayout({ children, }: { children: React.ReactNode })
 
   const isActive = (href: string) => pathname === href || `/${pathname.split('/')[1]}` === href;
 
+  // What is left of the legacy console. Its Dashboard was superseded by the
+  // main app's own dashboard and /organizations, and two of its three nav
+  // links pointed at routes that never existed — /admin/superusers and
+  // /admin/organizations, which /admin/[orgId] then swallowed and rendered as
+  // a broken organization page rather than a 404.
+  //
+  // "Admin users" is the platform operator's tier, so it is listed for them
+  // rather than for ['admin','hod'] as before — an organization admin has no
+  // business reading who operates the platform, and /api/admin/super-admins
+  // refuses them anyway.
   const allTabs = [
-    { key: 1, name: 'Dashboard', href: '/admin/dashboard', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'employee-w', 'auditor'] },
-    { key: 2, name: 'Admin users', href: '/admin/super', role_access: [ 'admin', 'hod'] },
-    { key: 3, name: 'Auditors', href: '/admin/auditor', role_access: [ 'super-admin' ] },
+    { key: 2, name: 'Platform operators', href: '/admin/super', role_access: ['super-admin'] },
+    { key: 3, name: 'Auditors', href: '/admin/auditor', role_access: ['super-admin'] },
   ]
 
   const tabs = allTabs.filter((t) => !role || t.role_access.includes(role));

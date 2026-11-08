@@ -15,7 +15,6 @@
 // answers the platform tier only.
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { apiFetch } from '@/app/utils/apiFetch';
 
 type SuperAdmin = { id: string; name: string; email: string };
@@ -53,14 +52,22 @@ export default function SuperAdminsPage() {
 
   return (
     <div className="min-h-screen bg-canvas p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Super Admins</h1>
-        <Link
-          href="/admin/super/add"
-          className="rounded-md bg-pes px-4 py-2 text-white hover:bg-pes-800"
-        >
-          Add New
-        </Link>
+      {/* "Add New" used to sit here. It opened /admin/super/add, which POSTed
+          to /api/admin/add-super-admin — an endpoint that has never existed, so
+          the button silently failed, and the page then redirected to
+          /admin/super-admins, which does not exist either. Both are removed;
+          scripts/promote-super-admin.ts is the working path, and deliberately
+          not a route (granting the tier that reads every tenant's data should
+          not be reachable over HTTP). */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Platform operators</h1>
+        <p className="mt-1 text-sm text-muted">
+          Accounts that can see across every organization. Promote one with{' '}
+          <code className="rounded bg-canvas px-1 py-0.5 text-[13px]">
+            npx tsx scripts/promote-super-admin.ts &lt;email&gt;
+          </code>
+          .
+        </p>
       </div>
 
       {loading ? (

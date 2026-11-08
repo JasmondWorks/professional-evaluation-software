@@ -60,7 +60,6 @@ export const ROUTE_ACCESS: RouteRule[] = [
   // all. The cookie these rules read is browser-set and forgeable, so this is
   // a second line only — each page and API authorizes the bearer token too.
   { path: '/admin/super', roles: ['super-admin'] },
-  { path: '/admin/dashboard', roles: ['super-admin', 'admin'] },
   // The same roster, in the main shell. /admin/auditor redirects here.
   { path: '/external-auditors', roles: ['super-admin'] },
 
