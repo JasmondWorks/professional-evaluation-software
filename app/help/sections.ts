@@ -33,8 +33,6 @@
  *  other with only the eyebrow to separate them. */
 export type SectionLevel = 'part' | 'group' | 'sub';
 
-import type { GuideFigureSpec } from './GuideFigure';
-
 export type GuideSection = {
   id: string;
   level: SectionLevel;
@@ -46,10 +44,6 @@ export type GuideSection = {
   printBreak?: boolean;
   /** Rendered markup, or null for a section the page composes itself. */
   html: string | null;
-  /** Screenshots rendered after the markup. The files live in `public/help/`
-   *  and are not in the repository, so a figure whose file is missing renders
-   *  as a labelled slot rather than a broken image — see GuideFigure. */
-  figures?: GuideFigureSpec[];
 };
 
 export const GUIDE_SECTIONS: GuideSection[] = [
@@ -226,18 +220,6 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <div style="display:flex;gap:12px;border-left:3px solid var(--warning-600);background:var(--warning-50);border-radius:0 8px 8px 0;padding:14px 16px;margin:0">
         <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--warning-900);margin:0 0 4px">The most common reason a cycle ends with nothing</div><div style="font-size:14px;line-height:1.6;color:var(--warning-900)">Only the top three grades earn anything: Very Outstanding, Excellent and Very Good. A cycle scored in the middle of the scale completes correctly and produces no certificate. That is the scheme working, not a fault.</div></div>
       </div>`,
-    figures: [
-      {
-        file: "handoff-period-open.png",
-        caption: "The organization admin opening a performance period: frequency, start and end dates, and the target score.",
-        capture: "Data entry \u2192 Performance, as an organization admin",
-      },
-      {
-        file: "handoff-staff-scoring.png",
-        caption: "A member of staff scoring their four criteria. All four must be settled before a grade exists.",
-        capture: "Performance \u2192 My performance, as a member of staff",
-      },
-    ],
   },
   {
     id: "p3-employee",
@@ -384,23 +366,6 @@ export const GUIDE_SECTIONS: GuideSection[] = [
           <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">You do not fill in appraisals, set goals, or administer the organization. You are also limited to three audits per account; past that, a further approval is refused automatically.</p>
         </div>
       </div>`,
-    figures: [
-      {
-        file: "auditor-accept-form.png",
-        caption: "The acceptance form: your details, the thirteen questions, and the credential uploads. The last question is the consent one.",
-        capture: "the invitation link, before approval",
-      },
-      {
-        file: "auditor-consent-profile.png",
-        caption: "Recognition by PES on your own Profile \u2014 where you change your mind after submitting.",
-        capture: "Profile, signed in as an approved auditor",
-      },
-      {
-        file: "auditor-queue.png",
-        caption: "The Audit Queue: criteria referred to you for a final ruling.",
-        capture: "Audit Queue, signed in as an approved auditor",
-      },
-    ],
   },
   {
     id: "p3-admin",
