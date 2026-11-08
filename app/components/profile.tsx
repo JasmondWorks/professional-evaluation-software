@@ -9,6 +9,7 @@ import { usePermissions } from './usePermissions';
 import ProfileChunk from './Profilechunk';
 import ChangePasswordForm from './ChangePasswordForm';
 import { useCurrentUser } from './useCurrentUser';
+import RecognitionConsentCard from './auditor/RecognitionConsentCard';
 
 type ReportingLine = {
   reportsTo: { name: string; role: string | null; dept: string | null } | null;
@@ -20,6 +21,8 @@ export default function Profile() {
   // A platform operator reports to no one and holds no org-scoped permission
   // set — both cards below describe an org membership this role doesn't have.
   const isPlatformOperator = user?.role === 'super-admin';
+  // Only an external auditor has a submission to consent about.
+  const isAuditor = user?.role === 'auditor';
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
@@ -62,6 +65,7 @@ export default function Profile() {
           </Card>
         ) : (
           <>
+            {isAuditor ? <RecognitionConsentCard /> : null}
             <ReportingLineCard />
             <PermissionsCard />
           </>
