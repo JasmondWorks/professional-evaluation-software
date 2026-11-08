@@ -33,6 +33,8 @@
  *  other with only the eyebrow to separate them. */
 export type SectionLevel = 'part' | 'group' | 'sub';
 
+import type { GuideFigureSpec } from './GuideFigure';
+
 export type GuideSection = {
   id: string;
   level: SectionLevel;
@@ -44,6 +46,10 @@ export type GuideSection = {
   printBreak?: boolean;
   /** Rendered markup, or null for a section the page composes itself. */
   html: string | null;
+  /** Screenshots rendered after the markup. The files live in `public/help/`
+   *  and are not in the repository, so a figure whose file is missing renders
+   *  as a labelled slot rather than a broken image — see GuideFigure. */
+  figures?: GuideFigureSpec[];
 };
 
 export const GUIDE_SECTIONS: GuideSection[] = [
@@ -200,6 +206,40 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <p style="font-size:16px;line-height:1.65;color:var(--text-strong-secondary);margin:0;max-width:66ch;text-wrap:pretty">One short chapter per role. Each answers the same four questions: what you can see, what you must do, what is waiting on you, and what you cannot do and why.</p>`,
   },
   {
+    id: "p3-handoff",
+    level: "sub",
+    roles: ["all"],
+    title: "3.0 Who does what, in order",
+    html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.0 Who does what, in order</h3>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">No single role can finish an evaluation. Each one does a piece and hands it on, and every step below is blocked until the one above it is done. Read this once and the rest of Part 3 is just your own column in more detail.</p>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);margin:0 0 20px">
+        <table style="width:100%;min-width:720px;border-collapse:collapse;font-size:14px">
+          <thead><tr>
+            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);border-bottom:1px solid var(--border-divider)">Step</th>
+            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);border-bottom:1px solid var(--border-divider)">Who</th>
+            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);border-bottom:1px solid var(--border-divider)">Does</th>
+            <th style="text-align:left;padding:12px 16px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);border-bottom:1px solid var(--border-divider)">What that means</th>
+          </tr></thead>
+          <tbody><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">1</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Organization admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Sets the organization up</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Uploads the institution logo and coat of arms, adds every member of staff with a department and a role, and switches on the models the plan allows. Nothing below can start until this is done.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">2</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Head of the establishment</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Chooses the motivators</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Picks, once per administration, what the organization will offer its staff. This decides what appears alongside a grade, not what grade anyone gets.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">3</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Organization admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Opens a period</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">One performance period open at a time. Until one is open, nobody can enter anything.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">4</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Member of staff</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Scores themselves</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Competence, integrity, compatibility and use of resources. All four are needed — a missing one is held out of the average rather than counted as zero, so a half-finished entry produces no grade.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">5</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Head of department or unit head</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Counter-scores</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Enters their own figure for each criterion. Where the two agree the figure settles. Where the head objects it goes back to the member of staff instead of settling quietly.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">6</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Member of staff</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Answers the objection</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Accepts the head's figure, or refers that criterion to an external auditor. A criterion left in dispute stays out of the average, so an unanswered objection alone is enough to stop a certificate being earned.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">7</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">External auditor</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Rules on referrals</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Their figure is final and overrides both the member of staff and the head. This step only exists for criteria actually referred at step 6 — a cycle with no disputes skips it entirely.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">8</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Organization admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Closes, then releases</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Two separate actions in that order. Results cannot be released while the period is still open. This is the step that turns scores into grades.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">9</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Member of staff</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Collects what they earned</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">Their certificate and badge on My Awards, carrying their name, the organization and both marks. Printable.</td></tr><tr><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-secondary)">10</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;font-weight:600">Organization admin</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top">Awards the records</td><td style="padding:11px 16px;border-bottom:1px solid var(--border-divider);vertical-align:top;color:var(--text-strong-secondary)">After three years of released results, writes everyone who qualifies into the Hall of Fame or a Book of Records. Safe to run again later; nobody is recorded twice for the same window.</td></tr></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:12px;border-left:3px solid var(--warning-600);background:var(--warning-50);border-radius:0 8px 8px 0;padding:14px 16px;margin:0">
+        <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--warning-900);margin:0 0 4px">The most common reason a cycle ends with nothing</div><div style="font-size:14px;line-height:1.6;color:var(--warning-900)">Only the top three grades earn anything: Very Outstanding, Excellent and Very Good. A cycle scored in the middle of the scale completes correctly and produces no certificate. That is the scheme working, not a fault.</div></div>
+      </div>`,
+    figures: [
+      {
+        file: "handoff-period-open.png",
+        caption: "The organization admin opening a performance period: frequency, start and end dates, and the target score.",
+        capture: "Data entry \u2192 Performance, as an organization admin",
+      },
+      {
+        file: "handoff-staff-scoring.png",
+        caption: "A member of staff scoring their four criteria. All four must be settled before a grade exists.",
+        capture: "Performance \u2192 My performance, as a member of staff",
+      },
+    ],
+  },
+  {
     id: "p3-employee",
     level: "sub",
     roles: ["employee"],
@@ -211,7 +251,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you can see</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Dashboard, Goals, Data Entry, Performance Review, My Awards and Profile. Non-academic staff also see Staff Determination when they have Define Performance Metrics, and the Models the admin has switched on for them.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Dashboard, Data Entry, Performance Review, Goals, My Awards, Recognition and Profile. Non-academic staff also see Staff Determination when they have Define Performance Metrics, and the Models the admin has switched on for them.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you must do</div>
@@ -310,26 +350,57 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: "p3-auditor",
     level: "sub",
     roles: ["auditor"],
-    title: "3.5 Auditor \u2014 contested appraisals",
-    html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.5 Auditor</h3>
+    title: "3.5 External auditor \u2014 joining, ruling, and your credentials",
+    html: `<h3 style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin:0 0 12px">3.5 External auditor</h3>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">You are invited from outside the organization, and you are outside its hierarchy on purpose. Independence is the whole point of the role, so nothing you do here is scored by anyone in it.</p>
+
+      <h4 style="font-size:15px;font-weight:600;margin:24px 0 8px">How you join</h4>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">An organization admin invites you by email. The link takes you to an acceptance form: your details, thirteen questions about how you will work, and at least three credential documents to upload — a certificate of recognition, a professional certificate and an academic certificate. Submitting puts you in that organization&rsquo;s queue.</p>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">When the admin approves you, you are emailed a link to choose your own password. That link expires; if it does, use &ldquo;Forgot password&rdquo; on the sign-in page with the same address. You cannot sign in before approval — until then you have no account, which is the usual reason an early sign-in attempt fails.</p>
+
+      <h4 style="font-size:15px;font-weight:600;margin:24px 0 8px">The last question, and what it controls</h4>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">The thirteenth question asks whether you want your role recognized globally by PES. Answering yes lets the platform operator, and organizations looking for a recognized external auditor, see the documents you uploaded. Answering no keeps them out of that view.</p>
+      <p style="font-size:15px;line-height:1.65;color:var(--text-strong-secondary);margin:0 0 16px;max-width:66ch">You can change your mind at any time afterwards, on your own Profile under <strong style="font-weight:600;color:var(--text-primary)">Recognition by PES</strong>. Turning it off hides your documents platform-wide straight away. It does not withdraw them from the organization that invited you — you handed those certificates to them when you accepted their invitation, and they still have to be able to vet the auditor they engaged.</p>
+      <div style="display:flex;gap:12px;border-left:3px solid var(--brand-600);background:var(--brand-50);border-radius:0 8px 8px 0;padding:14px 16px;margin:0 0 24px">
+        <div><div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--brand-900);margin:0 0 4px">Only you can change this</div><div style="font-size:14px;line-height:1.6;color:var(--brand-900)">No administrator can grant or withdraw your consent for you. It records what you agreed to, so it is yours to set.</div></div>
+      </div>
+
+      <h4 style="font-size:15px;font-weight:600;margin:24px 0 8px">Your role, day to day</h4>
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you can see</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">The cases referred to you, and the auditor survey. You do not see the Goals tab, and you are outside the departmental hierarchy by design.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Dashboard, Data Entry, Audit Queue, My Awards, Recognition and Profile. Audit Queue is where the referred cases arrive. You do not see Goals, and you see nothing of the organization&rsquo;s administration.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you must do</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Decide contested appraisals and contested performance entries. Your decision is final and returns the record to the workflow.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Rule on contested appraisals and contested performance criteria. Your figure is final: it overrides both the member of staff and their head, and returns the record to the workflow.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What is waiting on you</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Everything at <em>with the appraisal auditor</em>. Nothing else in the workflow can move past that stage while a case sits with you.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Everything in your Audit Queue. A criterion referred to you stays out of the average until you rule, so an unanswered referral alone can stop someone&rsquo;s grade — and therefore their certificate — from existing at all.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you cannot do, and why</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">You do not fill in appraisals, set goals, or administer the organization. Independence is the whole point of the role.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">You do not fill in appraisals, set goals, or administer the organization. You are also limited to three audits per account; past that, a further approval is refused automatically.</p>
         </div>
       </div>`,
+    figures: [
+      {
+        file: "auditor-accept-form.png",
+        caption: "The acceptance form: your details, the thirteen questions, and the credential uploads. The last question is the consent one.",
+        capture: "the invitation link, before approval",
+      },
+      {
+        file: "auditor-consent-profile.png",
+        caption: "Recognition by PES on your own Profile \u2014 where you change your mind after submitting.",
+        capture: "Profile, signed in as an approved auditor",
+      },
+      {
+        file: "auditor-queue.png",
+        caption: "The Audit Queue: criteria referred to you for a final ruling.",
+        capture: "Audit Queue, signed in as an approved auditor",
+      },
+    ],
   },
   {
     id: "p3-admin",
@@ -340,7 +411,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:0 0 20px">
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you can see</div>
-          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Employee Database, Goals, Model Access, Assessment, Staff Determination, all Models, Pricing — and Maintenance Model if your organization has it enabled. You do not have the staff-level Data Entry tab.</p>
+          <p style="font-size:14px;line-height:1.65;color:var(--text-strong-secondary);margin:0">Assessment, Staff Determination, Models, Goals and Recognition under Evaluate; Employee Database and External Auditors under Organization; Profile and Settings under Account — plus Maintenance Model if your organization has it enabled. Organization branding, Model access and Plan and billing all live inside Settings. You do not have the staff-level Data Entry tab.</p>
         </div>
         <div style="background:var(--surface-card);border-radius:10px;box-shadow:var(--shadow-2);padding:18px">
           <div style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 8px">What you must do</div>

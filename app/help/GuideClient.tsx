@@ -13,6 +13,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GUIDE_SECTIONS } from './sections';
 import PlansSection from './PlansSection';
+import GuideFigure from './GuideFigure';
 import { normalizeInstitution, type InstitutionType } from '@/app/lib/billing/catalog';
 import { guideRoleFor } from './roles';
 import { useAuth } from '@/app/components/useAuth';
@@ -406,11 +407,29 @@ export default function GuideClient() {
               'data-dim': dimmed(s) ? 'true' : 'false',
               'data-print-break': s.printBreak ? '' : undefined,
             };
-            return s.html === null ? (
-              <section key={s.id} {...props}>
-                <PlansSection institution={institution} />
-              </section>
-            ) : (
+            if (s.html === null) {
+              return (
+                <section key={s.id} {...props}>
+                  <PlansSection institution={institution} />
+                </section>
+              );
+            }
+
+            // A section with screenshots cannot use dangerouslySetInnerHTML on
+            // the same element as children, so the prose goes in its own div
+            // and the figures follow it.
+            if (s.figures?.length) {
+              return (
+                <section key={s.id} {...props}>
+                  <div dangerouslySetInnerHTML={{ __html: s.html }} />
+                  {s.figures.map((f) => (
+                    <GuideFigure key={f.file} {...f} />
+                  ))}
+                </section>
+              );
+            }
+
+            return (
               <section key={s.id} {...props} dangerouslySetInnerHTML={{ __html: s.html }} />
             );
           })}
