@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   // the email should say so, or it reads as though something has gone wrong.
   const purpose = user.first_login_at ? 'reset' : 'setup';
   const { token, expiresAt } = await issuePasswordToken(user.id, purpose);
-  const link = passwordLink(token, purpose);
+  const link = passwordLink(token, purpose, req.headers.get('origin'));
 
   try {
     await sendMail({

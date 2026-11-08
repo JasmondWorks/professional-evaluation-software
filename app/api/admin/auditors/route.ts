@@ -208,7 +208,7 @@ export async function POST(req: Request) {
         });
         if (created) {
           const issued = await issuePasswordToken(created.id, "setup");
-          setupLink = passwordLink(issued.token, "setup");
+          setupLink = passwordLink(issued.token, "setup", req.headers.get("origin"));
           linkExpires = issued.expiresAt;
         }
       }

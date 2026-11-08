@@ -121,9 +121,50 @@ export async function consumePasswordToken(
   });
 }
 
-/** The link that goes in the email. */
-export function passwordLink(token: string, purpose: TokenPurpose): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+/** The link that goes in the email.
+ *
+ *  `origin` is the host the request arrived on, and is preferred when given.
+ *  NEXT_PUBLIC_APP_URL is routinely empty — it is empty in .env.local and the
+ *  invite route already carries a comment about it being empty in production —
+ *  and this function used to fall through to `''`, producing the bare relative
+ *  path `/set-password?token=…`. That is not a link: mail clients autolink it
+ *  into something like `http://set-password/?token=…`, with the path as the
+ *  hostname, so every set-password and reset-password mail sent while the
+ *  variable was unset was undeliverable in practice.
+ *
+ *  Falls back to localhost so a developer still gets a working link, and logs
+ *  loudly, because a silent wrong link is only discovered by the person who
+ *  cannot use it. */
+export function passwordLink(
+  token: string,
+  purpose: TokenPurpose,
+  origin?: string | null,
+): string {
   const path = purpose === 'setup' ? '/set-password' : '/reset-password';
+
+  // Validated rather than trusted: this value ends up in an href in an email.
+  let base = '';
+  if (origin) {
+    try {
+      const parsed = new URL(origin);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        base = parsed.origin;
+      }
+    } catch {
+      // Fall through to the configured value.
+    }
+  }
+
+  if (!base) base = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+
+  if (!base) {
+    console.error(
+      'passwordLink: no request origin and NEXT_PUBLIC_APP_URL is unset — ' +
+        'falling back to localhost. Emails sent from a deployment will carry ' +
+        'an unusable link until NEXT_PUBLIC_APP_URL is configured.',
+    );
+    base = 'http://localhost:3000';
+  }
+
   return `${base}${path}?token=${token}`;
 }

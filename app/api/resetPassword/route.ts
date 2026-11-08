@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // token in pesuser.resettoken, so a leaked backup was a takeover of every
     // account with one outstanding.
     const { token, expiresAt } = await issuePasswordToken(user.id, 'reset');
-    const resetLink = passwordLink(token, 'reset');
+    const resetLink = passwordLink(token, 'reset', request.headers.get('origin'));
 
     // This is the part that never existed. The previous version built the link
     // and console.logged it behind a "TODO: Send email with reset link", so
