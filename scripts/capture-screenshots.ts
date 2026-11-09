@@ -49,7 +49,14 @@ async function signIn(browser: Browser, who: Persona) {
   return { ctx, page };
 }
 
-async function shot(page: Page, file: string, label: string) {
+async function shot(page: Page, file: string, label: string, scrollTo?: string) {
+  // Several of these screens put the interesting part below a 1000px fold —
+  // the auditor's consent control sits under their details and the password
+  // form. Scrolling to it first keeps the shot about its subject.
+  if (scrollTo) {
+    await page.locator(scrollTo).first().scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(400);
+  }
   await page.screenshot({ path: path.join(OUT, file), fullPage: false });
   console.log(`  ✓ ${file.padEnd(34)} ${label}`);
 }
@@ -126,7 +133,12 @@ async function main() {
     const { ctx, page } = await signIn(browser, AUDITOR);
     await page.goto(`${BASE}/profile`);
     await settle(page);
-    await shot(page, '09-auditor-consent.png', 'Recognition by PES (auditor profile)');
+    await shot(
+      page,
+      '09-auditor-consent.png',
+      'Recognition by PES (auditor profile)',
+      'text=Recognition by PES',
+    );
     await ctx.close();
   }
 
