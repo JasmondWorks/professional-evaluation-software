@@ -10,18 +10,20 @@ import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { rateLimit } from "../_lib/rateLimit";
 import { escapeHtml } from "../_lib/escapeHtml";
 
-// Invites an external auditor. It had no auth, so it was an open relay: anyone
-// could make the organization's mail account send an arbitrary address a link
-// that grants auditor entry.
+// Invites an external auditor. Platform-admin only: external auditors are not
+// tied to an inviting org — they're reviewed and publicly recognized by the
+// platform, then chosen by orgs afterward (see org_auditor_selection).
 export async function POST(request: Request) {
-  const auth = authorize(tokenFromRequest(request), { roles: ["super-admin", "admin"] });
+  // allowAdmins defaults true and would let org-tier "admin" bypass this —
+  // the whole point of this gate is that org admins may not invite auditors.
+  const auth = authorize(tokenFromRequest(request), { roles: ["super-admin"], allowAdmins: false });
   if (!auth.ok) return auth.response;
 
   const tooMany = rateLimit(request, {
     key: "auditor-invite",
     limit: 20,
     windowMs: 60 * 60_000,
-    subject: auth.user.org ? String(auth.user.org) : null,
+    subject: auth.user.userID ? String(auth.user.userID) : null,
   });
   if (tooMany) return tooMany;
 
@@ -35,9 +37,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // The invite carries the inviting org, so accepting it lands the auditor in
-    // the right tenant rather than wherever the accept form happens to say.
-    const token = jwt.sign({ email, orgId: auth.user.orgId, org: auth.user.org }, getJWTSecret(), {
+    // No org on this token — the auditor isn't bound to any org until an org
+    // admin selects them after platform approval.
+    const token = jwt.sign({ email }, getJWTSecret(), {
       expiresIn: "7d",
     });
     // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,

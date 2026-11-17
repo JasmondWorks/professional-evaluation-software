@@ -3,8 +3,15 @@
 import { ChangeEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from '@/app/utils/apiFetch';
-import { Button, Input, Label } from '@/app/components/ui';
+import { Badge, Button, Input, Label } from '@/app/components/ui';
 import { AUDITOR_QUESTIONS, CREDENTIAL_SLOTS } from '@/app/lib/auditor/questions';
+
+type AuditorStatus = {
+  submitted: boolean;
+  status?: string | null;
+  rejectionReason?: string | null;
+  recognitionConsent?: boolean;
+};
 
 export default function AuditorQuestions({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -12,7 +19,8 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
   const [email, setEmail] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState("");
-  
+  const [existing, setExisting] = useState<AuditorStatus | null>(null);
+
   const [responses, setResponses] = useState<string[]>(
     Array(AUDITOR_QUESTIONS.length).fill(""),
   );
@@ -52,6 +60,19 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         
         if (response.ok) {
           setEmail(data.email);
+
+          // Already submitted? Show their status instead of the form —
+          // there's no pesuser/session yet to gate a dedicated page behind,
+          // so this reuses the same invite-link token.
+          const statusRes = await apiFetch("/api/auditor-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token }),
+          });
+          const statusData = await statusRes.json();
+          if (statusRes.ok && statusData.submitted) {
+            setExisting(statusData);
+          }
         } else {
           setVerificationError(data.message || "Invalid token");
         }
@@ -61,7 +82,7 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         setIsVerifying(false);
       }
     };
-    
+
     verifyToken();
   }, [token]);
 
@@ -162,6 +183,31 @@ export default function AuditorQuestions({ params }: { params: { id: string } })
         <h1 className="text-2xl font-semibold text-danger-600">Access Denied</h1>
         <p className="text-body font-medium">{verificationError || "Invalid or Expired Invitation Link"}</p>
         <p className="text-sm text-muted mt-4">Please contact the administrator to request a new invitation.</p>
+      </div>
+    );
+  }
+
+  if (existing) {
+    const tone =
+      existing.status === "approved" ? "success" : existing.status === "rejected" ? "danger" : "warning";
+    const label =
+      existing.status === "approved" ? "Approved" : existing.status === "rejected" ? "Rejected" : "In Review";
+
+    return (
+      <div className="max-w-3xl mx-auto mt-10 p-10 rounded-2xl shadow-md bg-white text-pes text-center space-y-4">
+        <h1 className="text-2xl font-semibold">Your Application Status</h1>
+        <Badge tone={tone} className="text-sm px-4 py-1">{label}</Badge>
+        {existing.status === "rejected" && existing.rejectionReason && (
+          <p className="text-sm text-muted mt-4">
+            <span className="font-medium text-body">Reason: </span>
+            {existing.rejectionReason}
+          </p>
+        )}
+        {existing.status !== "rejected" && (
+          <p className="text-sm text-muted mt-4">
+            You&apos;ll be notified by email once the platform admin has reviewed your submission.
+          </p>
+        )}
       </div>
     );
   }

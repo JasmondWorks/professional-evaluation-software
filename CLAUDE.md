@@ -9,6 +9,21 @@ just editing a raw element that's already there. Full rule and exceptions:
 see "Check for an existing component before writing a raw HTML element" in
 AGENTS.md.
 
+## New pages and routes need a way in
+
+A route being guard-accessible (`roleAccess.ts` / middleware) is not the same
+as it being *reachable*. When adding a new page, route, or modal, always wire
+up how each role that needs it actually gets there through the UI — a sidebar
+entry (`app/components/sidebar.tsx`), a button/link from an existing page, or
+confirmation that it's intentionally link-free (e.g. `/auditor/[id]`, reached
+only via an emailed token link).
+
+This has already gone wrong once: `/admin/auditors/invite` and the
+super-admin's view of `/admin/auditors` both had a correct `roleAccess.ts`
+rule and worked fine when the URL was typed directly, but neither had a
+sidebar link, so the platform admin — the one role actually meant to use
+them — had no way to find them by clicking around the app.
+
 ## Database schema changes
 
 **Never run `prisma db push`** against the local or production database. Use

@@ -123,15 +123,19 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
       // Organization — people and tenancy.
       { key: 11, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: ['admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
-      // The vetting queue for invited external auditors. Had a roleAccess rule
-      // and a middleware entry but no link anywhere.
-      { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin'] },
-      // Platform-wide, not org-scoped: the two "Organization" items a
-      // super-admin sees. "Recognised auditors" is deliberately not called
+      // The vetting queue for invited external auditors. Approval/rejection is
+      // platform-admin only now, but an org admin still views it (read-only)
+      // for their own org's submissions, so both roles keep a link to it.
+      { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin', 'super-admin'] },
+      // Platform-wide, not org-scoped: the "Organization" items a super-admin
+      // sees. "Recognised auditors" is deliberately not called
       // "External Auditors" like the org admin's item above it — they are
       // different screens (approved roster vs. vetting queue) and the two
       // routes already differ by one letter, which is trap enough.
       { key: 13, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
+      // Had a page and a roleAccess rule but no link anywhere — the only way
+      // to reach it was typing the URL.
+      { key: 18, name: 'Invite Auditor', icon: Verify, href: '/admin/auditors/invite', group: 'Organization', role_access: ['super-admin'] },
       { key: 16, name: 'Recognised auditors', icon: Verify, href: '/external-auditors', group: 'Organization', role_access: ['super-admin'] },
       { key: 17, name: 'Platform operators', icon: ProfileCircle, href: '/platform-operators', group: 'Organization', role_access: ['super-admin'] },
 

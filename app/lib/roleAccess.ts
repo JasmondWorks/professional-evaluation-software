@@ -47,10 +47,14 @@ export const ROUTE_ACCESS: RouteRule[] = [
 
   // Organization directory and roles.
   { path: '/em-database/create-role', roles: ['admin'] },
+  // Browse + select from the platform's publicly-recognized auditors — org
+  // admins no longer invite auditors directly (see /admin/auditors/invite).
   { path: '/em-database/add-auditor', roles: ['admin'] },
   { path: '/em-database', roles: ['admin', 'hod', 'unit-head'] },
   { path: '/organization', roles: ['admin'] },
   { path: '/organizations', roles: ['super-admin'] },
+  // Platform-only: inviting an auditor into the recognition pipeline.
+  { path: '/admin/auditors/invite', roles: ['super-admin'] },
   { path: '/admin/auditors', roles: ['admin', 'super-admin'] },
   // The cross-org auditor overview (grouped by organization) — platform
   // operator only, matching the sidebar's role_access for this tab.

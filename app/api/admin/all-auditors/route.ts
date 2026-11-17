@@ -50,47 +50,63 @@ export async function GET(req: NextRequest) {
   const approvedEmails = responses.map((a) => a.email);
   const byEmail = new Map(responses.map((r) => [r.email, r]));
 
+  // Org<->auditor relationships are recorded in org_auditor_selection, not
+  // pesuser.org_id — one auditor may now be selected by several orgs, each at
+  // its own timestamp, which is what the platform operator asked to see.
   const auditors = await prisma.pesuser.findMany({
-    where: auth.viewer.isPlatform
-      ? { role: "auditor", email: { in: approvedEmails } }
-      : { role: "auditor", org_id: auth.viewer.orgId, email: { in: approvedEmails } },
+    where: { role: "auditor", email: { in: approvedEmails } },
     select: PUBLIC_USER_COLUMNS,
   });
+  const auditorIds = auditors.map((a) => a.id);
 
-  // The organization's display name. PUBLIC_USER_COLUMNS carries org_id only,
-  // and the roster groups its rows by organization — so without this every
-  // auditor fell into a single group headed "undefined", and each row linked
-  // to /admin/undefined/<id>.
-  const orgIds = Array.from(
-    new Set(auditors.map((a) => a.org_id).filter((id): id is string => Boolean(id))),
-  );
-  const orgs = orgIds.length
-    ? await prisma.org.findMany({
-        where: { id: { in: orgIds } },
-        select: { id: true, name: true },
+  const selections = auditorIds.length
+    ? await prisma.org_auditor_selection.findMany({
+        where: {
+          auditor_id: { in: auditorIds },
+          ...(auth.viewer.isPlatform ? {} : { org_id: auth.viewer.orgId as string }),
+        },
+        orderBy: { selected_at: "desc" },
       })
     : [];
+  const orgIds = Array.from(new Set(selections.map((s) => s.org_id)));
+  const orgs = orgIds.length
+    ? await prisma.org.findMany({ where: { id: { in: orgIds } }, select: { id: true, name: true } })
+    : [];
   const orgNameById = new Map(orgs.map((o) => [o.id, o.name]));
+  const byAuditorId = new Map<string, typeof selections>();
+  for (const s of selections) {
+    byAuditorId.set(s.auditor_id, [...(byAuditorId.get(s.auditor_id) ?? []), s]);
+  }
 
-  const enriched = auditors.map((a) => {
+  // An org admin only cares about auditors their own org has actually
+  // selected; the platform operator sees every approved auditor, including
+  // those no org has picked yet (selections: []).
+  const visibleAuditors = auth.viewer.isPlatform
+    ? auditors
+    : auditors.filter((a) => (byAuditorId.get(a.id) ?? []).length > 0);
+
+  // One row per auditor — this is a roster of recognized people, not of
+  // org<->auditor pairs. Which orgs picked them is an attribute of the
+  // person, attached as `selections`, not the thing the list is grouped by.
+  const enriched = visibleAuditors.map((a) => {
     const record = a.email ? byEmail.get(a.email) : undefined;
     const consented = record?.recognition_consent ?? false;
+    const documents = auditorDocumentsFor(auth.viewer, {
+      recognition_consent: consented,
+      credentials: record?.credentials,
+      org_id: record?.org_id ?? null,
+    });
+    const auditorSelections = byAuditorId.get(a.id) ?? [];
 
     return {
       ...a,
-      org: (a.org_id && orgNameById.get(a.org_id)) || 'Unassigned',
       recognitionConsent: consented,
       submittedAt: record?.created_at ?? null,
-      /** Null when the viewer may not see them, which is different from an
-       *  auditor who simply uploaded nothing (an empty array). */
-      // record.org_id, not the pesuser's: the submission is upserted by email
-      // and its org_id follows the most recent inviting organization, so the
-      // two can name different tenants for the same person.
-      documents: auditorDocumentsFor(auth.viewer, {
-        recognition_consent: consented,
-        credentials: record?.credentials,
-        org_id: record?.org_id ?? null,
-      }),
+      documents,
+      selections: auditorSelections.map((s) => ({
+        org: orgNameById.get(s.org_id) || "Unknown organization",
+        selectedAt: s.selected_at,
+      })),
     };
   });
 

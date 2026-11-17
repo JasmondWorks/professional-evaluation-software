@@ -290,8 +290,10 @@ export default function Employee() {
               href="/em-database/add-auditor"
               className="inline-flex items-center gap-2 h-10 px-4 text-sm font-medium text-pes-700 bg-surface border border-line rounded-lg shadow-xs hover:bg-pes-50 transition-colors"
             >
-              <Add size={18} />
-              <span>Add external auditor</span>
+              <SearchNormal1 size={18} />
+              {/* Org admins no longer invite auditors directly — this links to
+                  the pool of platform-approved, publicly recognized auditors. */}
+              <span>External auditors</span>
             </Link>
             <Link
               href="/em-database/add-employee"

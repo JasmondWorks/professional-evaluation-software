@@ -55,6 +55,8 @@ export async function GET(req: Request) {
         org_id: true,
         credentials: true,
         recognition_consent: true,
+        rejection_reason: true,
+        reviewed_at: true,
       },
     });
 
@@ -78,39 +80,36 @@ export async function GET(req: Request) {
   }
 }
 
-// Approve or Reject
+// Approve or Reject. Platform-admin only: the whole point of this gate is
+// that recognition is adjudicated once, centrally, not per-org.
 export async function POST(req: Request) {
-  // Approving an auditor creates a pesuser and mails out credentials. It ran
-  // unauthenticated, so anyone could mint an auditor account.
   const auth = consoleViewer(tokenFromRequest(req));
   if (!auth.ok) return auth.response;
 
+  if (!auth.viewer.isPlatform) {
+    return NextResponse.json(
+      { error: "Only the platform admin may approve or reject an auditor." },
+      { status: 403 },
+    );
+  }
+
   try {
-    const { id, action } = await req.json();
+    const { id, action, reason } = await req.json();
 
     if (!id || !["approve", "reject"].includes(action)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    // Fetch auditor details, scoped to the caller's organization.
-    //
-    // This was `findUnique({ where: { id } })` with no org check, so an
-    // organization admin could approve or reject ANY other organization's
-    // submission by id — minting a real `pesuser` inside a tenant they have no
-    // relationship with, and mailing that person credentials. The GET above was
-    // scoped in the same change that left this unscoped.
-    //
-    // Rows predating org_id (null) are the platform operator's to decide: an
-    // org admin has no claim on a submission whose inviting org was never
-    // recorded. 404 rather than 403 throughout, so an id that exists in another
-    // tenant is indistinguishable from one that does not exist.
+    if (action === "reject" && !String(reason ?? "").trim()) {
+      return NextResponse.json(
+        { error: "A rejection reason is required." },
+        { status: 400 },
+      );
+    }
+
     const a = await prisma.auditor_responses.findUnique({ where: { id } });
 
     if (!a) {
-      return NextResponse.json({ error: "Auditor not found" }, { status: 404 });
-    }
-
-    if (!auth.viewer.isPlatform && a.org_id !== auth.viewer.orgId) {
       return NextResponse.json({ error: "Auditor not found" }, { status: 404 });
     }
 
@@ -118,7 +117,7 @@ export async function POST(req: Request) {
       // Check if auditor already exists in pesuser
       const existingAuditor = await prisma.pesuser.findFirst({
         where: { email: a.email, role: "auditor" },
-        select: { id: true, audit_count: true, org_id: true },
+        select: { id: true, audit_count: true },
       });
 
       if (existingAuditor) {
@@ -126,7 +125,11 @@ export async function POST(req: Request) {
           // Reject automatically
           await prisma.auditor_responses.update({
             where: { id },
-            data: { status: "rejected" },
+            data: {
+              status: "rejected",
+              rejection_reason: "Audit limit reached (3) — automatically rejected.",
+              reviewed_at: new Date(),
+            },
           });
           return NextResponse.json({
             success: false,
@@ -134,19 +137,11 @@ export async function POST(req: Request) {
           });
         }
 
-        // Increment audit_count if under limit, and adopt the inviting org if
-        // the account has none yet (every auditor approved before org_id was
-        // carried through). An account that already names an org is left
-        // alone: pesuser holds a single org_id, so overwriting it would move
-        // the auditor out of the first organization rather than add them to
-        // the second. Serving several organizations at once needs a join
-        // table and is not expressible on this column.
+        // Org binding no longer happens here — an approved auditor is
+        // org-agnostic until an org admin selects them (org_auditor_selection).
         await prisma.pesuser.update({
           where: { id: existingAuditor.id },
-          data: {
-            audit_count: { increment: 1 },
-            ...(existingAuditor.org_id || !a.org_id ? {} : { org_id: a.org_id }),
-          },
+          data: { audit_count: { increment: 1 } },
         });
       }
 
@@ -179,22 +174,16 @@ export async function POST(req: Request) {
             address: a.address,
             dob: a.dob,
             image: a.image,
-            // Carried from the submission, which reads it off the invite token.
-            // This was omitted, so every approved auditor was created with
-            // org_id NULL — and both /api/admin/all-auditors and
-            // /api/admin/orgs/[orgId]/auditors filter on org_id, so an org
-            // admin's auditor list came back empty for auditors they had
-            // themselves invited.
-            org_id: a.org_id,
+            // No org_id — recognition is platform-level; an org binds to this
+            // auditor only via org_auditor_selection, after they pick them.
             audit_count: 1,
           },
         });
       }
 
-      // Update auditor_responses status
       await prisma.auditor_responses.update({
         where: { id },
-        data: { status: "approved" },
+        data: { status: "approved", reviewed_at: new Date() },
       });
 
       // Send success email. An existing auditor keeps their password, so only a
@@ -248,7 +237,11 @@ export async function POST(req: Request) {
     if (action === "reject") {
       await prisma.auditor_responses.update({
         where: { id },
-        data: { status: "rejected" },
+        data: {
+          status: "rejected",
+          rejection_reason: String(reason).trim(),
+          reviewed_at: new Date(),
+        },
       });
       return NextResponse.json({ success: true, message: "Auditor rejected" });
     }
