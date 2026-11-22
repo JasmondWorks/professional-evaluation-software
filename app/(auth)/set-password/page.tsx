@@ -12,14 +12,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { notify } from '@/lib/toast';
 import Input from '@/app/components/ui/Input';
 import Button from '@/app/components/ui/Button';
+import { setAccessToken } from '@/app/utils/auth';
+import { useAuth } from '@/app/components/useAuth';
 
 type Check =
   | { state: 'checking' }
-  | { state: 'valid'; purpose: 'setup' | 'reset'; name: string | null; email: string; organization: string | null }
+  | {
+      state: 'valid';
+      purpose: 'setup' | 'reset';
+      name: string | null;
+      email: string;
+      organization: string | null;
+      role: string | null;
+    }
   | { state: 'invalid'; error: string };
 
 export default function SetPasswordPage() {
   const router = useRouter();
+  const { setRole } = useAuth();
   const token = useSearchParams().get('token') ?? '';
 
   const [check, setCheck] = useState<Check>({ state: 'checking' });
@@ -48,6 +58,7 @@ export default function SetPasswordPage() {
             name: data.name,
             email: data.email,
             organization: data.organization,
+            role: data.role,
           });
         } else {
           setCheck({ state: 'invalid', error: data.error ?? 'This link cannot be used.' });
@@ -77,10 +88,23 @@ export default function SetPasswordPage() {
           notify.error(data.error ?? 'Could not set your password.');
           return;
         }
+        // The response carries a fresh access/refresh token pair for exactly
+        // this account, same as /api/login would issue. Adopting them here —
+        // rather than sending the person to /login to sign in "for real" —
+        // is what actually fixes the mix-up: /login auto-redirects straight
+        // through if it finds ANY existing session in this browser, which
+        // previously meant landing on whichever OTHER account was last
+        // signed in here, not this one. Setting these overwrites that.
+        if (data.token) {
+          setAccessToken(data.token);
+          setRole(data.role);
+          document.cookie = `role=${data.role}; path=/`;
+        }
+
         setDone(true);
-        // Straight to sign-in: they have a password now and nothing else to do
-        // here, and a page that just says "success" is a dead end.
-        setTimeout(() => router.replace('/login'), 1600);
+        // /dashboard for everyone — AuditorOnboardingGate sends an auditor who
+        // hasn't submitted the onboarding questionnaire yet on from there.
+        setTimeout(() => router.replace('/dashboard'), 1200);
       } finally {
         setSaving(false);
       }
@@ -153,7 +177,7 @@ export default function SetPasswordPage() {
     return (
       <div className="w-full max-w-md mx-auto py-20 text-center">
         <h1 className="text-2xl font-bold text-strong mb-2">Password set</h1>
-        <p className="text-sm text-muted">Taking you to sign in…</p>
+        <p className="text-sm text-muted">Signing you in…</p>
       </div>
     );
   }
@@ -166,11 +190,19 @@ export default function SetPasswordPage() {
         {setup ? 'Choose your password' : 'Set a new password'}
       </h1>
       <p className="text-sm text-muted mb-8">
-        {setup && check.organization ? (
+        {setup && check.role === 'admin' && check.organization ? (
           <>
             You are the administrator of <strong>{check.organization}</strong>. Choose
             a password to finish setting up your account.
           </>
+        ) : setup && check.role === 'auditor' && check.organization ? (
+          <>
+            You've been invited as an external auditor for <strong>{check.organization}</strong>. Choose a
+            password to finish setting up your account — you'll complete a short questionnaire once you're
+            signed in.
+          </>
+        ) : setup ? (
+          'Choose a password to finish setting up your account.'
         ) : (
           'Choose a password for your account.'
         )}

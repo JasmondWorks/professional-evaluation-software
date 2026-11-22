@@ -62,6 +62,7 @@ export type TokenHolder = {
   name: string | null;
   email: string;
   org: string | null;
+  role: string | null;
   purpose: TokenPurpose;
 };
 
@@ -81,6 +82,7 @@ export async function findPasswordTokenHolder(token: string): Promise<TokenHolde
       name: true,
       email: true,
       org_id: true,
+      role: true,
       password_token_purpose: true,
     },
   });
@@ -95,6 +97,7 @@ export async function findPasswordTokenHolder(token: string): Promise<TokenHolde
     name: user.name,
     email: user.email,
     org: org?.name ?? null,
+    role: user.role,
     purpose: (user.password_token_purpose as TokenPurpose) ?? 'reset',
   };
 }

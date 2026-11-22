@@ -12,15 +12,18 @@ async function getUser(userNameOrEmail: string | null, userId: string | null) {
     return null
   }
 
-  const or: Prisma.pesuserWhereInput[] = []
-
-  if (userNameOrEmail) {
-    or.push({ name: userNameOrEmail }, { email: userNameOrEmail })
-  }
-
-  if (userId !== null) {
-    or.push({ id: userId })
-  }
+  // An id claim, when present, identifies the account exactly — name and
+  // email are not unique (two real accounts can share a display name, e.g.
+  // the same person's org-admin account and a separate auditor account), so
+  // OR-ing them in alongside id let `findFirst` return a DIFFERENT person's
+  // row whenever a name collided, with no `orderBy` to make that outcome even
+  // deterministic. Only fall back to name/email at all when there's no id to
+  // go on — a legacy token that predates the userID claim.
+  const or: Prisma.pesuserWhereInput[] = userId !== null
+    ? [{ id: userId }]
+    : userNameOrEmail
+      ? [{ name: userNameOrEmail }, { email: userNameOrEmail }]
+      : [];
 
   try {
     // Never select `password`. This row is returned straight to the browser, and

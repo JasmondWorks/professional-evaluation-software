@@ -1,8 +1,32 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "../prisma.dev";
 import { rateLimit } from "../_lib/rateLimit";
 import { escapeHtml } from "../_lib/escapeHtml";
+import { AUDITOR_QUESTIONS, GLOBAL_RECOGNITION_QUESTION_INDEX } from "@/app/lib/auditorQuestions";
+import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import nodemailer from "nodemailer";
+
+// Only Cloudinary-hosted https URLs are trusted as credential links — the
+// upload widget always returns one, so anything else is either a bad client
+// or a deliberately crafted javascript:/data: URL aimed at whoever opens the
+// review queue and clicks a "document" link.
+function sanitizeCredentialData(input: unknown): Record<string, string> | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const out: Record<string, string> = {};
+  for (const [label, value] of Object.entries(input as Record<string, unknown>)) {
+    if (typeof value !== "string" || !value) continue;
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol === "https:" && parsed.hostname.endsWith("cloudinary.com")) {
+        out[label] = value;
+      }
+    } catch {
+      // Not a valid URL — drop it.
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -13,36 +37,69 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/**
- * CREATE (Submit Responses)
- */
+const questions = AUDITOR_QUESTIONS;
 
-const questions = [
-  "Will you be validating the input data for the current Appraisal and evaluation period?",
-  "Will you be validating the entire process based on accountability and fair judgment?",
-  "Will your validating of the process be based on Guided Standard which you will make available at the end of the process?",
-  "Will exceptions be raised for conflicts detected in the system?",
-  "Will your roles as an invited external auditor be independent?",
-  "Are you ready to suggest workable frameworks where you deem it fit?",
-  "Do you accept that your Management letter at the end of the process be made available to the management?",
-  "Where awards are applicable for motivation purposes as suggested by the system software, will you validate to ensure that there isn’t marginalization or nepotism?",
-  "Are you welcome to open criticism?",
-  "If invited again in the future, will you accept the invitation even if you were openly criticized?",
-];
+// An invited auditor's own onboarding status — used by the questionnaire
+// page to decide whether to show the form or an "already submitted" state.
+export async function GET(req: Request) {
+  const auth = authorize(tokenFromRequest(req), { roles: ["auditor"], allowAdmins: false });
+  if (!auth.ok) return auth.response;
 
-// Deliberately public: an invited external auditor answers this before they
-// have an account. Submissions land in a queue an admin must approve
-// (/api/admin/auditors) before they become a user.
+  const email = auth.user.email;
+  const userId = auth.user.userID;
+  if (!email || !userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const existing = await prisma.auditor_responses.findUnique({
+    where: { email },
+    select: { status: true, created_at: true },
+  });
+  const account = await prisma.pesuser.findUnique({
+    where: { id: userId },
+    select: { globally_recognized: true, global_recognition_status: true },
+  });
+
+  return NextResponse.json({
+    submission: existing
+      ? {
+          ...existing,
+          globally_recognized: account?.globally_recognized ?? false,
+          global_recognition_status: account?.global_recognition_status ?? null,
+        }
+      : null,
+  });
+}
+
+// Requires an authenticated auditor session — the account is created by the
+// inviting org admin (see /api/send-email) and the auditor must set their
+// password and log in before reaching this. Previously this was reachable
+// with no account at all, gated only by a JWT embedded in the invite link.
 export async function POST(req: Request) {
-  // Public, and each submission mails the admin, so bound it.
+  const auth = authorize(tokenFromRequest(req), { roles: ["auditor"], allowAdmins: false });
+  if (!auth.ok) return auth.response;
+
+  // Public no longer applies, but a motivated account could still hammer this
+  // with uploads — keep the same bound.
   const tooMany = rateLimit(req, { key: "auditor-responses", limit: 5, windowMs: 60 * 60_000 });
   if (tooMany) return tooMany;
 
+  // email and org_id are never taken from the request body — both come from
+  // the authenticated session, so a submitter can only ever file against
+  // their own account and the org that actually invited them.
+  const email = auth.user.email;
+  const orgId = auth.user.orgId ?? null;
+  const userId = auth.user.userID;
+  if (!email || !userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!orgId) {
+    return NextResponse.json({ error: "Your account is not attached to an organization" }, { status: 400 });
+  }
+
   try {
     const body = await req.json();
-    const { name, email, gsm, address, dob, image, responses } = body;
+    const { name, gsm, address, dob, image, responses, credentialData } = body;
 
-    if (!name || !email || !gsm || !address || !dob || !responses) {
+    if (!name || !gsm || !address || !dob || !responses) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -52,7 +109,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid date format for dob" }, { status: 400 });
     }
 
-    // Save into auditor_responses table
+    // An org that has REMOVED this auditor must be the one to re-add them —
+    // resubmitting this form must not be a way to quietly reinstate yourself.
+    // org_auditor is the authoritative per-org record (auditor_responses is a
+    // single row per email and isn't precise enough to gate on alone).
+    const existingPair = await prisma.org_auditor.findFirst({ where: { org_id: orgId, auditor_id: userId } });
+    if (existingPair?.status === "ended") {
+      return NextResponse.json(
+        { error: "You were removed from this organization. Contact them to be re-added." },
+        { status: 403 },
+      );
+    }
+
+    const current = await prisma.pesuser.findUnique({
+      where: { id: userId },
+      select: { globally_recognized: true },
+    });
+
+    // Local (not-yet-globally-recognized) auditors may only hold one active
+    // org association at a time; a globally recognized auditor reaching this
+    // path (re-submitting for a second org) may hold several.
+    if (!current?.globally_recognized) {
+      const otherActive = await prisma.org_auditor.findFirst({
+        where: { auditor_id: userId, status: "active", org_id: { not: orgId } },
+      });
+      if (otherActive) {
+        return NextResponse.json(
+          {
+            error:
+              "You already have an active association with another organization and are not globally recognized, so you cannot be activated here until that association ends.",
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    const wantsGlobalRecognition =
+      Array.isArray(responses) && String(responses[GLOBAL_RECOGNITION_QUESTION_INDEX]).toLowerCase() === "yes";
+
+    // The account already holds the real 'auditor' role (granted at invite
+    // time — the org admin inviting them by name is itself the authorization)
+    // so submitting this just fills in the real details and activates the
+    // org association; there is no separate "approve" step on the other side.
+    // The client was explicit that an approval step only exists for GLOBAL
+    // recognition (see global_recognition_status below). Everything below is
+    // one transaction so a request rejected above (removed, or already active
+    // elsewhere) never leaves a half-created association behind.
     const auditorData = {
       name,
       gsm,
@@ -60,13 +162,35 @@ export async function POST(req: Request) {
       dob: dobDate,
       image: image || null,
       responses,
-      status: "pending",
+      org_id: orgId,
+      credential_data: sanitizeCredentialData(credentialData) ?? Prisma.JsonNull,
+      status: "approved",
     };
-    await prisma.auditor_responses.upsert({
-      where: { email },
-      update: auditorData,
-      create: { email, ...auditorData },
-    });
+    await prisma.$transaction([
+      prisma.auditor_responses.upsert({
+        where: { email },
+        update: auditorData,
+        create: { email, ...auditorData },
+      }),
+      prisma.pesuser.update({
+        where: { id: userId },
+        data: {
+          name,
+          gsm,
+          address,
+          dob: dobDate,
+          image: image || null,
+          ...(wantsGlobalRecognition && !current?.globally_recognized
+            ? { global_recognition_status: "pending", global_recognition_requested_at: new Date() }
+            : {}),
+        },
+      }),
+      existingPair
+        ? prisma.org_auditor.update({ where: { id: existingPair.id }, data: { status: "active" } })
+        : prisma.org_auditor.create({
+            data: { org_id: orgId, auditor_id: userId, status: "active", consecutive_years: 1 },
+          }),
+    ]);
 
     // Generate HTML table for the email
     const tableRows = questions
@@ -84,7 +208,7 @@ export async function POST(req: Request) {
     const emailHtml = `
       <h2>New Auditor Response</h2>
       <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-      <p><strong>Email:</strong> ${escapeHtml(email.replaceAll('%40', '@'))}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email)}</p>
       <p><strong>GSM:</strong> ${escapeHtml(gsm)}</p>
       <p><strong>Address:</strong> ${escapeHtml(address)}</p>
       <p><strong>Date of Birth:</strong> ${dobDate.toDateString()}</p>

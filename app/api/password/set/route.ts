@@ -16,6 +16,7 @@ import {
   consumePasswordToken,
   findPasswordTokenHolder,
 } from '@/app/lib/auth/passwordToken';
+import { issueSessionTokens } from '@/app/lib/auth/session';
 
 /** Long enough to be worth having, short enough not to be a fight. Matches the
  *  minimum the signup form used to apply. */
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
     name: holder.name,
     email: holder.email,
     organization: holder.org,
+    role: holder.role,
   });
 }
 
@@ -74,5 +76,33 @@ export async function POST(req: Request) {
   const hashed = await bcrypt.hash(password, await bcrypt.genSalt(10));
   await consumePasswordToken(holder.id, hashed);
 
-  return NextResponse.json({ ok: true, email: holder.email });
+  // Sign them straight in as themselves — whoever is setting this password is
+  // not necessarily whoever this browser was last signed in as (the link can
+  // land in a tab while a different account is still active), so the client
+  // needs its own fresh tokens to adopt rather than a bare "success" that
+  // sends it off to /login to figure out who it is.
+  const session = await issueSessionTokens(holder.id);
+  if (!session) {
+    // The token was just validated against this exact user, so this would
+    // only happen if the account was deleted in the instant between.
+    return NextResponse.json({ ok: true, email: holder.email });
+  }
+
+  const response = NextResponse.json({
+    ok: true,
+    email: holder.email,
+    token: session.accessToken,
+    role: session.role,
+  });
+
+  response.cookies.set({
+    name: 'refresh_token',
+    value: session.refreshToken,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+
+  return response;
 }

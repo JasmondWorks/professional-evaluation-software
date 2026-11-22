@@ -2,7 +2,7 @@
 // enforced in middleware.ts (see that file for the matching rules). Previously
 // this lived only in the sidebar (what's shown) and a second, drifted copy in
 // components/utils/tabs.tsx (what a handful of routes checked) — most routes
-// under app/(admin) had no server-side gate at all and were reachable by
+// under app/(in-app) had no server-side gate at all and were reachable by
 // anyone who knew the URL. This is the only list now; the sidebar renders its
 // nav from PRESET_ROLES + KNOWN_ROLES, and middleware.ts checks pathnames
 // against it directly.
@@ -46,14 +46,22 @@ export const ROUTE_ACCESS: RouteRule[] = [
   { path: '/unauthorized', roles: EVERYONE },
 
   // Organization directory and roles.
+  // Onboarding questionnaire for a freshly invited external auditor —
+  // reachable only once they've set a password and logged in. The role is
+  // already 'auditor' at this point (the org admin's invite is itself the
+  // authorization); AuditorOnboardingGate is what actually forces them here
+  // before anything else, not this rule.
+  { path: '/auditor/questionnaire', roles: ['auditor'] },
+
   { path: '/em-database/create-role', roles: ['admin'] },
   { path: '/em-database/add-auditor', roles: ['admin'] },
+  { path: '/em-database/browse-auditors', roles: ['admin'] },
   { path: '/em-database', roles: ['admin', 'hod', 'unit-head'] },
   { path: '/organization', roles: ['admin'] },
   { path: '/organizations', roles: ['super-admin'] },
   { path: '/admin/auditors', roles: ['admin', 'super-admin'] },
-  // The cross-org auditor overview (grouped by organization) — platform
-  // operator only, matching the sidebar's role_access for this tab.
+  // The cross-org auditor overview + global-recognition review queue, as two
+  // tabs on one page — platform operator only, matching the sidebar.
   { path: '/admin/auditor', roles: ['super-admin'] },
 
   // Goals.
