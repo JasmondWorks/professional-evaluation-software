@@ -5,14 +5,24 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import prisma from "@/app/api/prisma.dev";
 import { authorize, tokenFromRequest } from "../../_lib/authGuard";
+import { isOnboardedAuditor } from "@/app/lib/auditorOnboarding";
 
+// Records an auditor's survey answers during an evaluation cycle. Had no role
+// check at all — any signed-in account could write rows here.
 export async function POST(req: Request) {
   try {
-    const auth = authorize(tokenFromRequest(req), {});
+    const auth = authorize(tokenFromRequest(req), { roles: ["auditor"] });
     if (!auth.ok) return auth.response;
 
     const orgId = auth.user.orgId ?? null;
     if (!orgId) return NextResponse.json({ error: "Org missing in token" }, { status: 400 });
+
+    if (auth.user.role === "auditor" && !(await isOnboardedAuditor(auth.user.userID, orgId))) {
+      return NextResponse.json(
+        { error: "Complete your onboarding questionnaire before auditing." },
+        { status: 403 },
+      );
+    }
 
     const { pesuser_name, responses } = await req.json();
 

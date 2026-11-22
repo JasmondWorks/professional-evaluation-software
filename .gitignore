@@ -81,3 +81,4 @@ docs/
 !prisma/migrations/**/*.sql
 !prisma/manual-migrations/*.sql
 config.bat
+.env*

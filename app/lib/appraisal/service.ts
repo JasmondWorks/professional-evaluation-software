@@ -22,6 +22,7 @@
 //      sealed until the period closes.
 
 import prisma from '@/app/api/prisma.dev';
+import { isOnboardedAuditor } from '@/app/lib/auditorOnboarding';
 import { scopesForCategory, templateInForce, type TemplateScope } from './templates';
 import { IntegrityReport, IntegritySubject, runIntegrityTest } from '@/app/lib/integrity';
 import {
@@ -62,6 +63,8 @@ export type Viewer = {
   dept?: string | null;
   /** academic | company | public — the org's product category, from the token. */
   productCategory?: string | null;
+  /** The pesuser id — needed to check onboarding completion for an auditor. */
+  userID?: string;
 };
 
 // Both lists live in ./instrument so the server and the screens can never
@@ -803,6 +806,9 @@ export async function recordAuditorScore(
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError('Only the appraisal auditor can resolve a referred score.', 403);
   }
+  if (viewer.role === 'auditor' && !(await isOnboardedAuditor(viewer.userID, viewer.orgId))) {
+    throw new AppraisalError('Complete your onboarding questionnaire before auditing.', 403);
+  }
   const entry = await loadEntry(viewer, input.entryId);
   const row = await prisma.appraisal_category_score.findFirst({
     where: { entry_id: entry.id, category: input.category },
@@ -1091,6 +1097,9 @@ export async function deanApproveDepartment(
 export async function auditorQueue(viewer: Viewer) {
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new AppraisalError('Restricted to the appraisal auditor.', 403);
+  }
+  if (viewer.role === 'auditor' && !(await isOnboardedAuditor(viewer.userID, viewer.orgId))) {
+    throw new AppraisalError('Complete your onboarding questionnaire before auditing.', 403);
   }
   const entries = await prisma.appraisal_entry.findMany({
     where: { org_id: viewer.orgId, status: 'referred_to_auditor' },

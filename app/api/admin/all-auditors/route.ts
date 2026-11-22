@@ -26,8 +26,18 @@ export async function GET(req: NextRequest) {
     where: auth.viewer.isPlatform
       ? { role: "auditor", email: { in: approvedEmails } }
       : { role: "auditor", org_id: auth.viewer.orgId, email: { in: approvedEmails } },
-    select: PUBLIC_USER_COLUMNS,
+    select: { ...PUBLIC_USER_COLUMNS, globally_recognized: true },
   });
 
-  return NextResponse.json(auditors);
+  // PUBLIC_USER_COLUMNS carries org_id, not a displayable org name — the page
+  // needs the name to group/label by, so resolve it here rather than leaving
+  // the client to show the raw id (or "undefined", when it tried to read a
+  // `org` field that was never selected at all).
+  const orgIds = Array.from(new Set(auditors.map((a) => a.org_id).filter((id): id is string => !!id)));
+  const orgs = await prisma.org.findMany({ where: { id: { in: orgIds } }, select: { id: true, name: true } });
+  const orgNameById = new Map(orgs.map((o) => [o.id, o.name]));
+
+  return NextResponse.json(
+    auditors.map((a) => ({ ...a, org: a.org_id ? (orgNameById.get(a.org_id) ?? "Unknown organization") : "Unassigned" })),
+  );
 }

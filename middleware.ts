@@ -35,6 +35,7 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/em-database/:path*",
+    "/auditor/questionnaire/:path*",
     "/organization/:path*",
     "/organizations/:path*",
     "/admin/auditors/:path*",

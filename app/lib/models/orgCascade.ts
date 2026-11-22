@@ -13,7 +13,7 @@
 import {
   findOptimalK,
   findOptimalKCost,
-} from '@/app/(admin)/models/personnel-utilization/lib/util-models11-16';
+} from '@/app/(in-app)/models/personnel-utilization/lib/util-models11-16';
 
 export type CascadeLevel = {
   /** 1 for the first management level above the supervisory staff. */

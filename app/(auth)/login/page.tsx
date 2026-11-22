@@ -81,6 +81,9 @@ export default function Home() {
         }
 
         // Delay the redirect slightly to give the save-info prompt time to appear.
+        // Every role lands on /dashboard — an auditor who hasn't submitted the
+        // onboarding questionnaire yet is redirected on from there by
+        // AuditorOnboardingGate, which actually knows whether they have.
         setTimeout(() => {
           router.push("/dashboard");
         }, 100);

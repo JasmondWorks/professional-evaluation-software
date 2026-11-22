@@ -29,10 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           setAccessToken(data.token);
-          
+
           const decoded: any = jwt.decode(data.token);
           if (decoded && decoded.role) {
             setRole(decoded.role);
+            // middleware.ts gates routes on this cookie, not on the in-memory
+            // token — and this was the only place that ever wrote it besides
+            // login/set-password. A role that changed AFTER login (e.g. an
+            // auditor's onboarding completing, or any future role change)
+            // left the cookie stale until the next full login, redirecting a
+            // legitimately-permitted account to /unauthorized in the
+            // meantime. Re-asserting it on every refresh keeps it current.
+            if (typeof document !== 'undefined') {
+              document.cookie = `role=${decoded.role}; path=/; max-age=2592000`;
+            }
           }
           return true;
         } else {

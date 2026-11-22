@@ -14,6 +14,7 @@
 // where the band sits, so an entry accepts edits only while it is a draft.
 
 import prisma from '@/app/api/prisma.dev';
+import { isOnboardedAuditor } from '@/app/lib/auditorOnboarding';
 import { IntegrityReport, IntegritySubject, runIntegrityTest } from '@/app/lib/integrity';
 import {
   CRITERION_KEYS,
@@ -45,6 +46,8 @@ export type Viewer = {
   role: string;
   dept?: string | null;
   productCategory?: string | null;
+  /** The pesuser id — needed to check onboarding completion for an auditor. */
+  userID?: string;
 };
 
 export class PerformanceError extends Error {
@@ -533,6 +536,9 @@ export async function recordAuditorScore(
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new PerformanceError('Only the performance auditor can resolve a referred score.', 403);
   }
+  if (viewer.role === 'auditor' && !(await isOnboardedAuditor(viewer.userID, viewer.orgId))) {
+    throw new PerformanceError('Complete your onboarding questionnaire before auditing.', 403);
+  }
   if (!Number.isFinite(input.score) || input.score < 0 || input.score > 100) {
     throw new PerformanceError('The score must be between 0 and 100.', 400);
   }
@@ -594,6 +600,9 @@ async function refreshEntryStatus(entryId: string) {
 export async function auditorQueue(viewer: Viewer) {
   if (viewer.role !== 'auditor' && !ORG_ADMIN_ROLES.includes(viewer.role)) {
     throw new PerformanceError('This queue is for the performance auditor.', 403);
+  }
+  if (viewer.role === 'auditor' && !(await isOnboardedAuditor(viewer.userID, viewer.orgId))) {
+    throw new PerformanceError('Complete your onboarding questionnaire before auditing.', 403);
   }
   // Keyed off the criterion rows rather than the entry's status, so a referral
   // cannot be hidden by whatever the entry's status happens to say.
