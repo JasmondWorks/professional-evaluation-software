@@ -5,7 +5,6 @@ import Image from 'next/image'
 import {
    Home3,
    Setting4,
-   DollarCircle,
    ProfileCircle,
    People,
    Award,
@@ -80,8 +79,7 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
       }
    }, [role])
 
-    // Definition of all tabs
-   // Definition of all tabs.
+    // Definition of all tabs.
    //
    // Kept deliberately short. An organization admin was carrying thirteen items
    // across five groups, and three of those thirteen were read-only trophy
@@ -96,19 +94,20 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
    // even though the hub lists it too: it is personal and checked often, unlike
    // the browse-y pages beside it.
    //
-   // Keys must be unique — React renders this list directly. 14 was used twice
-   // (Hall of Fame and Organization Settings) when the Recognition items were
-   // added, so the numbering is now contiguous and commented.
+   // Keys must be unique — React renders this list directly.
    const tabs = [
       { key: 1, name: 'Dashboard', icon: Home3, href: '/dashboard', group: '', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
 
       // Evaluate — the work itself.
       { key: 2, name: 'Data Entry', icon: LucideDatabase, href: '/data-entry', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },
       { key: 3, name: 'Performance Review', icon: Teacher, href: '/performance', group: 'Evaluate', role_access: ['lecturer', 'industrial-engineer', 'hod', 'unit-head', 'employee-w'] },
-      // An auditor's actual job: the criteria referred to them for a ruling.
-      // roleAccess has always allowed this route; the rail never listed it, so
-      // the one role whose work lives here could not reach it.
-      { key: 4, name: 'Audit Queue', icon: Verify, href: '/performance/auditor', group: 'Evaluate', role_access: ['auditor'] },
+      // An auditor's actual job: the criteria referred to them for a ruling,
+      // across both appraisal and performance. roleAccess has always allowed
+      // these routes; the rail never listed either, so the one role whose
+      // work lives here could not reach it.
+      { key: 4, name: 'Appraisal Queue', icon: Verify, href: '/appraisal/auditor', group: 'Evaluate', role_access: ['auditor'] },
+      { key: 19, name: 'Performance Queue', icon: Verify, href: '/performance/auditor', group: 'Evaluate', role_access: ['auditor'] },
+      { key: 20, name: 'Completed Appraisals', icon: Award, href: '/completed-appraisals', group: 'Evaluate', role_access: ['admin', 'hod', 'unit-head', 'auditor'] },
       { key: 5, name: 'Assessment', icon: Award, href: '/assessment', group: 'Evaluate', role_access: ['admin'], requires: 'can_manage_performance_reviews' as PermissionKey },
       { key: 6, name: 'Staff Determination', icon: Data2, href: '/evaluation', group: 'Evaluate', role_access: ['admin', 'industrial-engineer'], requires: 'can_define_performance_metrics' as PermissionKey },
       { key: 7, name: 'Models', icon: Setting2, href: '/models', group: 'Evaluate', role_access: ['industrial-engineer', 'admin'] },
@@ -123,21 +122,17 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
       // Organization — people and tenancy.
       { key: 11, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: ['admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
-      // The vetting queue for invited external auditors. Approval/rejection is
-      // platform-admin only now, but an org admin still views it (read-only)
-      // for their own org's submissions, so both roles keep a link to it.
+      // An org admin's own roster of local auditors — submitting the
+      // onboarding questionnaire activates someone immediately, so this is a
+      // visibility + remove list, not an approval queue.
       { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin', 'super-admin'] },
       // Platform-wide, not org-scoped: the "Organization" items a super-admin
-      // sees. "Recognised auditors" is deliberately not called
-      // "External Auditors" like the org admin's item above it — they are
-      // different screens (approved roster vs. vetting queue) and the two
-      // routes already differ by one letter, which is trap enough.
-      { key: 13, name: 'All Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
-      // Had a page and a roleAccess rule but no link anywhere — the only way
-      // to reach it was typing the URL.
-      { key: 18, name: 'Invite Auditor', icon: Verify, href: '/admin/auditors/invite', group: 'Organization', role_access: ['super-admin'] },
-      { key: 16, name: 'Recognised auditors', icon: Verify, href: '/external-auditors', group: 'Organization', role_access: ['super-admin'] },
-      { key: 17, name: 'Platform operators', icon: ProfileCircle, href: '/platform-operators', group: 'Organization', role_access: ['super-admin'] },
+      // sees.
+      { key: 13, name: 'Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
+      // Every auditor in the system (tab) + global recognition requests (tab)
+      // — one page. /external-auditors (the old legacy-console location)
+      // redirects here.
+      { key: 16, name: 'Auditors', icon: Verify, href: '/admin/auditor', group: 'Organization', role_access: ['super-admin'] },
 
       // Account — you, and the settings hub.
       { key: 14, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },

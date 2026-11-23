@@ -28,6 +28,7 @@ export function viewerFrom(req: Request): Viewer {
     role: claims.role,
     dept: claims.dept ?? null,
     productCategory: claims.productCategory ?? claims.category ?? null,
+    userID: claims.userID,
   };
 }
 

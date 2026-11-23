@@ -3,68 +3,99 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import prisma from "../prisma.dev";
 import { sendMail } from "@/app/lib/email";
-import { getJWTSecret } from "@/app/lib/jwt";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
 import { rateLimit } from "../_lib/rateLimit";
 import { escapeHtml } from "../_lib/escapeHtml";
+import { generateUniquePassword } from "../_lib/createEmployee";
+import { issuePasswordToken, passwordLink } from "@/app/lib/auth/passwordToken";
 
-// Invites an external auditor. Platform-admin only: external auditors are not
-// tied to an inviting org — they're reviewed and publicly recognized by the
-// platform, then chosen by orgs afterward (see org_auditor_selection).
+// Invites an external auditor into the system for the first time. Only an
+// organization admin can do this — they are the ones who source auditors and
+// vouch for them locally; the platform admin's role is reviewing global
+// recognition requests afterward (see /api/super/global-recognition), not
+// inviting people in fresh.
+//
+// The account is created right here, not on approval: the auditor must set a
+// password and log in BEFORE they can reach the onboarding questionnaire —
+// answering it (and uploading documents) was previously possible with no
+// account at all, gated only by a JWT embedded in the link.
 export async function POST(request: Request) {
-  // allowAdmins defaults true and would let org-tier "admin" bypass this —
-  // the whole point of this gate is that org admins may not invite auditors.
-  const auth = authorize(tokenFromRequest(request), { roles: ["super-admin"], allowAdmins: false });
+  const auth = authorize(tokenFromRequest(request), { roles: ["admin"] });
   if (!auth.ok) return auth.response;
 
   const tooMany = rateLimit(request, {
     key: "auditor-invite",
     limit: 20,
     windowMs: 60 * 60_000,
-    subject: auth.user.userID ? String(auth.user.userID) : null,
+    subject: auth.user.org ? String(auth.user.org) : null,
   });
   if (tooMany) return tooMany;
 
-  try {
-    const { email, origin } = await request.json();
+  const orgId = auth.user.orgId;
+  if (!orgId) {
+    return NextResponse.json({ message: "Your account is not attached to an organization" }, { status: 400 });
+  }
 
-    if (!email) {
+  try {
+    const { email } = await request.json();
+
+    if (!email || typeof email !== "string") {
       return NextResponse.json(
         { message: "Email is required" },
         { status: 400 },
       );
     }
 
-    // No org on this token — the auditor isn't bound to any org until an org
-    // admin selects them after platform approval.
-    const token = jwt.sign({ email }, getJWTSecret(), {
-      expiresIn: "7d",
+    // Someone with this email already has an account — inviting them again
+    // would either collide with their existing login or, worse, let an org
+    // admin walk an existing staff/admin account through the auditor
+    // onboarding flow. Block it with a clear reason instead of silently
+    // overwriting anything downstream.
+    const existingUser = await prisma.pesuser.findUnique({
+      where: { email },
+      select: { role: true },
     });
-    // Prefer the caller's origin — NEXT_PUBLIC_APP_URL is empty in production,
-    // which previously produced dead localhost invite links. The caller is an
-    // admin, not the public, but `origin` still shouldn't be trusted enough to
-    // drop unvalidated into an href: an admin account handing out a malformed
-    // value (or a compromised admin session) shouldn't be able to turn this
-    // into an arbitrary link mailed from the app's own address.
-    const fallbackBase = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    let baseUrl = fallbackBase;
-    if (typeof origin === "string" && origin) {
-      try {
-        const parsed = new URL(origin);
-        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-          baseUrl = parsed.origin;
-        }
-      } catch {
-        // Malformed origin — fall back rather than embed it unvalidated.
-      }
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          message:
+            existingUser.role === "auditor"
+              ? "This email already belongs to an auditor in the system. Use 'Browse Auditors' to add an existing one to your organization instead."
+              : "This email already belongs to an existing user in the system.",
+        },
+        { status: 409 },
+      );
     }
-    const secureLink = `${baseUrl}/auditor/${token}`;
 
-    // This built its own transport with smtp.gmail.com:465 hardcoded, ignoring
-    // EMAIL_HOST, EMAIL_PORT and the Resend path that every other email in the
-    // app goes through. sendMail() is the one mailer.
+    // Placeholder password nobody is ever told: it is unusable until they
+    // spend the setup token below and choose their own, same as any other
+    // provisioned account in this app (see createEmployee.generateUniquePassword).
+    const placeholderPassword = generateUniquePassword();
+    const auditor = await prisma.pesuser.create({
+      data: {
+        // No name yet — the questionnaire collects it. The email local part
+        // is a readable placeholder until then.
+        name: email.split("@")[0],
+        email,
+        password: await bcrypt.hash(placeholderPassword, 10),
+        must_change_password: true,
+        // The org admin inviting them BY NAME is itself the authorization to
+        // audit locally — there is no separate approval step, so this is the
+        // real 'auditor' role from the moment the account is created, not a
+        // lesser pending one. The onboarding questionnaire is still required
+        // before they can do anything else (see AuditorOnboardingGate), but
+        // that's a completeness gate, not a privilege one.
+        role: "auditor",
+        org_id: orgId,
+      },
+    });
+
+    const { token, expiresAt } = await issuePasswordToken(auditor.id, "setup");
+    const link = passwordLink(token, "setup");
+
     const { success, error } = await sendMail({
       to: email,
       subject: "Invitation: External Auditor for PES",
@@ -73,20 +104,20 @@ export async function POST(request: Request) {
           <h2 style="color: #4F46E5; text-align: center;">You've been invited!</h2>
           <p>Hello,</p>
           <p>You have been invited to serve as an <strong>External Auditor</strong> for the Performance Evaluation System (PES). We value your expertise and look forward to your contributions.</p>
-          <p>Please click the button below to securely accept the invitation and access the platform:</p>
-          
+          <p>First, choose a password for your account. Once you're signed in, you'll be asked to complete a short questionnaire and upload any supporting documents.</p>
+
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${escapeHtml(secureLink)}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation</a>
+            <a href="${escapeHtml(link)}" style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Set your password</a>
           </div>
 
           <p style="font-size: 14px; color: #555;">If the button above isn't clickable, copy and paste the following link into your web browser:</p>
           <p style="font-size: 14px; word-break: break-all; color: #4F46E5; background: #f9f9f9; padding: 10px; border-radius: 4px;">
-            ${escapeHtml(secureLink)}
+            ${escapeHtml(link)}
           </p>
-          
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
           <p style="font-size: 12px; color: #888; text-align: center;">
-            This link is securely generated and will expire in 7 days for your protection. Please do not share it with anyone.<br/><br/>
+            This link works once and expires on ${expiresAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}. Please do not share it with anyone.<br/><br/>
             &copy; ${new Date().getFullYear()} Performance Evaluation System
           </p>
         </div>
@@ -94,9 +125,12 @@ export async function POST(request: Request) {
     });
 
     // Only claim it was sent if the mailer says so. Reporting success for a send
-    // that failed is how an invitation goes missing with nobody any the wiser.
+    // that failed is how an invitation goes missing with nobody any the wiser —
+    // and here it would also leave a dangling pesuser nobody can reach, so the
+    // account is rolled back.
     if (!success) {
       console.error("Auditor invite failed to send:", email, error);
+      await prisma.pesuser.delete({ where: { id: auditor.id } });
       return NextResponse.json(
         { message: error || "The invitation could not be sent." },
         { status: 502 },

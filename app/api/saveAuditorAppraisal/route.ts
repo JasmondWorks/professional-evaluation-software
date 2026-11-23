@@ -5,12 +5,20 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../prisma.dev";
 import { authorize, tokenFromRequest } from "../_lib/authGuard";
+import { isOnboardedAuditor } from "@/app/lib/auditorOnboarding";
 
 // Writes an appraisal. The org was decoded, not verified, so the row could be
-// written into any organization's appraisal table.
+// written into any organization's appraisal table. This only ever carries
+// isAuditor: true (its one caller, app/(in-app)/data-entry/auditor/page.tsx,
+// never sets it false) — it had no role check at all, so any signed-in
+// account, not just an auditor, could record an auditor's score.
 export async function POST(req: NextRequest) {
-  const auth = authorize(tokenFromRequest(req), {});
+  const auth = authorize(tokenFromRequest(req), { roles: ["auditor"] });
   if (!auth.ok) return auth.response;
+
+  if (auth.user.role === "auditor" && !(await isOnboardedAuditor(auth.user.userID, auth.user.orgId ?? null))) {
+    return NextResponse.json({ message: "Complete your onboarding questionnaire before auditing." }, { status: 403 });
+  }
 
   const org = auth.user.org ? String(auth.user.org) : null;
   const orgId = auth.user.orgId ?? null;
