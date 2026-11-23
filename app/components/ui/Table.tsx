@@ -5,7 +5,13 @@ export type TableColumn<T> = {
   key: string;
   label: string;
   render?: (item: T, index: number) => ReactNode;
+  /** Advisory only under the browser's default table layout — the column can
+   *  still be squeezed narrower than this by other columns' content. Use
+   *  `minWidth` instead when a column (e.g. a long address) must actually
+   *  stay at least that wide; the table scrolls horizontally rather than
+   *  shrink it further. */
   width?: string;
+  minWidth?: string;
   align?: 'left' | 'center' | 'right';
 };
 
@@ -50,7 +56,7 @@ export default function Table<T extends Record<string, any>>({
               <th
                 key={col.key}
                 className={`py-3 px-4 font-semibold text-xs uppercase tracking-wide text-muted ${alignCls(col.align)}`}
-                style={{ width: col.width }}
+                style={{ width: col.width, minWidth: col.minWidth }}
               >
                 {col.label}
               </th>
@@ -97,6 +103,7 @@ export default function Table<T extends Record<string, any>>({
                   <td
                     key={col.key}
                     className={`py-3 px-4 text-sm text-body ${alignCls(col.align)}`}
+                    style={{ width: col.width, minWidth: col.minWidth }}
                   >
                     {col.render ? col.render(item, rowIndex) : item[col.key]}
                   </td>

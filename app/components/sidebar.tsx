@@ -122,17 +122,15 @@ export default function Sidebar({is_sidebar_active, handleSideBar}:
 
       // Organization — people and tenancy.
       { key: 11, name: 'Employee Database', icon: People, href: '/em-database', group: 'Organization', role_access: ['admin', 'hod', 'unit-head'], requires: 'can_access_employee_data' as PermissionKey },
-      // An org admin's own roster of local auditors — submitting the
-      // onboarding questionnaire activates someone immediately, so this is a
-      // visibility + remove list, not an approval queue.
+      // One page, two audiences: an org admin's own roster (visibility +
+      // remove — submitting the onboarding questionnaire already activates
+      // someone, so there's no approval queue), or, for the platform admin,
+      // every auditor in the system plus global-recognition requests. Same
+      // label and route either way — see app/(in-app)/admin/auditors/page.tsx.
       { key: 12, name: 'External Auditors', icon: Verify, href: '/admin/auditors', group: 'Organization', role_access: ['admin', 'super-admin'] },
       // Platform-wide, not org-scoped: the "Organization" items a super-admin
       // sees.
       { key: 13, name: 'Organizations', icon: People, href: '/organizations', group: 'Organization', role_access: ['super-admin'] },
-      // Every auditor in the system (tab) + global recognition requests (tab)
-      // — one page. /external-auditors (the old legacy-console location)
-      // redirects here.
-      { key: 16, name: 'Auditors', icon: Verify, href: '/admin/auditor', group: 'Organization', role_access: ['super-admin'] },
 
       // Account — you, and the settings hub.
       { key: 14, name: 'Profile', icon: ProfileCircle, href: '/profile', group: 'Account', role_access: ['super-admin', 'admin', 'lecturer', 'industrial-engineer', 'hod', 'dept-admin', 'unit-head', 'employee-w', 'auditor'] },

@@ -84,4 +84,3 @@ docs/
 # Captured by scripts/capture-screenshots.ts from a running dev server.
 /screenshots/
 config.bat
-.env*

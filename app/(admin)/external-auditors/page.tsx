@@ -11,7 +11,7 @@ export default function ExternalAuditorsRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/admin/auditor');
+    router.replace('/admin/auditors');
   }, [router]);
 
   return (
