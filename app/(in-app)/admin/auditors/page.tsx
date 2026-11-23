@@ -1,141 +1,190 @@
 "use client";
 
-import React from "react";
 import { useEffect, useState } from "react";
-import { apiFetch } from '@/app/utils/apiFetch';
-import Button from "@/app/components/ui/Button";
+import { apiFetch } from "@/app/utils/apiFetch";
+import { notify } from "@/lib/toast";
+import { Badge, Button, Card, CardBody, CardHeader, PageHeader, Table } from "@/app/components/ui";
+import { Modal } from "@/app/components/ui/modal";
+import type { TableColumn } from "@/app/components/ui/Table";
 import { AUDITOR_QUESTIONS } from "@/app/lib/auditorQuestions";
 import { safeHttpsUrl } from "@/app/lib/safeUrl";
 
+type AuditorRow = {
+  id: number;
+  name: string;
+  email: string;
+  gsm: string;
+  dob: string;
+  address: string;
+  status: string;
+  responses: string[];
+  credential_data: Record<string, string> | null;
+};
+
+function statusTone(status: string) {
+  if (status === "approved") return "success" as const;
+  if (status === "removed") return "danger" as const;
+  return "warning" as const;
+}
+
 export default function AdminAuditorsPage() {
-  const [auditors, setAuditors] = useState<any[]>([]);
-  const [expandedRows, setExpandedRows] = useState<number[]>([]); // Tracks expanded rows
-  const [message, setMessage] = useState("");
-  const questions = AUDITOR_QUESTIONS;
+  const [auditors, setAuditors] = useState<AuditorRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [removing, setRemoving] = useState<AuditorRow | null>(null);
+  const [actingId, setActingId] = useState<number | null>(null);
 
   const fetchAuditors = async () => {
     const res = await apiFetch("/api/admin/auditors");
     const data = await res.json();
-    setAuditors(data);
-  };
-
-  const toggleRow = (id: number) => {
-    setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
+    setAuditors(Array.isArray(data) ? data : []);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchAuditors();
   }, []);
 
-  const handleRemove = async (id: number) => {
-    const res = await apiFetch("/api/admin/auditors", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, action: "remove" }),
-    });
-    const data = await res.json();
-    setMessage(data.message || data.error);
-    fetchAuditors(); // refresh list
+  const confirmRemove = async () => {
+    if (!removing) return;
+    setActingId(removing.id);
+    try {
+      const res = await apiFetch("/api/admin/auditors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: removing.id, action: "remove" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        notify.error(data.error ?? "Could not remove this auditor.");
+        return;
+      }
+      notify.success(data.message ?? "Auditor removed.");
+      if (expandedId === removing.id) setExpandedId(null);
+      await fetchAuditors();
+    } finally {
+      setActingId(null);
+      setRemoving(null);
+    }
   };
 
+  const expanded = auditors.find((a) => a.id === expandedId) ?? null;
+
+  const columns: TableColumn<AuditorRow>[] = [
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    { key: "gsm", label: "GSM" },
+    { key: "dob", label: "DOB", render: (a) => new Date(a.dob).toLocaleDateString() },
+    { key: "address", label: "Address" },
+    { key: "status", label: "Status", render: (a) => <Badge tone={statusTone(a.status)}>{a.status}</Badge> },
+    {
+      key: "actions",
+      label: "Actions",
+      align: "right",
+      render: (a) => (
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setExpandedId(expandedId === a.id ? null : a.id);
+            }}
+          >
+            {expandedId === a.id ? "Hide details" : "View details"}
+          </Button>
+          {a.status === "approved" && (
+            <Button
+              size="sm"
+              variant="destructive"
+              loading={actingId === a.id}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setRemoving(a);
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">Your Organization's Auditors</h1>
-      <p className="text-sm text-muted mb-6">
-        An auditor becomes active as soon as they submit this questionnaire — there's nothing to approve here.
-        Remove one if they shouldn't be auditing for your organization anymore.
-      </p>
+    <div className="max-w-5xl mx-auto mt-10 px-4">
+      <PageHeader
+        title="Your Organization's Auditors"
+        subtitle="An auditor becomes active as soon as they submit this questionnaire — there's nothing to approve here. Remove one if they shouldn't be auditing for your organization anymore."
+      />
 
-      {message && <p className="mb-4 text-sm text-pes font-medium">{message}</p>}
+      <Table columns={columns} data={auditors} loading={loading} emptyMessage="No auditors yet." />
 
-      <table className="w-full border border-line rounded-lg overflow-hidden">
-        <thead className="bg-pes text-white">
-          <tr>
-            <th className="p-2">Name</th>
-            <th className="p-2">Email</th>
-            <th className="p-2">GSM</th>
-            <th className="p-2">DOB</th>
-            <th className="p-2">Address</th>
-            <th className="p-2">Status</th>
-            <th className="p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {auditors.map((a) => (
-            <React.Fragment key={a.id}>
-              <tr
-                className="border-b text-sm hover:bg-line/50 cursor-pointer"
-                onClick={() => toggleRow(a.id)}
-              >
-                <td className="p-2">{a.name}</td>
-                <td className="p-2">{a.email}</td>
-                <td className="p-2">{a.gsm}</td>
-                <td className="p-2">{new Date(a.dob).toLocaleDateString()}</td>
-                <td className="p-2">{a.address}</td>
-                <td className="p-2">{a.status}</td>
-                <td className="p-2 flex gap-2">
-                  {a.status === "approved" && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        handleRemove(a.id);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </td>
-              </tr>
-              {expandedRows.includes(a.id) && (
-                <tr className="bg-canvas">
-                  <td colSpan={7} className="p-4">
-                    <h3 className="font-bold mb-2">Responses:</h3>
-                    <table className="w-full border border-line rounded-lg">
-                      <thead className="bg-gray-200">
-                        <tr>
-                          <th className="p-2">#</th>
-                          <th className="p-2">Question</th>
-                          <th className="p-2">Response</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {a.responses.map((response: string, index: number) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-2">{index + 1}</td>
-                            <td className="p-2 text-xs">{ questions[index] }</td>
-                            <td className={`p-2 ${ (response.toString().toLowerCase() === 'yes') ? 'text-success-600' : 'text-danger-600'}`}>{ response }</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {a.credential_data && (
-                      <div className="mt-4">
-                        <h3 className="font-bold mb-2">Uploaded documents:</h3>
-                        <ul className="list-disc ms-5 text-sm">
-                          {Object.entries(a.credential_data as Record<string, string>)
-                            .map(([label, url]) => [label, safeHttpsUrl(url)] as const)
-                            .filter(([, url]) => !!url)
-                            .map(([label, url]) => (
-                              <li key={label}>
-                                <a href={url} target="_blank" rel="noopener noreferrer" className="text-pes underline">
-                                  {label}
-                                </a>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
+      {expanded && (
+        <Card className="mt-4">
+          <CardHeader>
+            <h3 className="text-sm font-semibold text-strong">{expanded.name}'s questionnaire</h3>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-4">
+            <Table
+              columns={[
+                { key: "index", label: "#", width: "48px" },
+                { key: "question", label: "Question" },
+                {
+                  key: "response",
+                  label: "Response",
+                  render: (row: { response: string }) => (
+                    <span className={row.response?.toString().toLowerCase() === "yes" ? "text-success-600" : "text-danger-600"}>
+                      {row.response}
+                    </span>
+                  ),
+                },
+              ]}
+              data={expanded.responses.map((response, index) => ({ index: index + 1, question: AUDITOR_QUESTIONS[index], response }))}
+              emptyMessage="No questionnaire responses on file."
+            />
+
+            {expanded.credential_data && (
+              <div>
+                <h4 className="text-sm font-semibold text-strong mb-2">Uploaded documents</h4>
+                <ul className="list-disc ms-5 text-sm">
+                  {Object.entries(expanded.credential_data)
+                    .map(([label, url]) => [label, safeHttpsUrl(url)] as const)
+                    .filter(([, url]) => !!url)
+                    .map(([label, url]) => (
+                      <li key={label}>
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-pes underline">
+                          {label}
+                        </a>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      <Modal
+        isOpen={!!removing}
+        setIsOpen={(open) => !open && setRemoving(null)}
+        title="Remove this auditor?"
+        description={
+          removing
+            ? `${removing.name} will no longer be able to audit for your organization. They can be re-added later if needed.`
+            : undefined
+        }
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setRemoving(null)} disabled={actingId === removing?.id}>
+              Cancel
+            </Button>
+            <Button variant="destructive" loading={actingId === removing?.id} onClick={confirmRemove}>
+              Remove
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
